@@ -1,3 +1,5 @@
+import { roboticsProducts } from './robotics-catalog'
+
 export type Product = {
   id: string
   name: string
@@ -32,6 +34,7 @@ export const products: Product[] = [
   { id: 'smart-street-lighting-package', name: 'Smart Street Lighting Pilot', category: 'Project Solutions', price: 85000, priceLabel: 'From NPR 85,000', sku: 'GEN-PRJ-LIGHT-001', productType: 'Project package', note: 'Adaptive lighting with visibility', description: 'A pilot package based on the portfolio smart street lighting network, including sensing, adaptive control, remote monitoring, and reporting.', specs: ['Pilot design and site review', 'Up to 5 controlled light points', 'Motion/ambient sensing concept', 'Fault alert dashboard prototype'], audience: 'Municipalities, campuses, and facilities', difficulty: 'Professional', warranty: 'Final warranty depends on installed hardware and proposal', stock: 0, delivery: 'Site survey required · quote by scope', color: 'from-[#f1a17e] to-[#e9c16a]' },
   { id: 'smart-agriculture-package', name: 'Smart Agriculture Pilot', category: 'Project Solutions', price: 65000, priceLabel: 'From NPR 65,000', sku: 'GEN-PRJ-AGRI-001', productType: 'Project package', note: 'Turn field signals into better decisions', description: 'A pilot package based on the portfolio smart agriculture platform, combining soil monitoring, irrigation logic, and field reporting.', specs: ['Field requirements review', 'Soil moisture and climate sensors', 'Irrigation automation pilot', 'Dashboard and handover guide'], audience: 'Farms, research teams, and agri-businesses', difficulty: 'Professional', warranty: 'Final warranty depends on environmental conditions and proposal', stock: 0, delivery: 'Site review required · typical 4–8 weeks', color: 'from-[#dff4ec] to-[#79c7a8]' },
   { id: 'rfid-parking-package', name: 'RFID Parking Management Pilot', category: 'Project Solutions', price: 95000, priceLabel: 'From NPR 95,000', sku: 'GEN-PRJ-PARK-001', productType: 'Project package', note: 'Make access and availability visible', description: 'A pilot package based on the portfolio intelligent parking system, covering access control, occupancy visibility, and operational reporting.', specs: ['Workflow and site review', 'RFID/NFC access concept', 'Availability dashboard prototype', 'Integration plan and documentation'], audience: 'Campuses, offices, and managed parking sites', difficulty: 'Professional', warranty: 'Final warranty depends on installed hardware and proposal', stock: 0, delivery: 'Site review required · quote by scope', color: 'from-[#dce8ff] to-[#7e9ff2]' },
+  ...roboticsProducts,
 ]
 
 export const formatNPR = (value: number) => `NPR ${value.toLocaleString('en-IN')}`

@@ -21,6 +21,7 @@ This document explains what exists, what is required before launch, and the exac
 - Light/dim mode saved in browser storage
 - Services page
 - Product catalog with search and category filters
+- Source-derived robotics catalog with 23 documented builds and 138 quote-based configurations from `my_COMPANY`
 - Product detail pages
 - Local persistent cart and checkout form
 - Stripe checkout server route example
