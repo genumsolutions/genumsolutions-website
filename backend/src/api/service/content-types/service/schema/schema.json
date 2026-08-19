@@ -1,0 +1,15 @@
+{
+  "kind": "collectionType",
+  "collectionName": "services",
+  "info": { "singularName": "service", "pluralName": "services", "displayName": "Service package" },
+  "options": { "draftAndPublish": true },
+  "attributes": {
+    "name": { "type": "string", "required": true },
+    "slug": { "type": "uid", "targetField": "name", "required": true },
+    "tier": { "type": "enumeration", "enum": ["Static", "CMS", "E-commerce", "AI + IoT", "3D Printing", "Training"], "required": true },
+    "price": { "type": "decimal" },
+    "description": { "type": "richtext" },
+    "features": { "type": "json" },
+    "featured": { "type": "boolean", "default": false }
+  }
+}

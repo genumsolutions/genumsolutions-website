@@ -1,0 +1,15 @@
+import PageIntro from '../../components/PageIntro'
+import PageShell from '../../components/PageShell'
+
+const competencies = [
+  ['Microcontrollers', 'ESP32, Arduino, STM32, and ARM-based systems'],
+  ['Cloud platforms', 'AWS, Azure, Google Cloud, Firebase, and IoT backends'],
+  ['IoT networks', 'WiFi, Bluetooth, LoRaWAN, MQTT, CoAP, and Zigbee'],
+  ['Embedded systems', 'Firmware, real-time systems, and hardware-software integration'],
+  ['Programming', 'Python, C++, JavaScript, Java, and Embedded C'],
+  ['STEAM education', 'Curriculum development, mentoring, and technical workshops'],
+]
+
+export default function AboutPage() {
+  return <PageShell><PageIntro eyebrow="About GENUM" title="Engineering with a reason to exist." body="GENUM brings a decade of telecom, IoT, embedded systems, project delivery, and STEAM education experience into a company built for practical technology." /><section className="mx-auto max-w-7xl px-5 py-14 lg:px-8"><div className="grid gap-4 sm:grid-cols-4"><div className="border-t-2 border-ink pt-4"><strong className="font-display text-3xl">25+</strong><p className="mt-1 text-sm text-slate-500">projects completed</p></div><div className="border-t-2 border-ink pt-4"><strong className="font-display text-3xl">10+</strong><p className="mt-1 text-sm text-slate-500">years in engineering</p></div><div className="border-t-2 border-ink pt-4"><strong className="font-display text-3xl">50+</strong><p className="mt-1 text-sm text-slate-500">clients served</p></div><div className="border-t-2 border-ink pt-4"><strong className="font-display text-3xl">500+</strong><p className="mt-1 text-sm text-slate-500">students trained</p></div></div><div className="mt-16 grid gap-10 lg:grid-cols-[.8fr_1.2fr]"><div><p className="text-xs font-black uppercase tracking-[.24em] text-cobalt">How we work</p><h2 className="mt-3 font-display text-4xl font-bold">Make the complex useful.</h2></div><div><p className="leading-8 text-slate-600">GENUM started with a fascination for how things communicate wirelessly and grew through telecom infrastructure, embedded systems, smart automation, cloud-connected devices, and technical education. The company now gives that experience a home: products people can build with, services that solve real problems, and training that leaves people more capable than when they arrived.</p><p className="mt-5 leading-8 text-slate-600">Our working values are simple: innovation with evidence, collaboration with clear ownership, and continuous growth through testing and sharing.</p></div></div><div className="mt-16"><p className="text-xs font-black uppercase tracking-[.24em] text-cobalt">Technical foundation</p><div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{competencies.map(([title, text]) => <article key={title} className="border-l-2 border-signal bg-white p-5"><h2 className="font-display text-xl font-bold">{title}</h2><p className="mt-2 text-sm leading-6 text-slate-600">{text}</p></article>)}</div></div></section></PageShell>
+}
