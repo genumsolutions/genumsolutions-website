@@ -16,25 +16,15 @@
       "static/chunks/main-app.js",
       "static/chunks/app/not-found.js"
     ],
-    "/journal/page": [
+    "/tools/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/journal/page.js"
+      "static/chunks/app/tools/page.js"
     ],
-    "/products/page": [
+    "/training/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/products/page.js"
-    ],
-    "/contact/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/contact/page.js"
-    ],
-    "/portfolio/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/portfolio/page.js"
+      "static/chunks/app/training/page.js"
     ],
     "/about/page": [
       "static/chunks/webpack.js",
@@ -46,6 +36,11 @@
       "static/chunks/main-app.js",
       "static/chunks/app/services/page.js"
     ],
+    "/products/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/products/page.js"
+    ],
     "/3d-printing/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
@@ -56,20 +51,20 @@
       "static/chunks/main-app.js",
       "static/chunks/app/3d-printing/not-found.js"
     ],
-    "/training/page": [
+    "/portfolio/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/training/page.js"
+      "static/chunks/app/portfolio/page.js"
     ],
-    "/checkout/page": [
+    "/journal/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/checkout/page.js"
+      "static/chunks/app/journal/page.js"
     ],
-    "/products/[slug]/page": [
+    "/contact/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/products/[slug]/page.js"
+      "static/chunks/app/contact/page.js"
     ]
   }
 }

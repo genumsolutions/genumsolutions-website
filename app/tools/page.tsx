@@ -1,0 +1,7 @@
+import PageIntro from '../../components/PageIntro'
+import PageShell from '../../components/PageShell'
+import OpenTools from '../../components/OpenTools'
+
+export default function ToolsPage() {
+  return <PageShell><PageIntro eyebrow="Tools · open source" title="Useful tools for the next build." body="A small, practical directory for designing, simulating, programming, and documenting robotics and fabrication work." /><OpenTools /></PageShell>
+}

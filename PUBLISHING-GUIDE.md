@@ -18,15 +18,19 @@ This document explains what exists, what is required before launch, and the exac
 
 - Responsive homepage
 - Shared route header and footer
+- Standardized homepage and inner-page shell with one navigation and footer system
 - Light/dim mode saved in browser storage
 - Services page
 - Product catalog with search and category filters
 - Source-derived robotics catalog with 23 documented builds and 138 quote-based configurations from `my_COMPANY`
+- Shared category imagery for every product card and product detail page
+- Open-source Tools directory and embedded 3D model library
 - Product detail pages
 - Local persistent cart and checkout form
 - Stripe checkout server route example
 - eSewa/Khalti server adapter placeholder
 - Training page
+- Source-backed K–5 robotics pilot, STEM Master Package, teacher enablement, 100+ project curriculum highlights, and illustrative proposal costing
 - Portfolio page
 - Journal page
 - Contact page
