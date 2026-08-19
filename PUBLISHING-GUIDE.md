@@ -150,6 +150,18 @@ Do not advertise "payments live" until all callback verification paths pass.
 
 ## 7. Business data still required
 
+### Contact email
+
+The contact form sends inquiries to `genumsolutions@gmail.com` through Resend. Before local or production use:
+
+1. Create a Resend account and generate an API key.
+2. Copy `.env.example` to `.env.local` for local development.
+3. Set `RESEND_API_KEY` to the key from Resend.
+4. Set `RESEND_FROM_EMAIL` to a sender address verified in Resend. The example sender is suitable only for initial Resend testing.
+5. Add the same variables in Vercel under **Project Settings > Environment Variables**.
+
+The API key stays server-side. The visitor's address is used as `Reply-To`, so replies go directly back to the person who submitted the inquiry.
+
 Replace placeholders before launch:
 
 - Real business email instead of `hello@genumsolutions.com` if different

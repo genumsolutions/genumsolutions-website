@@ -31,3 +31,11 @@ GENUM should not copy product names, images, prices, page structure, or brand la
 5. Use Strapi to expand the catalog only after supplier cost, landed cost, warranty, and Nepal delivery time are verified.
 
 This is market positioning research, not an affiliation or endorsement by Himalayan Solution.
+
+## Company registration scope
+
+The company registration screenshot supplied by GENUM lists these NCIS activity codes:
+
+`2610`, `2819`, `2910`, `4100`, `4210`, `4290`, `4321`, `4610`, `4651`, `4652`, `4653`, `4659`, `4741`, `4742`, `4791`, `5911`, `6110`, `6201`, `6209`, `6311`, `7110`, `7210`, `7490`, `8522`, and `8549`.
+
+The website should present these as the registered operating scope, while keeping the active public offer focused on verified digital products, electronics, IoT, 3D printing, engineering support, and technical education. Construction, installation, manufacturing, and other regulated or site-based work should be quoted only after scope, capability, and compliance requirements are confirmed.

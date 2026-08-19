@@ -1,4 +1,4 @@
-// File: E:\GENUM SOLUTIONS PVT LTD\Website\app\layout.tsx
+// File: E:\GENUM SOLUTIONS PVT LTD\genumsolutions-website\app\layout.tsx
 import * as entry from '../../../app/layout.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

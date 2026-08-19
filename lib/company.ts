@@ -5,7 +5,7 @@ export const company = {
   address: 'Shringhkhala Galli-32, Kathmandu, Nepal',
   city: 'Kathmandu',
   country: 'NP',
-  email: 'hello@genumsolutions.com',
+  email: 'genumsolutions@gmail.com',
   phone: '+977 9800000000',
   description: 'Robotics, electronics, 3D printing, AI, IoT, digital products, and practical technology training from Kathmandu, Nepal.',
 }
