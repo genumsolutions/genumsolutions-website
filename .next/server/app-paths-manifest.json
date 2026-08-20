@@ -1,9 +1,7 @@
 {
-  "/services/page": "app/services/page.js",
   "/journal/page": "app/journal/page.js",
-  "/about/page": "app/about/page.js",
+  "/services/page": "app/services/page.js",
   "/products/page": "app/products/page.js",
-  "/products/[slug]/page": "app/products/[slug]/page.js",
   "/3d-printing/page": "app/3d-printing/page.js",
   "/tools/page": "app/tools/page.js"
 }
