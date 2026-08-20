@@ -8,10 +8,11 @@ const nav = [
   { label: 'About', href: '/about' },
   { label: 'Services', href: '/services' },
   { label: 'Products', href: '/products' },
+  { label: 'Robot Cars', href: '/robot-cars' },
+  { label: 'Projects', href: '/projects' },
   { label: 'Tools', href: '/tools' },
   { label: '3D Printing', href: '/3d-printing' },
   { label: 'Training', href: '/training' },
-  { label: 'Portfolio', href: '/portfolio' },
   { label: 'Journal', href: '/journal' },
   { label: 'Contact', href: '/contact' },
 ]

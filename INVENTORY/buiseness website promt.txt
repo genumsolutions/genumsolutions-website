@@ -1,0 +1,156 @@
+Genum Solutions Pvt. Ltd. — Site Brief, Builder Prompt, Management Spec, Product Catalog
+
+Company Summary
+Company Name: Genum Solutions Pvt. Ltd.
+Focus: Teaching robotics and automation; selling robot cars, Arduino/ESP projects, sensors, motors, mechanical parts; offering 3D printing services and 2D printing press solutions; design support.
+Business Model: Online-first e-commerce + services.
+Target Audience: Students, schools, teaching institutions, hobbyists, tech enthusiasts.
+Brand Style: Nepal-inspired palette (sky blue, Everest white, crimson red, navy blue).
+Primary Goals: Sell kits & components; provide 3D/2D printing services; run workshops and school packages; maintain an easy management dashboard that keeps product stock and service schedules in sync.
+
+Full Builder Prompt for Site and Dashboard
+Project Summary
+Company: Genum Solutions Pvt. Ltd.
+Business model: Online-first e-commerce + services marketplace for robotics, automation, 3D printing, and 2D printing.
+Primary goals: Sell kits & components; offer 3D/2D printing services; run workshops and school packages; provide an easy management dashboard that keeps product stock and service schedules in sync.
+
+Deliverables
+1. Responsive website with Home, Shop, Courses, Services, About, Blog, Contact, Support/FAQ.
+2. Product & Service catalog pages with category pages, product detail pages, and cross-sell suggestions.
+3. Admin management dashboard for inventory, orders, service scheduling, and reports.
+4. CSV / Excel export of all products and services in upload-ready format.
+5. Sample content (homepage hero text, 3 product descriptions, About Us copy, 3 blog post outlines).
+6. Integration plan for payment gateways, calendar sync, and automation (Zapier/Make).
+7. Design assets list (color palette, logo concept, font suggestions, image placeholders).
+
+Must Keep
+- Core categories: Robotics kits & components; Controllers & boards; Motors & motion; Sensors & modules; Power & charging; Mechanical parts & fasteners; Pre-packaged kits; 3D printing services; 2D printing press services; Teaching & workshops.
+- Branding: Nepal-inspired palette (sky blue, Everest white, crimson red, navy blue).
+- CTAs: Buy Now, Add to Cart, Book Service, Join Workshop, Request Quote.
+- Customer types: Students, schools, institutions, hobbyists.
+- Management features: Inventory sync, order statuses, service scheduling, role-based access, weekly reports.
+
+Remove / Avoid
+- Placeholder or lorem ipsum text.
+- Duplicate categories or repeated product listings.
+- Unused widgets or social feeds with no content.
+- Overly broad objectives — focus on core services and product lines.
+
+Site Structure Requirements
+Home: Hero, featured categories, how it works, testimonials, footer.
+Shop: Filters (Category, Subcategory, Price, Supplier, Availability), grid view, category landing pages.
+PDP: Images + gallery + 3D viewer for printable parts, title, SKU, short description, price, stock, related components with separate price tags, add-ons, specs, supplier, warranty, downloadable resources, reviews & Q&A.
+Services/Courses: Service cards, booking calendar, file upload for design files, pricing calculator for 3D prints.
+About: Mission, vision, team, partnerships.
+Blog: Tutorials and educational content.
+Contact/Support/FAQ: Form, email, phone, ticketing/chatbot.
+
+Admin Dashboard Requirements
+- Inventory management with real-time stock, low-stock alerts, supplier field per SKU.
+- Order management with statuses and customer portal.
+- Service scheduling with calendar view and Google/Outlook sync.
+- Product ↔ Service linking (prompt to book related service after purchase).
+- Role-based access: Admin, Staff, Viewer.
+- Reports & exports: Sales, inventory movement, service utilization; CSV export.
+- Automations: Zapier/Make flows to update Google Sheets, send emails, sync calendar.
+
+UX UI Guidelines
+- Colors: Primary sky blue #4DA8E2; Accent crimson red #C62828; Neutral Everest white #F7FAFF; Dark navy #0B2545.
+- Typography: Headings Poppins; Body Inter.
+- Buttons: High contrast, rounded corners.
+- Mobile: Sticky bottom CTA for Buy/Book; collapsible specs on PDP.
+- Accessibility: Alt text, keyboard navigable, color contrast >= WCAG AA.
+
+Integrations & Tech Stack
+- Platform: WordPress + WooCommerce OR Next.js + Shopify/WooCommerce API.
+- Payments: eSewa, Khalti (Nepal); PayPal, Stripe (global).
+- Calendar: Google Calendar / Outlook sync.
+- Automation: Zapier or Make.
+- 3D Viewer: model-viewer or Sketchfab embed.
+- Hosting: Vercel (Next.js) or managed WordPress hosting.
+- Design assets: Figma file; Canva templates.
+
+Product Display Rules
+1. Hierarchy: Category → Product → Related Components.
+2. Each product must list related components with separate price fields and SKU.
+3. Add-on pricing: allow customers to add components individually to cart.
+4. Bundle option: show kit price and itemized breakdown.
+5. Supplier field: show supplier name on PDP.
+6. Stock control: warn if related component out of stock and show restock estimate.
+
+Pricing & Shipping Rules
+- Prices in NPR by default; multi-currency display optional.
+- Shipping: Domestic flat rates + weight-based; optional international quotes.
+- Service pricing: hourly or per-session for workshops; per-piece or per-gram for 3D prints.
+
+SEO & Content
+- Meta title & description for every page.
+- Structured data: Product, Offer, Review, LocalBusiness.
+- Blog: 2–3 SEO articles to start.
+- Image alt text and compressed images.
+
+CSV / Excel Import Template
+Header row (one-line cells):
+SKU,Title,Category,Subcategory,Short Description,Price_NPR,Stock,Supplier,Related_SKUs,Weight_g,Material,Dimensions_mm,Image_URL,Tags,Downloadable_File_URL
+
+Excel Import Instruction
+- Related_SKUs: comma-separated SKUs.
+- SKU pattern: GEN-<CATEGORYCODE>-<4DIGIT> (e.g., GEN-ARD-0001).
+- Map the provided Robotics quotation.xlsx to this template and preserve supplier names.
+
+Acceptance Criteria
+- All core pages implemented and responsive.
+- Shop with filters and PDPs showing related components and separate prices.
+- Admin dashboard with inventory sync, order statuses, and calendar scheduling.
+- CSV export/import works and matches template.
+- Payment gateways configured (test mode).
+- Basic SEO meta tags and 3 starter blog posts.
+- Figma or design file included.
+
+Management Tool Requirements
+Dashboard Features
+- Product status tracking: real-time stock levels for kits, components, and printing services.
+- Order management: pending, in-progress, completed; automatic notifications.
+- Service scheduling: calendar view for teaching sessions and printing deadlines; Google Calendar/Outlook sync.
+- Reports: weekly/monthly sales and service usage.
+- Role-based access: Admin, Staff, Customer Portal.
+- Inventory sync: auto-update when sales occur.
+- Service sync: auto-update when bookings are made.
+- Automations: Zapier/Make to link WooCommerce → Google Sheets → Calendar.
+
+Workflow Example
+1. Customer buys a kit → stock auto-decreases.
+2. Customer books a 3D printing job → service calendar auto-updates.
+3. Dashboard shows products in stock and services scheduled side-by-side.
+4. Weekly report auto-emailed.
+
+Product and Service Catalog Summary
+Robotics Categories
+- Controllers & Boards: Arduino UNO, Mega, Nano; ESP8266, ESP32; STM32; Raspberry Pi.
+- Motors & Motion: DC motors, geared motors, servos, steppers, BLDC.
+- Wheels & Mechanical: rubber wheels, omni wheels, casters, gear assemblies.
+- Sensors & Modules: environmental, distance, IMU, vision, soil & water.
+- Power & Charging: LiPo, Li-ion, power banks, DC-DC converters, chargers, BMS.
+- Connectors & Cables: JST, XT60, USB, Dupont, IDC.
+- Tools & Fabrication: soldering kits, multimeters, PCBs, 3D printing supplies.
+- Kits & Bundles: robot car kits, drone kits, IoT starter kits, robotics arm kits, self-balancing kits, farm automation kits.
+
+Printing Categories
+- 3D Printing: custom parts, prototypes, filaments (PLA, ABS, PETG), design support.
+- 2D Printing: flyers, posters, student reports, branding materials, stickers, banners.
+
+Services
+- Robotics workshops (students, schools).
+- School packages (kits + training).
+- Online tutorials and downloadable resources.
+- Consultation for robotics lab setup.
+- 3D printing pricing calculator and file handling.
+
+Catalog Rules
+- Each main product links to related components with separate price tags.
+- Kits show both bundle price and itemized component prices.
+- Supplier info displayed on PDP.
+- Cross-sell suggestions: buy kit → suggest sensors, batteries, controllers.
+
+Full CSV Product Import Block
+(See attached CSV block in the separate CSV file or the CSV section in the Excel workbook.)

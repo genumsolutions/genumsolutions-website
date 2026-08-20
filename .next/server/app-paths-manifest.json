@@ -1,13 +1,9 @@
 {
-  "/about/page": "app/about/page.js",
   "/services/page": "app/services/page.js",
-  "/page": "app/page.js",
-  "/products/page": "app/products/page.js",
-  "/3d-printing/page": "app/3d-printing/page.js",
-  "/tools/page": "app/tools/page.js",
-  "/training/page": "app/training/page.js",
-  "/portfolio/page": "app/portfolio/page.js",
   "/journal/page": "app/journal/page.js",
-  "/contact/page": "app/contact/page.js",
-  "/api/contact/route": "app/api/contact/route.js"
+  "/about/page": "app/about/page.js",
+  "/products/page": "app/products/page.js",
+  "/products/[slug]/page": "app/products/[slug]/page.js",
+  "/3d-printing/page": "app/3d-printing/page.js",
+  "/tools/page": "app/tools/page.js"
 }

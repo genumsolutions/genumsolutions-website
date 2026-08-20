@@ -22,7 +22,7 @@ This document explains what exists, what is required before launch, and the exac
 - Light/dim mode saved in browser storage
 - Services page
 - Product catalog with search and category filters
-- Source-derived robotics catalog with 23 documented builds and 138 quote-based configurations from `my_COMPANY`
+- Source-backed inventory catalog with controllers, motors, sensors, power, mechanical parts, tools, printing materials, 3 distinct Robot Cars, and 20 Excel project packages from `INVENTORY`
 - Shared category imagery for every product card and product detail page
 - Open-source Tools directory and embedded 3D model library
 - Product detail pages
@@ -31,12 +31,12 @@ This document explains what exists, what is required before launch, and the exac
 - eSewa/Khalti server adapter placeholder
 - Training page
 - Source-backed K–5 robotics pilot, STEM Master Package, teacher enablement, 100+ project curriculum highlights, and illustrative proposal costing
-- Portfolio page
+- Services and workshop pages
 - Journal page
 - Contact page
 - Dedicated 3D-printing page
 - 3D-printing products: PLA filament and printer care kit
-- AI + IoT products clearly marked as coming soon/pre-order
+- Quote-only project packages clearly separated from stocked retail inventory
 - Strapi content-type schemas for products, services, blog, and training
 - SEO metadata, Open Graph metadata, Twitter metadata, favicon, JSON-LD organization data
 - Generated `robots.txt` and `sitemap.xml` routes
@@ -91,11 +91,10 @@ KHALTI_SECRET_KEY=replace_with_merchant_secret
 6. Open the Vercel deployment URL and test:
    - `/`
    - `/products`
-   - `/products/esp32-car`
+   - `/products/esp32-bluetooth-robot-car`
    - `/3d-printing`
    - `/services`
    - `/training`
-   - `/portfolio`
    - `/journal`
    - `/contact`
    - `/checkout`

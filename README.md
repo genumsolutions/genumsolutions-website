@@ -13,10 +13,9 @@ Open `http://localhost:3000`. If that port is occupied, Next.js will report the 
 
 ## Public areas
 
-- `/products` contains retail products and source-derived robotics project configurations.
+- `/products` contains source-named inventory, a dedicated Robot Cars category, and Excel project packages.
 - `/training` contains the K–5 pilot, STEM Master Package, teacher enablement, 100+ project curriculum highlights, and illustrative proposal costing.
-- `/services` describes client delivery, proposal stages, business scope, and starting package prices.
-- `/portfolio` presents documented projects and robotics build paths.
+- `/services` covers website delivery, 3D and 2D printing, robotics workshops, school packages, and lab consultation.
 - `/3d-printing` includes print services and an open model browser.
 - `/tools` contains open-source CAD, electronics, firmware, simulation, and media resources.
 - `/contact` sends inquiries through the server-side Resend integration.
