@@ -1,7 +1,5 @@
 {
-  "/journal/page": "app/journal/page.js",
-  "/services/page": "app/services/page.js",
-  "/products/page": "app/products/page.js",
-  "/3d-printing/page": "app/3d-printing/page.js",
-  "/tools/page": "app/tools/page.js"
+  "/admin/login/page": "app/admin/login/page.js",
+  "/api/admin/login/route": "app/api/admin/login/route.js",
+  "/admin/page": "app/admin/page.js"
 }

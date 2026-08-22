@@ -1,14 +1,16 @@
 import { notFound } from 'next/navigation'
 import ProductDetailPro from '../../../components/ProductDetailPro'
 import PageShell from '../../../components/PageShell'
-import { findProduct, products } from '../../../lib/catalog'
+import { getManagedProducts } from '../../../lib/content-store'
 
 export function generateStaticParams() {
-  return products.map((product) => ({ slug: product.id }))
+  return []
 }
 
-export default function ProductPage({ params }: { params: { slug: string } }) {
-  const product = findProduct(params.slug)
+export const dynamic = 'force-dynamic'
+
+export default async function ProductPage({ params }: { params: { slug: string } }) {
+  const product = (await getManagedProducts()).find((item) => item.id === params.slug)
   if (!product) notFound()
   return <PageShell><ProductDetailPro product={product} /></PageShell>
 }

@@ -2,18 +2,18 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { products } from '../lib/catalog'
+import { products as localProducts, type Product } from '../lib/catalog'
 import { getProductMedia } from '../lib/product-media'
 
 const componentCategories = ['All', 'Controllers & Boards', 'Motors & Motion', 'Sensors & Modules', 'Communication Modules', 'Displays & Interfaces', 'Power & Charging', 'Mechanical Parts', 'Connectors & Cables', 'Tools & Fabrication']
 type CatalogScope = 'components' | 'cars' | 'projects'
 
-export default function ProductCatalog({ scope = 'components' }: { scope?: CatalogScope }) {
+export default function ProductCatalog({ scope = 'components', products = localProducts }: { scope?: CatalogScope; products?: Product[] }) {
   const [category, setCategory] = useState('All')
   const [query, setQuery] = useState('')
   const [cartCount, setCartCount] = useState(0)
   const scopedProducts = scope === 'cars' ? products.filter((product) => product.category === 'Robot Cars') : scope === 'projects' ? products.filter((product) => product.productType === 'Project package') : products.filter((product) => !['Robot Cars', '3D Printing Materials', 'Pre-packaged Kits'].includes(product.category) && product.productType !== 'Project package')
-  const visibleProducts = useMemo(() => scopedProducts.filter((product) => (category === 'All' || product.category === category) && `${product.name} ${product.note} ${product.description}`.toLowerCase().includes(query.toLowerCase())), [category, query, scope])
+  const visibleProducts = useMemo(() => scopedProducts.filter((product) => (category === 'All' || product.category === category) && `${product.name} ${product.note} ${product.description}`.toLowerCase().includes(query.toLowerCase())), [category, query, scopedProducts])
 
   function addToCart(productId: string) {
     const product = products.find((item) => item.id === productId)
