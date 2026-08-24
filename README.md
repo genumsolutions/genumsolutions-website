@@ -49,8 +49,8 @@ Products, homepage content, customer accounts, carts, orders, messages, and prod
    - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
 4. Seed the catalog: `npm run seed`
 5. Authentication → Sign In / Providers → Email: keep "Confirm email" OFF until SMTP is configured.
-6. Make yourself admin: sign up through `/login`, then run
-   `update profiles set role = 'admin' where id = (select id from auth.users where email = 'you@example.com');`
+6. Google (Gmail) sign-in: Authentication → Providers → Google → enable, pasting a Client ID/secret from [Google Cloud credentials](https://console.cloud.google.com/apis/credentials) (authorized redirect URI: `https://<project-ref>.supabase.co/auth/v1/callback`). No code change needed - the "Continue with Google" buttons activate automatically.
+7. Make yourself admin: `npx tsx scripts/create-admin.ts you@example.com <password>` (creates the account if missing and sets role=admin), or run `select public.set_admin('email');` in the SQL editor.
 
 ### Daily operations (no deploys needed)
 

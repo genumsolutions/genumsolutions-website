@@ -71,7 +71,7 @@ export default function AdminPanel({ initialProducts, initialContent }: Props) {
     else setMessage('Could not update the order.')
   }
 
-  async function logout() { await fetch('/api/admin/logout', { method: 'POST' }); window.location.href = '/login' }
+  async function logout() { await fetch('/api/auth/logout', { method: 'POST' }); window.location.href = '/login' }
   const shown = products.filter((item) => `${item.name} ${item.sku} ${item.id}`.toLowerCase().includes(query.toLowerCase()))
 
   return (

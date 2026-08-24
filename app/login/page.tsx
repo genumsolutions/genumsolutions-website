@@ -1,3 +1,6 @@
 import PageShell from '../../components/PageShell'
-import UnifiedLoginPanel from '../../components/UnifiedLoginPanel'
-export default function LoginPage() { return <PageShell><UnifiedLoginPanel /></PageShell> }
+import AuthPanel from '../../components/AuthPanel'
+
+export default function LoginPage() {
+  return <PageShell><AuthPanel initialMode="signin" /></PageShell>
+}

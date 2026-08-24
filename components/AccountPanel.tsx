@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { FormEvent, useEffect, useState } from 'react'
+import AuthPanel from './AuthPanel'
 import { formatNPR } from '../lib/catalog'
 
 type Customer = {
@@ -25,41 +26,22 @@ const statusStyles: Record<string, string> = {
 export default function AccountPanel() {
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [orders, setOrders] = useState<Order[]>([])
-  const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login')
+  const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState('')
-  const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState(false)
   const [profileSaved, setProfileSaved] = useState(false)
 
   useEffect(() => {
-    fetch('/api/customer/me').then((response) => response.json()).then((data) => setCustomer(data.customer)).catch(() => undefined)
-    fetch('/api/orders').then((response) => (response.ok ? response.json() : { orders: [] })).then((data) => setOrders(data.orders || [])).catch(() => undefined)
+    Promise.all([
+      fetch('/api/customer/me').then((response) => response.json()).then((data) => setCustomer(data.customer)),
+      fetch('/api/orders').then((response) => (response.ok ? response.json() : { orders: [] })).then((data) => setOrders(data.orders || [])),
+    ]).catch(() => undefined).finally(() => setLoaded(true))
   }, [])
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setBusy(true); setError(''); setNotice('')
-    const data = Object.fromEntries(new FormData(event.currentTarget).entries())
-    const response = await fetch(`/api/customer/${mode}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
-    const result = await response.json().catch(() => ({}))
-    if (!response.ok) { setError(result.error || 'Something went wrong. Please try again.'); setBusy(false); return }
-    if (result.needsEmailConfirmation) {
-      setMode('login'); setNotice('Account created. Check your email and confirm your address, then sign in.'); setBusy(false); return
-    }
-    const localCart = JSON.parse(window.localStorage.getItem('genum-cart') || '[]')
-    if (localCart.length) await fetch('/api/cart', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cart: localCart }) })
-    window.location.reload()
+  async function logout() {
+    await fetch('/api/auth/logout', { method: 'POST' })
+    window.location.href = '/'
   }
-
-  async function sendReset(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setBusy(true); setError(''); setNotice('')
-    const data = Object.fromEntries(new FormData(event.currentTarget).entries())
-    const response = await fetch('/api/auth/reset', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
-    const result = await response.json().catch(() => ({}))
-    if (!response.ok) { setError(result.error || 'Could not send the email.'); setBusy(false); return }
-    setNotice('If an account exists for that email, a password-reset link is on its way.'); setBusy(false)
-  }
-
-  async function logout() { await fetch('/api/customer/logout', { method: 'POST' }); window.location.reload() }
 
   async function saveProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); setProfileSaved(false)
@@ -69,30 +51,9 @@ export default function AccountPanel() {
     setBusy(false)
   }
 
-  if (!customer) return (
-    <main className="grid-paper flex min-h-[70vh] items-center justify-center px-5 py-14">
-      <form onSubmit={mode === 'forgot' ? sendReset : submit} className="w-full max-w-md border-t-4 border-cobalt bg-white p-8 shadow-xl">
-        <p className="text-xs font-black uppercase tracking-widest text-cobalt">Customer account</p>
-        <h1 className="mt-4 font-display text-4xl font-bold">{mode === 'login' ? 'Welcome back.' : mode === 'register' ? 'Create your account.' : 'Reset password.'}</h1>
-        <p className="mt-3 text-sm leading-6 text-slate-600">{mode === 'forgot' ? 'Enter your account email and we will send you a reset link.' : 'Save your build list, track orders, and return to your history from any device.'}</p>
-        {mode === 'register' && <label className="mt-7 block text-sm font-bold">Name<input name="name" required className="mt-2 w-full border border-line px-3 py-3" /></label>}
-        <label className="mt-5 block text-sm font-bold">Email<input name="email" type="email" required className="mt-2 w-full border border-line px-3 py-3" /></label>
-        {mode !== 'forgot' && <label className="mt-5 block text-sm font-bold">Password<input name="password" type="password" minLength={6} required className="mt-2 w-full border border-line px-3 py-3" /></label>}
-        {error && <p className="mt-4 text-sm font-bold text-red-600">{error}</p>}
-        {notice && <p className="mt-4 text-sm font-bold text-emerald-700">{notice}</p>}
-        <button disabled={busy} className="mt-7 w-full bg-cobalt px-5 py-3.5 text-sm font-black text-white disabled:opacity-60">{busy ? 'Please wait...' : mode === 'login' ? 'Log in' : mode === 'register' ? 'Register' : 'Send reset link'}</button>
-        {mode !== 'forgot' && (
-          <>
-            <div className="my-5 flex items-center gap-3 text-xs font-bold uppercase tracking-widest text-slate-400"><span className="h-px flex-1 bg-line" />or<span className="h-px flex-1 bg-line" /></div>
-            <a href="/api/auth/google" className="flex w-full items-center justify-center gap-3 border border-line px-5 py-3.5 text-sm font-black hover:border-cobalt"><svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" /><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" /><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" /><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" /></svg>Continue with Google</a>
-          </>
-        )}
-        {mode !== 'forgot' && <button type="button" onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(''); setNotice('') }} className="mt-5 text-sm font-bold text-cobalt underline">{mode === 'login' ? 'Create a customer account' : 'I already have an account'}</button>}
-        {mode === 'login' && <button type="button" onClick={() => { setMode('forgot'); setError(''); setNotice('') }} className="mt-2 block text-sm font-bold text-cobalt underline">Forgot password?</button>}
-        {mode === 'forgot' && <button type="button" onClick={() => { setMode('login'); setError(''); setNotice('') }} className="mt-5 text-sm font-bold text-cobalt underline">Back to sign in</button>}
-      </form>
-    </main>
-  )
+  if (!loaded) return <main className="grid-paper min-h-[70vh]" />
+
+  if (!customer) return <AuthPanel initialMode="signup" />
 
   return (
     <section className="mx-auto max-w-4xl px-5 py-14 lg:px-8">
@@ -135,6 +96,7 @@ export default function AccountPanel() {
           <label className="block text-sm font-bold sm:col-span-2">Delivery address<textarea name="address" defaultValue={customer.address || ''} rows={3} className="mt-2 w-full border border-line px-3 py-3" /></label>
           <div className="sm:col-span-2"><button disabled={busy} className="bg-signal px-5 py-3 text-sm font-black text-ink disabled:opacity-60">Save details</button>{profileSaved && <span className="ml-3 text-sm font-bold text-emerald-700">Details saved.</span>}</div>
         </form>
+        {error && <p className="mt-4 text-sm font-bold text-red-600">{error}</p>}
 
         <h2 className="mt-10 font-display text-2xl font-bold">Your messages</h2>
         {customer.messages.length === 0 ? <p className="mt-3 pb-6 text-sm text-slate-500">No messages yet.</p> : (
