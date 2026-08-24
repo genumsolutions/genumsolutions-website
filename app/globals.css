@@ -2,14 +2,33 @@
 @tailwind components;
 @tailwind utilities;
 
-:root { --brand-navy: #102a72; --brand-blue: #173eaa; --brand-signal: #efb73d; --brand-paper: #f6f8fc; --ink: #101b3d; --blue: #173eaa; --line: #dbe3f2; }
+:root {
+  --brand-navy: #102a72;
+  --brand-blue: #173eaa;
+  --brand-signal: #efb73d;
+  --brand-paper: #f6f8fc;
+  --ink: #101b3d;
+  --blue: #173eaa;
+  --line: #dbe3f2;
+  --radius: 0.5rem;
+}
+
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body { margin: 0; background: #f6f8fc; color: var(--ink); font-family: var(--font-manrope), sans-serif; }
 button, a { transition: all .2s ease; }
-.grid-paper { background-image: linear-gradient(#dce6f4 1px, transparent 1px), linear-gradient(90deg, #dce6f4 1px, transparent 1px); background-size: 28px 28px; }
+
+.grid-paper {
+  background-image: linear-gradient(#dce6f4 1px, transparent 1px), linear-gradient(90deg, #dce6f4 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
 .stamp-ring { box-shadow: 0 0 0 1px rgba(23,62,170,.15), 0 18px 45px rgba(16,27,61,.12); }
-.brand-motif { position: relative; display: grid; height: 56px; width: 56px; place-items: center; overflow: hidden; border: 2px solid var(--brand-navy); border-radius: 999px; color: var(--brand-navy); }
+
+.brand-motif {
+  position: relative; display: grid; height: 56px; width: 56px; place-items: center;
+  overflow: hidden; border: 2px solid var(--brand-navy); border-radius: 999px; color: var(--brand-navy);
+}
 .brand-motif::before, .brand-motif::after { content: ''; position: absolute; border: 1px solid var(--brand-navy); border-radius: 999px; }
 .brand-motif::before { inset: 5px; }
 .brand-motif::after { inset: 12px; }
@@ -22,7 +41,27 @@ html[data-theme='dim'] body { background: #0e1630; color: #f4f7ff; }
 html[data-theme='dim'] .bg-white { background-color: #151f3b !important; }
 html[data-theme='dim'] .bg-mist { background-color: #0e1630 !important; }
 html[data-theme='dim'] .text-ink { color: #f4f7ff !important; }
-html[data-theme='dim'] .text-slate-500,
-html[data-theme='dim'] .text-slate-600 { color: #aab7d2 !important; }
+html[data-theme='dim'] .text-slate-500, html[data-theme='dim'] .text-slate-600 { color: #aab7d2 !important; }
 html[data-theme='dim'] .border-line { border-color: #33415f !important; }
 html[data-theme='dim'] .grid-paper { background-image: linear-gradient(#263452 1px, transparent 1px), linear-gradient(90deg, #263452 1px, transparent 1px); }
+
+/* Robotics 3D Animations */
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+@keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fade-in-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes scale-in { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes scale-out { from { transform: scale(1); opacity: 1; } to { transform: scale(0.95); opacity: 0; } }
+
+.orbit-pattern { position: relative; }
+.orbit-pattern::before, .orbit-pattern::after { content: ''; position: absolute; border: 1px solid var(--line); border-radius: 50%; }
+.orbit-pattern::before { width: 100px; height: 100px; top: -50px; left: -50px; animation: orbit 20s linear infinite; }
+.orbit-pattern::after { width: 50px; height: 50px; bottom: -25px; right: -25px; animation: orbit-reverse 18s linear infinite; }
+
+@keyframes orbit { from { transform: rotate(0deg) translate(100px) rotate(0deg); } to { transform: rotate(360deg) translate(100px) rotate(360deg); } }
+@keyframes orbit-reverse { from { transform: rotate(0deg) translate(50px) rotate(0deg); } to { transform: rotate(360deg) translate(50px) rotate(-360deg); } }
+
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+@keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fade-in-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes scale-in { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes scale-out { from { transform: scale(1); opacity: 1; } to { transform: scale(0.95); opacity: 0; } }

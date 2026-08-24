@@ -1,7 +1,84 @@
 import PageIntro from '../../components/PageIntro'
 import PageShell from '../../components/PageShell'
 import { pilotCosts, stemProjectHighlights, trainingPrograms } from '../../lib/programs'
+import { formatNPR } from '../../lib/catalog'
+import { RoboticArm } from '../../components/Robotics3D'
 
 export default function TrainingPage() {
-  return <PageShell><PageIntro eyebrow="Training · schools · teams" title="Learning that leaves something working." body="GENUM's source curriculum combines 100+ age-banded STEM projects with modular robotics, teacher enablement, and measurable pilot support." /><section className="mx-auto max-w-7xl px-5 py-14 lg:px-8"><div className="grid gap-4 lg:grid-cols-2">{trainingPrograms.map((program) => <article key={program.title} className="border-t-2 border-ink bg-white p-6"><p className="text-xs font-black uppercase tracking-widest text-cobalt">{program.audience}</p><h2 className="mt-8 font-display text-2xl font-bold">{program.title}</h2><p className="mt-3 leading-7 text-slate-600">{program.description}</p><div className="mt-6 grid gap-3 border-t border-line pt-4 text-sm sm:grid-cols-2"><div><strong className="block text-ink">Format</strong><span className="text-slate-500">{program.duration}</span></div><div><strong className="block text-ink">Takeaway</strong><span className="text-slate-500">{program.outcome}</span></div></div><a href="/contact" className="mt-7 inline-block rounded-full bg-cobalt px-5 py-3 text-sm font-black text-white">Plan this program ↗</a></article>)}</div><div className="mt-16 border-y border-line py-10"><div className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-xs font-black uppercase tracking-[.24em] text-cobalt">100+ project curriculum</p><h2 className="mt-2 font-display text-3xl font-bold">Ages, materials, and outcomes stay visible.</h2></div><a href="/contact" className="text-sm font-black text-cobalt underline decoration-signal decoration-2 underline-offset-4">Request the full catalog ↗</a></div><div className="mt-8 grid gap-4 md:grid-cols-3">{stemProjectHighlights.map(([age, ...projects]) => <article key={age} className="bg-ink p-6 text-white"><p className="text-xs font-black uppercase tracking-widest text-signal">{age}</p><ul className="mt-5 grid gap-3 text-sm text-blue-100/80">{projects.map((project) => <li key={project} className="border-b border-white/15 pb-2">{project}</li>)}</ul></article>)}</div></div><div className="mt-16 grid gap-10 lg:grid-cols-[.8fr_1.2fr]"><div><p className="text-xs font-black uppercase tracking-[.24em] text-cobalt">Illustrative pilot costing</p><h2 className="mt-3 font-display text-3xl font-bold">A transparent starting point for a school proposal.</h2><p className="mt-4 leading-7 text-slate-600">The source proposal models a three-classroom pilot with 30 kits. These figures are illustrative, shown in USD for planning, and confirmed after scope, taxes, shipping, and local procurement review.</p><p className="mt-5 font-display text-3xl font-bold text-cobalt">$6,300 <span className="text-sm font-sans font-normal text-slate-500">illustrative total</span></p></div><div className="border-t-2 border-ink">{pilotCosts.map(([item, amount, detail]) => <div key={item} className="grid gap-2 border-b border-line py-4 sm:grid-cols-[1fr_auto]"><div><strong className="block">{item}</strong><span className="text-sm text-slate-500">{detail}</span></div><strong className="text-cobalt">{amount}</strong></div>)}<div className="mt-5 flex flex-wrap gap-2 text-xs font-black"><span className="rounded-full bg-ink px-3 py-2 text-white">50% on contract</span><span className="rounded-full bg-signal px-3 py-2 text-ink">40% on delivery</span><span className="rounded-full border border-line bg-white px-3 py-2">10% on completion</span></div></div></div><div className="mt-16 border-l-2 border-signal pl-5"><p className="max-w-3xl leading-7 text-slate-600">Every engagement can scale from a single workshop to a full classroom rollout. The public figures are planning examples, not a final invoice; GENUM confirms the final quote after client goals, classroom count, hardware, delivery, tax, and support are agreed.</p><a href="/contact" className="mt-6 inline-block rounded-full bg-ink px-5 py-3 text-sm font-black text-white">Start a proposal ↗</a></div></section></PageShell>
+  return (
+    <PageShell>
+      <section className="mx-auto max-w-7xl px-5 py-14 lg:px-8">
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div>
+            <h1 className="font-display text-3xl font-bold text-ink mb-6">
+              Training Programs that Build Careers
+            </h1>
+            <p className="text-slate-600 leading-relaxed">
+              GENUM&apos;s source curriculum combines 100+ age-banded STEM projects with
+              modular robotics, teacher enablement, and measurable pilot support.
+            </p>
+          </div>
+          <div className="space-y-6">
+            {trainingPrograms.map((program, i) => (
+              <div key={program.title} className="border-t-2 border-ink bg-white p-6">
+                <h3 className="font-display text-xl font-bold mb-3">
+                  {program.title}
+                </h3>
+                <p className="text-slate-500 text-sm leading-relaxed">
+                  {program.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Pilot Costs Section with NPR */}
+        <section className="mt-16 border-y border-line py-10">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <h2 className="font-display text-2xl font-bold mb-4">Pilot Investment</h2>
+              <p className="text-xs font-black uppercase tracking-[.24em] text-cobalt">
+                Indicative NPR amounts (excluding VAT), confirmed after scope review
+              </p>
+            </div>
+            <RoboticArm />
+          </div>
+
+          <div className="mt-8 grid grid-cols-2 gap-4">
+            {pilotCosts.map(([item, amount, detail]) => (
+              <div key={item} className="border-t border-line pt-4">
+                <p className="text-xs font-black uppercase tracking-widest text-cobalt">{item}</p>
+                <p className="font-bold text-2xl text-cobalt">{amount}</p>
+                <p className="text-xs text-slate-500">{detail}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Stem Project Highlights */}
+        <section className="mt-16 border-y border-line py-10">
+          <h2 className="font-display text-2xl font-bold mb-6 text-center">
+            STEM Project Highlights
+          </h2>
+          <div className="grid grid-cols-2 gap-4">
+            {stemProjectHighlights[0].map((project) => (
+              <div key={project} className="border-b border-line pb-3">
+                <p className="text-xs font-black uppercase tracking-widest text-signal">{project}</p>
+              </div>
+            ))}
+            {stemProjectHighlights[1].map((project) => (
+              <div key={project} className="border-b border-line pb-3">
+                <p className="text-xs font-black uppercase tracking-widest text-signal">{project}</p>
+              </div>
+            ))}
+            {stemProjectHighlights[2].map((project) => (
+              <div key={project} className="border-b border-line pb-3">
+                <p className="text-xs font-black uppercase tracking-widest text-signal">{project}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      </section>
+    </PageShell>
+  )
 }

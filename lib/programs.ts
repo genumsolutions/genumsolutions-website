@@ -6,14 +6,14 @@ export const trainingPrograms = [
 ]
 
 export const pilotCosts = [
-  ['30 classroom kits', '$2,700', '10 kits per classroom × 3 classrooms at the illustrative bulk rate'],
-  ['Storage and charging', '$300', 'Caddies, charging or USB hub, and spare-parts handling'],
-  ['Shipping and handling', '$200', 'Pilot delivery allowance; confirmed by destination'],
-  ['On-site teacher workshop', '$1,200', 'One full-day session for up to 6 teachers'],
-  ['Virtual coaching', '$400', 'Two 90-minute sessions in months 1 and 3'],
-  ['Curriculum subscription', '$540', '12 months × 3 classrooms × $15 per classroom/month'],
-  ['Dashboard and secure relay setup', '$360', 'One-time setup for lesson distribution and oversight'],
-  ['Pilot support and report', '$600', 'Coordination, data collection, feedback, and recommendations'],
+  ['30 classroom kits', 'NPR 3,60,000', '10 kits per classroom × 3 classrooms at the illustrative bulk rate'],
+  ['Storage and charging', 'NPR 40,000', 'Caddies, charging or USB hub, and spare-parts handling'],
+  ['Shipping and handling', 'NPR 26,000', 'Valley delivery included; nationwide courier confirmed by destination'],
+  ['On-site teacher workshop', 'NPR 1,60,000', 'One full-day session for up to 6 teachers'],
+  ['Virtual coaching', 'NPR 54,000', 'Two 90-minute sessions in months 1 and 3'],
+  ['Curriculum subscription', 'NPR 72,000', '12 months × 3 classrooms × NPR 2,000 per classroom/month'],
+  ['Dashboard and secure relay setup', 'NPR 48,000', 'One-time setup for lesson distribution and oversight'],
+  ['Pilot support and report', 'NPR 80,000', 'Coordination, data collection, feedback, and recommendations'],
 ]
 
 export const stemProjectHighlights = [
