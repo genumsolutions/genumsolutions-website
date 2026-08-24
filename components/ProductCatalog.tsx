@@ -2,6 +2,7 @@
 
 import React from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { formatNPR } from '../lib/catalog'
 import type { Product } from '../lib/catalog'
 
@@ -92,7 +93,13 @@ export default function ProductCatalog({ scope = 'components', products = [] }: 
               className="overflow-hidden rounded-2xl border border-line bg-white shadow-sm"
             >
               <Link href={`/products/${product.id}`} aria-label={`View ${product.name}`} className="relative block h-48 overflow-hidden bg-ink">
-                <img src={media.src} alt={media.alt} className="h-full w-full object-cover transition duration-500 hover:scale-105" loading="lazy" />
+                <Image
+                  src={media.src}
+                  alt={media.alt}
+                  fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  className="object-cover transition duration-500 hover:scale-105"
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-ink/70 to-transparent" />
                 <span className="absolute bottom-3 left-4 text-xs font-black uppercase tracking-widest text-white">{product.category}</span>
               </Link>

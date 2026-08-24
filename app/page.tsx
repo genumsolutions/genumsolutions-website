@@ -48,10 +48,13 @@ export default async function HomePage() {
               </div>
             </div>
             <div className="relative overflow-hidden rounded-3xl bg-ink shadow-2xl lg:mt-0 lg:mx-0">
-              <img
+              <Image
                 src={heroMedia.src}
                 alt={heroMedia.alt}
-                className="aspect-[4/3] w-full object-cover opacity-90"
+                fill
+                priority
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                className="object-cover opacity-90"
               />
               <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/90 to-transparent p-6 text-white">
                 <p className="text-xs font-black uppercase tracking-[.2em] text-signal">Build what matters</p>

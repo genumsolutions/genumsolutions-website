@@ -41,7 +41,7 @@ function SuccessPanel() {
         }
       })
       .catch(() => setState('received'))
-  }, [sessionId, provider])
+  }, [sessionId, provider, searchParams])
 
   return (
     <section className="max-w-lg rounded-2xl border border-line bg-white p-8 text-center shadow-sm">

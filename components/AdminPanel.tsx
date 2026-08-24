@@ -1,6 +1,7 @@
 'use client'
 
 import { FormEvent, useEffect, useRef, useState } from 'react'
+import Image from 'next/image'
 import { formatNPR } from '../lib/catalog'
 import type { Product, SiteContent } from '../lib/content-store'
 
@@ -25,7 +26,7 @@ export default function AdminPanel({ initialProducts, initialContent }: Props) {
   useEffect(() => {
     if (!showOrders || orders.length) return
     fetch('/api/admin/orders').then((response) => (response.ok ? response.json() : { orders: [] })).then((data) => setOrders(data.orders || [])).catch(() => undefined)
-  }, [showOrders])
+  }, [showOrders, orders.length])
 
   function updateProduct(key: keyof Product, value: string | number | string[]) {
     setProduct((current) => ({ ...current, [key]: value }))
@@ -119,7 +120,7 @@ export default function AdminPanel({ initialProducts, initialContent }: Props) {
             <div className="sm:col-span-2">
               <p className="text-sm font-bold">Product image</p>
               <div className="mt-2 flex flex-wrap items-center gap-3">
-                {product.image && <img src={product.image} alt="" className="h-16 w-16 rounded object-cover" />}
+                {product.image && <Image src={product.image} alt="" width={64} height={64} className="rounded object-cover" />}
                 <input value={product.image || ''} onChange={(event) => updateProduct('image', event.target.value)} placeholder="https://... or upload below" className="min-w-0 flex-1 border border-line px-3 py-2 text-sm" />
                 <input ref={fileInput} type="file" accept="image/*" onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadImage(file); event.currentTarget.value = '' }} className="hidden" />
                 <button type="button" disabled={uploading} onClick={() => fileInput.current?.click()} className="bg-cobalt px-4 py-2 text-xs font-black text-white disabled:opacity-60">{uploading ? 'Uploading...' : 'Upload'}</button>

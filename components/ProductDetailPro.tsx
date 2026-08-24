@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useState } from 'react'
 import { RoboticArm } from './Robotics3D'
 import type { Product } from '../lib/catalog'
@@ -27,7 +28,13 @@ export default function ProductDetailPro({ product }: { product: Product }) {
         <Link href="/products" className="text-sm font-bold text-cobalt">← Back to the shop</Link>
         <div className="mt-8 grid gap-10 lg:grid-cols-[.9fr_1.1fr] lg:items-start">
           <div className="relative aspect-square overflow-hidden rounded-3xl bg-ink">
-            <img src="/placeholder.jpg" alt="Product" className="h-full w-full object-cover" />
+            <Image
+              src={product.image || '/placeholder.jpg'}
+              alt={product.name}
+              fill
+              priority
+              className="object-cover"
+            />
             <RoboticArm />
           </div>
           <div>

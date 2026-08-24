@@ -4,7 +4,7 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   images: {
-    domains: ['localhost', 'genumsolutions-website.vercel.app'],
+    domains: ['localhost', 'genumsolutions-website.vercel.app', 'images.unsplash.com', 'bkylfnlybtsujwzropru.supabase.co'],
     formats: ['image/avif', 'image/webp'],
   },
   async headers() {
