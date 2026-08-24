@@ -24,6 +24,10 @@ Open `http://localhost:3000`. If that port is occupied, Next.js will report the 
 
 Copy `.env.example` to `.env.local` and add the Resend key before testing contact email delivery. Never commit `.env.local`, payment secrets, Wi-Fi credentials, or private proposal files.
 
+## Accounts
+
+Customer accounts, saved carts, orders, and messages run on Supabase Auth with cookie sessions (`middleware.ts` refreshes sessions on every request). Password reset and Google sign-in are wired through `/auth/callback`; the Google provider activates as soon as credentials are enabled in the Supabase dashboard. Admin access is any signed-in user whose `profiles.role` is `admin` - promote via `select public.set_admin('email');` in the Supabase SQL editor.
+
 ## Validation
 
 ```powershell
