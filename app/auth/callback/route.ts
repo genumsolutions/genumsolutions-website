@@ -13,8 +13,8 @@ export async function GET(request: NextRequest) {
   const rawNext = searchParams.get('next') || '/reset-password'
   const next = /^\/[^/\\]/.test(rawNext) ? rawNext : '/reset-password'
 
-  const supabase = createClient()
   try {
+    const supabase = createClient()
     if (code) {
       const { error } = await supabase.auth.exchangeCodeForSession(code)
       if (!error) return NextResponse.redirect(`${origin}${next}`)
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
       if (!error) return NextResponse.redirect(`${origin}${next}`)
     }
   } catch {
-    // Fall through to the failure redirect below.
+    // Unconfigured Supabase or network hiccup - fall through to the failure redirect.
   }
   return NextResponse.redirect(`${origin}/login?error=link`)
 }
