@@ -1,6 +1,7 @@
 node_modules
 .env*
 !.env.example
+keys*.txt
 .next
 *.tsbuildinfo
-data/admin-content.json
+data/*.json

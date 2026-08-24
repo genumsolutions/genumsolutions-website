@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server'
-import { COOKIE_NAME } from '../../../../lib/admin'
+import { NextResponse, type NextRequest } from 'next/server'
+import { createClient } from '../../../../lib/supabase/server'
 
-export async function POST() {
-  const response = NextResponse.json({ ok: true })
-  response.cookies.set({ name: COOKIE_NAME, value: '', httpOnly: true, expires: new Date(0), path: '/' })
-  return response
+// 303 so the browser follows with a clean GET instead of rendering the JSON body.
+export async function POST(request: NextRequest) {
+  await createClient().auth.signOut()
+  return NextResponse.redirect(new URL('/', request.url), 303)
 }

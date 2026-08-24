@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { sendEmail } from '../../../lib/email'
+import { getSessionUser } from '../../../lib/supabase/server'
+import { addCustomerMessage } from '../../../lib/customer-store'
 
 export const runtime = 'nodejs'
 
@@ -15,6 +17,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Please check your details and try again.' }, { status: 400 })
     }
 
+    const user = await getSessionUser()
+    // Persist the inquiry for logged-in customers (best effort - email still goes out on failure).
+    if (user) {
+      try {
+        await addCustomerMessage(user.id, { name, email, message })
+      } catch (error) {
+        console.error('Message persistence failed', error)
+      }
+    }
     await sendEmail({ replyTo: email, subject: `New website inquiry from ${name}`, text: `Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}` })
     return NextResponse.json({ message: 'Thanks. Your inquiry has been sent.' })
   } catch (error) {

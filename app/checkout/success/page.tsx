@@ -1,5 +1,73 @@
+'use client'
+
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
+import { Suspense, useEffect, useState } from 'react'
+import { formatNPR } from '../../../lib/catalog'
+
+function SuccessPanel() {
+  const searchParams = useSearchParams()
+  const sessionId = searchParams.get('session_id')
+  const orderId = searchParams.get('order')
+  const provider = searchParams.get('provider')
+  const [state, setState] = useState<'checking' | 'confirmed' | 'received'>('checking')
+  const [total, setTotal] = useState<number | null>(null)
+
+  useEffect(() => {
+    // Clear the guest cart copy now that an order exists.
+    window.localStorage.removeItem('genum-cart')
+    let endpoint: string | null = null
+    if (sessionId) {
+      endpoint = `/api/orders/confirm?session_id=${encodeURIComponent(sessionId)}`
+    } else if (provider === 'esewa' && searchParams.get('data')) {
+      endpoint = `/api/orders/confirm/esewa?data=${encodeURIComponent(searchParams.get('data')!)}`
+    } else if (provider === 'khalti' && searchParams.get('pidx')) {
+      endpoint = `/api/orders/confirm/khalti?pidx=${encodeURIComponent(searchParams.get('pidx')!)}&purchase_order_id=${encodeURIComponent(searchParams.get('purchase_order_id') || '')}`
+    }
+    if (!endpoint) {
+      setState('received')
+      return
+    }
+    fetch(endpoint)
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.ok && data.matched) {
+          setTotal(data.order?.totalNpr ?? null)
+          setState('confirmed')
+        } else if (data.error === 'Unauthorized') {
+          setState('received')
+        } else {
+          setState('received')
+        }
+      })
+      .catch(() => setState('received'))
+  }, [sessionId, provider])
+
+  return (
+    <section className="max-w-lg rounded-2xl border border-line bg-white p-8 text-center shadow-sm">
+      <p className="text-xs font-black uppercase tracking-[.24em] text-cobalt">Order received</p>
+      <h1 className="mt-3 font-display text-4xl font-bold">{state === 'checking' ? 'Confirming payment...' : state === 'confirmed' ? 'Payment confirmed.' : 'Your build is in motion.'}</h1>
+      <p className="mt-4 leading-7 text-slate-600">
+        {state === 'confirmed' && total !== null
+          ? `We received ${formatNPR(total)}. Track this order any time from your account page.`
+          : 'GENUM will confirm the order and delivery details by email. You can follow its status in your account.'}
+        {orderId ? ` Order reference: ${orderId.slice(0, 8).toUpperCase()}.` : ''}
+      </p>
+      {(sessionId || provider) && state === 'received' && <p className="mt-2 text-xs text-slate-400">Payment verification is still processing. Your order is saved and will update shortly.</p>}
+      <div className="mt-7 flex flex-wrap justify-center gap-3">
+        <Link href="/account" className="rounded-full bg-cobalt px-5 py-3 text-sm font-black text-white">View my orders</Link>
+        <Link href="/products" className="rounded-full border border-line px-5 py-3 text-sm font-black text-ink">Keep exploring</Link>
+      </div>
+    </section>
+  )
+}
 
 export default function CheckoutSuccessPage() {
-  return <main className="grid min-h-screen place-items-center bg-mist px-5"><section className="max-w-lg rounded-2xl border border-line bg-white p-8 text-center shadow-sm"><p className="text-xs font-black uppercase tracking-[.24em] text-cobalt">Order received</p><h1 className="mt-3 font-display text-4xl font-bold">Your build is in motion.</h1><p className="mt-4 leading-7 text-slate-600">We’ve received your payment handoff. GENUM will confirm the order and delivery details by email.</p><div className="mt-7 flex flex-wrap justify-center gap-3"><Link href="/products" className="rounded-full bg-cobalt px-5 py-3 text-sm font-black text-white">Keep exploring</Link><Link href="/" className="rounded-full border border-line px-5 py-3 text-sm font-black text-ink">Back home</Link></div></section></main>
+  return (
+    <main className="grid min-h-screen place-items-center bg-mist px-5">
+      <Suspense fallback={<div className="font-display text-xl font-bold text-slate-500">Loading...</div>}>
+        <SuccessPanel />
+      </Suspense>
+    </main>
+  )
 }

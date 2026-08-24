@@ -1,6 +1,7 @@
-import { promises as fs } from 'node:fs'
-import path from 'node:path'
 import { products as localProducts, type Product } from './catalog'
+import { createServiceClient, supabaseConfigured } from './supabase/server'
+
+export type { Product } from './catalog'
 
 export type SiteContent = {
   homeTitle: string
@@ -8,48 +9,121 @@ export type SiteContent = {
   products: Partial<Product>[]
 }
 
-const contentPath = path.join(process.cwd(), 'data', 'admin-content.json')
 const defaultContent: SiteContent = {
   homeTitle: 'Technology you can touch, test, and trust.',
   homeBody: 'Robotics kits, project solutions, fabrication, open tools, and training for curious builders, schools, and teams.',
   products: [],
 }
 
-async function readContent(): Promise<SiteContent> {
+type ProductRow = {
+  id: string
+  name: string
+  category: string
+  price: number
+  price_label: string | null
+  sku: string | null
+  product_type: string | null
+  note: string | null
+  description: string | null
+  specs: unknown
+  audience: string | null
+  difficulty: string | null
+  warranty: string | null
+  stock: number | null
+  delivery: string | null
+  color: string | null
+  badge: string | null
+  supplier: string | null
+  image_url: string | null
+}
+
+function rowToProduct(row: ProductRow): Product {
+  return {
+    id: row.id,
+    name: row.name,
+    category: row.category,
+    price: row.price ?? 0,
+    priceLabel: row.price_label || (row.price ? `NPR ${row.price.toLocaleString('en-IN')}` : 'Request quote'),
+    sku: row.sku || '',
+    productType: (row.product_type as Product['productType']) || 'Retail kit',
+    note: row.note || '',
+    description: row.description || '',
+    specs: Array.isArray(row.specs) ? (row.specs as string[]) : [],
+    audience: row.audience || '',
+    difficulty: (row.difficulty as Product['difficulty']) || 'Beginner',
+    warranty: row.warranty || '',
+    stock: row.stock ?? 0,
+    delivery: row.delivery || '',
+    color: row.color || 'from-[#dce8ff] to-[#7e9ff2]',
+    ...(row.badge ? { badge: row.badge } : {}),
+    ...(row.supplier ? { supplier: row.supplier } : {}),
+    ...(row.image_url ? { image: row.image_url } : {}),
+  }
+}
+
+export function productToRow(product: Product) {
+  return {
+    id: product.id,
+    name: product.name,
+    category: product.category,
+    price: Math.max(0, Math.round(Number(product.price) || 0)),
+    price_label: product.priceLabel,
+    sku: product.sku,
+    product_type: product.productType,
+    note: product.note,
+    description: product.description,
+    specs: product.specs,
+    audience: product.audience,
+    difficulty: product.difficulty,
+    warranty: product.warranty,
+    stock: Math.max(0, Math.round(Number(product.stock) || 0)),
+    delivery: product.delivery,
+    color: product.color,
+    badge: product.badge || null,
+    supplier: product.supplier || null,
+    image_url: product.image || null,
+    updated_at: new Date().toISOString(),
+  }
+}
+
+// Reads the authoritative catalog. Falls back to the bundled catalog when Supabase
+// is not configured or unreachable so the site never renders empty.
+export async function getManagedProducts(): Promise<Product[]> {
+  if (!supabaseConfigured()) return localProducts
   try {
-    const raw = await fs.readFile(contentPath, 'utf8')
-    return { ...defaultContent, ...JSON.parse(raw) }
+    const db = createServiceClient()
+    const { data, error } = await db.from('products').select('*').order('sort_order', { ascending: true }).order('name', { ascending: true })
+    if (error) throw error
+    if (!data || data.length === 0) return localProducts
+    return data.map(rowToProduct)
+  } catch (error) {
+    console.error('Supabase product read failed; using local catalog.', error)
+    return localProducts
+  }
+}
+
+export async function saveProduct(product: Product) {
+  await createServiceClient().from('products').upsert(productToRow(product))
+}
+
+export async function deleteProduct(id: string) {
+  await createServiceClient().from('products').delete().eq('id', id)
+}
+
+export async function getSiteContent(): Promise<SiteContent> {
+  if (!supabaseConfigured()) return defaultContent
+  try {
+    const { data, error } = await createServiceClient().from('site_content').select('*').eq('id', 1).maybeSingle()
+    if (error || !data) return defaultContent
+    return { homeTitle: data.home_title, homeBody: data.home_body, products: [] }
   } catch {
     return defaultContent
   }
 }
 
-async function writeContent(content: SiteContent) {
-  await fs.mkdir(path.dirname(contentPath), { recursive: true })
-  await fs.writeFile(contentPath, JSON.stringify(content, null, 2) + '\n', 'utf8')
-}
-
-export async function getSiteContent() {
-  return readContent()
-}
-
-export async function getManagedProducts() {
-  const content = await readContent()
-  const overrides = new Map(content.products.map((product) => [product.id, product]))
-  const managed = localProducts.map((product) => ({ ...product, ...(overrides.get(product.id) || {}) }))
-  const localIds = new Set(localProducts.map((product) => product.id))
-  return [...managed, ...content.products.filter((product) => product.id && !localIds.has(product.id))] as Product[]
-}
-
-export async function saveProduct(product: Product) {
-  const content = await readContent()
-  const nextProducts = content.products.filter((item) => item.id !== product.id)
-  const localProduct = localProducts.find((item) => item.id === product.id)
-  nextProducts.push(localProduct ? product : product)
-  await writeContent({ ...content, products: nextProducts })
-}
-
 export async function saveSiteContent(values: Pick<SiteContent, 'homeTitle' | 'homeBody'>) {
-  const content = await readContent()
-  await writeContent({ ...content, ...values })
+  await createServiceClient()
+    .from('site_content')
+    .update({ home_title: values.homeTitle, home_body: values.homeBody, updated_at: new Date().toISOString() })
+    .eq('id', 1)
 }

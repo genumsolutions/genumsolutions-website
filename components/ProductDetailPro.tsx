@@ -9,7 +9,7 @@ export default function ProductDetailPro({ product }: { product: Product }) {
   const [quantity, setQuantity] = useState(1)
   const [added, setAdded] = useState(false)
   const isQuote = product.productType === 'Project package' || product.stock === 0
-  const media = getProductMedia(product.category)
+  const media = product.image ? { src: product.image, alt: product.name } : getProductMedia(product.category)
 
   function addToBuildList() {
     if (isQuote) { setAdded(true); return }
@@ -18,6 +18,7 @@ export default function ProductDetailPro({ product }: { product: Product }) {
     if (existing) existing.quantity = Math.min(existing.quantity + quantity, product.stock)
     else saved.push({ productId: product.id, quantity })
     window.localStorage.setItem('genum-cart', JSON.stringify(saved))
+    void fetch('/api/cart', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cart: saved }) })
     setAdded(true)
   }
 

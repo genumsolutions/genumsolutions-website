@@ -12,7 +12,7 @@ This document explains what exists, what is required before launch, and the exac
 - Currency currently shown: NPR
 - Primary delivery market: Nepal
 - Primary language currently implemented: English
-- Repository root: `e:\GENUM SOLUTIONS PVT LTD\Website`
+- Repository root: `E:\GENUM SOLUTIONS PVT LTD\genumsolutions-website`
 
 ## 2. What is already built
 
@@ -27,8 +27,9 @@ This document explains what exists, what is required before launch, and the exac
 - Open-source Tools directory and embedded 3D model library
 - Product detail pages
 - Local persistent cart and checkout form
-- Stripe checkout server route example
-- eSewa/Khalti server adapter placeholder
+- Stripe checkout with server-side confirmation
+- eSewa ePay v2 and Khalti ePayment v2 checkout with signed requests and server-to-server verification
+- Customer accounts, saved carts, order history (Supabase Auth + Postgres)
 - Training page
 - Source-backed K–5 robotics pilot, STEM Master Package, teacher enablement, 100+ project curriculum highlights, and illustrative proposal costing
 - Services and workshop pages
@@ -37,7 +38,7 @@ This document explains what exists, what is required before launch, and the exac
 - Dedicated 3D-printing page
 - 3D-printing products: PLA filament and printer care kit
 - Quote-only project packages clearly separated from stocked retail inventory
-- Strapi content-type schemas for products, services, blog, and training
+- Supabase backend: products, site content, profiles with roles, orders, carts, messages, product image storage
 - SEO metadata, Open Graph metadata, Twitter metadata, favicon, JSON-LD organization data
 - Generated `robots.txt` and `sitemap.xml` routes
 - Official address centralized in `lib/company.ts`
@@ -69,7 +70,7 @@ Remove-Item .next -Recurse -Force
 npm.cmd run dev
 ```
 
-Never delete `app`, `components`, `lib`, `public`, or `backend`; `.next` is generated cache only.
+Never delete `app`, `components`, `lib`, or `public`; `.next` is generated cache only.
 
 ## 4. Publish the frontend on Vercel
 
@@ -80,11 +81,15 @@ Never delete `app`, `components`, `lib`, `public`, or `backend`; `.next` is gene
 
 ```text
 NEXT_PUBLIC_SITE_URL=https://YOUR-DOMAIN.com
-NEXT_PUBLIC_STRAPI_URL=https://YOUR-STRAPI-DOMAIN.com
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=replace_with_anon_public_key
+SUPABASE_SERVICE_ROLE_KEY=replace_with_service_role_key
 STRIPE_SECRET_KEY=replace_with_live_or_test_key
-STRIPE_WEBHOOK_SECRET=replace_with_webhook_secret
 ESEWA_SECRET_KEY=replace_with_merchant_secret
+ESEWA_PRODUCT_CODE=EPAYTEST
 KHALTI_SECRET_KEY=replace_with_merchant_secret
+RESEND_API_KEY=replace_with_resend_api_key
+RESEND_FROM_EMAIL=GENUM website <onboarding@resend.dev>
 ```
 
 5. Deploy the project.
@@ -103,30 +108,26 @@ KHALTI_SECRET_KEY=replace_with_merchant_secret
 7. Add the real domain in Vercel **Settings > Domains** and update `NEXT_PUBLIC_SITE_URL` to that domain. Redeploy after changing it.
 8. In Google Search Console, add the domain property and submit `https://YOUR-DOMAIN.com/sitemap.xml`.
 
-## 5. Strapi and PostgreSQL production setup
+## 5. Supabase production setup
 
-The `backend` folder contains schemas and setup notes, not a complete production Strapi installation yet.
+Products, homepage content, customer accounts, carts, orders, messages, and product images live in Supabase (Postgres + Auth + Storage). Without the env vars the storefront still runs from the bundled catalog in `lib/catalog.ts`.
 
-1. Create a Strapi project in a separate backend repository or deploy directory:
+1. Create a project at `https://supabase.com` (or use the existing one).
+2. In the SQL Editor, run `supabase/schema.sql` once. It creates profiles, products, site content, orders, carts, messages, RLS policies, and storage rules. It is safe to re-run section by section.
+3. Copy `Project Settings > API` values into `.env.local` locally and into Vercel environment variables:
+   - `NEXT_PUBLIC_SUPABASE_URL` (bare project URL - do not append `/rest/v1/`)
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+4. Seed the catalog: `npm run seed`.
+5. Make yourself admin: sign up through `/login`, then run in the SQL Editor:
 
-```powershell
-npx create-strapi-app@latest genum-cms --no-run
-cd genum-cms
-npm install
+```sql
+update profiles set role = 'admin' where id = (select id from auth.users where email = 'you@example.com');
 ```
 
-2. Copy the schema directories from this project’s `backend/src/api` into the Strapi project’s `src/api`.
-3. Use managed PostgreSQL on DigitalOcean, AWS RDS, or another trusted provider.
-4. Configure Strapi production environment variables for PostgreSQL, application keys, API tokens, and upload storage. Generate fresh secrets; never use sample values.
-5. Run locally with `npm run develop`, create the first admin user, and verify Products, Services, Blog, and Training content types.
-6. Configure roles:
-   - Admin: full CMS access
-   - Editor: manage products, services, blog, and training content
-   - Customer: frontend account and order access only
-7. Enable only the public read permissions required by the storefront. Keep create, update, delete, orders, and customer data protected.
-8. Deploy Strapi to DigitalOcean App Platform, AWS, or a container host behind HTTPS.
-9. Set `NEXT_PUBLIC_STRAPI_URL` in Vercel to the deployed Strapi URL and redeploy.
-10. Test Strapi API responses before relying on CMS data. The frontend currently falls back to the local catalog when Strapi is missing or unavailable.
+6. Enable daily database backups (paid plans) under Database > Backups.
+7. Keep email confirmation disabled or configure SMTP; the registration route expects immediate sessions.
+8. Optional: enable Google login under Authentication > Providers; no code change is needed.
 
 ## 6. Payments: launch requirements
 
@@ -141,16 +142,14 @@ npm install
 
 ### eSewa and Khalti
 
-The current route is an adapter placeholder because the exact signing fields, merchant account, callback URL, and environment differ by provider and merchant agreement. Before launch:
+Both gateways are implemented: `/api/checkout/esewa` builds the signed ePay v2 form, `/api/checkout/khalti` initiates ePayment v2, and both confirm routes verify server-to-server before marking an order paid. Before launch:
 
-- Obtain merchant credentials directly from eSewa and Khalti.
-- Implement server-side request signing.
-- Implement server-side callback verification.
-- Store provider transaction IDs and order status.
+- Obtain merchant credentials directly from eSewa and Khalti (UAT/test keys first).
+- Set `ESEWA_SECRET_KEY`, `ESEWA_PRODUCT_CODE`, `ESEWA_BASE_URL`, `KHALTI_SECRET_KEY`, and `KHALTI_BASE_URL` locally and in Vercel.
 - Test success, failure, cancellation, duplicate callback, and timeout cases.
-- Never expose provider secrets in browser code.
+- Switch to live credentials only after test orders pass end to end.
 
-Do not advertise "payments live" until all callback verification paths pass.
+Never expose provider secrets in browser code. Do not advertise "payments live" until all callback verification paths pass.
 
 ## 7. Business data still required
 
@@ -182,7 +181,7 @@ Replace placeholders before launch:
 
 ## 8. Important launch limitation
 
-The frontend is publishable as a polished brochure/catalog prototype now. It is not yet a complete production commerce system until Strapi/PostgreSQL, authentication, order persistence, inventory locking, email notifications, payment webhooks, legal policies, and the real business credentials are connected.
+The frontend is a complete storefront: catalog, accounts, carts, orders, and three payment gateways with server-side verification. It is not fully production-ready until the real business credentials, legal policies, email notifications, inventory locking, and Stripe webhooks are connected.
 
 Do not accept live payments while the order database and webhook confirmation flow are still placeholders.
 
@@ -190,7 +189,7 @@ Do not accept live payments while the order database and webhook confirmation fl
 
 Copy and paste this into Copilot after opening the project:
 
-> I am publishing the GENUM SOLUTIONS PVT. LTD. website in `e:\GENUM SOLUTIONS PVT LTD\Website`. It is a Next.js App Router storefront with Tailwind CSS. The official company address is `Shringhkhala Galli-32, Kathmandu, Nepal`. The official logo is `public/logo.png`. Please guide me step by step to deploy the frontend to Vercel, connect a production Strapi backend with PostgreSQL, configure the environment variables, attach a custom domain, submit the sitemap to Google Search Console, and run a complete production checklist. Do not invent credentials or mark payments live. Separate actions I can do now from actions requiring a Stripe, eSewa, Khalti, Strapi, PostgreSQL, domain, email, or hosting account. Check the current files before suggesting edits.
+> I am publishing the GENUM SOLUTIONS PVT. LTD. website in `E:\GENUM SOLUTIONS PVT LTD\genumsolutions-website`. It is a Next.js App Router storefront with Supabase (Postgres + Auth + Storage) as the backend. The official company address is `Shringhkhala Galli-32, Kathmandu, Nepal`. The official logo is `public/logo.png`. Please guide me step by step to: run `supabase/schema.sql` in the Supabase SQL Editor, seed products with `npm run seed`, create an admin account at `/login` and promote it via SQL, add the environment variables from `.env.example` in Vercel, deploy to Vercel, attach a custom domain, and submit the sitemap to Google Search Console. Do not invent credentials or mark payments live. Payments: Stripe, eSewa ePay v2, Khalti ePayment v2 - all verified server-side; I still need real merchant keys for eSewa and Khalti. Separate actions I can do now from actions requiring Stripe, eSewa, Khalti, domain, email, or hosting accounts. Check the current files before suggesting edits.
 
 ## 10. Final launch checklist
 
@@ -200,8 +199,7 @@ Copy and paste this into Copilot after opening the project:
 - [ ] `NEXT_PUBLIC_SITE_URL` matches the production domain
 - [ ] Logo, favicon, metadata, Open Graph preview, robots, and sitemap work
 - [ ] Address and contact details are verified
-- [ ] Strapi admin and Editor roles are configured
-- [ ] PostgreSQL backups are enabled
+- [ ] Supabase schema applied and admin account promoted
 - [ ] Product stock, prices, warranty, and delivery are verified
 - [ ] Stripe test and refund flows pass
 - [ ] eSewa and Khalti callbacks are verified server-side

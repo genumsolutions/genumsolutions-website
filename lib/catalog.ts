@@ -19,6 +19,7 @@ export type Product = {
   color: string
   badge?: string
   supplier?: string
+  image?: string
 }
 
 const standard = {

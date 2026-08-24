@@ -15,6 +15,7 @@ const nav = [
   { label: 'Training', href: '/training' },
   { label: 'Journal', href: '/journal' },
   { label: 'Contact', href: '/contact' },
+  { label: 'Account', href: '/account' },
 ]
 
 export default function SiteHeader() {
