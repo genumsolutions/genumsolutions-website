@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { clearLocalCart, readLocalCart, unionQuantities, writeLocalCart } from '../lib/cart-client'
+import { clearLocalCart, readLocalCart, writeLocalCart } from '../lib/cart-client'
 import type { CartLine } from '../lib/customer'
 
 type CartContextValue = {
@@ -49,26 +49,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
         setAuthenticated(Boolean(data.authenticated))
         if (!data.authenticated) return
         const serverCart: CartLine[] = Array.isArray(data.cart) ? data.cart : []
-        // Signed in: fold any local-only additions into the server cart once,
-        // then treat the server response as truth.
-        const merged = unionQuantities(serverCart, local)
-        if (merged.length !== serverCart.length || JSON.stringify(merged) !== JSON.stringify(serverCart)) {
-          const saved = await fetch('/api/cart', {
+        // Signed in: the server cart is always the source of truth.
+        // Only push local-only items the server doesn't already have (guest
+        // additions made before the session cookie was ready).
+        const serverIds = new Set(serverCart.map((l) => l.productId))
+        const localOnly = local.filter((l) => !serverIds.has(l.productId) && l.quantity > 0)
+        const merged = localOnly.length ? [...serverCart, ...localOnly] : serverCart
+        if (localOnly.length) {
+          await fetch('/api/cart', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ cart: merged }),
-          }).then((res) => res.json())
-          if (!cancelled && Array.isArray(saved.cart)) {
-            linesRef.current = saved.cart
-            setLines(saved.cart)
-            writeLocalCart(saved.cart)
-            return
-          }
+          }).catch(() => undefined)
         }
-        if (!cancelled && serverCart.length) {
-          linesRef.current = serverCart
-          setLines(serverCart)
-          writeLocalCart(serverCart)
+        if (!cancelled) {
+          linesRef.current = merged
+          setLines(merged)
+          writeLocalCart(merged)
         }
       } catch {
         // Offline or API hiccup - keep whatever localStorage had.

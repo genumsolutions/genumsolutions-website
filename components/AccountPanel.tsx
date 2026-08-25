@@ -5,6 +5,7 @@ import { FormEvent, useEffect, useState } from 'react'
 import AuthPanel from './AuthPanel'
 import { formatNPR } from '../lib/catalog'
 import { initials } from '../lib/identity'
+import { useCart } from './cart-provider'
 
 type Customer = {
   id: string
@@ -41,6 +42,7 @@ export default function AccountPanel() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState('')
+  const { clear } = useCart()
   const [busy, setBusy] = useState(false)
   const [profileSaved, setProfileSaved] = useState(false)
 
@@ -52,6 +54,7 @@ export default function AccountPanel() {
   }, [])
 
   async function logout() {
+    clear()
     await fetch('/api/auth/logout', { method: 'POST' })
     window.location.href = '/'
   }

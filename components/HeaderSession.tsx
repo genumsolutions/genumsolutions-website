@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { initials } from '../lib/identity'
+import { useCart } from './cart-provider'
 
 type SessionUser = { name: string; email: string; role: string }
 
@@ -14,6 +15,7 @@ export default function HeaderSession() {
   const [ready, setReady] = useState(false)
   const [open, setOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  const { clear } = useCart()
 
   useEffect(() => {
     fetch('/api/auth/session')
@@ -41,6 +43,7 @@ export default function HeaderSession() {
 
   async function logout() {
     setOpen(false)
+    clear()
     await fetch('/api/auth/logout', { method: 'POST' })
     window.location.href = '/'
   }

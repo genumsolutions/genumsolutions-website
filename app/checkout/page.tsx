@@ -85,7 +85,7 @@ export default function CheckoutPage() {
     try {
       const response = await fetch(`/api/checkout/${provider}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items: items.map(({ product, quantity }) => ({ productId: product.id, quantity })), customer }) })
       const result = await response.json()
-      if (provider === 'khalti' && result.url) { window.location.href = result.url; return }
+      if (provider === 'khalti' && result.url) { clear(); window.location.href = result.url; return }
       if (provider === 'esewa' && result.action && result.fields) { clear(); submitGatewayForm(result.action, result.fields); return }
       setMessage(result.error || `${provider} is not configured yet.`); setBusy(false)
     } catch {
