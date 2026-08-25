@@ -3,9 +3,8 @@ import Link from 'next/link'
 import { company } from '../lib/company'
 
 const shopLinks = [
-  { href: '/services', label: 'Services' },
+  { href: '/services', label: 'Services & Training' },
   { href: '/products', label: 'Shop' },
-  { href: '/training', label: 'Training' },
   { href: '/3d-printing', label: '3D Printing' },
   { href: '/tools', label: 'Tools' },
   { href: '/projects', label: 'Projects' },

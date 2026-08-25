@@ -11,11 +11,9 @@ const nav = [
   { label: 'About', href: '/about' },
   { label: 'Services', href: '/services' },
   { label: 'Products', href: '/products' },
-  { label: 'Robot Cars', href: '/robot-cars' },
   { label: 'Projects', href: '/projects' },
   { label: 'Tools', href: '/tools' },
   { label: '3D Printing', href: '/3d-printing' },
-  { label: 'Training', href: '/training' },
   { label: 'Journal', href: '/journal' },
   { label: 'Contact', href: '/contact' },
 ]
@@ -81,7 +79,7 @@ export default function SiteHeader() {
           </span>
         </Link>
 
-        <nav aria-label="Primary" className="hidden items-center gap-1 text-sm text-ink/60 xl:flex">
+        <nav aria-label="Primary" className="hidden items-center gap-1 text-sm text-ink/60 lg:flex">
           {nav.map((item) => (
             <Link key={item.href} href={item.href} className={linkClass(item.href)} aria-current={isActive(pathname ?? '', item.href) ? 'page' : undefined}>
               {item.label}
@@ -117,7 +115,7 @@ export default function SiteHeader() {
             aria-expanded={open}
             aria-controls="mobile-navigation"
             aria-label={open ? 'Close navigation menu' : 'Open navigation menu'}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-white text-ink transition hover:border-cobalt hover:text-cobalt lg:hidden"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-white text-ink transition hover:border-cobalt hover:text-cobalt xl:hidden"
           >
             {open ? (
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 4l8 8M12 4l-8 8" /></svg>

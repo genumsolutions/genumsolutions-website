@@ -30,7 +30,7 @@ export async function generateMetadata(): Promise<Metadata> {
 const services = [
   { title: 'Robotics kits & components', body: 'Controllers, motors, sensors, and full robot-car platforms sourced and tested in Kathmandu.', href: '/products', cta: 'Browse catalog' },
   { title: '3D & 2D printing', body: 'Prototypes, spare parts, and signage printed to spec with materials advice included.', href: '/3d-printing', cta: 'Printing services' },
-  { title: 'School STEM packages', body: 'Kits, curriculum, teacher training, and coaching bundled into a single pilot program.', href: '/training', cta: 'See programs' },
+  { title: 'School STEM packages', body: 'Kits, curriculum, teacher training, and coaching bundled into a single pilot program.', href: '/services#training', cta: 'See programs' },
   { title: 'Custom projects & labs', body: 'IoT, AI prototypes, workshop setups, and lab consultation delivered end to end.', href: '/services', cta: 'Start a proposal' },
 ]
 
@@ -202,7 +202,7 @@ export default async function HomePage() {
               ))}
             </ul>
             <Link
-              href="/training"
+              href="/services#training"
               className="mt-7 inline-block rounded-full bg-signal px-6 py-3.5 text-sm font-black text-ink transition hover:bg-yellow-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal"
             >
               See training programs →

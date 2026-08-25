@@ -30,23 +30,24 @@ export async function getPageViewStats(options: { days?: number } = {}): Promise
   const since = new Date(Date.now() - days * 86400000).toISOString()
   const todayStart = new Date()
   todayStart.setHours(0, 0, 0, 0)
+  const todayISO = todayStart.toISOString()
 
-  const [totalResult, todayResult, pathsResult, dailyResult] = await Promise.all([
-    supabase.from('page_views').select('*', { count: 'exact', head: true }).gte('created_at', since),
-    supabase.from('page_views').select('*', { count: 'exact', head: true }).gte('created_at', todayStart.toISOString()),
-    supabase.from('page_views').select('path').gte('created_at', since),
-    supabase.from('page_views').select('created_at').gte('created_at', since).order('created_at', { ascending: true }),
+  // Reduced from 4 to 2 queries: fetch all rows once, compute counts in JS
+  const [allResult, todayResult] = await Promise.all([
+    supabase.from('page_views').select('path, created_at, user_id').gte('created_at', since),
+    supabase.from('page_views').select('*', { count: 'exact', head: true }).gte('created_at', todayISO),
   ])
 
-  const totalViews = totalResult.count ?? 0
   const todayViews = todayResult.count ?? 0
+  const allRows = (allResult.data ?? []) as { path: string; created_at: string; user_id: string | null }[]
+  const totalViews = allRows.length
 
   // Aggregate top paths
-  const allPaths = (pathsResult.data ?? []) as { path: string }[]
   const pathMap = new Map<string, { count: number; users: Set<string> }>()
-  allPaths.forEach(({ path }) => {
+  allRows.forEach(({ path, user_id }) => {
     const entry = pathMap.get(path) ?? { count: 0, users: new Set() }
     entry.count++
+    if (user_id) entry.users.add(user_id)
     pathMap.set(path, entry)
   })
   const topPaths = Array.from(pathMap.entries())
@@ -55,9 +56,8 @@ export async function getPageViewStats(options: { days?: number } = {}): Promise
     .slice(0, 20)
 
   // Aggregate by day
-  const dailyRows = (dailyResult.data ?? []) as { created_at: string }[]
   const dayMap = new Map<string, number>()
-  dailyRows.forEach(({ created_at }) => {
+  allRows.forEach(({ created_at }) => {
     const day = created_at.slice(0, 10)
     dayMap.set(day, (dayMap.get(day) ?? 0) + 1)
   })
@@ -87,49 +87,48 @@ export async function getDashboardStats(): Promise<{
   todayStart.setHours(0, 0, 0, 0)
   const todayISO = todayStart.toISOString()
 
+  // Reduced from 12 to 6 parallel queries by pairing related counts
   const [
-    totalUsersResult,
+    profilesResult,
     newUsersResult,
-    totalOrdersResult,
-    pendingOrdersResult,
-    revenueResult,
-    revenueTodayResult,
+    ordersAllResult,
     productsResult,
-    lowStockResult,
     messagesResult,
-    unreadResult,
     transactionsResult,
-    succeededResult,
   ] = await Promise.all([
     supabase.from('profiles').select('*', { count: 'exact', head: true }),
     supabase.from('profiles').select('*', { count: 'exact', head: true }).gte('created_at', todayISO),
-    supabase.from('orders').select('*', { count: 'exact', head: true }),
-    supabase.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
-    supabase.from('orders').select('total_npr').in('status', ['paid', 'fulfilled']),
-    supabase.from('orders').select('total_npr').in('status', ['paid', 'fulfilled']).gte('created_at', todayISO),
-    supabase.from('products').select('*', { count: 'exact', head: true }),
-    supabase.from('products').select('*', { count: 'exact', head: true }).lte('stock', 3).gt('stock', 0),
-    supabase.from('customer_messages').select('*', { count: 'exact', head: true }),
-    supabase.from('customer_messages').select('*', { count: 'exact', head: true }).eq('status', 'new'),
-    supabase.from('transactions').select('*', { count: 'exact', head: true }),
-    supabase.from('transactions').select('*', { count: 'exact', head: true }).eq('status', 'succeeded'),
+    supabase.from('orders').select('total_npr, status, created_at'),
+    supabase.from('products').select('stock'),
+    supabase.from('customer_messages').select('status'),
+    supabase.from('transactions').select('status'),
   ])
 
-  const revenueRows = (revenueResult.data ?? []) as { total_npr: number }[]
-  const revenueTodayRows = (revenueTodayResult.data ?? []) as { total_npr: number }[]
+  const profilesCount = profilesResult.count ?? 0
+  const newUsersToday = newUsersResult.count ?? 0
+  const ordersAll = (ordersAllResult.data ?? []) as { total_npr: number; status: string; created_at: string }[]
+  const productsAll = (productsResult.data ?? []) as { stock: number }[]
+  const messagesAll = (messagesResult.data ?? []) as { status: string }[]
+  const transactionsAll = (transactionsResult.data ?? []) as { status: string }[]
+
+  const totalOrders = ordersAll.length
+  const pendingOrders = ordersAll.filter((o) => o.status === 'pending').length
+  const paidOrders = ordersAll.filter((o) => o.status === 'paid' || o.status === 'fulfilled')
+  const revenue = paidOrders.reduce((sum, o) => sum + (o.total_npr ?? 0), 0)
+  const revenueToday = paidOrders.filter((o) => o.created_at >= todayISO).reduce((sum, o) => sum + (o.total_npr ?? 0), 0)
 
   return {
-    totalUsers: totalUsersResult.count ?? 0,
-    newUsersToday: newUsersResult.count ?? 0,
-    totalOrders: totalOrdersResult.count ?? 0,
-    pendingOrders: pendingOrdersResult.count ?? 0,
-    revenue: revenueRows.reduce((sum, r) => sum + (r.total_npr ?? 0), 0),
-    revenueToday: revenueTodayRows.reduce((sum, r) => sum + (r.total_npr ?? 0), 0),
-    totalProducts: productsResult.count ?? 0,
-    lowStockProducts: lowStockResult.count ?? 0,
-    totalMessages: messagesResult.count ?? 0,
-    unreadMessages: unreadResult.count ?? 0,
-    totalTransactions: transactionsResult.count ?? 0,
-    succeededTransactions: succeededResult.count ?? 0,
+    totalUsers: profilesCount,
+    newUsersToday,
+    totalOrders,
+    pendingOrders,
+    revenue,
+    revenueToday,
+    totalProducts: productsAll.length,
+    lowStockProducts: productsAll.filter((p) => p.stock > 0 && p.stock <= 3).length,
+    totalMessages: messagesAll.length,
+    unreadMessages: messagesAll.filter((m) => m.status === 'new').length,
+    totalTransactions: transactionsAll.length,
+    succeededTransactions: transactionsAll.filter((t) => t.status === 'succeeded').length,
   }
 }

@@ -1,11 +1,11 @@
 import PageIntro from '../../components/PageIntro'
 import PageShell from '../../components/PageShell'
-import ProductCatalog from '../../components/ProductCatalog'
+import ProjectsCatalog from '../../components/ProjectsCatalog'
 import { getManagedProducts } from '../../lib/content-store'
 
 export const dynamic = 'force-dynamic'
 
 export default async function ProjectsPage() {
   const products = await getManagedProducts()
-  return <PageShell><PageIntro eyebrow="Project catalog · quote by scope" title="Teaching and automation projects, organized." body="The project section contains the named projects from the INVENTORY Excel catalog. Each listing keeps its purpose, operating modes, components, sensors, and indicative NPR estimate together." /><ProductCatalog scope="projects" products={products} /></PageShell>
+  return <PageShell><PageIntro eyebrow="Projects · packages &amp; robot cars" title="Teaching, automation, and robot-car projects." body="Browse project packages and assembled robot-car builds. Each listing keeps its purpose, components, sensors, and indicative NPR estimate together." /><ProjectsCatalog products={products} /></PageShell>
 }

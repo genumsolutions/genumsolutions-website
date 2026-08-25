@@ -32,17 +32,19 @@ const perks = [
 async function mergeLocalCart() {
   const localCart = readLocalCart()
   if (!localCart.length) return
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 5000)
   try {
-    // Fold the guest cart into the saved account cart so nothing is lost,
-    // then send one REPLACE payload (PUT semantics are replace).
-    const response = await fetch('/api/cart')
+    const response = await fetch('/api/cart', { signal: controller.signal })
     const data = await response.json().catch(() => ({ cart: [] }))
     const merged = unionQuantities(Array.isArray(data.cart) ? data.cart : [], localCart)
     if (!merged.length) return
-    await fetch('/api/cart', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cart: merged }) })
+    await fetch('/api/cart', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cart: merged }), signal: controller.signal })
     writeLocalCart(merged)
   } catch {
-    // Offline - the provider reconciles on the next page load anyway.
+    // Offline or timeout - the provider reconciles on the next page load anyway.
+  } finally {
+    clearTimeout(timeout)
   }
 }
 
@@ -81,7 +83,7 @@ export default function AuthPanel({ initialMode = 'signin' }: { initialMode?: Mo
         switchMode('signin')
         setNotice('Account created. Check your email and confirm your address, then sign in.'); setBusy(false); return
       }
-      await mergeLocalCart()
+      try { await mergeLocalCart() } catch { /* non-blocking: proceed even if cart merge fails */ }
       router.replace(result.role === 'admin' ? '/admin' : '/account')
       router.refresh()
     } catch {

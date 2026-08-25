@@ -7,6 +7,12 @@ const nextConfig = {
     domains: ['localhost', 'genumsolutions-website.vercel.app', 'images.unsplash.com', 'bkylfnlybtsujwzropru.supabase.co'],
     formats: ['image/avif', 'image/webp'],
   },
+  async redirects() {
+    return [
+      { source: '/robot-cars', destination: '/projects', permanent: true },
+      { source: '/training', destination: '/services#training', permanent: true },
+    ]
+  },
   async headers() {
     return [
       {

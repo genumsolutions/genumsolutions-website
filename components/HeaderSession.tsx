@@ -48,14 +48,14 @@ export default function HeaderSession() {
     window.location.href = '/'
   }
 
-  if (!ready) return <span className="hidden h-10 w-28 animate-pulse rounded-full border border-line lg:block" aria-hidden="true" />
+  if (!ready) return <span className="h-10 w-28 animate-pulse rounded-full border border-line" aria-hidden="true" />
 
   if (!user) {
-    return <Link href="/login" className="hidden rounded-full bg-cobalt px-5 py-2 text-sm font-black text-white lg:block">Sign in</Link>
+    return <Link href="/login" className="rounded-full bg-cobalt px-5 py-2 text-sm font-black text-white transition hover:bg-cobalt-dark">Sign in</Link>
   }
 
   return (
-    <div ref={menuRef} className="relative hidden lg:block">
+    <div ref={menuRef} className="relative">
       <button
         onClick={() => setOpen(!open)}
         aria-haspopup="menu"

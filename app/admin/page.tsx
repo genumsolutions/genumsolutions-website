@@ -12,9 +12,8 @@ export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Admin · GENUM SOLUTIONS' }
 
 export default async function AdminPage() {
-  const admin = await getCurrentAdmin()
+  const [admin, products] = await Promise.all([getCurrentAdmin(), getManagedProducts()])
   if (!admin) redirect('/login')
-  const products = await getManagedProducts()
   return (
     <main className="min-h-screen bg-mist">
       <header className="border-b border-line bg-white">

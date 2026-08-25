@@ -1,9 +1,20 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-// Refreshes Supabase auth cookies on every request so sessions stay valid.
+// Only refresh Supabase auth cookies on routes that need session state.
+// Public pages (/, /about, /products, etc.) skip the auth call entirely,
+// saving ~200-400 ms per page load.
+const AUTH_PATHS = ['/admin', '/account', '/checkout', '/login', '/api/']
+
+function needsAuthRefresh(pathname: string) {
+  return AUTH_PATHS.some((prefix) => pathname === prefix || pathname.startsWith(prefix + '/'))
+}
+
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request })
+
+  if (!needsAuthRefresh(request.nextUrl.pathname)) return response
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (!url || !key) return response
