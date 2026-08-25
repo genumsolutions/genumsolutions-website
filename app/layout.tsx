@@ -26,5 +26,16 @@ export const metadata: Metadata = {
 }
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body className={`${manrope.variable} ${space.variable}`}><OrganizationJsonLd /><PageViewTracker /><CartProvider>{children}</CartProvider></body></html>
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('theme');if(t==='dim')document.documentElement.setAttribute('data-theme','dim')}catch(e){}` }} />
+      </head>
+      <body className={`${manrope.variable} ${space.variable}`}>
+        <OrganizationJsonLd />
+        <PageViewTracker />
+        <CartProvider>{children}</CartProvider>
+      </body>
+    </html>
+  )
 }

@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { FormEvent, useEffect, useState } from 'react'
+import { inputClass } from '../lib/styles'
 
 // Final step of password recovery: the visitor arrived here through
 // /auth/callback, so the recovery session cookie is already set.
@@ -56,8 +57,8 @@ export default function ResetPasswordPanel() {
         <Link href="/" className="text-sm font-bold text-cobalt">GENUM SOLUTIONS</Link>
         <h1 className="mt-10 font-display text-4xl font-bold text-ink">Set a new password</h1>
         <p className="mt-3 text-sm leading-6 text-slate-600">Choose a password you have not used elsewhere. At least 6 characters.</p>
-        <label className="mt-8 block text-sm font-bold text-ink">New password<input name="password" type="password" required autoComplete="new-password" className="mt-2 w-full border border-line px-4 py-3 outline-none focus:border-cobalt" /></label>
-        <label className="mt-5 block text-sm font-bold text-ink">Confirm new password<input name="confirm" type="password" required autoComplete="new-password" className="mt-2 w-full border border-line px-4 py-3 outline-none focus:border-cobalt" /></label>
+        <label className="mt-8 block text-sm font-bold text-ink">New password<input name="password" type="password" required autoComplete="new-password" className={`mt-2 w-full ${inputClass}`} /></label>
+        <label className="mt-5 block text-sm font-bold text-ink">Confirm new password<input name="confirm" type="password" required autoComplete="new-password" className={`mt-2 w-full ${inputClass}`} /></label>
         {error && <p className="mt-4 text-sm font-bold text-red-600">{error}</p>}
         <button disabled={busy} className="mt-7 w-full bg-cobalt px-5 py-3.5 text-sm font-black text-white disabled:opacity-60">{busy ? 'Saving...' : 'Save new password'}</button>
       </form>

@@ -128,7 +128,7 @@ export default function SiteHeader() {
 
       <div id="mobile-navigation" ref={mobileNavRef}>
         {open && (
-          <nav aria-label="Mobile" className="border-t border-line bg-white px-5 py-4 lg:hidden">
+          <nav aria-label="Mobile" className="border-t border-line bg-white px-5 py-4 lg:hidden animate-fade-in-up">
             <ul className="grid grid-cols-2 gap-1 text-sm">
               {nav.map((item) => {
                 const active = isActive(pathname ?? '', item.href)

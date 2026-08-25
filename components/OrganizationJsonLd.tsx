@@ -17,7 +17,6 @@ export default function OrganizationJsonLd() {
       addressCountry: company.country,
     },
     areaServed: 'Nepal',
-    sameAs: [],
   }
 
   return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />

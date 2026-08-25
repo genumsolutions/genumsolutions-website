@@ -1,8 +1,14 @@
 import Link from 'next/link'
+import type { Metadata } from 'next'
 import PageIntro from '../../components/PageIntro'
 import PageShell from '../../components/PageShell'
 import { listServices } from '../../lib/services'
 import { trainingPrograms, pilotCosts, stemProjectHighlights } from '../../lib/programs'
+
+export const metadata: Metadata = {
+  title: 'Services & Training',
+  description: 'Web delivery, 3D printing, school STEM packages, teacher workshops, and training programs from GENUM Solutions.',
+}
 
 const processSteps = [
   ['01', 'Share the outcome', 'Tell us what you need to sell, print, teach, publish, or build.'],

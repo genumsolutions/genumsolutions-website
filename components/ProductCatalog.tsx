@@ -1,25 +1,24 @@
 'use client'
 
-import React from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { formatNPR } from '../lib/catalog'
 import type { Product } from '../lib/catalog'
 import { useCart } from './cart-provider'
 
 export default function ProductCatalog({ scope = 'components', products = [] }: { scope?: string; products?: Product[] }) {
-  const [category, setCategory] = React.useState('All')
-  const [query, setQuery] = React.useState('')
-  const [addedId, setAddedId] = React.useState<string | null>(null)
+  const [category, setCategory] = useState('All')
+  const [query, setQuery] = useState('')
+  const [addedId, setAddedId] = useState<string | null>(null)
   const { add, count, hydrated } = useCart()
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!addedId) return
     const timer = window.setTimeout(() => setAddedId(null), 1600)
     return () => window.clearTimeout(timer)
   }, [addedId])
 
-  const scopedProducts = React.useMemo(() => {
+  const scopedProducts = useMemo(() => {
     if (scope === 'cars') {
       return products.filter((product) => product.category === 'Robot Cars')
     }
@@ -32,7 +31,7 @@ export default function ProductCatalog({ scope = 'components', products = [] }: 
     )
   }, [scope, products])
 
-  const visibleProducts = React.useMemo(() => {
+  const visibleProducts = useMemo(() => {
     const needle = query.trim().toLowerCase()
     return scopedProducts.filter((product) =>
       `${product.name} ${product.note} ${product.description}`.toLowerCase().includes(needle)
@@ -70,7 +69,7 @@ export default function ProductCatalog({ scope = 'components', products = [] }: 
           </div>
           <label className="flex items-center gap-3 rounded-full border border-line bg-white px-4 py-2 text-sm text-muted">
             <span aria-hidden="true">⌕</span>
-            <input value={query} onChange={(event) => setQuery(event.target.value)} className="w-full bg-transparent outline-none placeholder:text-muted lg:w-52" placeholder="Search this section" />
+            <input value={query} onChange={(event) => setQuery(event.target.value)} className="w-full bg-transparent outline-none placeholder:text-muted lg:w-52" placeholder="Search this section" aria-label="Search products" />
           </label>
         </div>
         <div className="mt-5 flex items-center justify-between text-sm text-muted">
@@ -80,6 +79,12 @@ export default function ProductCatalog({ scope = 'components', products = [] }: 
       </div>
 
       <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {visibleProducts.length === 0 && (
+          <div className="col-span-full border-t-2 border-ink bg-white p-10 text-center">
+            <p className="font-display text-xl font-bold">No products found</p>
+            <p className="mt-2 text-sm text-muted">Try a different search term or browse another category.</p>
+          </div>
+        )}
         {visibleProducts.map((product) => {
           const media = product.image
             ? { src: product.image, alt: product.name }

@@ -1,6 +1,12 @@
 import Link from 'next/link'
+import type { Metadata } from 'next'
 import PageIntro from '../../components/PageIntro'
 import PageShell from '../../components/PageShell'
+
+export const metadata: Metadata = {
+  title: 'About',
+  description: 'GENUM Solutions brings a decade of telecom, IoT, embedded systems, and STEAM education experience from Kathmandu, Nepal.',
+}
 
 const competencies = [
   ['Microcontrollers', 'ESP32, Arduino, STM32, and ARM-based systems'],

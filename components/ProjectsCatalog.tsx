@@ -1,9 +1,8 @@
 'use client'
 
-import React from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { formatNPR } from '../lib/catalog'
 import type { Product } from '../lib/catalog'
 import { useCart } from './cart-provider'
 
@@ -24,28 +23,28 @@ function getProductMedia(category: string) {
 }
 
 export default function ProjectsCatalog({ products = [] }: { products?: Product[] }) {
-  const [tab, setTab] = React.useState<ProjectTab>('packages')
-  const [query, setQuery] = React.useState('')
-  const [addedId, setAddedId] = React.useState<string | null>(null)
+  const [tab, setTab] = useState<ProjectTab>('packages')
+  const [query, setQuery] = useState('')
+  const [addedId, setAddedId] = useState<string | null>(null)
   const { add, hydrated, count } = useCart()
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!addedId) return
     const timer = window.setTimeout(() => setAddedId(null), 1600)
     return () => window.clearTimeout(timer)
   }, [addedId])
 
-  const packageProducts = React.useMemo(() => {
+  const packageProducts = useMemo(() => {
     return products.filter((p) => p.productType === 'Project package')
   }, [products])
 
-  const robotCarProducts = React.useMemo(() => {
+  const robotCarProducts = useMemo(() => {
     return products.filter((p) => p.category === 'Robot Cars')
   }, [products])
 
   const activeProducts = tab === 'packages' ? packageProducts : robotCarProducts
 
-  const visibleProducts = React.useMemo(() => {
+  const visibleProducts = useMemo(() => {
     const needle = query.trim().toLowerCase()
     return activeProducts.filter((p) =>
       `${p.name} ${p.note} ${p.description}`.toLowerCase().includes(needle)
@@ -82,7 +81,7 @@ export default function ProjectsCatalog({ products = [] }: { products?: Product[
           </div>
           <label className="mt-3 flex items-center gap-3 rounded-full border border-line bg-white px-4 py-2 text-sm text-muted">
             <span aria-hidden="true">⌕</span>
-            <input value={query} onChange={(e) => setQuery(e.target.value)} className="w-full bg-transparent outline-none placeholder:text-muted lg:w-52" placeholder="Search this section" />
+            <input value={query} onChange={(e) => setQuery(e.target.value)} className="w-full bg-transparent outline-none placeholder:text-muted lg:w-52" placeholder="Search this section" aria-label="Search projects" />
           </label>
         </div>
         <div className="mt-5 flex items-center justify-between text-sm text-muted">
@@ -115,7 +114,7 @@ export default function ProjectsCatalog({ products = [] }: { products?: Product[
                   src={media.src}
                   alt={media.alt}
                   fill
-                  sizes="(max-width: 640px) 100vw, (max-width, 1024px) 50vw, 33vw"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                   className="object-cover transition duration-500 hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-ink/70 to-transparent" />

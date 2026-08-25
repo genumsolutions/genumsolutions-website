@@ -1,7 +1,13 @@
+import type { Metadata } from 'next'
 import PageIntro from '../../components/PageIntro'
 import PageShell from '../../components/PageShell'
 import ProductCatalog from '../../components/ProductCatalog'
 import { getManagedProducts } from '../../lib/content-store'
+
+export const metadata: Metadata = {
+  title: 'Products',
+  description: 'Robotics kits, controllers, sensors, motors, and electronics — sourced, tested, and ready to build with.',
+}
 
 export const dynamic = 'force-dynamic'
 

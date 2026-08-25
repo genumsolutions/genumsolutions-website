@@ -68,7 +68,7 @@ export default function HeaderSession() {
       </button>
 
       {open && (
-        <div role="menu" className="absolute right-0 z-50 mt-2 w-64 border border-line bg-white shadow-xl">
+        <div role="menu" className="absolute right-0 z-50 mt-2 w-64 border border-line bg-white shadow-xl animate-scale-in">
           <div className="border-b border-line px-4 py-3">
             <p className="truncate text-sm font-black text-ink">{user.name}</p>
             <p className="mt-0.5 truncate text-xs text-slate-500">{user.email}</p>

@@ -1,7 +1,13 @@
+import type { Metadata } from 'next'
 import PageIntro from '../../components/PageIntro'
 import PageShell from '../../components/PageShell'
 import ProjectsCatalog from '../../components/ProjectsCatalog'
 import { getManagedProducts } from '../../lib/content-store'
+
+export const metadata: Metadata = {
+  title: 'Projects',
+  description: 'Project packages and robot-car builds for teaching, automation, and prototyping from GENUM Solutions.',
+}
 
 export const dynamic = 'force-dynamic'
 

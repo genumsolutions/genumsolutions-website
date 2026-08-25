@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { FormEvent, useEffect, useState } from 'react'
+import { FormEvent, ReactNode, useEffect, useState } from 'react'
 import AuthPanel from './AuthPanel'
 import { formatNPR } from '../lib/catalog'
 import { initials } from '../lib/identity'
@@ -28,7 +28,7 @@ const statusStyles: Record<string, string> = {
 
 const inputClass = 'mt-2 w-full rounded-lg border border-line bg-white px-4 py-3 text-sm text-ink outline-none transition focus:border-cobalt focus:ring-2 focus:ring-cobalt/20'
 
-function SectionCard({ title, id, children }: { title: string; id?: string; children: React.ReactNode }) {
+function SectionCard({ title, id, children }: { title: string; id?: string; children: ReactNode }) {
   return (
     <section id={id} className="rounded-2xl border border-line bg-white p-6 shadow-card sm:p-8">
       <h2 className="font-display text-xl font-bold text-ink">{title}</h2>

@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import { formatNPR } from '../lib/catalog'
+import { inputClass } from '../lib/styles'
 import type { Product } from '../lib/content-store'
 
 type Props = { initialProducts: Product[] }
@@ -59,6 +60,7 @@ export default function AdminPanel({ initialProducts }: Props) {
   const [message, setMessage] = useState('')
   const [query, setQuery] = useState('')
   const [productPage, setProductPage] = useState(1)
+  const [busy, setBusy] = useState('')
   const [uploading, setUploading] = useState(false)
   const fileInput = useRef<HTMLInputElement>(null)
 
@@ -146,18 +148,10 @@ export default function AdminPanel({ initialProducts }: Props) {
     } finally { setServicesLoaded(true) }
   }
 
-  async function loadFinance(page: number) {
+  async function loadFinance() {
     setFinanceLoaded(false)
     try {
-      const response = await fetch(`/api/admin/stats`)
-      // Use a dedicated finance endpoint — for now derive from transactions table via admin stats
-      const params = new URLSearchParams({ page: String(page), limit: String(PAGE_SIZE) })
-      // We need a transactions list endpoint — use the service client directly via a new route
-      const res = await fetch(`/api/admin/analytics?days=365`)
-      if (res.ok) {
-        // We need actual transaction rows. Let me create a lightweight approach:
-        // For now, show what we can from the stats endpoint
-      }
+      if (!stats) await loadDashboard()
     } finally { setFinanceLoaded(true) }
   }
 
@@ -199,7 +193,7 @@ export default function AdminPanel({ initialProducts }: Props) {
     if (next === 'Orders' && !ordersLoaded) void loadOrders(1)
     if (next === 'Users' && !usersLoaded) void loadUsers(1)
     if (next === 'Services' && !servicesLoaded) void loadServices()
-    if (next === 'Finance' && !financeLoaded) void loadFinance(1)
+    if (next === 'Finance' && !financeLoaded) void loadFinance()
     if (next === 'Messages' && !messagesLoaded) void loadMessages(1)
     if (next === 'Activity' && !activityLoaded) void loadActivity(1)
   }
@@ -213,13 +207,15 @@ export default function AdminPanel({ initialProducts }: Props) {
   async function saveProduct(event?: FormEvent) {
     event?.preventDefault()
     if (!product.id || !product.name) { setMessage('Give the product at least an id and a name.'); return }
+    setBusy('product')
     const payload = { ...product, id: product.id.trim().toLowerCase().replace(/\s+/g, '-'), price: Number(product.price), stock: Number(product.stock), specs: typeof product.specs === 'string' ? String(product.specs).split('\n').filter(Boolean) : product.specs }
     const response = await fetch('/api/admin/products', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
     const result = await response.json().catch(() => ({}))
-    if (!response.ok) { setMessage(result.error || 'Could not save product.'); return }
+    if (!response.ok) { setMessage(result.error || 'Could not save product.'); setBusy(''); return }
     setProducts((current) => [...current.filter((item) => item.id !== payload.id), payload].sort((a, b) => a.name.localeCompare(b.name)))
     setProduct(emptyProduct)
     setMessage('Product saved.')
+    setBusy('')
   }
 
   async function removeProduct(id: string) {
@@ -262,13 +258,15 @@ export default function AdminPanel({ initialProducts }: Props) {
   async function saveServiceItem(event?: FormEvent) {
     event?.preventDefault()
     if (!service.id || !service.name) { setMessage('Service needs at least an id and name.'); return }
+    setBusy('service')
     const payload = { ...service, id: service.id.trim().toLowerCase().replace(/\s+/g, '-') }
     const response = await fetch('/api/admin/services', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
     const result = await response.json().catch(() => ({}))
-    if (!response.ok) { setMessage(result.error || 'Could not save service.'); return }
+    if (!response.ok) { setMessage(result.error || 'Could not save service.'); setBusy(''); return }
     setServices((current) => [...current.filter((s) => s.id !== payload.id), payload].sort((a, b) => a.sortOrder - b.sortOrder))
     setService(emptyService)
     setMessage('Service saved.')
+    setBusy('')
   }
 
   async function removeService(id: string) {
@@ -294,7 +292,7 @@ export default function AdminPanel({ initialProducts }: Props) {
     <div className="mx-auto max-w-7xl px-5 py-10 lg:px-8">
       <div role="tablist" aria-label="Admin sections" className="flex flex-wrap gap-2 border-b border-line pb-4">
         {TABS.map((name) => (
-          <button key={name} role="tab" aria-selected={tab === name} onClick={() => openTab(name)} className={`rounded-full px-5 py-2.5 text-sm font-bold transition ${tab === name ? 'bg-cobalt text-white' : 'border border-line bg-white text-muted hover:border-cobalt hover:text-cobalt'}`}>{name}</button>
+          <button key={name} role="tab" id={`tab-${name.toLowerCase()}`} aria-selected={tab === name} aria-controls={`panel-${name.toLowerCase()}`} onClick={() => openTab(name)} className={`rounded-full px-5 py-2.5 text-sm font-bold transition ${tab === name ? 'bg-cobalt text-white' : 'border border-line bg-white text-muted hover:border-cobalt hover:text-cobalt'}`}>{name}</button>
         ))}
       </div>
 
@@ -302,7 +300,7 @@ export default function AdminPanel({ initialProducts }: Props) {
 
       {/* ═══════ DASHBOARD ═══════ */}
       {tab === 'Dashboard' && (
-        <section aria-label="Dashboard overview" className="mt-8 space-y-8">
+        <section role="tabpanel" aria-labelledby="tab-dashboard" aria-label="Dashboard overview" className="mt-8 space-y-8">
           <h2 className="font-display text-2xl font-bold text-ink">Dashboard</h2>
           {!stats ? <p className="text-sm text-slate-500" role="status">Loading stats…</p> : (
             <>
@@ -355,11 +353,11 @@ export default function AdminPanel({ initialProducts }: Props) {
 
       {/* ═══════ PRODUCTS ═══════ */}
       {tab === 'Products' && (
-        <div className="mt-8 grid gap-8 xl:grid-cols-[1fr_1.3fr]">
+        <div role="tabpanel" id="panel-products" aria-labelledby="tab-products" className="mt-8 grid gap-8 xl:grid-cols-[1fr_1.3fr]">
           <section aria-label="Product list" className="space-y-6">
             <div className="border-t-2 border-ink bg-white p-6">
               <h2 className="font-display text-xl font-bold">Products ({filteredProducts.length})</h2>
-              <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by name, SKU, or id" aria-label="Search products" className="mt-3 w-full border border-line px-3 py-2 text-sm" />
+              <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by name, SKU, or id" aria-label="Search products" className={`mt-3 w-full ${inputClass}`} />
               <div className="mt-3 divide-y divide-line">
                 {shownProducts.map((item) => (
                   <div key={item.id} className="flex items-center justify-between gap-2 py-2">
@@ -379,20 +377,20 @@ export default function AdminPanel({ initialProducts }: Props) {
             <form onSubmit={saveProduct} className="border-t-2 border-ink bg-white p-6">
               <h2 className="font-display text-2xl font-bold">{products.some((item) => item.id === product.id) ? `Edit ${product.id}` : 'Add a new product'}</h2>
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                {fields.map((key) => <label key={key} className="text-sm font-bold capitalize">{key}<input value={String(product[key] ?? '')} onChange={(e) => updateProduct(key, ['price', 'stock'].includes(key) ? Number(e.target.value) : e.target.value)} className="mt-2 w-full border border-line px-3 py-2" /></label>)}
-                <label className="text-sm font-bold sm:col-span-2">Specs, one per line<textarea value={Array.isArray(product.specs) ? product.specs.join('\n') : String(product.specs)} onChange={(e) => updateProduct('specs', e.target.value.split('\n'))} rows={4} className="mt-2 w-full border border-line px-3 py-2" /></label>
+                {fields.map((key) => <label key={key} className="text-sm font-bold capitalize">{key}<input value={String(product[key] ?? '')} onChange={(e) => updateProduct(key, ['price', 'stock'].includes(key) ? Number(e.target.value) : e.target.value)} className={`mt-2 w-full ${inputClass}`} /></label>)}
+                <label className="text-sm font-bold sm:col-span-2">Specs, one per line<textarea value={Array.isArray(product.specs) ? product.specs.join('\n') : String(product.specs)} onChange={(e) => updateProduct('specs', e.target.value.split('\n'))} rows={4} className={`mt-2 w-full ${inputClass}`} /></label>
                 <div className="sm:col-span-2">
                   <p className="text-sm font-bold">Product image</p>
                   <div className="mt-2 flex flex-wrap items-center gap-3">
-                    {product.image && <Image src={product.image} alt="" width={64} height={64} className="rounded object-cover" />}
-                    <input value={product.image || ''} onChange={(e) => updateProduct('image', e.target.value)} placeholder="https://... or upload below" aria-label="Product image URL" className="min-w-0 flex-1 border border-line px-3 py-2 text-sm" />
+                    {product.image && <Image src={product.image} alt={product.name || 'Product preview'} width={64} height={64} className="rounded object-cover" />}
+                    <input value={product.image || ''} onChange={(e) => updateProduct('image', e.target.value)} placeholder="https://... or upload below" aria-label="Product image URL" className={`min-w-0 flex-1 ${inputClass}`} />
                     <input ref={fileInput} type="file" accept="image/*" onChange={(e) => { const file = e.target.files?.[0]; if (file) void uploadImage(file); e.currentTarget.value = '' }} className="hidden" />
                     <button type="button" disabled={uploading} onClick={() => fileInput.current?.click()} className="bg-cobalt px-4 py-2 text-xs font-black text-white disabled:opacity-60">{uploading ? 'Uploading...' : 'Upload'}</button>
                   </div>
                 </div>
               </div>
               <div className="mt-5 flex gap-3">
-                <button type="submit" disabled={uploading} className="bg-signal px-5 py-3 text-sm font-black text-ink transition hover:bg-yellow-500 disabled:opacity-60">Save product</button>
+                <button type="submit" disabled={busy === 'product' || uploading} className="bg-signal px-5 py-3 text-sm font-black text-ink transition hover:bg-yellow-500 disabled:opacity-60">{busy === 'product' ? 'Saving...' : 'Save product'}</button>
                 {product.id && <button type="button" onClick={() => setProduct(emptyProduct)} className="border border-line px-5 py-3 text-sm font-black text-ink transition hover:border-cobalt">New product</button>}
               </div>
             </form>
@@ -402,7 +400,7 @@ export default function AdminPanel({ initialProducts }: Props) {
 
       {/* ═══════ SERVICES ═══════ */}
       {tab === 'Services' && (
-        <div className="mt-8 grid gap-8 xl:grid-cols-[1fr_1.3fr]">
+        <div role="tabpanel" id="panel-services" aria-labelledby="tab-services" className="mt-8 grid gap-8 xl:grid-cols-[1fr_1.3fr]">
           <section aria-label="Service list" className="space-y-6">
             <div className="border-t-2 border-ink bg-white p-6">
               <h2 className="font-display text-xl font-bold">Services ({services.length})</h2>
@@ -428,17 +426,17 @@ export default function AdminPanel({ initialProducts }: Props) {
             <form onSubmit={saveServiceItem} className="border-t-2 border-ink bg-white p-6">
               <h2 className="font-display text-2xl font-bold">{services.some((s) => s.id === service.id) ? `Edit ${service.id}` : 'Add a new service'}</h2>
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                <label className="text-sm font-bold">Id<input value={service.id} onChange={(e) => updateService('id', e.target.value)} className="mt-2 w-full border border-line px-3 py-2" placeholder="e.g. website-design" /></label>
-                <label className="text-sm font-bold">Name<input value={service.name} onChange={(e) => updateService('name', e.target.value)} className="mt-2 w-full border border-line px-3 py-2" /></label>
-                <label className="text-sm font-bold">Category<input value={service.category} onChange={(e) => updateService('category', e.target.value)} className="mt-2 w-full border border-line px-3 py-2" /></label>
-                <label className="text-sm font-bold">Price Label<input value={service.priceLabel} onChange={(e) => updateService('priceLabel', e.target.value)} className="mt-2 w-full border border-line px-3 py-2" placeholder="from NPR 35,000" /></label>
-                <label className="text-sm font-bold">Tag / Badge<input value={service.tag} onChange={(e) => updateService('tag', e.target.value)} className="mt-2 w-full border border-line px-3 py-2" placeholder="Website, Fabrication, etc." /></label>
-                <label className="text-sm font-bold">Sort Order<input type="number" value={service.sortOrder} onChange={(e) => updateService('sortOrder', Number(e.target.value))} className="mt-2 w-full border border-line px-3 py-2" /></label>
-                <label className="text-sm font-bold sm:col-span-2">Description<textarea value={service.description} onChange={(e) => updateService('description', e.target.value)} rows={3} className="mt-2 w-full border border-line px-3 py-2" /></label>
+                <label className="text-sm font-bold">Id<input value={service.id} onChange={(e) => updateService('id', e.target.value)} className={`mt-2 w-full ${inputClass}`} placeholder="e.g. website-design" /></label>
+                <label className="text-sm font-bold">Name<input value={service.name} onChange={(e) => updateService('name', e.target.value)} className={`mt-2 w-full ${inputClass}`} /></label>
+                <label className="text-sm font-bold">Category<input value={service.category} onChange={(e) => updateService('category', e.target.value)} className={`mt-2 w-full ${inputClass}`} /></label>
+                <label className="text-sm font-bold">Price Label<input value={service.priceLabel} onChange={(e) => updateService('priceLabel', e.target.value)} className={`mt-2 w-full ${inputClass}`} placeholder="from NPR 35,000" /></label>
+                <label className="text-sm font-bold">Tag / Badge<input value={service.tag} onChange={(e) => updateService('tag', e.target.value)} className={`mt-2 w-full ${inputClass}`} placeholder="Website, Fabrication, etc." /></label>
+                <label className="text-sm font-bold">Sort Order<input type="number" value={service.sortOrder} onChange={(e) => updateService('sortOrder', Number(e.target.value))} className={`mt-2 w-full ${inputClass}`} /></label>
+                <label className="text-sm font-bold sm:col-span-2">Description<textarea value={service.description} onChange={(e) => updateService('description', e.target.value)} rows={3} className={`mt-2 w-full ${inputClass}`} /></label>
                 <label className="flex items-center gap-2 text-sm font-bold"><input type="checkbox" checked={service.active} onChange={(e) => updateService('active', e.target.checked)} className="h-4 w-4" /> Active (visible on site)</label>
               </div>
               <div className="mt-5 flex gap-3">
-                <button type="submit" className="bg-signal px-5 py-3 text-sm font-black text-ink transition hover:bg-yellow-500">Save service</button>
+                <button type="submit" disabled={busy === 'service'} className="bg-signal px-5 py-3 text-sm font-black text-ink transition hover:bg-yellow-500 disabled:opacity-60">{busy === 'service' ? 'Saving...' : 'Save service'}</button>
                 {service.id && <button type="button" onClick={() => setService(emptyService)} className="border border-line px-5 py-3 text-sm font-black text-ink transition hover:border-cobalt">New service</button>}
               </div>
             </form>
@@ -448,11 +446,11 @@ export default function AdminPanel({ initialProducts }: Props) {
 
       {/* ═══════ ORDERS ═══════ */}
       {tab === 'Orders' && (
-        <section aria-label="Customer orders" className="mt-8 space-y-4">
+        <section role="tabpanel" id="panel-orders" aria-labelledby="tab-orders" aria-label="Customer orders" className="mt-8 space-y-4">
           <div className="flex flex-wrap items-end gap-3 border-t-2 border-ink bg-white p-6">
             <h2 className="font-display text-xl font-bold">Customer orders</h2>
             <label className="ml-auto text-sm font-bold text-slate-500">Search buyer
-              <input value={orderQuery} onChange={(e) => setOrderQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && void loadOrders(1)} placeholder="email or name" aria-label="Search orders" className="ml-2 w-48 border border-line px-3 py-2 text-sm" />
+              <input value={orderQuery} onChange={(e) => setOrderQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && void loadOrders(1)} placeholder="email or name" aria-label="Search orders" className={`ml-2 w-48 ${inputClass}`} />
             </label>
             <label className="text-sm font-bold text-slate-500">Status
               <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} aria-label="Filter by status" className="ml-2 border border-line px-3 py-2 text-sm font-bold">
@@ -489,7 +487,7 @@ export default function AdminPanel({ initialProducts }: Props) {
 
       {/* ═══════ FINANCE ═══════ */}
       {tab === 'Finance' && (
-        <section aria-label="Finance overview" className="mt-8 space-y-6">
+        <section role="tabpanel" id="panel-finance" aria-labelledby="tab-finance" aria-label="Finance overview" className="mt-8 space-y-6">
           <div className="border-t-2 border-ink bg-white p-6">
             <h2 className="font-display text-xl font-bold">Finance &amp; Transactions</h2>
             {stats && (
@@ -532,11 +530,11 @@ export default function AdminPanel({ initialProducts }: Props) {
 
       {/* ═══════ USERS ═══════ */}
       {tab === 'Users' && (
-        <section aria-label="User management" className="mt-8 space-y-4">
+        <section role="tabpanel" id="panel-users" aria-labelledby="tab-users" aria-label="User management" className="mt-8 space-y-4">
           <div className="flex flex-wrap items-end gap-3 border-t-2 border-ink bg-white p-6">
             <h2 className="font-display text-xl font-bold">Users</h2>
             <label className="ml-auto text-sm font-bold text-slate-500">Search
-              <input value={userQuery} onChange={(e) => setUserQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && void loadUsers(1)} placeholder="email or name" aria-label="Search users" className="ml-2 w-56 border border-line px-3 py-2 text-sm" />
+              <input value={userQuery} onChange={(e) => setUserQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && void loadUsers(1)} placeholder="email or name" aria-label="Search users" className={`ml-2 w-56 ${inputClass}`} />
             </label>
             <button onClick={() => void loadUsers(1)} className="bg-cobalt px-4 py-2 text-xs font-black text-white transition hover:bg-cobalt-dark">Apply</button>
           </div>
@@ -568,7 +566,7 @@ export default function AdminPanel({ initialProducts }: Props) {
 
       {/* ═══════ MESSAGES ═══════ */}
       {tab === 'Messages' && (
-        <section aria-label="Customer messages" className="mt-8 space-y-4">
+        <section role="tabpanel" id="panel-messages" aria-labelledby="tab-messages" aria-label="Customer messages" className="mt-8 space-y-4">
           <div className="flex flex-wrap items-end gap-3 border-t-2 border-ink bg-white p-6">
             <h2 className="font-display text-xl font-bold">Messages</h2>
             <label className="ml-auto text-sm font-bold text-slate-500">Status
@@ -606,7 +604,7 @@ export default function AdminPanel({ initialProducts }: Props) {
 
       {/* ═══════ ACTIVITY ═══════ */}
       {tab === 'Activity' && (
-        <section aria-label="Activity log" className="mt-8 space-y-4">
+        <section role="tabpanel" id="panel-activity" aria-labelledby="tab-activity" aria-label="Activity log" className="mt-8 space-y-4">
           <div className="border-t-2 border-ink bg-white p-6">
             <h2 className="font-display text-xl font-bold">Activity Log</h2>
           </div>

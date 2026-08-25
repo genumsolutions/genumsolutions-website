@@ -96,8 +96,8 @@ export default function ProductDetailPro({ product }: { product: Product }) {
         <div className="mt-10 grid gap-4 border-t-2 border-line py-6 sm:grid-cols-2">
           <div>
             <p className="text-xs font-black uppercase tracking-widest text-cobalt">Color</p>
-            <p className="mt-2 text-sm text-muted" style={{ color: product.color }}>
-              {product.color}
+            <p className="mt-2 text-sm leading-6 text-muted">
+              {product.color ? product.color.replace(/from-\[.*?\]\s*to-\[.*?\]/, 'Standard finish') : 'Standard finish'}
             </p>
           </div>
           <div>
