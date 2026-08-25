@@ -27,7 +27,6 @@ This document explains what exists, what is required before launch, and the exac
 - Open-source Tools directory and embedded 3D model library
 - Product detail pages
 - Local persistent cart and checkout form
-- Stripe checkout with server-side confirmation
 - eSewa ePay v2 and Khalti ePayment v2 checkout with signed requests and server-to-server verification
 - Customer accounts, saved carts, order history (Supabase Auth + Postgres)
 - Training page
@@ -74,7 +73,7 @@ Never delete `app`, `components`, `lib`, or `public`; `.next` is generated cache
 
 ## 4. Publish the frontend on Vercel
 
-1. Create a GitHub repository and push this project. Do not commit `.env.local`, API keys, Stripe keys, database passwords, or private certificates.
+1. Create a GitHub repository and push this project. Do not commit `.env.local`, API keys, database passwords, or private certificates.
 2. Go to `https://vercel.com`, sign in, choose **Add New Project**, and import the GitHub repository.
 3. Framework preset: Next.js. Build command: `next build`. Install command: `npm install`.
 4. Add these Vercel environment variables:
@@ -84,7 +83,6 @@ NEXT_PUBLIC_SITE_URL=https://YOUR-DOMAIN.com
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=replace_with_anon_public_key
 SUPABASE_SERVICE_ROLE_KEY=replace_with_service_role_key
-STRIPE_SECRET_KEY=replace_with_live_or_test_key
 ESEWA_SECRET_KEY=replace_with_merchant_secret
 ESEWA_PRODUCT_CODE=EPAYTEST
 KHALTI_SECRET_KEY=replace_with_merchant_secret
@@ -131,17 +129,6 @@ update profiles set role = 'admin' where id = (select id from auth.users where e
 
 ## 6. Payments: launch requirements
 
-### Stripe
-
-- Create a Stripe account and verify the business.
-- Use test keys first.
-- Add a Stripe webhook endpoint on the deployed backend.
-- Verify payment events server-side before marking an order paid.
-- Replace test keys with live keys only after a successful test order and refund test.
-- Confirm that the settlement currency and NPR support match the Stripe account configuration.
-
-### eSewa and Khalti
-
 Both gateways are implemented: `/api/checkout/esewa` builds the signed ePay v2 form, `/api/checkout/khalti` initiates ePayment v2, and both confirm routes verify server-to-server before marking an order paid. Before launch:
 
 - Obtain merchant credentials directly from eSewa and Khalti (UAT/test keys first).
@@ -173,7 +160,7 @@ Replace placeholders before launch:
 - Supplier, warranty, and return terms
 - Shipping prices and delivery times by Nepal location
 - Tax/VAT/PAN details if applicable
-- Actual Stripe/eSewa/Khalti merchant accounts
+- Actual eSewa/Khalti merchant accounts
 - Real training dates, locations, seat limits, and instructors
 - Portfolio images and project case-study facts
 - Social media URLs for the JSON-LD `sameAs` field
@@ -181,7 +168,7 @@ Replace placeholders before launch:
 
 ## 8. Important launch limitation
 
-The frontend is a complete storefront: catalog, accounts, carts, orders, and three payment gateways with server-side verification. It is not fully production-ready until the real business credentials, legal policies, email notifications, inventory locking, and Stripe webhooks are connected.
+The frontend is a complete storefront: catalog, accounts, carts, orders, and two payment gateways with server-side verification. It is not fully production-ready until the real business credentials, legal policies, email notifications, and inventory locking are connected.
 
 Do not accept live payments while the order database and webhook confirmation flow are still placeholders.
 
@@ -189,7 +176,7 @@ Do not accept live payments while the order database and webhook confirmation fl
 
 Copy and paste this into Copilot after opening the project:
 
-> I am publishing the GENUM SOLUTIONS PVT. LTD. website in `E:\GENUM SOLUTIONS PVT LTD\genumsolutions-website`. It is a Next.js App Router storefront with Supabase (Postgres + Auth + Storage) as the backend. The official company address is `Shringhkhala Galli-32, Kathmandu, Nepal`. The official logo is `public/logo.png`. Please guide me step by step to: run `supabase/schema.sql` in the Supabase SQL Editor, seed products with `npm run seed`, create an admin account at `/login` and promote it via SQL, add the environment variables from `.env.example` in Vercel, deploy to Vercel, attach a custom domain, and submit the sitemap to Google Search Console. Do not invent credentials or mark payments live. Payments: Stripe, eSewa ePay v2, Khalti ePayment v2 - all verified server-side; I still need real merchant keys for eSewa and Khalti. Separate actions I can do now from actions requiring Stripe, eSewa, Khalti, domain, email, or hosting accounts. Check the current files before suggesting edits.
+> I am publishing the GENUM SOLUTIONS PVT. LTD. website in `E:\GENUM SOLUTIONS PVT LTD\genumsolutions-website`. It is a Next.js App Router storefront with Supabase (Postgres + Auth + Storage) as the backend. The official company address is `Shringhkhala Galli-32, Kathmandu, Nepal`. The official logo is `public/logo.png`. Please guide me step by step to: run `supabase/schema.sql` in the Supabase SQL Editor, seed products with `npm run seed`, create an admin account at `/login` and promote it via SQL, add the environment variables from `.env.example` in Vercel, deploy to Vercel, attach a custom domain, and submit the sitemap to Google Search Console. Do not invent credentials or mark payments live. Payments: eSewa ePay v2, Khalti ePayment v2, and cash on delivery - all verified server-side; I still need real merchant keys for eSewa and Khalti. Separate actions I can do now from actions requiring eSewa, Khalti, domain, email, or hosting accounts. Check the current files before suggesting edits.
 
 ## 10. Final launch checklist
 
@@ -201,8 +188,7 @@ Copy and paste this into Copilot after opening the project:
 - [ ] Address and contact details are verified
 - [ ] Supabase schema applied and admin account promoted
 - [ ] Product stock, prices, warranty, and delivery are verified
-- [ ] Stripe test and refund flows pass
-- [ ] eSewa and Khalti callbacks are verified server-side
+- [ ] eSewa, Khalti, and COD flows are verified server-side
 - [ ] Order persistence and confirmation emails work
 - [ ] Privacy, terms, refund, shipping, and warranty pages are published
 - [ ] Mobile, desktop, keyboard, and accessibility checks pass

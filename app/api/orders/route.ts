@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSessionUser } from '../../../lib/supabase/server'
-import { createOrder, listOrders } from '../../../lib/orders'
+import { createOrder, listOrders, logTransaction } from '../../../lib/orders'
 import type { OrderItem, Order } from '../../../lib/customer'
 
 function sanitizeItems(raw: unknown): OrderItem[] {
@@ -17,7 +17,7 @@ export async function GET() {
   return NextResponse.json({ orders: await listOrders(user.id) })
 }
 
-// Creates a pending order. Used directly for cash-on-delivery; the Stripe route
+// Creates a pending order. Used directly for cash-on-delivery; the eSewa/Khalti checkout routes
 // creates its order server-side and only redirects to the gateway afterwards.
 export async function POST(request: Request) {
   const user = await getSessionUser()
@@ -39,5 +39,8 @@ export async function POST(request: Request) {
   const provider = (['cod', 'esewa', 'khalti'].includes(body.provider) ? body.provider : 'cod') as Order['provider']
   const order = await createOrder({ userId: user.id, items, totalNpr, provider, customerName: name, email, phone, address })
   if (!order) return NextResponse.json({ error: 'Could not save the order. Try again.' }, { status: 500 })
+  if (provider === 'cod') {
+    await logTransaction({ orderId: order.id, userId: user.id, provider: 'cod', amountNpr: totalNpr, status: 'initiated', rawPayload: { note: 'cash on delivery reserved' } })
+  }
   return NextResponse.json({ ok: true, order })
 }

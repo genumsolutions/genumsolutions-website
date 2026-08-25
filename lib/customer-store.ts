@@ -1,13 +1,6 @@
 import { createClient, createServiceClient, getSessionUser, supabaseConfigured } from './supabase/server'
 import type { CartLine, CustomerMessage, Customer } from './customer'
 
-// Pure helper kept from the previous implementation: additive cart merge keyed by productId.
-export function mergeCart(current: CartLine[], incoming: CartLine[]) {
-  const merged = new Map(current.map((line) => [line.productId, line.quantity]))
-  incoming.forEach((line) => merged.set(line.productId, (merged.get(line.productId) || 0) + Math.max(0, Math.floor(line.quantity))))
-  return Array.from(merged, ([productId, quantity]) => ({ productId, quantity })).filter((line) => line.quantity > 0)
-}
-
 export async function getProfile(userId: string): Promise<Customer | null> {
   if (!supabaseConfigured()) return null
   const db = createClient()

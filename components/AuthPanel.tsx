@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { FormEvent, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { initials } from '../lib/identity'
+import { readLocalCart, unionQuantities, writeLocalCart } from '../lib/cart-client'
 
 type Mode = 'signin' | 'signup' | 'forgot'
 
@@ -29,9 +30,19 @@ const perks = [
 ]
 
 async function mergeLocalCart() {
-  const localCart = JSON.parse(window.localStorage.getItem('genum-cart') || '[]')
-  if (localCart.length) {
-    await fetch('/api/cart', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cart: localCart }) })
+  const localCart = readLocalCart()
+  if (!localCart.length) return
+  try {
+    // Fold the guest cart into the saved account cart so nothing is lost,
+    // then send one REPLACE payload (PUT semantics are replace).
+    const response = await fetch('/api/cart')
+    const data = await response.json().catch(() => ({ cart: [] }))
+    const merged = unionQuantities(Array.isArray(data.cart) ? data.cart : [], localCart)
+    if (!merged.length) return
+    await fetch('/api/cart', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cart: merged }) })
+    writeLocalCart(merged)
+  } catch {
+    // Offline - the provider reconciles on the next page load anyway.
   }
 }
 

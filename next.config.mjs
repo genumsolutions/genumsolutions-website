@@ -25,14 +25,6 @@ const nextConfig = {
       },
     ]
   },
-  async rewrites() {
-    return [
-      {
-        source: '/robots.txt',
-        destination: '/robots.txt',
-      },
-    ]
-  },
 }
 
 export default nextConfig

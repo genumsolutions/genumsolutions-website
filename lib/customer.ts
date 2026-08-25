@@ -16,7 +16,7 @@ export type Order = {
   items: OrderItem[]
   totalNpr: number
   status: 'pending' | 'paid' | 'fulfilled' | 'cancelled'
-  provider: 'stripe' | 'esewa' | 'khalti' | 'cod'
+  provider: 'esewa' | 'khalti' | 'cod'
   customerName: string
   email: string
   phone: string

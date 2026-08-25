@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import crypto from 'node:crypto'
 import { getSessionUser } from '../../../../lib/supabase/server'
 import { priceRequestedItems, readCustomerFields } from '../../../../lib/checkout'
-import { createOrder } from '../../../../lib/orders'
+import { createOrder, logTransaction, setOrderRef } from '../../../../lib/orders'
 
 export const runtime = 'nodejs'
 
@@ -56,8 +56,10 @@ export async function POST(request: Request) {
     fields.signature = signFields(fields, process.env.ESEWA_SECRET_KEY!)
   } catch (error) {
     console.error('eSewa signing failed', error)
+    await logTransaction({ orderId: order.id, userId: user.id, provider: 'esewa', amountNpr: cart.totalNpr, status: 'failed', rawPayload: { error: 'signing-failed' } })
     return NextResponse.json({ error: 'Payment could not be started. Try again.' }, { status: 500 })
   }
 
+  await logTransaction({ orderId: order.id, userId: user.id, provider: 'esewa', providerRef: order.id, amountNpr: cart.totalNpr, status: 'initiated', rawPayload: { transactionUuid: order.id } })
   return NextResponse.json({ action: `${baseUrl}/epay/main`, fields, orderId: order.id })
 }

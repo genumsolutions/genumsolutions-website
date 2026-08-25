@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server'
 import { getSessionUser } from '../../../../../lib/supabase/server'
-import { findOrderById, markOrderPaidAndClearCart, setOrderRef } from '../../../../../lib/orders'
+import {
+  findOrderById,
+  logTransaction,
+  markOrderPaidAndClearCart,
+  setOrderRef,
+  transactionAlreadySucceeded,
+} from '../../../../../lib/orders'
 
 export const runtime = 'nodejs'
 
@@ -61,6 +67,9 @@ export async function GET(request: Request) {
   }
 
   await setOrderRef(order.id, String(payload.transaction_code || ''))
-  await markOrderPaidAndClearCart(order)
+  if (!(await transactionAlreadySucceeded(order.id))) {
+    await markOrderPaidAndClearCart(order)
+    await logTransaction({ orderId: order.id, userId: order.userId, provider: 'esewa', providerRef: String(payload.transaction_code || ''), amountNpr: order.totalNpr, status: 'succeeded', rawPayload: payload })
+  }
   return NextResponse.json({ ok: true, matched: true, order: { id: order.id, totalNpr: order.totalNpr } })
 }

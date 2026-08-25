@@ -2,23 +2,26 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { RoboticArm } from './Robotics3D'
+import { useCart } from './cart-provider'
 import type { Product } from '../lib/catalog'
 
 export default function ProductDetailPro({ product }: { product: Product }) {
   const [quantity, setQuantity] = useState(1)
   const [added, setAdded] = useState(false)
+  const { add } = useCart()
   const isQuote = product.productType === 'Project package' || product.stock === 0
 
+  useEffect(() => {
+    if (!added) return
+    const timer = window.setTimeout(() => setAdded(false), 2000)
+    return () => window.clearTimeout(timer)
+  }, [added])
+
   function addToBuildList() {
-    if (isQuote) { setAdded(true); return }
-    const saved = JSON.parse(window.localStorage.getItem('genum-cart') || '[]') as { productId: string; quantity: number }[]
-    const existing = saved.find((item: { productId: string }) => item.productId === product.id)
-    if (existing) existing.quantity = Math.min(existing.quantity + quantity, product.stock)
-    else saved.push({ productId: product.id, quantity })
-    window.localStorage.setItem('genum-cart', JSON.stringify(saved))
-    void fetch('/api/cart', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cart: saved }) })
+    if (isQuote) return
+    add(product.id, Math.min(quantity, product.stock))
     setAdded(true)
   }
 
@@ -56,16 +59,17 @@ export default function ProductDetailPro({ product }: { product: Product }) {
             <div className="mt-6 flex flex-wrap items-center gap-3">
               {!isQuote && (
                 <div className="flex items-center rounded-full border border-line bg-white">
-                  <button onClick={() => setQuantity((value) => Math.max(1, value - 1))} className="h-11 w-11 text-lg font-bold">−</button>
-                  <span className="w-8 text-center text-sm font-bold">{quantity}</span>
-                  <button onClick={() => setQuantity((value) => Math.min(product.stock, value + 1))} className="h-11 w-11 text-lg font-bold">+</button>
+                  <button onClick={() => setQuantity((value) => Math.max(1, value - 1))} className="h-11 w-11 text-lg font-bold" aria-label={`Decrease quantity of ${product.name}`}>−</button>
+                  <span className="w-8 text-center text-sm font-bold" aria-live="polite" aria-label={`Quantity: ${quantity}`}>{quantity}</span>
+                  <button onClick={() => setQuantity((value) => Math.min(product.stock, value + 1))} className="h-11 w-11 text-lg font-bold" aria-label={`Increase quantity of ${product.name}`}>+</button>
                 </div>
               )}
               <Link
                 href={isQuote ? '/contact' : '/checkout'}
                 onClick={isQuote ? undefined : addToBuildList}
-                className="rounded-full bg-cobalt px-6 py-3.5 text-sm font-black text-white hover:bg-ink">
-                {isQuote ? 'Request a scoped quote ↗' : added ? 'Added to build list' : 'Add to build list'}
+                className={`rounded-full px-6 py-3.5 text-sm font-black text-white transition ${added ? 'bg-emerald-600' : 'bg-cobalt hover:bg-blue-800'}`}
+                aria-label={isQuote ? `Request a quote for ${product.name}` : added ? `${product.name} added to build list` : `Add ${product.name} to build list`}>
+                {isQuote ? 'Request a scoped quote ↗' : added ? 'Added to build list ✓' : 'Add to build list'}
               </Link>
             </div>
           </div>

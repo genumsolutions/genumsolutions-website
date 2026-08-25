@@ -1,79 +1,193 @@
 # GENUM SOLUTIONS website
 
-Next.js App Router website for GENUM SOLUTIONS PVT. LTD., covering robotics, electronics, AI, IoT, 3D printing, digital products, training, and client project delivery.
+Next.js 14 (App Router, TypeScript) storefront for **GENUM SOLUTIONS PVT. LTD.** — robotics kits, electronics components, robot-car projects, 3D printing, AI/IoT project packages, and STEM training programs, built and shipped from Kathmandu, Nepal.
+
+Live: https://genumsolutions-website.vercel.app · PAN 623676190
+
+## Project overview
+
+| Layer | Technology |
+|---|---|
+| Framework | Next.js 14.2 (App Router) + React 18 + TypeScript |
+| Styling | Tailwind CSS (custom `ink/cobalt/signal/mist/line/sky` tokens) |
+| Database/Auth/Storage | Supabase (Postgres + Auth + Storage, cookie sessions via `@supabase/ssr`) |
+| Fonts | Manrope + Space Grotesk via `next/font` (self-hosted) |
+| Payments | eSewa ePay v2 · Khalti ePayment v2 · Cash on delivery |
+| Email | Resend (contact form; optional) |
+| Hosting | Vercel |
+
+### Key features
+- Catalog with category filters, search, quote-only project packages, and stock-aware cart.
+- Cart persisted to **localStorage** for guests and **Supabase (`carts` table)** for signed-in users; quantities are clamped to live stock server-side on every save (replace semantics — no double counting).
+- Checkout with four payment flows; every payment event is written to an append-only **`transactions`** ledger.
+- Admin dashboard at `/admin` (session + `profiles.role = 'admin'` protected) with product CRUD, order status management, user role management, search, and pagination.
+- SEO: per-page metadata/OpenGraph, `sitemap.xml`, `robots.txt`, Organization JSON-LD, static prerendering with ISR.
+
+## Hardware & software requirements
+
+### Software (development machine)
+- Node.js ≥ 18.17 (LTS recommended) and npm ≥ 9
+- A Supabase project (free tier is enough)
+- Optional: Vercel CLI
+
+### Hardware (products documented in this repo)
+The GENUM robot-car line covers 10 modes (see `INVENTORY/ADMIN/robo car/Multimode_Robotic_Car_Complete_Documentation.docx`). Common bill of materials:
+
+- **Chassis:** 2WD chassis + 2 DC gear motors (+ caster wheel), or omni-directional chassis ×4 motors
+- **Controllers:** Arduino UNO (classic modes) or ESP32 / ESP32-CAM (WiFi/Camera modes)
+- **Motor driver:** L298N (or TB6612FNG for the omni build)
+- **Sensors:** IR sensors ×2–4, HC-SR04 ultrasonic, ADXL335 accelerometer, microphone module, NEO-6M GPS
+- **Comms:** HC-05/HC-06 Bluetooth, ESP32 WiFi (built-in)
+- **Power:** 7.4 V Li-ion pack or 9 V battery; solar panel on the Solar Rover
+- **Misc:** jumper wires, breadboard, screws/nuts, wheels
+
+### Robo-car pin mapping (latest, Arduino UNO example used across all modes)
+
+| Component | Pin |
+|---|---|
+| IR Sensor 1 | D2 |
+| IR Sensor 2 | D4 |
+| Ultrasonic Trigger | D5 |
+| Ultrasonic Echo | D6 |
+| Motor Driver IN1 | D7 |
+| Motor Driver IN2 | D8 |
+| Motor Driver IN3 | D9 |
+| Motor Driver IN4 | D10 |
+
+ESP32 builds use the same logical layout mapped to ESP32 GPIOs; OLED display rides I²C (SDA/SCL). Modes supported per model: WiFi (Remote/Autonomous/Web UI), Bluetooth (Manual/BT/Autonomous), Gesture, Line Follower, Obstacle Avoidance, Voice, GPS Navigation, Solar, Camera Vision, Omni-Wheel.
+
+## File structure
+
+```
+app/
+  layout.tsx              Root layout: fonts, metadata, CartProvider
+  page.tsx                Landing page (ISR, revalidate=300)
+  products/               Catalog + [slug] detail pages
+  checkout/               Cart review + success/verification page
+  account/, login/, admin/, reset-password/
+  privacy/, terms/        Legal pages
+  api/
+    auth/{login,register,logout,reset,google,session,update-password}
+    auth/callback         PKCE + email-link handler (/auth/callback route lives at app/auth/callback)
+    cart                  GET read · PUT replace-with-stock-clamp
+    orders                COD placement + user order list
+    orders/confirm*       Server-side verification (eSewa/Khalti)
+    checkout/{esewa,khalti}   Gateway session creation
+    admin/{products,orders,users,content,upload}   Admin APIs (all admin-guarded)
+components/
+  SiteHeader/SiteFooter   Nav (active routes, hamburger) + footer (PAN, legal links)
+  cart-provider.tsx       Single source of truth for cart state
+  ProductCatalog/ProductDetailPro/AdminPanel/AuthPanel/...
+lib/
+  catalog.ts, content-store.ts   Product data (DB w/ bundled fallback)
+  supabase/server.ts      Cookie client + service-role client (server only!)
+  orders.ts               Order CRUD + transaction ledger helpers
+  checkout.ts             Server-side re-pricing (never trusts client prices)
+  cart-client.ts          localStorage read/write/merge utilities
+  company.ts              Company identity (name, address, PAN, contacts)
+supabase/schema.sql       Tables, RLS policies, storage bucket, triggers
+scripts/                  seed-products.ts, create-admin.ts
+middleware.ts             Refreshes Supabase auth cookies on every request
+```
 
 ## Run locally
 
 ```powershell
-npm.cmd install
-npm.cmd run dev
+npm install
+copy .env.example .env.local   # then fill in the values (see below)
+npm run dev
 ```
 
-Open `http://localhost:3000`. If that port is occupied, Next.js will report the alternate port in the terminal.
+Open http://localhost:3000. Production check before deploying:
 
-## Public areas
+```powershell
+npm run build
+npm run start
+```
 
-- `/products` contains source-named inventory, a dedicated Robot Cars category, and Excel project packages.
-- `/training` contains the K–5 pilot, STEM Master Package, teacher enablement, 100+ project curriculum highlights, and illustrative proposal costing.
-- `/services` covers website delivery, 3D and 2D printing, robotics workshops, school packages, and lab consultation.
-- `/3d-printing` includes print services and an open model browser.
-- `/tools` contains open-source CAD, electronics, firmware, simulation, and media resources.
-- `/contact` sends inquiries through the server-side Resend integration.
+Type/lint gates: `.\node_modules\.bin\tsc.cmd --noEmit` and `npm run lint`.
 
-## Environment
+## Environment variables
 
-Copy `.env.example` to `.env.local` and add the Resend key before testing contact email delivery. Never commit `.env.local`, payment secrets, Wi-Fi credentials, or private proposal files.
+Copy `.env.example` → `.env.local`; add the same keys in Vercel → Project → Settings → Environment Variables:
 
-## Accounts
+| Variable | Notes |
+|---|---|
+| `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` locally; `https://genumsolutions-website.vercel.app` (or your domain) in production. Used for all gateway callbacks. |
+| `NEXT_PUBLIC_SUPABASE_URL` | Bare project URL from Supabase → Settings → API (no `/rest/v1/` suffix). |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public anon key — safe for the browser. |
+| `SUPABASE_SERVICE_ROLE_KEY` | **Server-only secret.** Bypasses RLS. Never prefix with `NEXT_PUBLIC_`, never commit. |
+| `CONTACT_EMAIL` | Where contact-form mail lands. |
+| `RESEND_API_KEY`, `RESEND_FROM_EMAIL` | Optional — contact form degrades gracefully without them. |
+| `ESEWA_PRODUCT_CODE`, `ESEWA_SECRET_KEY`, `ESEWA_BASE_URL` | UAT: code `EPAYTEST`, base `https://uat.esewa.com.np`. |
+| `KHALTI_SECRET_KEY`, `KHALTI_BASE_URL` | Test keys + `https://a.khalti.com/api/v2`. |
 
-Customer accounts, saved carts, orders, and messages run on Supabase Auth with cookie sessions (`middleware.ts` refreshes sessions on every request). Password reset and Google sign-in are wired through `/auth/callback`; the Google provider activates as soon as credentials are enabled in the Supabase dashboard. Admin access is any signed-in user whose `profiles.role` is `admin` - promote via `select public.set_admin('email');` in the Supabase SQL editor.
+Without Supabase vars the site still renders from the bundled catalog in `lib/catalog.ts`.
+
+## Supabase setup
+
+1. Create a project at [supabase.com](https://supabase.com) (region: Mumbai or Singapore).
+2. SQL Editor → run **the whole of `supabase/schema.sql`**. It creates: `profiles` (+ signup trigger + role-change protection), `products`, `site_content`, `carts`, `orders`, `customer_messages`, **`transactions`** (append-only payment ledger), RLS policies for admin vs customer, the `product-images` storage bucket, and the `set_admin()` helper.
+3. Copy URL/anon/service keys into `.env.local`.
+4. Seed the catalog: `npm run seed`.
+5. Authentication → Providers → Email: keep "Confirm email" OFF until SMTP is configured.
+6. Google sign-in: Authentication → Providers → Google → enable with an OAuth client from Google Cloud Console (authorized redirect URI: `https://<project-ref>.supabase.co/auth/v1/callback`).
+
+### Auth redirect URLs (Supabase → Authentication → URL Configuration)
+
+| Setting | Value |
+|---|---|
+| Site URL | `https://genumsolutions-website.vercel.app` |
+| Additional redirect URLs | `https://genumsolutions-website.vercel.app/**`, `http://localhost:3000/**` |
+
+Password recovery and signup emails must land users on `<site>/auth/callback` (set "Reset password" email template link accordingly). The callback exchanges the PKCE code, then forwards to `/reset-password` or your `?next=` path. Open redirects are blocked (relative paths only).
+
+### Roles
+
+Admin = any signed-in user whose `profiles.role = 'admin'`. Promote yourself:
+
+```sql
+select public.set_admin('you@example.com');
+-- or: npx tsx scripts/create-admin.ts you@example.com <password>
+```
+
+Users can also be promoted/demoted from `/admin` → Users tab (service-role backed, audit-friendly).
+
+## Payments
+
+Safe pattern everywhere: the order is saved `pending` server-side, prices are **re-checked against the database**, and payment is confirmed only after a server-to-server verification call. Every initiation/success/failure is appended to `transactions`.
+
+| Provider | Start | Confirm |
+|---|---|---|
+| eSewa v2 | `POST /api/checkout/esewa` → signed form | `GET /api/orders/confirm/esewa?data=…` → status API must say `COMPLETE` |
+| Khalti v2 | `POST /api/checkout/khalti` → redirect | `GET /api/orders/confirm/khalti?pidx=…` → lookup must say `Completed` + paisa match |
+| Cash on delivery | `POST /api/orders` (`provider: 'cod'`) | marked when admin fulfils |
+
+**Sandbox testing checklist (do this before production keys):**
+1. eSewa UAT (`EPAYTEST`) with the mobile number/password pair from developer.esewa.com.np docs.
+2. Khalti test keys from dashboard.khalti.com (test user).
+3. COD flow: order saves as `pending`, buyer's cart empties, admin sees it in `/admin`.
+4. For each payment method: verify order flips `pending → paid`, a row appears in `transactions`, and double-firing confirm does not duplicate rows.
+
+## Deployment (Vercel)
+
+1. Push this repo to GitHub/GitLab and import it in Vercel (framework auto-detected as Next.js; no build overrides needed).
+2. Add every variable from the environment table above (Production + Preview).
+3. Set `NEXT_PUBLIC_SITE_URL` to the final domain **before** testing payments — all gateway return URLs derive from it.
+4. Redeploy once after adding env vars.
+5. Update Supabase Site URL + redirect URLs to match the live domain (table above).
+6. Post-deploy smoke test: browse catalog, add to cart (guest), sign in (cart merges), place a COD order, check `/admin` lists it, then run one sandbox payment per gateway.
+
+## Daily operations
+
+- **Products/content/images:** manage everything in `/admin` — changes go straight to Postgres and are live immediately.
+- **Orders:** customers track status in `/account`; admins update statuses in `/admin` → Orders.
+- **Payments ledger:** query `public.transactions` in the Supabase dashboard (admins can also read it via RLS).
 
 ## Validation
 
 ```powershell
 .\node_modules\.bin\tsc.cmd --noEmit
-npm.cmd run build
+npm.cmd run lint
+npm.cmd run build && npm.cmd run start
 ```
-
-Product imagery uses shared, category-specific public Unsplash image URLs in `lib/product-media.ts`; every catalog listing and detail page resolves through that map so new listings do not need duplicate binary assets.
-
-## Supabase backend
-
-Products, homepage content, customer accounts, carts, orders, messages, and product images live in Supabase (Postgres + Auth + Storage). Without the env vars the site still runs from the bundled catalog in `lib/catalog.ts`.
-
-### First-time setup
-
-1. Create a project at [supabase.com](https://supabase.com) (region: Mumbai or Singapore).
-2. Run `supabase/schema.sql` in the SQL Editor (tables, RLS policies, storage bucket).
-3. Copy Project URL / anon key / service_role key from Settings → API into `.env.local`:
-   - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
-4. Seed the catalog: `npm run seed`
-5. Authentication → Sign In / Providers → Email: keep "Confirm email" OFF until SMTP is configured.
-6. Google (Gmail) sign-in: Authentication → Providers → Google → enable, pasting a Client ID/secret from [Google Cloud credentials](https://console.cloud.google.com/apis/credentials) (authorized redirect URI: `https://<project-ref>.supabase.co/auth/v1/callback`). No code change needed - the "Continue with Google" buttons activate automatically.
-7. Make yourself admin: `npx tsx scripts/create-admin.ts you@example.com <password>` (creates the account if missing and sets role=admin), or run `select public.set_admin('email');` in the SQL editor.
-
-### Daily operations (no deploys needed)
-
-- **Add/edit products:** `/admin` panel — saves straight to Postgres; changes are live immediately on Vercel.
-- **Product images:** Upload button in `/admin` stores files in the `product-images` Storage bucket.
-- **Orders:** Customers see history in `/account`; admins manage statuses in the `/admin` panel.
-- **Vercel env vars:** Add the three Supabase vars in Project Settings, then redeploy once.
-
-### Payments
-
-All three gateways follow the same safe pattern: the order is saved as `pending` server-side, prices are re-checked against the database, and payment is only confirmed after a server-to-server verification call.
-
-| Provider | Checkout route | Verification | Env vars |
-|---|---|---|---|
-| Stripe card | `/api/checkout/stripe` | `/api/orders/confirm?session_id=…` | `STRIPE_SECRET_KEY` |
-| eSewa ePay v2 | `/api/checkout/esewa` (returns signed form) | `/api/orders/confirm/esewa?data=…` → status API must say `COMPLETE` | `ESEWA_SECRET_KEY`, `ESEWA_PRODUCT_CODE`, `ESEWA_BASE_URL` |
-| Khalti ePayment v2 | `/api/checkout/khalti` (initiate + redirect) | `/api/orders/confirm/khalti?pidx=…` → lookup must say `Completed` and amounts must match | `KHALTI_SECRET_KEY`, `KHALTI_BASE_URL` |
-
-Test locally with UAT/test credentials: eSewa UAT (`EPAYTEST`) from [developer.esewa.com.np](https://developer.esewa.com.np) and Khalti test keys from [dashboard.khalti.com](https://dashboard.khalti.com). Cash-on-delivery orders need no configuration.
-
-### Going further with Supabase
-
-- **Stripe webhooks:** For bulletproof payment confirmation, add a webhook route verifying `STRIPE_WEBHOOK_SECRET` and updating `orders.status`; the current success-page verification covers the normal flow.
-- **Realtime order alerts:** Subscribe the admin panel to `postgres_changes` on `public.orders` to see new orders instantly.
-- **Google login:** Enable the Google provider in Authentication settings; no code change is required for customers (role-based redirects keep working).
-- **Email verification & password reset:** Configure custom SMTP (Resend) in Authentication settings and flip "Confirm email" back ON.

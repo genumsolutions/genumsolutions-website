@@ -1,4 +1,4 @@
-import { createClient, getSessionUser } from './supabase/server'
+import { createClient, createServiceClient, getSessionUser } from './supabase/server'
 import { saveCart } from './customer-store'
 import type { Order, OrderItem } from './customer'
 
@@ -46,6 +46,39 @@ export async function listOrders(userId?: string): Promise<Order[]> {
   const { data, error } = await (userId ? query.eq('user_id', userId) : query)
   if (error || !data) return []
   return data.map(rowToOrder)
+}
+
+// Paginated admin listing with optional status filter and text search over
+// buyer fields. Returns one page plus exact totals so the panel can render
+// real pagination controls.
+export async function listOrdersPage(options: {
+  page?: number
+  limit?: number
+  status?: Order['status']
+  query?: string
+}): Promise<{ orders: Order[]; total: number; page: number; totalPages: number }> {
+  const page = Math.max(1, Math.floor(options.page || 1))
+  const limit = Math.min(50, Math.max(5, Math.floor(options.limit || 10)))
+  let query = createClient()
+    .from('orders')
+    .select('*', { count: 'exact' })
+    .order('created_at', { ascending: false })
+    .range((page - 1) * limit, page * limit - 1)
+  if (options.status) query = query.eq('status', options.status)
+  const needle = options.query?.trim()
+  if (needle) {
+    // Search across buyer identity fields; ids are uuids so they are matched
+    // through their prefix on email/name instead.
+    query = query.or(`email.ilike.%${needle}%,customer_name.ilike.%${needle}%`)
+  }
+  const { data, count, error } = await query
+  const total = count ?? 0
+  return {
+    orders: (data || []).map(rowToOrder),
+    total,
+    page,
+    totalPages: Math.max(1, Math.ceil(total / limit)),
+  }
 }
 
 export async function createOrder(input: {
@@ -102,4 +135,48 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
 export async function markOrderPaidAndClearCart(order: Order & { userId: string }) {
   if (order.status === 'pending') await updateOrderStatus(order.id, 'paid')
   await saveCart(order.userId, [])
+}
+
+// Append-only ledger write. Never throws into the caller's flow - a failed
+// log should not break a successful payment, but it is reported to logs.
+export async function logTransaction(input: {
+  orderId: string
+  userId?: string | null
+  provider: Order['provider']
+  providerRef?: string
+  amountNpr: number
+  status: 'initiated' | 'succeeded' | 'failed'
+  rawPayload?: unknown
+}) {
+  try {
+    const db = createServiceClient()
+    await db.from('transactions').insert({
+      order_id: input.orderId,
+      ...(input.userId ? { user_id: input.userId } : {}),
+      provider: input.provider,
+      provider_ref: String(input.providerRef || ''),
+      amount_npr: Math.max(0, Math.floor(input.amountNpr)),
+      status: input.status,
+      raw_payload: (input.rawPayload ?? {}) as object,
+    })
+  } catch (error) {
+    console.error('transaction log failed', error)
+  }
+}
+
+// Idempotency guard for confirmation paths: true if this provider_ref already
+// has a succeeded row (webhook + redirect both firing must not double-log).
+export async function transactionAlreadySucceeded(providerRef: string): Promise<boolean> {
+  if (!providerRef) return false
+  try {
+    const { data } = await createServiceClient()
+      .from('transactions')
+      .select('id')
+      .eq('provider_ref', providerRef)
+      .eq('status', 'succeeded')
+      .limit(1)
+    return Boolean(data?.length)
+  } catch {
+    return false
+  }
 }

@@ -6,6 +6,8 @@ export const company = {
   city: 'Kathmandu',
   country: 'NP',
   email: 'genumsolutions@gmail.com',
-  phone: '+977 9800000000',
+  phone: '+977 9861842552',
+  pan: '623676190',
+  vatLabel: 'PAN registered',
   description: 'Robotics, electronics, 3D printing, AI, IoT, digital products, and practical technology training from Kathmandu, Nepal.',
 }

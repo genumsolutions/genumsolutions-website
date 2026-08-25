@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server'
 import { getSessionUser } from '../../../../../lib/supabase/server'
-import { findOrderById, markOrderPaidAndClearCart } from '../../../../../lib/orders'
+import {
+  findOrderById,
+  logTransaction,
+  markOrderPaidAndClearCart,
+  transactionAlreadySucceeded,
+} from '../../../../../lib/orders'
 
 export const runtime = 'nodejs'
 
@@ -43,7 +48,10 @@ export async function GET(request: Request) {
       console.error('Khalti amount mismatch', result?.total_amount, order.totalNpr * 100)
       return NextResponse.json({ ok: false, reason: 'amount-mismatch' })
     }
-    await markOrderPaidAndClearCart(order)
+    if (!(await transactionAlreadySucceeded(pidx))) {
+      await markOrderPaidAndClearCart(order)
+      await logTransaction({ orderId: order.id, userId: order.userId, provider: 'khalti', providerRef: pidx, amountNpr: order.totalNpr, status: 'succeeded', rawPayload: result })
+    }
     return NextResponse.json({ ok: true, matched: true, order: { id: order.id, totalNpr: order.totalNpr } })
   } catch (error) {
     console.error('Khalti verification failed', error)

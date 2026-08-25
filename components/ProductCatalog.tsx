@@ -5,11 +5,19 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { formatNPR } from '../lib/catalog'
 import type { Product } from '../lib/catalog'
+import { useCart } from './cart-provider'
 
 export default function ProductCatalog({ scope = 'components', products = [] }: { scope?: string; products?: Product[] }) {
   const [category, setCategory] = React.useState('All')
   const [query, setQuery] = React.useState('')
-  const [cartCount, setCartCount] = React.useState(0)
+  const [addedId, setAddedId] = React.useState<string | null>(null)
+  const { add, count, hydrated } = useCart()
+
+  React.useEffect(() => {
+    if (!addedId) return
+    const timer = window.setTimeout(() => setAddedId(null), 1600)
+    return () => window.clearTimeout(timer)
+  }, [addedId])
 
   const scopedProducts = React.useMemo(() => {
     if (scope === 'cars') {
@@ -37,17 +45,8 @@ export default function ProductCatalog({ scope = 'components', products = [] }: 
       window.location.href = `/products/${productId}`
       return
     }
-    const saved = JSON.parse(window.localStorage.getItem('genum-cart') || '[]') as { productId: string; quantity: number }[]
-    const existing = saved.find((item) => item.productId === productId)
-    if (existing) existing.quantity += 1
-    else saved.push({ productId, quantity: 1 })
-    window.localStorage.setItem('genum-cart', JSON.stringify(saved))
-    void fetch('/api/cart', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cart: saved })
-    })
-    setCartCount((count) => count + 1)
+    add(productId, 1)
+    setAddedId(productId)
   }
 
   const filters = scope === 'components'
@@ -76,7 +75,7 @@ export default function ProductCatalog({ scope = 'components', products = [] }: 
         </div>
         <div className="mt-5 flex items-center justify-between text-sm text-slate-500">
           <span>{visibleProducts.length} listing{visibleProducts.length === 1 ? '' : 's'} found</span>
-          <span className="font-bold text-cobalt">{cartCount > 0 ? `${cartCount} item${cartCount > 1 ? 's' : ''} in your build list` : scope === 'components' ? 'Components and materials only' : 'Quote by scope'}</span>
+          <span aria-live="polite" className="font-bold text-cobalt">{hydrated && count > 0 ? `${count} item${count === 1 ? '' : 's'} in your build list` : scope === 'components' ? 'Components and materials only' : 'Quote by scope'}</span>
         </div>
       </div>
 
@@ -105,14 +104,21 @@ export default function ProductCatalog({ scope = 'components', products = [] }: 
               </Link>
               <div className="p-5">
                 <p className="text-xs font-black uppercase tracking-widest text-cobalt">{product.badge || product.productType}</p>
-                <h2 className="mt-2 font-display text-xl font-bold">{product.name}</h2>
-                <p className="mt-2 min-h-12 text-sm leading-6 text-slate-600">{product.note}</p>
+                <h2 className="mt-2 font-display text-xl font-bold leading-snug">{product.name}</h2>
+                <p className="mt-2 min-h-12 text-sm leading-6 text-slate-600">{product.note || product.description?.split('. ')[0]}</p>
                 <div className="mt-5 flex items-center justify-between gap-3">
                   <strong className="font-display text-lg">{product.priceLabel}</strong>
                   {quoteOnly ? (
-                    <button onClick={() => window.location.href = `/products/${product.id}`} className="rounded-full bg-cobalt px-4 py-2 text-xs font-black text-white">View details</button>
+                    <Link href={`/products/${product.id}`} className="rounded-full bg-cobalt px-4 py-2 text-xs font-black text-white transition hover:bg-blue-800" aria-label={`View details for ${product.name}`}>View details</Link>
                   ) : (
-                    <button onClick={() => addToCart(product.id)} className="rounded-full bg-cobalt px-4 py-2 text-xs font-black text-white">Add</button>
+                    <button
+                      onClick={() => addToCart(product.id)}
+                      className={`rounded-full px-4 py-2 text-xs font-black text-white transition ${addedId === product.id ? 'bg-emerald-600' : 'bg-cobalt hover:bg-blue-800'}`}
+                      aria-label={`${addedId === product.id ? 'Added' : 'Add'} ${product.name} to build list`}
+                      aria-live="polite"
+                    >
+                      {addedId === product.id ? 'Added ✓' : 'Add'}
+                    </button>
                   )}
                 </div>
               </div>

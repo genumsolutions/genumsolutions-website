@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSessionUser } from '../../../../lib/supabase/server'
 import { priceRequestedItems, readCustomerFields } from '../../../../lib/checkout'
-import { createOrder, setOrderRef } from '../../../../lib/orders'
+import { createOrder, logTransaction, setOrderRef } from '../../../../lib/orders'
 
 export const runtime = 'nodejs'
 
@@ -57,6 +57,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Payment could not be started. Try again.' }, { status: 502 })
     }
     await setOrderRef(order.id, String(result.pidx || ''))
+    await logTransaction({ orderId: order.id, userId: user.id, provider: 'khalti', providerRef: String(result.pidx || ''), amountNpr: cart.totalNpr, status: 'initiated', rawPayload: { pidx: result.pidx } })
     return NextResponse.json({ url: result.payment_url, orderId: order.id })
   } catch (error) {
     console.error('Khalti session failed', error)
