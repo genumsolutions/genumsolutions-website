@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { isAdminRequest } from '../../../../lib/admin'
 import { listOrdersPage, updateOrderStatus } from '../../../../lib/orders'
+import { logActivity } from '../../../../lib/activity'
 import type { Order } from '../../../../lib/customer'
 
 const STATUSES: Order['status'][] = ['pending', 'paid', 'fulfilled', 'cancelled']
@@ -24,5 +25,6 @@ export async function PATCH(request: Request) {
   const status = body?.status
   if (!body?.id || !STATUSES.includes(status)) return NextResponse.json({ error: 'Valid order id and status are required.' }, { status: 400 })
   await updateOrderStatus(String(body.id), status)
+  await logActivity({ action: 'order.status_changed', entityType: 'order', entityId: String(body.id), details: { status } })
   return NextResponse.json({ ok: true })
 }

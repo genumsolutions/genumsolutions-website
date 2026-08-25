@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { isAdminRequest } from '../../../../lib/admin'
 import { createServiceClient } from '../../../../lib/supabase/server'
+import { logActivity } from '../../../../lib/activity'
 
 // Admin-only user directory. Reads auth users (emails) via the service role
 // because RLS hides auth.users from normal clients; role changes also run
@@ -78,6 +79,7 @@ export async function PATCH(request: Request) {
     // Upsert keeps working for profiles rows that predate the signup trigger.
     const { error } = await db.from('profiles').upsert({ id: userId, role }, { ignoreDuplicates: false })
     if (error) return NextResponse.json({ error: 'Could not update the role.' }, { status: 500 })
+    await logActivity({ action: 'user.role_changed', entityType: 'user', entityId: userId, details: { role } })
     return NextResponse.json({ ok: true })
   } catch (error) {
     console.error('Admin role change failed', error)

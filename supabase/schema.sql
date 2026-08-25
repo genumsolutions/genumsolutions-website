@@ -246,3 +246,72 @@ $$;
 revoke all on function public.set_admin(text) from public;
 revoke all on function public.set_admin(text) from anon;
 revoke all on function public.set_admin(text) from authenticated;
+
+-- ===== SERVICES (manageable from admin) =====
+create table if not exists public.services (
+  id text primary key,
+  name text not null,
+  category text not null default 'General',
+  price_label text not null default 'Request quote',
+  description text not null default '',
+  tag text not null default '',
+  sort_order integer not null default 1000,
+  active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+-- seed the 6 original services
+insert into public.services (id, name, category, price_label, description, tag, sort_order) values
+  ('website-design', 'Website Design & Development', 'Digital', 'from NPR 35,000', 'Fast, responsive business websites, content systems, and online stores for schools, institutions, makers, and growing teams.', 'Website', 1),
+  ('3d-printing', '3D Printing Services', 'Fabrication', 'from NPR 2,500', 'Custom parts, prototypes, enclosures, classroom models, filament guidance, and design support. Send a model for a print quote.', 'Fabrication', 2),
+  ('2d-printing', '2D Printing Press', 'Print', 'Request a quote', 'Flyers, posters, student reports, branding materials, stickers, and banners for schools, events, and businesses.', 'Print', 3),
+  ('robotics-workshops', 'Robotics Workshops', 'Learning', 'from NPR 25,000', 'Hands-on sessions for students, hobbyists, clubs, and teaching institutions using practical robotics builds.', 'Learning', 4),
+  ('school-packages', 'School Packages', 'Education', 'Scoped proposal', 'Kits plus teacher enablement, curriculum support, classroom delivery, and a structured robotics lab starting point.', 'Education', 5),
+  ('lab-consultation', 'Robotics Lab Consultation', 'Consulting', 'Request a quote', 'Plan a lab around available space, learner age, inventory, safety, project progression, and equipment priorities.', 'Consulting', 6)
+on conflict (id) do nothing;
+
+-- ===== ACTIVITY LOG (admin actions, order events, signups) =====
+create table if not exists public.activity_log (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete set null,
+  action text not null,
+  entity_type text not null,
+  entity_id text,
+  details jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+create index if not exists activity_user_idx on public.activity_log(user_id);
+create index if not exists activity_created_idx on public.activity_log(created_at desc);
+
+-- ===== PAGE VIEWS (lightweight analytics) =====
+create table if not exists public.page_views (
+  id uuid primary key default gen_random_uuid(),
+  path text not null,
+  user_id uuid references auth.users(id) on delete set null,
+  referrer text,
+  created_at timestamptz not null default now()
+);
+create index if not exists page_views_path_idx on public.page_views(path);
+create index if not exists page_views_created_idx on public.page_views(created_at desc);
+
+-- ===== RLS for new tables =====
+alter table public.services enable row level security;
+alter table public.activity_log enable row level security;
+alter table public.page_views enable row level security;
+
+-- services: public read, admin write
+drop policy if exists "public read services" on public.services;
+create policy "public read services" on public.services for select using (active = true or public.is_admin());
+drop policy if exists "admin write services" on public.services;
+create policy "admin write services" on public.services for all using (public.is_admin());
+
+-- activity_log: admin read only; server writes via service role
+drop policy if exists "admin read activity" on public.activity_log;
+create policy "admin read activity" on public.activity_log for select using (public.is_admin());
+
+-- page_views: admin read only; anon insert allowed for tracking
+drop policy if exists "anon insert page views" on public.page_views;
+create policy "anon insert page views" on public.page_views for insert to anon with check (true);
+drop policy if exists "admin read page views" on public.page_views;
+create policy "admin read page views" on public.page_views for select using (public.is_admin());

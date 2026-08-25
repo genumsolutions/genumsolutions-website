@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Manrope, Space_Grotesk } from 'next/font/google'
 import OrganizationJsonLd from '../components/OrganizationJsonLd'
 import { CartProvider } from '../components/cart-provider'
+import PageViewTracker from '../components/PageViewTracker'
 import { company } from '../lib/company'
 import './globals.css'
 
@@ -25,5 +26,5 @@ export const metadata: Metadata = {
 }
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body className={`${manrope.variable} ${space.variable}`}><OrganizationJsonLd /><CartProvider>{children}</CartProvider></body></html>
+  return <html lang="en"><body className={`${manrope.variable} ${space.variable}`}><OrganizationJsonLd /><PageViewTracker /><CartProvider>{children}</CartProvider></body></html>
 }

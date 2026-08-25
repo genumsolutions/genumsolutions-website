@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { isAdminRequest } from '../../../../lib/admin'
 import { deleteProduct, getManagedProducts, saveProduct, type Product } from '../../../../lib/content-store'
+import { logActivity } from '../../../../lib/activity'
 
 export async function GET(request: Request) {
   if (!(await isAdminRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -27,6 +28,7 @@ export async function PUT(request: Request) {
   const specs = Array.isArray(body.specs) ? body.specs.filter((line: unknown) => typeof line === 'string' && line.trim()) : []
   const product: Product = { ...body, id: String(body.id).trim(), name: String(body.name).trim(), category: String(body.category).trim(), specs }
   await saveProduct(product)
+  await logActivity({ action: 'product.saved', entityType: 'product', entityId: product.id, details: { name: product.name } })
   return NextResponse.json({ ok: true, product })
 }
 
@@ -35,5 +37,6 @@ export async function DELETE(request: Request) {
   const id = new URL(request.url).searchParams.get('id')
   if (!id) return NextResponse.json({ error: 'Product id is required.' }, { status: 400 })
   await deleteProduct(id)
+  await logActivity({ action: 'product.deleted', entityType: 'product', entityId: id })
   return NextResponse.json({ ok: true })
 }
