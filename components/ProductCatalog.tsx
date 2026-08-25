@@ -62,18 +62,18 @@ export default function ProductCatalog({ scope = 'components', products = [] }: 
               <button
                 key={item}
                 onClick={() => setCategory(item)}
-                className={`rounded-full px-4 py-2 text-xs font-black ${category === item ? 'bg-ink text-white' : 'border border-line bg-white text-slate-600 hover:border-cobalt hover:text-cobalt'}`}
+                className={`rounded-full px-4 py-2 text-xs font-bold transition ${category === item ? 'bg-cobalt text-white' : 'border border-line bg-white text-muted hover:border-cobalt hover:text-cobalt'}`}
               >
                 {item}{item !== 'All' && ` · ${products.filter((p) => p.category === item).length}`}
               </button>
             ))}
           </div>
-          <label className="flex items-center gap-3 rounded-full border border-line bg-white px-4 py-2 text-sm text-slate-400">
+          <label className="flex items-center gap-3 rounded-full border border-line bg-white px-4 py-2 text-sm text-muted">
             <span aria-hidden="true">⌕</span>
-            <input value={query} onChange={(event) => setQuery(event.target.value)} className="w-full bg-transparent outline-none placeholder:text-slate-400 lg:w-52" placeholder="Search this section" />
+            <input value={query} onChange={(event) => setQuery(event.target.value)} className="w-full bg-transparent outline-none placeholder:text-muted lg:w-52" placeholder="Search this section" />
           </label>
         </div>
-        <div className="mt-5 flex items-center justify-between text-sm text-slate-500">
+        <div className="mt-5 flex items-center justify-between text-sm text-muted">
           <span>{visibleProducts.length} listing{visibleProducts.length === 1 ? '' : 's'} found</span>
           <span aria-live="polite" className="font-bold text-cobalt">{hydrated && count > 0 ? `${count} item${count === 1 ? '' : 's'} in your build list` : scope === 'components' ? 'Components and materials only' : 'Quote by scope'}</span>
         </div>
@@ -105,15 +105,15 @@ export default function ProductCatalog({ scope = 'components', products = [] }: 
               <div className="p-5">
                 <p className="text-xs font-black uppercase tracking-widest text-cobalt">{product.badge || product.productType}</p>
                 <h2 className="mt-2 font-display text-xl font-bold leading-snug">{product.name}</h2>
-                <p className="mt-2 min-h-12 text-sm leading-6 text-slate-600">{product.note || product.description?.split('. ')[0]}</p>
+                <p className="mt-2 min-h-12 text-sm leading-6 text-muted">{product.note || product.description?.split('. ')[0]}</p>
                 <div className="mt-5 flex items-center justify-between gap-3">
                   <strong className="font-display text-lg">{product.priceLabel}</strong>
                   {quoteOnly ? (
-                    <Link href={`/products/${product.id}`} className="rounded-full bg-cobalt px-4 py-2 text-xs font-black text-white transition hover:bg-blue-800" aria-label={`View details for ${product.name}`}>View details</Link>
+                    <Link href={`/products/${product.id}`} className="rounded-full bg-cobalt px-4 py-2 text-xs font-black text-white transition hover:bg-cobalt-dark" aria-label={`View details for ${product.name}`}>View details</Link>
                   ) : (
                     <button
                       onClick={() => addToCart(product.id)}
-                      className={`rounded-full px-4 py-2 text-xs font-black text-white transition ${addedId === product.id ? 'bg-emerald-600' : 'bg-cobalt hover:bg-blue-800'}`}
+                      className={`rounded-full px-4 py-2 text-xs font-black text-white transition ${addedId === product.id ? 'bg-emerald-600' : 'bg-cobalt hover:bg-cobalt-dark'}`}
                       aria-label={`${addedId === product.id ? 'Added' : 'Add'} ${product.name} to build list`}
                       aria-live="polite"
                     >

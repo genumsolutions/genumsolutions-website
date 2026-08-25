@@ -26,11 +26,11 @@ const statusStyles: Record<string, string> = {
   cancelled: 'bg-red-100 text-red-700',
 }
 
-const inputClass = 'mt-2 w-full border border-line bg-white px-4 py-3 text-sm text-ink outline-none transition-colors focus:border-cobalt'
+const inputClass = 'mt-2 w-full rounded-lg border border-line bg-white px-4 py-3 text-sm text-ink outline-none transition focus:border-cobalt focus:ring-2 focus:ring-cobalt/20'
 
 function SectionCard({ title, id, children }: { title: string; id?: string; children: React.ReactNode }) {
   return (
-    <section id={id} className="border border-line bg-white p-6 sm:p-8">
+    <section id={id} className="rounded-2xl border border-line bg-white p-6 shadow-card sm:p-8">
       <h2 className="font-display text-xl font-bold text-ink">{title}</h2>
       {children}
     </section>
@@ -94,22 +94,22 @@ export default function AccountPanel() {
                 <p className="mt-1 text-sm text-slate-600">{customer.email}</p>
               </div>
             </div>
-            <button onClick={logout} className="border border-line px-4 py-2 text-sm font-bold text-ink hover:border-red-300 hover:text-red-600">Log out</button>
+            <button onClick={logout} className="rounded-lg border border-line px-4 py-2 text-sm font-semibold text-ink transition hover:border-red-300 hover:text-red-600">Log out</button>
           </div>
         </header>
 
         <div className="grid gap-4 sm:grid-cols-3">
-          <a href="#orders" className="border border-line bg-white p-5 transition-colors hover:border-cobalt">
+          <a href="#orders" className="rounded-2xl border border-line bg-white p-5 shadow-card transition hover:border-cobalt">
             <strong className="block font-display text-3xl font-bold text-ink">{orders.length}</strong>
-            <span className="mt-1 block text-sm font-bold text-slate-600">Order{orders.length === 1 ? '' : 's'} placed</span>
+            <span className="mt-1 block text-sm font-semibold text-muted">Order{orders.length === 1 ? '' : 's'} placed</span>
           </a>
-          <Link href="/checkout" className="border border-line bg-white p-5 transition-colors hover:border-cobalt">
+          <Link href="/checkout" className="rounded-2xl border border-line bg-white p-5 shadow-card transition hover:border-cobalt">
             <strong className="block font-display text-3xl font-bold text-ink">{customer.cart.length}</strong>
-            <span className="mt-1 block text-sm font-bold text-slate-600">Item types in build list</span>
+            <span className="mt-1 block text-sm font-semibold text-muted">Item types in build list</span>
           </Link>
-          <Link href="/contact" className="border border-line bg-white p-5 transition-colors hover:border-cobalt">
+          <Link href="/contact" className="rounded-2xl border border-line bg-white p-5 shadow-card transition hover:border-cobalt">
             <strong className="block font-display text-3xl font-bold text-ink">{customer.messages.length}</strong>
-            <span className="mt-1 block text-sm font-bold text-slate-600">Support message{customer.messages.length === 1 ? '' : 's'}</span>
+            <span className="mt-1 block text-sm font-semibold text-muted">Support message{customer.messages.length === 1 ? '' : 's'}</span>
           </Link>
         </div>
 
@@ -144,7 +144,7 @@ export default function AccountPanel() {
             <label className="block text-sm font-bold text-ink">Phone<input name="phone" type="tel" defaultValue={customer.phone || ''} autoComplete="tel" className={inputClass} /></label>
             <label className="block text-sm font-bold text-ink sm:col-span-2">Delivery address<textarea name="address" defaultValue={customer.address || ''} rows={3} className={inputClass} /></label>
             <div className="flex items-center gap-3 sm:col-span-2">
-              <button disabled={busy} className="bg-signal px-5 py-3 text-sm font-black text-ink disabled:opacity-60">{busy ? 'Saving…' : 'Save details'}</button>
+              <button disabled={busy} className="rounded-lg bg-signal px-5 py-3 text-sm font-bold text-ink shadow-sm transition hover:bg-signal-dark disabled:opacity-60">{busy ? 'Saving…' : 'Save details'}</button>
               {profileSaved && <span role="status" className="text-sm font-bold text-emerald-700">Details saved.</span>}
               {error && <span role="alert" className="text-sm font-bold text-red-600">{error}</span>}
             </div>

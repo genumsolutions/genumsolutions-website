@@ -93,8 +93,8 @@ export default function CheckoutPage() {
     }
   }
 
-  const inputClass = 'w-full border border-line bg-mist px-4 py-3 text-sm outline-none transition focus:border-cobalt'
-  const labelClass = 'block text-xs font-bold uppercase tracking-wide text-slate-500'
+  const inputClass = 'w-full rounded-lg border border-line bg-white px-4 py-3 text-sm text-ink outline-none transition focus:border-cobalt focus:ring-2 focus:ring-cobalt/20'
+  const labelClass = 'block text-xs font-bold uppercase tracking-wide text-muted'
 
   return (
     <main className="min-h-screen bg-mist">
@@ -114,23 +114,23 @@ export default function CheckoutPage() {
         <p className="text-xs font-black uppercase tracking-[.24em] text-cobalt">Secure order</p>
         <h1 className="mt-3 font-display text-4xl font-bold tracking-tight sm:text-5xl">Ready to build?</h1>
         {!account && hydrated && lines.length > 0 && (
-          <div className="mt-6 rounded-2xl border border-cobalt bg-white p-5 text-sm text-slate-700">
-            <strong className="text-ink">Sign in to place your order.</strong> Your build list is already saved and will merge into your account.{' '}
-            <Link href="/login" className="font-bold text-cobalt underline">Sign in or create an account</Link>
+          <div className="mt-6 rounded-2xl border border-cobalt/20 bg-cobalt-light p-5 text-sm text-ink">
+            <strong>Sign in to place your order.</strong> Your build list is already saved and will merge into your account.{' '}
+            <Link href="/login" className="font-bold text-cobalt transition hover:text-cobalt-dark">Sign in or create an account</Link>
           </div>
         )}
         {!hydrated ? (
-          <div className="mt-10 animate-pulse rounded-2xl border border-line bg-white p-12 text-center text-sm font-bold text-slate-400" role="status">Loading your build list...</div>
+          <div className="mt-10 animate-pulse rounded-2xl border border-line bg-white p-12 text-center text-sm font-bold text-muted" role="status">Loading your build list...</div>
         ) : items.length === 0 && lines.length > 0 ? (
           <div className="mt-10 rounded-2xl border border-dashed border-signal bg-white p-8 text-center">
             <h2 className="font-display text-xl font-bold">Some items in your build list are no longer available.</h2>
-            <p className="mt-2 text-sm text-slate-500">They were removed because they are out of stock or no longer listed.</p>
-            <Link href="/products" className="mt-5 inline-block rounded-full bg-cobalt px-5 py-3 text-sm font-black text-white transition hover:bg-blue-800">Browse alternatives</Link>
+            <p className="mt-2 text-sm text-muted">They were removed because they are out of stock or no longer listed.</p>
+            <Link href="/products" className="mt-5 inline-block rounded-lg bg-cobalt px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-cobalt-dark">Browse alternatives</Link>
           </div>
         ) : items.length === 0 ? (
           <div className="mt-10 rounded-2xl border border-dashed border-line bg-white p-12 text-center">
             <h2 className="font-display text-2xl font-bold">Your build list is empty.</h2>
-            <Link href="/products" className="mt-5 inline-block rounded-full bg-cobalt px-5 py-3 text-sm font-black text-white transition hover:bg-blue-800">Browse products</Link>
+            <Link href="/products" className="mt-5 inline-block rounded-lg bg-cobalt px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-cobalt-dark">Browse products</Link>
           </div>
         ) : (
           <div className="mt-10 grid gap-10 lg:grid-cols-[1.1fr_.9fr]">
@@ -150,7 +150,7 @@ export default function CheckoutPage() {
                   <textarea value={customer.address} onChange={(event) => setCustomer({ ...customer, address: event.target.value })} rows={3} autoComplete="street-address" required className={`mt-2 ${inputClass}`} />
                 </label>
               </form>
-              <p className="mt-4 text-xs leading-5 text-slate-500">Free Kathmandu delivery on orders above NPR 5,000. We confirm every order by email before dispatch.</p>
+              <p className="mt-4 text-xs leading-5 text-muted">Free Kathmandu delivery on orders above NPR 5,000. We confirm every order by email before dispatch.</p>
             </section>
             <section aria-label="Order summary and payment" className="space-y-4">
               <div className="rounded-2xl border border-line bg-white p-6">
@@ -159,23 +159,23 @@ export default function CheckoutPage() {
                   <div key={product.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-line py-3 last:border-b-0 last:pb-0 first:pt-0">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-bold">{product.name}</p>
-                      <p className="text-xs text-slate-500">{formatNPR(product.price)} each · {product.stock} in stock</p>
+                      <p className="text-xs text-muted">{formatNPR(product.price)} each · {product.stock} in stock</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <button onClick={() => changeQuantity(product.id, quantity - 1)} className="h-8 w-8 border border-line font-black transition hover:border-cobalt hover:text-cobalt disabled:opacity-40" disabled={quantity <= 1} aria-label={`Reduce ${product.name} quantity`}>−</button>
+                      <button onClick={() => changeQuantity(product.id, quantity - 1)} className="h-8 w-8 rounded-lg border border-line font-bold transition hover:border-cobalt hover:text-cobalt disabled:opacity-40" disabled={quantity <= 1} aria-label={`Reduce ${product.name} quantity`}>−</button>
                       <span className="w-6 text-center text-sm font-bold" aria-live="polite">{quantity}</span>
-                      <button onClick={() => changeQuantity(product.id, Math.min(quantity + 1, product.stock))} disabled={quantity >= product.stock} className="h-8 w-8 border border-line font-black transition hover:border-cobalt hover:text-cobalt disabled:opacity-40" aria-label={`Add another ${product.name}`}>+</button>
+                      <button onClick={() => changeQuantity(product.id, Math.min(quantity + 1, product.stock))} disabled={quantity >= product.stock} className="h-8 w-8 rounded-lg border border-line font-bold transition hover:border-cobalt hover:text-cobalt disabled:opacity-40" aria-label={`Add another ${product.name}`}>+</button>
                       <button onClick={() => changeQuantity(product.id, 0)} className="ml-1 text-xs font-bold text-red-600 underline" aria-label={`Remove ${product.name} from build list`}>Remove</button>
                     </div>
                   </div>
                 ))}
               </div>
-              <div className="rounded-2xl border-t-4 border-ink bg-white p-6">
+              <div className="rounded-2xl border-t-4 border-cobalt bg-white p-6 shadow-card">
                 <div className="flex items-center justify-between text-lg font-black"><span>Total</span><span>{formatNPR(total)}</span></div>
                 <div className="mt-5 grid gap-3">
-                  <button onClick={() => payNepal('esewa')} disabled={busy} className="bg-cobalt px-5 py-3.5 text-sm font-black text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60">Pay with eSewa</button>
-                  <button onClick={() => payNepal('khalti')} disabled={busy} className="bg-cobalt px-5 py-3.5 text-sm font-black text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60">Pay with Khalti</button>
-                  <button onClick={payCod} disabled={busy} className="border-2 border-dashed border-line px-5 py-3.5 text-sm font-black text-slate-600 transition hover:border-slate-400 disabled:cursor-not-allowed disabled:opacity-60">Reserve order · Pay on delivery</button>
+                  <button onClick={() => payNepal('esewa')} disabled={busy} className="rounded-lg bg-cobalt px-5 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-cobalt-dark disabled:cursor-not-allowed disabled:opacity-60">Pay with eSewa</button>
+                  <button onClick={() => payNepal('khalti')} disabled={busy} className="rounded-lg bg-cobalt px-5 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-cobalt-dark disabled:cursor-not-allowed disabled:opacity-60">Pay with Khalti</button>
+                  <button onClick={payCod} disabled={busy} className="rounded-lg border-2 border-dashed border-line px-5 py-3.5 text-sm font-bold text-muted transition hover:border-ink hover:text-ink disabled:cursor-not-allowed disabled:opacity-60">Reserve order · Pay on delivery</button>
                 </div>
                 <div role="status" aria-live="polite">{message && <p className="mt-4 text-sm font-bold text-signal">{message}</p>}</div>
               </div>

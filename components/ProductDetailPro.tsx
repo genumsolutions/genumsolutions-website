@@ -47,27 +47,27 @@ export default function ProductDetailPro({ product }: { product: Product }) {
             <h1 className="mt-3 font-display text-5xl font-bold leading-none tracking-[-.04em] text-ink">
               {product.name}
             </h1>
-            <p className="mt-5 max-w-xl text-lg leading-8 text-slate-600">
+            <p className="mt-5 max-w-xl text-lg leading-8 text-muted">
               {product.description}
             </p>
             <div className="mt-7 flex flex-wrap items-baseline gap-3">
               <span className="font-display text-3xl font-bold">{product.priceLabel}</span>
-              <span className="text-sm text-slate-500">
+              <span className="text-sm text-muted">
                 {product.productType === 'Project package' ? 'indicative package' : 'per unit'}
               </span>
             </div>
             <div className="mt-6 flex flex-wrap items-center gap-3">
               {!isQuote && (
-                <div className="flex items-center rounded-full border border-line bg-white">
-                  <button onClick={() => setQuantity((value) => Math.max(1, value - 1))} className="h-11 w-11 text-lg font-bold" aria-label={`Decrease quantity of ${product.name}`}>−</button>
+                <div className="flex items-center rounded-full border border-line bg-white shadow-sm">
+                  <button onClick={() => setQuantity((value) => Math.max(1, value - 1))} className="h-11 w-11 rounded-l-full text-lg font-bold transition hover:bg-mist" aria-label={`Decrease quantity of ${product.name}`}>−</button>
                   <span className="w-8 text-center text-sm font-bold" aria-live="polite" aria-label={`Quantity: ${quantity}`}>{quantity}</span>
-                  <button onClick={() => setQuantity((value) => Math.min(product.stock, value + 1))} className="h-11 w-11 text-lg font-bold" aria-label={`Increase quantity of ${product.name}`}>+</button>
+                  <button onClick={() => setQuantity((value) => Math.min(product.stock, value + 1))} className="h-11 w-11 rounded-r-full text-lg font-bold transition hover:bg-mist" aria-label={`Increase quantity of ${product.name}`}>+</button>
                 </div>
               )}
               <Link
                 href={isQuote ? '/contact' : '/checkout'}
                 onClick={isQuote ? undefined : addToBuildList}
-                className={`rounded-full px-6 py-3.5 text-sm font-black text-white transition ${added ? 'bg-emerald-600' : 'bg-cobalt hover:bg-blue-800'}`}
+                className={`rounded-full px-6 py-3.5 text-sm font-black text-white transition ${added ? 'bg-emerald-600' : 'bg-cobalt hover:bg-cobalt-dark'}`}
                 aria-label={isQuote ? `Request a quote for ${product.name}` : added ? `${product.name} added to build list` : `Add ${product.name} to build list`}>
                 {isQuote ? 'Request a scoped quote ↗' : added ? 'Added to build list ✓' : 'Add to build list'}
               </Link>
@@ -78,16 +78,16 @@ export default function ProductDetailPro({ product }: { product: Product }) {
         <div className="mt-10 grid gap-4 border-y border-line py-6 sm:grid-cols-2">
           <div>
             <p className="text-xs font-black uppercase tracking-widest text-cobalt">Audience</p>
-            <p className="mt-2 text-sm leading-6 text-slate-500">
+            <p className="mt-2 text-sm leading-6 text-muted">
               {product.audience}
             </p>
-            <p className="mt-2 text-sm leading-6 text-slate-500">
+            <p className="mt-2 text-sm leading-6 text-muted">
               {product.difficulty}
             </p>
           </div>
           <div>
             <p className="text-xs font-black uppercase tracking-widest text-cobalt">Warranty</p>
-            <p className="mt-2 text-sm leading-6 text-slate-500">
+            <p className="mt-2 text-sm leading-6 text-muted">
               {product.warranty}
             </p>
           </div>
@@ -96,13 +96,13 @@ export default function ProductDetailPro({ product }: { product: Product }) {
         <div className="mt-10 grid gap-4 border-t-2 border-line py-6 sm:grid-cols-2">
           <div>
             <p className="text-xs font-black uppercase tracking-widest text-cobalt">Color</p>
-            <p className="mt-2 text-sm text-slate-500" style={{ color: product.color }}>
+            <p className="mt-2 text-sm text-muted" style={{ color: product.color }}>
               {product.color}
             </p>
           </div>
           <div>
             <p className="text-xs font-black uppercase tracking-widest text-cobalt">Delivery</p>
-            <p className="mt-2 text-sm leading-6 text-slate-500">
+            <p className="mt-2 text-sm leading-6 text-muted">
               {product.delivery}
             </p>
           </div>

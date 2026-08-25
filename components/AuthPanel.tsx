@@ -46,8 +46,8 @@ async function mergeLocalCart() {
   }
 }
 
-const inputClass = 'mt-2 w-full border border-line bg-white px-4 py-3 text-sm text-ink outline-none transition-colors focus:border-cobalt'
-const labelClass = 'block text-sm font-bold text-ink'
+const inputClass = 'mt-2 w-full rounded-lg border border-line bg-white px-4 py-3 text-sm text-ink outline-none transition focus:border-cobalt focus:ring-2 focus:ring-cobalt/20'
+const labelClass = 'block text-sm font-semibold text-ink'
 
 export default function AuthPanel({ initialMode = 'signin' }: { initialMode?: Mode }) {
   const router = useRouter()
@@ -105,21 +105,21 @@ export default function AuthPanel({ initialMode = 'signin' }: { initialMode?: Mo
             {perks.map((perk) => (
               <li key={perk.title} className="flex gap-4">
                 <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-cobalt text-xs font-black text-white">{initials(perk.title).slice(0, 1)}</span>
-                <span><strong className="block font-display text-lg text-ink">{perk.title}</strong><span className="mt-1 block text-sm leading-6 text-slate-600">{perk.body}</span></span>
+                <span><strong className="block font-display text-lg text-ink">{perk.title}</strong><span className="mt-1 block text-sm leading-6 text-muted">{perk.body}</span></span>
               </li>
             ))}
           </ul>
-          <p className="mt-12 border-t border-line pt-5 text-xs font-bold uppercase tracking-widest text-slate-400">Robotics · Electronics · 3D printing · AI — Kathmandu, Nepal</p>
+          <p className="mt-12 border-t border-line pt-5 text-xs font-bold uppercase tracking-widest text-muted">Robotics · Electronics · 3D printing · AI — Kathmandu, Nepal</p>
         </aside>
 
         <section className="w-full justify-self-center">
           <div className="stamp-ring border-t-4 border-cobalt bg-white p-7 sm:p-9">
             <Link href="/" className="text-sm font-bold text-cobalt lg:hidden">GENUM SOLUTIONS</Link>
             <h1 className="mt-8 font-display text-3xl font-bold text-ink sm:text-4xl lg:mt-0">{copy[mode].title}</h1>
-            <p className="mt-3 text-sm leading-6 text-slate-600">{copy[mode].body}</p>
+            <p className="mt-3 text-sm leading-6 text-muted">{copy[mode].body}</p>
 
-            {error && <p role="alert" className="mt-5 border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">{error}</p>}
-            {notice && <p role="status" className="mt-5 border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700">{notice}</p>}
+            {error && <p role="alert" className="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{error}</p>}
+            {notice && <p role="status" className="mt-5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">{notice}</p>}
 
             <form onSubmit={submit}>
               {mode === 'signup' && (
@@ -132,7 +132,7 @@ export default function AuthPanel({ initialMode = 'signin' }: { initialMode?: Mo
                   Password
                   <span className="relative mt-2 block">
                     <input name="password" type={showPassword ? 'text' : 'password'} required minLength={6} autoComplete={mode === 'signin' ? 'current-password' : 'new-password'} className={`${inputClass} pr-16`} />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Hide password' : 'Show password'} className="absolute inset-y-0 right-0 px-4 text-xs font-black uppercase tracking-wide text-slate-500 hover:text-cobalt">
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Hide password' : 'Show password'} className="absolute inset-y-0 right-0 px-4 text-xs font-bold uppercase tracking-wide text-muted transition hover:text-cobalt">
                       {showPassword ? 'Hide' : 'Show'}
                     </button>
                   </span>
@@ -140,25 +140,25 @@ export default function AuthPanel({ initialMode = 'signin' }: { initialMode?: Mo
               )}
 
               {mode === 'signin' && (
-                <button type="button" onClick={() => switchMode('forgot')} className="mt-3 block text-sm font-bold text-cobalt underline">Forgot password?</button>
+                <button type="button" onClick={() => switchMode('forgot')} className="mt-3 block text-sm font-semibold text-cobalt transition hover:text-cobalt-dark">Forgot password?</button>
               )}
 
-              <button disabled={busy} className="mt-7 w-full bg-cobalt px-5 py-3.5 text-sm font-black text-white transition-opacity disabled:opacity-60">
+              <button disabled={busy} className="mt-7 w-full rounded-lg bg-cobalt px-5 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-cobalt-dark disabled:opacity-60">
                 {busy ? 'Please wait…' : copy[mode].button}
               </button>
             </form>
 
             {mode !== 'forgot' && (
               <>
-                <div className="my-6 flex items-center gap-3 text-xs font-bold uppercase tracking-widest text-slate-400"><span className="h-px flex-1 bg-line" />or<span className="h-px flex-1 bg-line" /></div>
-                <a href="/api/auth/google" className="flex w-full items-center justify-center gap-3 border border-line px-5 py-3.5 text-sm font-black text-ink transition-colors hover:border-cobalt hover:bg-mist">{GoogleIcon}Continue with Google</a>
+                <div className="my-6 flex items-center gap-3 text-xs font-bold uppercase tracking-widest text-muted"><span className="h-px flex-1 bg-line" />or<span className="h-px flex-1 bg-line" /></div>
+                <a href="/api/auth/google" className="flex w-full items-center justify-center gap-3 rounded-lg border-2 border-line bg-white px-5 py-3.5 text-sm font-bold text-ink transition hover:border-cobalt hover:bg-cobalt-light">{GoogleIcon}Continue with Google</a>
               </>
             )}
 
             <div className="mt-6 space-y-2 border-t border-line pt-5">
-              {mode !== 'signup' && <button type="button" onClick={() => switchMode('signup')} className="block text-sm font-bold text-cobalt underline">New here? Create a customer account</button>}
-              {mode !== 'signin' && <button type="button" onClick={() => switchMode('signin')} className="block text-sm font-bold text-cobalt underline">I already have an account</button>}
-              {mode === 'forgot' && <button type="button" onClick={() => switchMode('signin')} className="block text-sm font-bold text-cobalt underline">Back to sign in</button>}
+              {mode !== 'signup' && <button type="button" onClick={() => switchMode('signup')} className="block text-sm font-semibold text-cobalt transition hover:text-cobalt-dark">New here? Create a customer account</button>}
+              {mode !== 'signin' && <button type="button" onClick={() => switchMode('signin')} className="block text-sm font-semibold text-cobalt transition hover:text-cobalt-dark">I already have an account</button>}
+              {mode === 'forgot' && <button type="button" onClick={() => switchMode('signin')} className="block text-sm font-semibold text-cobalt transition hover:text-cobalt-dark">Back to sign in</button>}
             </div>
           </div>
         </section>

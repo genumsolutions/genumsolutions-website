@@ -15,7 +15,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
             <div className="mt-8 flex flex-wrap justify-center gap-3">
               <button
                 onClick={reset}
-                className="rounded-full bg-[#173eaa] px-6 py-3.5 text-sm font-black text-white transition hover:bg-blue-800"
+                className="rounded-full bg-cobalt px-6 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-cobalt-dark"
               >
                 Try again
               </button>

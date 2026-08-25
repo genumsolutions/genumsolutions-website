@@ -1,10 +1,12 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import dynamicImport from 'next/dynamic'
 import { getCurrentAdmin } from '../../lib/admin'
 import { getManagedProducts } from '../../lib/content-store'
-import AdminPanel from '../../components/AdminPanel'
 import LogoutButton from '../../components/LogoutButton'
+
+const AdminPanel = dynamicImport(() => import('../../components/AdminPanel'), { ssr: false, loading: () => <div className="mx-auto max-w-7xl px-5 py-12 text-sm text-muted">Loading admin…</div> })
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Admin · GENUM SOLUTIONS' }
@@ -22,8 +24,8 @@ export default async function AdminPage() {
             <h1 className="mt-2 font-display text-3xl font-bold text-ink">Admin Dashboard</h1>
           </div>
           <div className="flex items-center gap-3">
-            <span className="hidden max-w-[14rem] truncate rounded-full bg-sky px-4 py-2 text-xs font-bold text-cobalt sm:block" title={admin.email}>{admin.email}</span>
-            <LogoutButton className="border border-line px-4 py-2 text-sm font-bold text-ink hover:border-red-300 hover:text-red-600" />
+            <span className="hidden max-w-[14rem] truncate rounded-full bg-cobalt-light px-4 py-2 text-xs font-bold text-cobalt sm:block" title={admin.email}>{admin.email}</span>
+            <LogoutButton className="rounded-lg border border-line px-4 py-2 text-sm font-semibold text-ink transition hover:border-red-300 hover:text-red-600" />
           </div>
         </div>
       </header>

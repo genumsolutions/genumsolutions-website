@@ -294,7 +294,7 @@ export default function AdminPanel({ initialProducts }: Props) {
     <div className="mx-auto max-w-7xl px-5 py-10 lg:px-8">
       <div role="tablist" aria-label="Admin sections" className="flex flex-wrap gap-2 border-b border-line pb-4">
         {TABS.map((name) => (
-          <button key={name} role="tab" aria-selected={tab === name} onClick={() => openTab(name)} className={`rounded-full px-5 py-2.5 text-sm font-black transition ${tab === name ? 'bg-ink text-white' : 'border border-line bg-white text-slate-600 hover:border-cobalt hover:text-cobalt'}`}>{name}</button>
+          <button key={name} role="tab" aria-selected={tab === name} onClick={() => openTab(name)} className={`rounded-full px-5 py-2.5 text-sm font-bold transition ${tab === name ? 'bg-cobalt text-white' : 'border border-line bg-white text-muted hover:border-cobalt hover:text-cobalt'}`}>{name}</button>
         ))}
       </div>
 
@@ -460,7 +460,7 @@ export default function AdminPanel({ initialProducts }: Props) {
                 {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
             </label>
-            <button onClick={() => void loadOrders(1)} className="bg-cobalt px-4 py-2 text-xs font-black text-white transition hover:bg-blue-800">Apply</button>
+            <button onClick={() => void loadOrders(1)} className="bg-cobalt px-4 py-2 text-xs font-black text-white transition hover:bg-cobalt-dark">Apply</button>
           </div>
           {!ordersLoaded ? <p className="text-sm text-slate-500" role="status">Loading…</p> : orderData.orders.length === 0 ? <p className="text-sm text-slate-500">No orders found.</p> : (
             <>
@@ -538,7 +538,7 @@ export default function AdminPanel({ initialProducts }: Props) {
             <label className="ml-auto text-sm font-bold text-slate-500">Search
               <input value={userQuery} onChange={(e) => setUserQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && void loadUsers(1)} placeholder="email or name" aria-label="Search users" className="ml-2 w-56 border border-line px-3 py-2 text-sm" />
             </label>
-            <button onClick={() => void loadUsers(1)} className="bg-cobalt px-4 py-2 text-xs font-black text-white transition hover:bg-blue-800">Apply</button>
+            <button onClick={() => void loadUsers(1)} className="bg-cobalt px-4 py-2 text-xs font-black text-white transition hover:bg-cobalt-dark">Apply</button>
           </div>
           {!usersLoaded ? <p className="text-sm text-slate-500" role="status">Loading…</p> : userData.users.length === 0 ? <p className="text-sm text-slate-500">No users found.</p> : (
             <>
@@ -578,7 +578,7 @@ export default function AdminPanel({ initialProducts }: Props) {
                 <option value="replied">Replied</option>
               </select>
             </label>
-            <button onClick={() => void loadMessages(1)} className="bg-cobalt px-4 py-2 text-xs font-black text-white transition hover:bg-blue-800">Apply</button>
+            <button onClick={() => void loadMessages(1)} className="bg-cobalt px-4 py-2 text-xs font-black text-white transition hover:bg-cobalt-dark">Apply</button>
           </div>
           {!messagesLoaded ? <p className="text-sm text-slate-500" role="status">Loading…</p> : messages.length === 0 ? <p className="text-sm text-slate-500">No messages found.</p> : (
             <>

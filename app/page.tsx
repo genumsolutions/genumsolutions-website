@@ -65,7 +65,7 @@ export default async function HomePage() {
               <div className="mt-9 flex flex-wrap gap-3">
                 <Link
                   href="/products"
-                  className="rounded-full bg-cobalt px-6 py-3.5 text-sm font-black text-white shadow-sm transition hover:bg-blue-800 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cobalt"
+                  className="rounded-full bg-cobalt px-6 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-cobalt-dark hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cobalt"
                 >
                   Get started
                 </Link>
@@ -110,7 +110,7 @@ export default async function HomePage() {
             </div>
             <Link
               href="/services"
-              className="text-sm font-black text-cobalt underline decoration-signal decoration-2 underline-offset-4 transition hover:text-blue-800"
+              className="text-sm font-bold text-cobalt underline decoration-signal decoration-2 underline-offset-4 transition hover:text-cobalt-dark"
             >
               View all services →
             </Link>
@@ -135,7 +135,7 @@ export default async function HomePage() {
                 <p className="text-xs font-black uppercase tracking-[.24em] text-cobalt">100+ project curriculum</p>
                 <h2 id="curriculum-heading" className="mt-2 max-w-2xl font-display text-3xl font-bold tracking-tight sm:text-4xl">Ages, materials, and outcomes stay visible.</h2>
               </div>
-              <Link href="/contact" className="text-sm font-black text-cobalt underline decoration-signal decoration-2 underline-offset-4 transition hover:text-blue-800">
+              <Link href="/contact" className="text-sm font-bold text-cobalt underline decoration-signal decoration-2 underline-offset-4 transition hover:text-cobalt-dark">
                 Request the full catalog →
               </Link>
             </div>
