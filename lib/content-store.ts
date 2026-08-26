@@ -95,7 +95,15 @@ export async function getManagedProducts(): Promise<Product[]> {
     const { data, error } = await db.from('products').select('*').order('sort_order', { ascending: true }).order('name', { ascending: true })
     if (error) throw error
     if (!data || data.length === 0) return localProducts
-    return data.map(rowToProduct)
+    const localImageMap = new Map(localProducts.map((p) => [p.id, p.image]))
+    return data.map((row) => {
+      const product = rowToProduct(row)
+      if (!product.image) {
+        const localImg = localImageMap.get(row.id)
+        if (localImg) product.image = localImg
+      }
+      return product
+    })
   } catch (error) {
     console.error('Supabase product read failed; using local catalog.', error)
     return localProducts
