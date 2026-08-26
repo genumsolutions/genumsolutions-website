@@ -71,7 +71,8 @@ export async function listOrdersPage(options: {
     // through their prefix on email/name instead.
     query = query.or(`email.ilike.%${needle}%,customer_name.ilike.%${needle}%`)
   }
-  const { data, count, error } = await query
+  const { data, error, count } = await query
+  if (error) throw new Error(`Order list failed: ${error.message}`)
   const total = count ?? 0
   return {
     orders: (data || []).map(rowToOrder),

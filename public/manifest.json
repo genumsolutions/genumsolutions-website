@@ -1,0 +1,23 @@
+{
+  "name": "GENUM SOLUTIONS",
+  "short_name": "GENUM",
+  "description": "Robotics, electronics, AI, IoT, 3D printing, and practical technology training from Kathmandu, Nepal.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f9fafb",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

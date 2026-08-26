@@ -3,6 +3,7 @@ import { Manrope, Space_Grotesk } from 'next/font/google'
 import OrganizationJsonLd from '../components/OrganizationJsonLd'
 import { CartProvider } from '../components/cart-provider'
 import PageViewTracker from '../components/PageViewTracker'
+import WebVitals from '../components/WebVitals'
 import { company } from '../lib/company'
 import './globals.css'
 
@@ -29,11 +30,14 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#2563eb" />
         <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('theme');if(t==='dim')document.documentElement.setAttribute('data-theme','dim')}catch(e){}` }} />
       </head>
       <body className={`${manrope.variable} ${space.variable}`}>
         <OrganizationJsonLd />
         <PageViewTracker />
+        <WebVitals />
         <CartProvider>{children}</CartProvider>
       </body>
     </html>

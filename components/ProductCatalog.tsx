@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import type { Product } from '../lib/catalog'
+import { getProductMedia } from '../lib/product-media'
 import { useCart } from './cart-provider'
 
 export default function ProductCatalog({ scope = 'components', products = [] }: { scope?: string; products?: Product[] }) {
@@ -133,29 +134,4 @@ export default function ProductCatalog({ scope = 'components', products = [] }: 
       </div>
     </section>
   )
-}
-
-function getProductMedia(category: string) {
-  const mediaByCategory: Record<string, { src: string; alt: string }> = {
-    Robotics: { src: '/media/robotics.jpg', alt: 'Small educational robot on a workbench' },
-    Electronics: { src: '/media/electronics.jpg', alt: 'Electronic circuit board close-up' },
-    Learning: { src: '/media/learning.jpg', alt: 'Robotics team working on a prototype' },
-    Components: { src: '/media/components.jpg', alt: 'Motors and electronics components' },
-    'AI + IoT': { src: '/media/ai-iot.jpg', alt: 'Team collaborating around connected technology' },
-    '3D Printing': { src: '/media/printing.jpg', alt: 'Engineer working on a fabrication prototype' },
-    'Project Solutions': { src: '/media/solutions.jpg', alt: 'Engineer working on a technology prototype' },
-    'Controllers & Boards': { src: '/media/controllers.jpg', alt: 'Development boards and electronic components on a workbench' },
-    'Motors & Motion': { src: '/media/motors.jpg', alt: 'Small motors and motion components' },
-    'Sensors & Modules': { src: '/media/sensors.jpg', alt: 'Electronic sensor modules and circuit board' },
-    'Power & Charging': { src: '/media/power.jpg', alt: 'Power and electronic components on a circuit board' },
-    'Mechanical Parts': { src: '/media/mechanical.jpg', alt: 'Mechanical workshop parts and tools' },
-    'Connectors & Cables': { src: '/media/cables.jpg', alt: 'Organized electronic cables and connectors' },
-    'Tools & Fabrication': { src: '/media/tools.jpg', alt: 'Workshop tools for electronics and fabrication' },
-    'Pre-packaged Kits': { src: '/media/kits.jpg', alt: 'Students building a robotics project kit' },
-    '3D Printing Materials': { src: '/media/printing-materials.jpg', alt: '3D printer filament and printed prototype parts' },
-    'Robot Cars': { src: '/media/robot-cars.jpg', alt: 'Educational robot car platform on a workbench' },
-    'Communication Modules': { src: '/media/communication.jpg', alt: 'Wireless communication and electronics modules' },
-    'Displays & Interfaces': { src: '/media/displays.jpg', alt: 'Small electronic display and controller components' },
-  }
-  return mediaByCategory[category] || mediaByCategory.Robotics
 }

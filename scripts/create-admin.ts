@@ -10,9 +10,10 @@ function loadEnvFile() {
     const raw = readFileSync(join(process.cwd(), '.env.local'), 'utf8')
     for (const line of raw.split('\n')) {
       const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/)
-      if (!match) continue
+      if (!match?.[1]) continue
+      const key = match[1]
       const value = (match[2] || '').replace(/^["']|["']$/g, '')
-      if (!process.env[match[1]]) process.env[match[1]] = value
+      if (!process.env[key]) process.env[key] = value
     }
   } catch {
     // Fall back to already-set environment variables.
@@ -21,13 +22,14 @@ function loadEnvFile() {
 
 loadEnvFile()
 
-const email = process.argv[2]
+const rawEmail = process.argv[2]
 const password = process.argv[3]
 
-if (!email || !password) {
+if (!rawEmail || !password) {
   console.error('Usage: npx tsx scripts/create-admin.ts <email> <password>')
   process.exit(1)
 }
+const email: string = rawEmail
 
 if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
   console.error('SUPABASE_SERVICE_ROLE_KEY is not set.')

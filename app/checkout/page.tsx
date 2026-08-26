@@ -4,6 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { formatNPR, type Product } from '../../lib/catalog'
+import { inputClass } from '../../lib/styles'
 import { useCart } from '../../components/cart-provider'
 
 export default function CheckoutPage() {
@@ -93,7 +94,6 @@ export default function CheckoutPage() {
     }
   }
 
-  const inputClass = 'w-full rounded-lg border border-line bg-white px-4 py-3 text-sm text-ink outline-none transition focus:border-cobalt focus:ring-2 focus:ring-cobalt/20'
   const labelClass = 'block text-xs font-bold uppercase tracking-wide text-muted'
 
   return (
@@ -138,16 +138,16 @@ export default function CheckoutPage() {
               <h2 id="delivery-heading" className="font-display text-2xl font-bold">Delivery details</h2>
               <form className="mt-6 grid gap-3 sm:grid-cols-2" onSubmit={(event) => event.preventDefault()}>
                 <label className={`${labelClass} sm:col-span-2`}>Full name
-                  <input value={customer.name} onChange={(event) => setCustomer({ ...customer, name: event.target.value })} autoComplete="name" required className={`mt-2 ${inputClass}`} />
+                  <input value={customer.name} onChange={(event) => setCustomer({ ...customer, name: event.target.value })} autoComplete="name" required className={`mt-2 w-full ${inputClass}`} />
                 </label>
                 <label className={labelClass}>Email
-                  <input value={customer.email} onChange={(event) => setCustomer({ ...customer, email: event.target.value })} type="email" autoComplete="email" required className={`mt-2 ${inputClass}`} />
+                  <input value={customer.email} onChange={(event) => setCustomer({ ...customer, email: event.target.value })} type="email" autoComplete="email" required className={`mt-2 w-full ${inputClass}`} />
                 </label>
                 <label className={labelClass}>Phone
-                  <input value={customer.phone} onChange={(event) => setCustomer({ ...customer, phone: event.target.value })} type="tel" autoComplete="tel" className={`mt-2 ${inputClass}`} />
+                  <input value={customer.phone} onChange={(event) => setCustomer({ ...customer, phone: event.target.value })} type="tel" autoComplete="tel" className={`mt-2 w-full ${inputClass}`} />
                 </label>
                 <label className={`${labelClass} sm:col-span-2`}>Delivery address in Nepal
-                  <textarea value={customer.address} onChange={(event) => setCustomer({ ...customer, address: event.target.value })} rows={3} autoComplete="street-address" required className={`mt-2 ${inputClass}`} />
+                  <textarea value={customer.address} onChange={(event) => setCustomer({ ...customer, address: event.target.value })} rows={3} autoComplete="street-address" required className={`mt-2 w-full ${inputClass}`} />
                 </label>
               </form>
               <p className="mt-4 text-xs leading-5 text-muted">Free Kathmandu delivery on orders above NPR 5,000. We confirm every order by email before dispatch.</p>

@@ -21,5 +21,5 @@ const mediaByCategory: Record<string, { src: string; alt: string }> = {
 }
 
 export function getProductMedia(category: string) {
-  return mediaByCategory[category] || mediaByCategory.Robotics
+  return mediaByCategory[category] ?? { src: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=1200&q=85', alt: 'Educational robot on a workbench' }
 }

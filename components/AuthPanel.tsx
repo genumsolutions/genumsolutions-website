@@ -5,6 +5,7 @@ import { FormEvent, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { initials } from '../lib/identity'
 import { readLocalCart, unionQuantities, writeLocalCart } from '../lib/cart-client'
+import { inputClass } from '../lib/styles'
 
 type Mode = 'signin' | 'signup' | 'forgot'
 
@@ -48,7 +49,6 @@ async function mergeLocalCart() {
   }
 }
 
-const inputClass = 'mt-2 w-full rounded-lg border border-line bg-white px-4 py-3 text-sm text-ink outline-none transition focus:border-cobalt focus:ring-2 focus:ring-cobalt/20'
 const labelClass = 'block text-sm font-semibold text-ink'
 
 export default function AuthPanel({ initialMode = 'signin' }: { initialMode?: Mode }) {
@@ -125,15 +125,15 @@ export default function AuthPanel({ initialMode = 'signin' }: { initialMode?: Mo
 
             <form onSubmit={submit}>
               {mode === 'signup' && (
-                <label className={`${labelClass} mt-7 block`}>Full name<input name="name" required minLength={2} autoComplete="name" className={inputClass} /></label>
+                <label className={`${labelClass} mt-7 block`}>Full name<input name="name" required minLength={2} autoComplete="name" className={`mt-2 w-full ${inputClass}`} /></label>
               )}
-              <label className={`${labelClass} mt-5 block`}>Email<input name="email" type="email" required autoComplete="email" className={inputClass} /></label>
+              <label className={`${labelClass} mt-5 block`}>Email<input name="email" type="email" required autoComplete="email" className={`mt-2 w-full ${inputClass}`} /></label>
 
               {mode !== 'forgot' && (
                 <label className={`${labelClass} mt-5 block`}>
                   Password
                   <span className="relative mt-2 block">
-                    <input name="password" type={showPassword ? 'text' : 'password'} required minLength={6} autoComplete={mode === 'signin' ? 'current-password' : 'new-password'} className={`${inputClass} pr-16`} />
+                    <input name="password" type={showPassword ? 'text' : 'password'} required minLength={6} autoComplete={mode === 'signin' ? 'current-password' : 'new-password'} className={`mt-2 w-full ${inputClass} pr-16`} />
                     <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Hide password' : 'Show password'} className="absolute inset-y-0 right-0 px-4 text-xs font-bold uppercase tracking-wide text-muted transition hover:text-cobalt">
                       {showPassword ? 'Hide' : 'Show'}
                     </button>

@@ -85,11 +85,7 @@ export default function AdminPanel({ initialProducts }: Props) {
   const [service, setService] = useState<Service>(emptyService)
 
   // Finance
-  const [transactions, setTransactions] = useState<{ id: string; orderId: string; provider: string; providerRef: string; amountNpr: number; status: string; createdAt: string }[]>([])
   const [financeLoaded, setFinanceLoaded] = useState(false)
-  const [financePage, setFinancePage] = useState(1)
-  const [financeTotal, setFinanceTotal] = useState(0)
-  const [financeTotalPages, setFinanceTotalPages] = useState(1)
 
   // Messages
   const [messages, setMessages] = useState<Message[]>([])

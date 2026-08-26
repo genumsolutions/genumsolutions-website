@@ -5,6 +5,8 @@ import { FormEvent, ReactNode, useEffect, useState } from 'react'
 import AuthPanel from './AuthPanel'
 import { formatNPR } from '../lib/catalog'
 import { initials } from '../lib/identity'
+import { inputClass } from '../lib/styles'
+import { signOut } from '../lib/auth'
 import { useCart } from './cart-provider'
 
 type Customer = {
@@ -25,8 +27,6 @@ const statusStyles: Record<string, string> = {
   fulfilled: 'bg-cobalt/10 text-cobalt',
   cancelled: 'bg-red-100 text-red-700',
 }
-
-const inputClass = 'mt-2 w-full rounded-lg border border-line bg-white px-4 py-3 text-sm text-ink outline-none transition focus:border-cobalt focus:ring-2 focus:ring-cobalt/20'
 
 function SectionCard({ title, id, children }: { title: string; id?: string; children: ReactNode }) {
   return (
@@ -55,8 +55,7 @@ export default function AccountPanel() {
 
   async function logout() {
     clear()
-    await fetch('/api/auth/logout', { method: 'POST' })
-    window.location.href = '/'
+    await signOut('/')
   }
 
   async function saveProfile(event: FormEvent<HTMLFormElement>) {
@@ -140,9 +139,9 @@ export default function AccountPanel() {
         <SectionCard title="Your details">
           <p className="mt-2 text-sm text-slate-600">Used for delivery and order updates.</p>
           <form onSubmit={saveProfile} className="mt-5 grid gap-4 sm:grid-cols-2">
-            <label className="block text-sm font-bold text-ink sm:col-span-2">Name<input name="name" defaultValue={customer.name} autoComplete="name" className={inputClass} /></label>
-            <label className="block text-sm font-bold text-ink">Phone<input name="phone" type="tel" defaultValue={customer.phone || ''} autoComplete="tel" className={inputClass} /></label>
-            <label className="block text-sm font-bold text-ink sm:col-span-2">Delivery address<textarea name="address" defaultValue={customer.address || ''} rows={3} className={inputClass} /></label>
+            <label className="block text-sm font-bold text-ink sm:col-span-2">Name<input name="name" defaultValue={customer.name} autoComplete="name" className={`mt-2 w-full ${inputClass}`} /></label>
+            <label className="block text-sm font-bold text-ink">Phone<input name="phone" type="tel" defaultValue={customer.phone || ''} autoComplete="tel" className={`mt-2 w-full ${inputClass}`} /></label>
+            <label className="block text-sm font-bold text-ink sm:col-span-2">Delivery address<textarea name="address" defaultValue={customer.address || ''} rows={3} className={`mt-2 w-full ${inputClass}`} /></label>
             <div className="flex items-center gap-3 sm:col-span-2">
               <button disabled={busy} className="rounded-lg bg-signal px-5 py-3 text-sm font-bold text-ink shadow-sm transition hover:bg-signal-dark disabled:opacity-60">{busy ? 'Saving…' : 'Save details'}</button>
               {profileSaved && <span role="status" className="text-sm font-bold text-emerald-700">Details saved.</span>}

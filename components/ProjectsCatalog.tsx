@@ -4,23 +4,10 @@ import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import type { Product } from '../lib/catalog'
+import { getProductMedia } from '../lib/product-media'
 import { useCart } from './cart-provider'
 
 type ProjectTab = 'packages' | 'robot-cars'
-
-function getProductMedia(category: string) {
-  const mediaByCategory: Record<string, { src: string; alt: string }> = {
-    Robotics: { src: '/media/robotics.jpg', alt: 'Small educational robot on a workbench' },
-    Electronics: { src: '/media/electronics.jpg', alt: 'Electronic circuit board close-up' },
-    Learning: { src: '/media/learning.jpg', alt: 'Robotics team working on a prototype' },
-    Components: { src: '/media/components.jpg', alt: 'Motors and electronics components' },
-    'AI + IoT': { src: '/media/ai-iot.jpg', alt: 'Team collaborating around connected technology' },
-    '3D Printing': { src: '/media/printing.jpg', alt: 'Engineer working on a fabrication prototype' },
-    'Project Solutions': { src: '/media/solutions.jpg', alt: 'Engineer working on a technology prototype' },
-    'Robot Cars': { src: '/media/robot-cars.jpg', alt: 'Educational robot car platform on a workbench' },
-  }
-  return mediaByCategory[category] || mediaByCategory.Robotics
-}
 
 export default function ProjectsCatalog({ products = [] }: { products?: Product[] }) {
   const [tab, setTab] = useState<ProjectTab>('packages')

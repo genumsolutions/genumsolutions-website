@@ -43,7 +43,6 @@ const stats = [
 
 export default async function HomePage() {
   const heroMedia = getProductMedia('Robotics')
-  const content = await getSiteContent()
 
   return (
     <PageShell>

@@ -1,7 +1,3 @@
-'use client'
-
-import { useEffect, useRef } from 'react'
-
 /**
  * Robotic Arm - CSS-animated visual element
  * The animation keyframes are defined in globals.css

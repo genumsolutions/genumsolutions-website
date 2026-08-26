@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { initials } from '../lib/identity'
+import { signOut } from '../lib/auth'
 import { useCart } from './cart-provider'
 
 type SessionUser = { name: string; email: string; role: string }
@@ -44,8 +45,7 @@ export default function HeaderSession() {
   async function logout() {
     setOpen(false)
     clear()
-    await fetch('/api/auth/logout', { method: 'POST' })
-    window.location.href = '/'
+    await signOut('/')
   }
 
   if (!ready) return <span className="h-10 w-28 animate-pulse rounded-full border border-line" aria-hidden="true" />
