@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import { ArrowUpRight } from 'lucide-react'
 import PageIntro from '../../components/PageIntro'
 import PageShell from '../../components/PageShell'
 import ModelBrowser from '../../components/ModelBrowser'
@@ -31,7 +32,7 @@ export default function PrintingPage() {
               <p className="text-xs font-black uppercase tracking-widest text-navy">{offer.meta}</p>
               <h2 className="mt-12 font-display text-2xl font-bold">{offer.title}</h2>
               <p className="mt-3 leading-7 text-muted">{offer.text}</p>
-              <Link href="/contact" className="mt-7 inline-block rounded-full bg-navy px-5 py-3 text-sm font-black text-white transition hover:bg-navy-dark">Request a quote ↗</Link>
+              <Link href="/contact" className="mt-7 inline-flex items-center gap-1.5 rounded-full bg-navy px-5 py-3 text-sm font-black text-white transition hover:bg-navy-dark">Request a quote <ArrowUpRight size={14} aria-hidden="true" /></Link>
             </article>
           ))}
         </div>
@@ -68,7 +69,7 @@ export default function PrintingPage() {
             <p className="text-xs font-black uppercase tracking-[.24em] text-gold">Have a file?</p>
             <h2 className="mt-2 font-display text-2xl font-bold">Let us review the first print.</h2>
           </div>
-          <Link href="/contact" className="rounded-full bg-gold px-5 py-3 text-sm font-black text-ink transition hover:bg-gold-dark">Request a print review ↗</Link>
+          <Link href="/contact" className="inline-flex items-center gap-1.5 rounded-full bg-gold px-5 py-3 text-sm font-black text-ink transition hover:bg-gold-dark">Request a print review <ArrowUpRight size={14} aria-hidden="true" /></Link>
         </div>
       </section>
     </PageShell>
