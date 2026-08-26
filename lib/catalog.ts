@@ -91,10 +91,16 @@ const additionalInventoryProducts: Product[] = [
   quoteInventory('abs-filament', 'ABS Maker Filament · 1 kg', '3D Printing Materials', 'GEN-3DP-0004', 'Durable printed parts', 'ABS filament for stronger functional prototypes and workshop parts where suitable ventilation is available.', ['1.75 mm diameter', '1 kg spool', 'Higher-temperature printing material'], 'from-[#dce8ff] to-[#7e9ff2]', '/media/products/abs-filament.jpg'),
 ]
 
+const robotCarImages = [
+  'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=600&q=80',
+  'https://images.unsplash.com/photo-1535378917042-10a22c95931a?auto=format&fit=crop&w=600&q=80',
+  'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=600&q=80',
+]
+
 const robotCarProducts: Product[] = [
-  { ...standard, id: 'arduino-multimode-robot-car', name: 'Arduino Multimode Robot Car', category: 'Robot Cars', price: 0, priceLabel: 'Request quote', sku: 'GEN-CAR-0001', productType: 'Retail kit', note: 'Bluetooth, obstacle avoidance, and path-learning platform', description: 'The canonical Arduino Uno robot car from the modular source projects, consolidated from the near-duplicate final, final2, final3, and base versions.', specs: ['Arduino Uno', 'HC-06 Bluetooth module', 'L298N motor driver', '4 BO motors', '3 HC-SR04 ultrasonic sensors', 'Buzzer and mode switch', 'Bluetooth manual control and obstacle avoidance'], stock: 0, delivery: 'Kit contents and lead time confirmed with quotation', color: 'from-[#dce8ff] to-[#7e9ff2]', badge: 'Canonical build' },
-  { ...standard, id: 'esp32-bluetooth-robot-car', name: 'ESP32 Bluetooth Robot Car', category: 'Robot Cars', price: 0, priceLabel: 'Request quote', sku: 'GEN-CAR-0002', productType: 'Retail kit', note: 'Simple phone-controlled teaching car', description: 'A distinct ESP32 Bluetooth car for MIT App Inventor teaching, manual driving, OLED status, and failsafe stopping.', specs: ['ESP32', 'L298N motor driver', 'DC motors, chassis, and wheels', '1.3-inch SH1106 OLED', 'Battery pack', 'Manual stop switch', 'Phone Bluetooth control'], stock: 0, delivery: 'Kit contents and lead time confirmed with quotation', color: 'from-[#dff4ec] to-[#79c7a8]', badge: 'Teaching build' },
-  { ...standard, id: 'esp32-wifi-web-robot-car', name: 'ESP32 Wi-Fi Web Robot Car', category: 'Robot Cars', price: 0, priceLabel: 'Request quote', sku: 'GEN-CAR-0003', productType: 'Retail kit', note: 'Browser and WebSocket control', description: 'A separate ESP32 Wi-Fi robot car for browser dashboards, WebServer control, WebSocket commands, and OLED telemetry.', specs: ['ESP32', 'L298N motor driver', 'DC motor and chassis assembly', 'OLED display', 'Wi-Fi WebServer and WebSocket control', 'Browser control interface'], stock: 0, delivery: 'Kit contents and lead time confirmed with quotation', color: 'from-[#f1e9ff] to-[#c4a8ef]', badge: 'Web control build' },
+  { ...standard, id: 'arduino-multimode-robot-car', name: 'Arduino Multimode Robot Car', category: 'Robot Cars', price: 0, priceLabel: 'Request quote', sku: 'GEN-CAR-0001', productType: 'Retail kit', note: 'Bluetooth, obstacle avoidance, and path-learning platform', description: 'The canonical Arduino Uno robot car from the modular source projects, consolidated from the near-duplicate final, final2, final3, and base versions.', specs: ['Arduino Uno', 'HC-06 Bluetooth module', 'L298N motor driver', '4 BO motors', '3 HC-SR04 ultrasonic sensors', 'Buzzer and mode switch', 'Bluetooth manual control and obstacle avoidance'], stock: 0, delivery: 'Kit contents and lead time confirmed with quotation', color: 'from-[#dce8ff] to-[#7e9ff2]', badge: 'Canonical build', image: robotCarImages[0] },
+  { ...standard, id: 'esp32-bluetooth-robot-car', name: 'ESP32 Bluetooth Robot Car', category: 'Robot Cars', price: 0, priceLabel: 'Request quote', sku: 'GEN-CAR-0002', productType: 'Retail kit', note: 'Simple phone-controlled teaching car', description: 'A distinct ESP32 Bluetooth car for MIT App Inventor teaching, manual driving, OLED status, and failsafe stopping.', specs: ['ESP32', 'L298N motor driver', 'DC motors, chassis, and wheels', '1.3-inch SH1106 OLED', 'Battery pack', 'Manual stop switch', 'Phone Bluetooth control'], stock: 0, delivery: 'Kit contents and lead time confirmed with quotation', color: 'from-[#dff4ec] to-[#79c7a8]', badge: 'Teaching build', image: robotCarImages[1] },
+  { ...standard, id: 'esp32-wifi-web-robot-car', name: 'ESP32 Wi-Fi Web Robot Car', category: 'Robot Cars', price: 0, priceLabel: 'Request quote', sku: 'GEN-CAR-0003', productType: 'Retail kit', note: 'Browser and WebSocket control', description: 'A separate ESP32 Wi-Fi robot car for browser dashboards, WebServer control, WebSocket commands, and OLED telemetry.', specs: ['ESP32', 'L298N motor driver', 'DC motor and chassis assembly', 'OLED display', 'Wi-Fi WebServer and WebSocket control', 'Browser control interface'], stock: 0, delivery: 'Kit contents and lead time confirmed with quotation', color: 'from-[#f1e9ff] to-[#c4a8ef]', badge: 'Web control build', image: robotCarImages[2] },
 ]
 
 type ExcelProject = [string, string, string, string, string, string, string, string]
@@ -202,6 +208,62 @@ const quotationCategory: Record<string, string> = {
 
 const existingQuotationVariants = new Set(['Arduino Uno R3', 'Arduino Mega 2560', 'Arduino Nano', 'Li-ion 18650 Pack 3.7V x N', 'Full-size Solderless Breadboard', 'ESP8266 NodeMCU', 'ESP32 WROOM', 'L298N Dual H-Bridge', 'Micro Servo SG90', 'Digital Multimeter 600V/10A', 'Raspberry Pi 4 4GB', '60W Soldering Iron + Accessories', 'Rubber Robot Wheel 65mm'])
 
+const quotationImages: Record<string, string> = {
+  'Air Quality': 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80',
+  'Arduino Boards': 'https://images.unsplash.com/photo-1553406830-ef2513450d76?auto=format&fit=crop&w=600&q=80',
+  Battery: 'https://images.unsplash.com/photo-1620283085439-39620a128440?auto=format&fit=crop&w=600&q=80',
+  Breadboard: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80',
+  Camera: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=600&q=80',
+  'Charge Controller': 'https://images.unsplash.com/photo-1616763355548-1b606f439f86?auto=format&fit=crop&w=600&q=80',
+  'Charging Modules': 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80',
+  'Connecting Cables': 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=600&q=80',
+  'DC to DC Converter': 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80',
+  Display: 'https://images.unsplash.com/photo-1553406830-ef2513450d76?auto=format&fit=crop&w=600&q=80',
+  Encoder: 'https://images.unsplash.com/photo-1535378917042-10a22c95931a?auto=format&fit=crop&w=600&q=80',
+  'Encoder Wheel': 'https://images.unsplash.com/photo-1535378917042-10a22c95931a?auto=format&fit=crop&w=600&q=80',
+  ESC: 'https://images.unsplash.com/photo-1508610048659-a06b669e3321?auto=format&fit=crop&w=600&q=80',
+  'ESP Boards': 'https://images.unsplash.com/photo-1553406830-ef2513450d76?auto=format&fit=crop&w=600&q=80',
+  'Flight Controller': 'https://images.unsplash.com/photo-1508610048659-a06b669e3321?auto=format&fit=crop&w=600&q=80',
+  Frame: 'https://images.unsplash.com/photo-1508610048659-a06b669e3321?auto=format&fit=crop&w=600&q=80',
+  Gimbal: 'https://images.unsplash.com/photo-1508610048659-a06b669e3321?auto=format&fit=crop&w=600&q=80',
+  GPS: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=600&q=80',
+  'GSM Module': 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=600&q=80',
+  'Header Pins': 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80',
+  'Heat Shrink': 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=600&q=80',
+  IMU: 'https://images.unsplash.com/photo-1535378917042-10a22c95931a?auto=format&fit=crop&w=600&q=80',
+  'Linear Actuator': 'https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?auto=format&fit=crop&w=600&q=80',
+  'LoRa Module': 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=600&q=80',
+  MCU: 'https://images.unsplash.com/photo-1553406830-ef2513450d76?auto=format&fit=crop&w=600&q=80',
+  'Motor Driver': 'https://images.unsplash.com/photo-1553406830-ef2513450d76?auto=format&fit=crop&w=600&q=80',
+  Motors: 'https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?auto=format&fit=crop&w=600&q=80',
+  Multimeter: 'https://images.unsplash.com/photo-1530124566582-a618bc2615dc?auto=format&fit=crop&w=600&q=80',
+  'Nuts and Bolts': 'https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?auto=format&fit=crop&w=600&q=80',
+  'PCB Service': 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80',
+  PDB: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80',
+  'pH Sensor': 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80',
+  'PID Controller': 'https://images.unsplash.com/photo-1553406830-ef2513450d76?auto=format&fit=crop&w=600&q=80',
+  'PID Tuning Kit': 'https://images.unsplash.com/photo-1530124566582-a618bc2615dc?auto=format&fit=crop&w=600&q=80',
+  'Power Bank': 'https://images.unsplash.com/photo-1620283085439-39620a128440?auto=format&fit=crop&w=600&q=80',
+  Propellers: 'https://images.unsplash.com/photo-1508610048659-a06b669e3321?auto=format&fit=crop&w=600&q=80',
+  'Rain Sensor': 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80',
+  'Relay Module': 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80',
+  RTC: 'https://images.unsplash.com/photo-1553406830-ef2513450d76?auto=format&fit=crop&w=600&q=80',
+  SBC: 'https://images.unsplash.com/photo-1553406830-ef2513450d76?auto=format&fit=crop&w=600&q=80',
+  'SBC Accessory': 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=600&q=80',
+  'SD Module': 'https://images.unsplash.com/photo-1553406830-ef2513450d76?auto=format&fit=crop&w=600&q=80',
+  'Smart Switch': 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=600&q=80',
+  'Soil Sensor': 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80',
+  'Solar Panel': 'https://images.unsplash.com/photo-1616763355548-1b606f439f86?auto=format&fit=crop&w=600&q=80',
+  'Soldering Kit': 'https://images.unsplash.com/photo-1530124566582-a618bc2615dc?auto=format&fit=crop&w=600&q=80',
+  'Solenoid Valve': 'https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?auto=format&fit=crop&w=600&q=80',
+  SSR: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80',
+  'Stepper Driver': 'https://images.unsplash.com/photo-1553406830-ef2513450d76?auto=format&fit=crop&w=600&q=80',
+  'TDS Sensor': 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80',
+  'Voltage Sensor': 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80',
+  'Water Pump': 'https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?auto=format&fit=crop&w=600&q=80',
+  Wheels: 'https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?auto=format&fit=crop&w=600&q=80',
+}
+
 const quotationProducts: Product[] = quotationItems.filter(([, variant]) => !existingQuotationVariants.has(variant)).map(([type, variant, description, supplier], index) => ({
   ...standard,
   id: `quote-${variant.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
@@ -219,6 +281,7 @@ const quotationProducts: Product[] = quotationItems.filter(([, variant]) => !exi
   color: index % 2 === 0 ? 'from-[#dce8ff] to-[#7e9ff2]' : 'from-[#dff4ec] to-[#79c7a8]',
   badge: 'Quotation inventory',
   supplier,
+  image: quotationImages[type] || 'https://images.unsplash.com/photo-1553406830-ef2513450d76?auto=format&fit=crop&w=600&q=80',
 }))
 
 export const products: Product[] = [...inventoryProducts, ...additionalInventoryProducts, ...quotationProducts, ...robotCarProducts, ...projectProducts]
