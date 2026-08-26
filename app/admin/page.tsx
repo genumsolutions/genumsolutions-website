@@ -19,11 +19,11 @@ export default async function AdminPage() {
       <header className="border-b border-line bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-5 lg:px-8">
           <div>
-            <Link href="/" className="text-sm font-black text-cobalt">GENUM SOLUTIONS</Link>
+            <Link href="/" className="text-sm font-black text-navy">GENUM SOLUTIONS</Link>
             <h1 className="mt-2 font-display text-3xl font-bold text-ink">Admin Dashboard</h1>
           </div>
           <div className="flex items-center gap-3">
-            <span className="hidden max-w-[14rem] truncate rounded-full bg-cobalt-light px-4 py-2 text-xs font-bold text-cobalt sm:block" title={admin.email}>{admin.email}</span>
+            <span className="hidden max-w-[14rem] truncate rounded-full bg-navy-light px-4 py-2 text-xs font-bold text-navy sm:block" title={admin.email}>{admin.email}</span>
             <LogoutButton className="rounded-lg border border-line px-4 py-2 text-sm font-semibold text-ink transition hover:border-red-300 hover:text-red-600" />
           </div>
         </div>

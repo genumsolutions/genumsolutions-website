@@ -40,7 +40,7 @@ export default function ResetPasswordPanel() {
   }
 
   if (done) {
-    return <main className="grid-paper flex min-h-[70vh] items-center justify-center px-5 py-14"><div className="w-full max-w-md border-t-4 border-cobalt bg-white p-8 text-center shadow-xl"><h1 className="font-display text-4xl font-bold">Password updated.</h1><p className="mt-3 text-sm leading-6 text-slate-600">Your new password is active. Use it the next time you sign in.</p><Link href="/account" className="mt-7 inline-block bg-cobalt px-6 py-3.5 text-sm font-black text-white">Go to your account</Link></div></main>
+    return <main className="grid-paper flex min-h-[70vh] items-center justify-center px-5 py-14"><div className="w-full max-w-md border-t-4 border-navy bg-white p-8 text-center shadow-xl"><h1 className="font-display text-4xl font-bold">Password updated.</h1><p className="mt-3 text-sm leading-6 text-slate-600">Your new password is active. Use it the next time you sign in.</p><Link href="/account" className="mt-7 inline-block bg-navy px-6 py-3.5 text-sm font-black text-white">Go to your account</Link></div></main>
   }
 
   if (ready === 'checking') {
@@ -48,19 +48,19 @@ export default function ResetPasswordPanel() {
   }
 
   if (ready === 'anonymous') {
-    return <main className="grid-paper flex min-h-[70vh] items-center justify-center px-5 py-14"><div className="w-full max-w-md border-t-4 border-cobalt bg-white p-8 shadow-xl"><h1 className="font-display text-3xl font-bold">Link expired or already used.</h1><p className="mt-3 text-sm leading-6 text-slate-600">Recovery links only work once and expire quickly. Start again from the sign-in page to receive a fresh email.</p><Link href="/login" className="mt-7 inline-block bg-cobalt px-6 py-3.5 text-sm font-black text-white">Back to sign in</Link></div></main>
+    return <main className="grid-paper flex min-h-[70vh] items-center justify-center px-5 py-14"><div className="w-full max-w-md border-t-4 border-navy bg-white p-8 shadow-xl"><h1 className="font-display text-3xl font-bold">Link expired or already used.</h1><p className="mt-3 text-sm leading-6 text-slate-600">Recovery links only work once and expire quickly. Start again from the sign-in page to receive a fresh email.</p><Link href="/login" className="mt-7 inline-block bg-navy px-6 py-3.5 text-sm font-black text-white">Back to sign in</Link></div></main>
   }
 
   return (
     <main className="grid-paper flex min-h-[70vh] items-center justify-center px-5 py-14">
-      <form onSubmit={submit} className="w-full max-w-md border-t-4 border-cobalt bg-white p-8 shadow-xl">
-        <Link href="/" className="text-sm font-bold text-cobalt">GENUM SOLUTIONS</Link>
+      <form onSubmit={submit} className="w-full max-w-md border-t-4 border-navy bg-white p-8 shadow-xl">
+        <Link href="/" className="text-sm font-bold text-navy">GENUM SOLUTIONS</Link>
         <h1 className="mt-10 font-display text-4xl font-bold text-ink">Set a new password</h1>
         <p className="mt-3 text-sm leading-6 text-slate-600">Choose a password you have not used elsewhere. At least 6 characters.</p>
         <label className="mt-8 block text-sm font-bold text-ink">New password<input name="password" type="password" required autoComplete="new-password" className={`mt-2 w-full ${inputClass}`} /></label>
         <label className="mt-5 block text-sm font-bold text-ink">Confirm new password<input name="confirm" type="password" required autoComplete="new-password" className={`mt-2 w-full ${inputClass}`} /></label>
         {error && <p className="mt-4 text-sm font-bold text-red-600">{error}</p>}
-        <button disabled={busy} className="mt-7 w-full bg-cobalt px-5 py-3.5 text-sm font-black text-white disabled:opacity-60">{busy ? 'Saving...' : 'Save new password'}</button>
+        <button disabled={busy} className="mt-7 w-full bg-navy px-5 py-3.5 text-sm font-black text-white disabled:opacity-60">{busy ? 'Saving...' : 'Save new password'}</button>
       </form>
     </main>
   )

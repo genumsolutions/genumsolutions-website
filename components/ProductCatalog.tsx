@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { Check, Search } from 'lucide-react'
 import type { Product } from '../lib/catalog'
 import { getProductMedia } from '../lib/product-media'
 import { useCart } from './cart-provider'
@@ -62,20 +63,20 @@ export default function ProductCatalog({ scope = 'components', products = [] }: 
               <button
                 key={item}
                 onClick={() => setCategory(item)}
-                className={`rounded-full px-4 py-2 text-xs font-bold transition ${category === item ? 'bg-cobalt text-white' : 'border border-line bg-white text-muted hover:border-cobalt hover:text-cobalt'}`}
+                className={`rounded-full px-4 py-2 text-xs font-bold transition ${category === item ? 'bg-navy text-white' : 'border border-line bg-white text-muted hover:border-navy hover:text-navy'}`}
               >
                 {item}{item !== 'All' && ` · ${products.filter((p) => p.category === item).length}`}
               </button>
             ))}
           </div>
           <label className="flex items-center gap-3 rounded-full border border-line bg-white px-4 py-2 text-sm text-muted">
-            <span aria-hidden="true">⌕</span>
+            <Search size={15} aria-hidden="true" />
             <input value={query} onChange={(event) => setQuery(event.target.value)} className="w-full bg-transparent outline-none placeholder:text-muted lg:w-52" placeholder="Search this section" aria-label="Search products" />
           </label>
         </div>
         <div className="mt-5 flex items-center justify-between text-sm text-muted">
           <span>{visibleProducts.length} listing{visibleProducts.length === 1 ? '' : 's'} found</span>
-          <span aria-live="polite" className="font-bold text-cobalt">{hydrated && count > 0 ? `${count} item${count === 1 ? '' : 's'} in your build list` : scope === 'components' ? 'Components and materials only' : 'Quote by scope'}</span>
+          <span aria-live="polite" className="font-bold text-navy">{hydrated && count > 0 ? `${count} item${count === 1 ? '' : 's'} in your build list` : scope === 'components' ? 'Components and materials only' : 'Quote by scope'}</span>
         </div>
       </div>
 
@@ -109,21 +110,21 @@ export default function ProductCatalog({ scope = 'components', products = [] }: 
                 <span className="absolute bottom-3 left-4 text-xs font-black uppercase tracking-widest text-white">{product.category}</span>
               </Link>
               <div className="p-5">
-                <p className="text-xs font-black uppercase tracking-widest text-cobalt">{product.badge || product.productType}</p>
+                <p className="text-xs font-black uppercase tracking-widest text-navy">{product.badge || product.productType}</p>
                 <h2 className="mt-2 font-display text-xl font-bold leading-snug">{product.name}</h2>
                 <p className="mt-2 min-h-12 text-sm leading-6 text-muted">{product.note || product.description?.split('. ')[0]}</p>
                 <div className="mt-5 flex items-center justify-between gap-3">
                   <strong className="font-display text-lg">{product.priceLabel}</strong>
                   {quoteOnly ? (
-                    <Link href={`/products/${product.id}`} className="rounded-full bg-cobalt px-4 py-2 text-xs font-black text-white transition hover:bg-cobalt-dark" aria-label={`View details for ${product.name}`}>View details</Link>
+                    <Link href={`/products/${product.id}`} className="rounded-full bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark" aria-label={`View details for ${product.name}`}>View details</Link>
                   ) : (
                     <button
                       onClick={() => addToCart(product.id)}
-                      className={`rounded-full px-4 py-2 text-xs font-black text-white transition ${addedId === product.id ? 'bg-emerald-600' : 'bg-cobalt hover:bg-cobalt-dark'}`}
+                      className={`rounded-full px-4 py-2 text-xs font-black text-white transition ${addedId === product.id ? 'bg-emerald-600' : 'bg-navy hover:bg-navy-dark'}`}
                       aria-label={`${addedId === product.id ? 'Added' : 'Add'} ${product.name} to build list`}
                       aria-live="polite"
                     >
-                      {addedId === product.id ? 'Added ✓' : 'Add'}
+                      {addedId === product.id ? <span className="inline-flex items-center gap-1.5"><Check size={13} aria-hidden="true" /> Added</span> : 'Add'}
                     </button>
                   )}
                 </div>

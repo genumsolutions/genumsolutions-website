@@ -39,7 +39,7 @@ export default function ContactForm() {
     <label className="block text-sm font-bold text-ink">Message
       <textarea name="message" required maxLength={5000} className={`mt-2 min-h-36 w-full ${inputClass}`} placeholder="What are you working on?" />
     </label>
-    <button className="rounded-lg bg-cobalt px-5 py-3 text-sm font-black text-white transition hover:bg-cobalt-dark disabled:cursor-wait disabled:opacity-60" type="submit" disabled={sending}>{sending ? 'Sending...' : 'Send inquiry ↗'}</button>
+    <button className="rounded-lg bg-navy px-5 py-3 text-sm font-black text-white transition hover:bg-navy-dark disabled:cursor-wait disabled:opacity-60" type="submit" disabled={sending}>{sending ? 'Sending...' : 'Send inquiry ↗'}</button>
     {status && <p role={isError ? 'alert' : 'status'} className={`text-sm font-semibold ${isError ? 'text-red-600' : 'text-emerald-700'}`}>{status}</p>}
   </form>
 }

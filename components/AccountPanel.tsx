@@ -24,7 +24,7 @@ type Order = { id: string; items: { name: string; quantity: number; price: numbe
 const statusStyles: Record<string, string> = {
   pending: 'bg-amber-100 text-amber-800',
   paid: 'bg-emerald-100 text-emerald-800',
-  fulfilled: 'bg-cobalt/10 text-cobalt',
+  fulfilled: 'bg-navy/10 text-navy',
   cancelled: 'bg-red-100 text-red-700',
 }
 
@@ -83,12 +83,12 @@ export default function AccountPanel() {
     <main className="grid-paper min-h-[70vh]">
       <div className="mx-auto max-w-5xl space-y-6 px-5 py-12 lg:px-8">
 
-        <header className="border-t-4 border-cobalt bg-white p-6 sm:p-8">
+        <header className="border-t-4 border-navy bg-white p-6 sm:p-8">
           <div className="flex flex-wrap items-center justify-between gap-5">
             <div className="flex items-center gap-4">
-              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-cobalt font-display text-lg font-black text-white">{initials(customer.name)}</span>
+              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-navy font-display text-lg font-black text-white">{initials(customer.name)}</span>
               <div>
-                <p className="text-xs font-black uppercase tracking-[.25em] text-cobalt">Customer account</p>
+                <p className="text-xs font-black uppercase tracking-[.25em] text-navy">Customer account</p>
                 <h1 className="mt-1 font-display text-2xl font-bold text-ink sm:text-3xl">Welcome, {customer.name}.</h1>
                 <p className="mt-1 text-sm text-slate-600">{customer.email}</p>
               </div>
@@ -98,15 +98,15 @@ export default function AccountPanel() {
         </header>
 
         <div className="grid gap-4 sm:grid-cols-3">
-          <a href="#orders" className="rounded-2xl border border-line bg-white p-5 shadow-card transition hover:border-cobalt">
+          <a href="#orders" className="rounded-2xl border border-line bg-white p-5 shadow-card transition hover:border-navy">
             <strong className="block font-display text-3xl font-bold text-ink">{orders.length}</strong>
             <span className="mt-1 block text-sm font-semibold text-muted">Order{orders.length === 1 ? '' : 's'} placed</span>
           </a>
-          <Link href="/checkout" className="rounded-2xl border border-line bg-white p-5 shadow-card transition hover:border-cobalt">
+          <Link href="/checkout" className="rounded-2xl border border-line bg-white p-5 shadow-card transition hover:border-navy">
             <strong className="block font-display text-3xl font-bold text-ink">{customer.cart.length}</strong>
             <span className="mt-1 block text-sm font-semibold text-muted">Item types in build list</span>
           </Link>
-          <Link href="/contact" className="rounded-2xl border border-line bg-white p-5 shadow-card transition hover:border-cobalt">
+          <Link href="/contact" className="rounded-2xl border border-line bg-white p-5 shadow-card transition hover:border-navy">
             <strong className="block font-display text-3xl font-bold text-ink">{customer.messages.length}</strong>
             <span className="mt-1 block text-sm font-semibold text-muted">Support message{customer.messages.length === 1 ? '' : 's'}</span>
           </Link>
@@ -143,7 +143,7 @@ export default function AccountPanel() {
             <label className="block text-sm font-bold text-ink">Phone<input name="phone" type="tel" defaultValue={customer.phone || ''} autoComplete="tel" className={`mt-2 w-full ${inputClass}`} /></label>
             <label className="block text-sm font-bold text-ink sm:col-span-2">Delivery address<textarea name="address" defaultValue={customer.address || ''} rows={3} className={`mt-2 w-full ${inputClass}`} /></label>
             <div className="flex items-center gap-3 sm:col-span-2">
-              <button disabled={busy} className="rounded-lg bg-signal px-5 py-3 text-sm font-bold text-ink shadow-sm transition hover:bg-signal-dark disabled:opacity-60">{busy ? 'Saving…' : 'Save details'}</button>
+              <button disabled={busy} className="rounded-lg bg-gold px-5 py-3 text-sm font-bold text-ink shadow-sm transition hover:bg-gold-dark disabled:opacity-60">{busy ? 'Saving…' : 'Save details'}</button>
               {profileSaved && <span role="status" className="text-sm font-bold text-emerald-700">Details saved.</span>}
               {error && <span role="alert" className="text-sm font-bold text-red-600">{error}</span>}
             </div>
@@ -152,7 +152,7 @@ export default function AccountPanel() {
 
         <SectionCard title="Your messages">
           {customer.messages.length === 0 ? (
-            <p className="mt-3 pb-2 text-sm text-slate-500">No messages yet. <Link href="/contact" className="font-bold text-cobalt underline">Ask us about a project</Link>.</p>
+            <p className="mt-3 pb-2 text-sm text-slate-500">No messages yet. <Link href="/contact" className="font-bold text-navy underline">Ask us about a project</Link>.</p>
           ) : (
             <div className="mt-4 divide-y divide-line">
               {customer.messages.map((item) => (

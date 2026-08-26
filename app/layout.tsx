@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Manrope, Space_Grotesk } from 'next/font/google'
+import { Inter, Sora } from 'next/font/google'
 import OrganizationJsonLd from '../components/OrganizationJsonLd'
 import { CartProvider } from '../components/cart-provider'
 import PageViewTracker from '../components/PageViewTracker'
@@ -7,8 +7,8 @@ import WebVitals from '../components/WebVitals'
 import { company } from '../lib/company'
 import './globals.css'
 
-const manrope = Manrope({ subsets: ['latin'], variable: '--font-manrope' })
-const space = Space_Grotesk({ subsets: ['latin'], variable: '--font-space' })
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
+const sora = Sora({ subsets: ['latin'], variable: '--font-sora' })
 
 export const metadata: Metadata = {
   metadataBase: new URL(company.url),
@@ -23,7 +23,13 @@ export const metadata: Metadata = {
   openGraph: { type: 'website', locale: 'en_NP', url: '/', siteName: company.shortName, title: 'GENUM SOLUTIONS | Build what matters', description: company.description, images: [{ url: '/logo.png', width: 512, height: 512, alt: 'GENUM SOLUTIONS official stamp' }] },
   twitter: { card: 'summary', title: 'GENUM SOLUTIONS | Build what matters', description: company.description, images: ['/logo.png'] },
   robots: { index: true, follow: true, googleBot: { index: true, follow: true, 'max-image-preview': 'large' } },
-  icons: { icon: '/logo.png', apple: '/logo.png' },
+  icons: {
+    icon: [
+      { url: '/icon-32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+    ],
+    apple: '/apple-touch-icon.png',
+  },
 }
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -31,10 +37,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#2563eb" />
+        <meta name="theme-color" content="#1e3a8a" />
         <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('theme');if(t==='dim')document.documentElement.setAttribute('data-theme','dim')}catch(e){}` }} />
       </head>
-      <body className={`${manrope.variable} ${space.variable}`}>
+      <body className={`${inter.variable} ${sora.variable}`}>
         <OrganizationJsonLd />
         <PageViewTracker />
         <WebVitals />

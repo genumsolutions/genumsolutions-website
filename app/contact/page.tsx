@@ -22,7 +22,7 @@ export default function ContactPage() {
         <div className="border-t-2 border-ink pt-5">
           <p className="text-sm font-bold">{company.name}</p>
           <p className="mt-3 leading-7 text-muted">{company.address}</p>
-          <p className="mt-5 text-sm font-bold text-cobalt">{company.email}<br />{company.phone}</p>
+          <p className="mt-5 text-sm font-bold text-navy">{company.email}<br />{company.phone}</p>
         </div>
       </section>
     </PageShell>

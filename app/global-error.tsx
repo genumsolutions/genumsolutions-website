@@ -15,13 +15,13 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
             <div className="mt-8 flex flex-wrap justify-center gap-3">
               <button
                 onClick={reset}
-                className="rounded-full bg-cobalt px-6 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-cobalt-dark"
+                className="rounded-full bg-navy px-6 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-navy-dark"
               >
                 Try again
               </button>
               <a
                 href="/"
-                className="rounded-full border border-line bg-white px-6 py-3.5 text-sm font-black text-ink transition hover:border-cobalt hover:text-cobalt"
+                className="rounded-full border border-line bg-white px-6 py-3.5 text-sm font-black text-ink transition hover:border-navy hover:text-navy"
               >
                 Back to home
               </a>

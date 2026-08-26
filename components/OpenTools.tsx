@@ -24,18 +24,18 @@ export default function OpenTools() {
     <section className="mx-auto max-w-7xl px-5 py-12 lg:px-8 lg:py-16">
       <div className="flex flex-wrap gap-2" role="group" aria-label="Filter tools by category">
         {groups.map((group) => (
-          <button key={group} onClick={() => setFilter(group)} aria-pressed={filter === group} className={`rounded-full px-4 py-2 text-xs font-bold transition ${filter === group ? 'bg-cobalt text-white' : 'border border-line bg-white text-muted hover:border-cobalt hover:text-cobalt'}`}>
+          <button key={group} onClick={() => setFilter(group)} aria-pressed={filter === group} className={`rounded-full px-4 py-2 text-xs font-bold transition ${filter === group ? 'bg-navy text-white' : 'border border-line bg-white text-muted hover:border-navy hover:text-navy'}`}>
             {group}
           </button>
         ))}
       </div>
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {visible.map((tool) => (
-          <article key={tool.name} className="rounded-2xl border-t-2 border-cobalt bg-white p-5 shadow-card">
-            <p className="text-[10px] font-black uppercase tracking-widest text-cobalt">{tool.group}</p>
+          <article key={tool.name} className="rounded-2xl border-t-2 border-navy bg-white p-5 shadow-card">
+            <p className="text-[10px] font-black uppercase tracking-widest text-navy">{tool.group}</p>
             <h2 className="mt-8 font-display text-xl font-bold">{tool.name}</h2>
             <p className="mt-2 text-sm leading-6 text-muted">{tool.description}</p>
-            <a href={tool.href} target="_blank" rel="noreferrer" className="mt-6 inline-block text-sm font-bold text-cobalt underline decoration-signal decoration-2 underline-offset-4 transition hover:text-cobalt-dark">Open tool ↗</a>
+            <a href={tool.href} target="_blank" rel="noreferrer" className="mt-6 inline-block text-sm font-bold text-navy underline decoration-gold decoration-2 underline-offset-4 transition hover:text-navy-dark">Open tool ↗</a>
           </article>
         ))}
       </div>

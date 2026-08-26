@@ -105,32 +105,32 @@ export default function CheckoutPage() {
             <span className="font-display text-lg font-bold">GENUM checkout</span>
           </Link>
           <div className="flex items-center gap-5">
-            <Link href="/products" className="text-sm font-bold text-cobalt hover:underline">Continue shopping</Link>
-            {account && <Link href="/account" className="text-sm font-bold text-cobalt hover:underline">My account</Link>}
+            <Link href="/products" className="text-sm font-bold text-navy hover:underline">Continue shopping</Link>
+            {account && <Link href="/account" className="text-sm font-bold text-navy hover:underline">My account</Link>}
           </div>
         </div>
       </header>
       <div className="mx-auto max-w-7xl px-5 py-12 lg:px-8">
-        <p className="text-xs font-black uppercase tracking-[.24em] text-cobalt">Secure order</p>
+        <p className="text-xs font-black uppercase tracking-[.24em] text-navy">Secure order</p>
         <h1 className="mt-3 font-display text-4xl font-bold tracking-tight sm:text-5xl">Ready to build?</h1>
         {!account && hydrated && lines.length > 0 && (
-          <div className="mt-6 rounded-2xl border border-cobalt/20 bg-cobalt-light p-5 text-sm text-ink">
+          <div className="mt-6 rounded-2xl border border-navy/20 bg-navy-light p-5 text-sm text-ink">
             <strong>Sign in to place your order.</strong> Your build list is already saved and will merge into your account.{' '}
-            <Link href="/login" className="font-bold text-cobalt transition hover:text-cobalt-dark">Sign in or create an account</Link>
+            <Link href="/login" className="font-bold text-navy transition hover:text-navy-dark">Sign in or create an account</Link>
           </div>
         )}
         {!hydrated ? (
           <div className="mt-10 animate-pulse rounded-2xl border border-line bg-white p-12 text-center text-sm font-bold text-muted" role="status">Loading your build list...</div>
         ) : items.length === 0 && lines.length > 0 ? (
-          <div className="mt-10 rounded-2xl border border-dashed border-signal bg-white p-8 text-center">
+          <div className="mt-10 rounded-2xl border border-dashed border-gold bg-white p-8 text-center">
             <h2 className="font-display text-xl font-bold">Some items in your build list are no longer available.</h2>
             <p className="mt-2 text-sm text-muted">They were removed because they are out of stock or no longer listed.</p>
-            <Link href="/products" className="mt-5 inline-block rounded-lg bg-cobalt px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-cobalt-dark">Browse alternatives</Link>
+            <Link href="/products" className="mt-5 inline-block rounded-lg bg-navy px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-navy-dark">Browse alternatives</Link>
           </div>
         ) : items.length === 0 ? (
           <div className="mt-10 rounded-2xl border border-dashed border-line bg-white p-12 text-center">
             <h2 className="font-display text-2xl font-bold">Your build list is empty.</h2>
-            <Link href="/products" className="mt-5 inline-block rounded-lg bg-cobalt px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-cobalt-dark">Browse products</Link>
+            <Link href="/products" className="mt-5 inline-block rounded-lg bg-navy px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-navy-dark">Browse products</Link>
           </div>
         ) : (
           <div className="mt-10 grid gap-10 lg:grid-cols-[1.1fr_.9fr]">
@@ -162,22 +162,22 @@ export default function CheckoutPage() {
                       <p className="text-xs text-muted">{formatNPR(product.price)} each · {product.stock} in stock</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <button onClick={() => changeQuantity(product.id, quantity - 1)} className="h-8 w-8 rounded-lg border border-line font-bold transition hover:border-cobalt hover:text-cobalt disabled:opacity-40" disabled={quantity <= 1} aria-label={`Reduce ${product.name} quantity`}>−</button>
+                      <button onClick={() => changeQuantity(product.id, quantity - 1)} className="h-8 w-8 rounded-lg border border-line font-bold transition hover:border-navy hover:text-navy disabled:opacity-40" disabled={quantity <= 1} aria-label={`Reduce ${product.name} quantity`}>−</button>
                       <span className="w-6 text-center text-sm font-bold" aria-live="polite">{quantity}</span>
-                      <button onClick={() => changeQuantity(product.id, Math.min(quantity + 1, product.stock))} disabled={quantity >= product.stock} className="h-8 w-8 rounded-lg border border-line font-bold transition hover:border-cobalt hover:text-cobalt disabled:opacity-40" aria-label={`Add another ${product.name}`}>+</button>
+                      <button onClick={() => changeQuantity(product.id, Math.min(quantity + 1, product.stock))} disabled={quantity >= product.stock} className="h-8 w-8 rounded-lg border border-line font-bold transition hover:border-navy hover:text-navy disabled:opacity-40" aria-label={`Add another ${product.name}`}>+</button>
                       <button onClick={() => changeQuantity(product.id, 0)} className="ml-1 text-xs font-bold text-red-600 underline" aria-label={`Remove ${product.name} from build list`}>Remove</button>
                     </div>
                   </div>
                 ))}
               </div>
-              <div className="rounded-2xl border-t-4 border-cobalt bg-white p-6 shadow-card">
+              <div className="rounded-2xl border-t-4 border-navy bg-white p-6 shadow-card">
                 <div className="flex items-center justify-between text-lg font-black"><span>Total</span><span>{formatNPR(total)}</span></div>
                 <div className="mt-5 grid gap-3">
-                  <button onClick={() => payNepal('esewa')} disabled={busy} className="rounded-lg bg-cobalt px-5 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-cobalt-dark disabled:cursor-not-allowed disabled:opacity-60">Pay with eSewa</button>
-                  <button onClick={() => payNepal('khalti')} disabled={busy} className="rounded-lg bg-cobalt px-5 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-cobalt-dark disabled:cursor-not-allowed disabled:opacity-60">Pay with Khalti</button>
+                  <button onClick={() => payNepal('esewa')} disabled={busy} className="rounded-lg bg-navy px-5 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-navy-dark disabled:cursor-not-allowed disabled:opacity-60">Pay with eSewa</button>
+                  <button onClick={() => payNepal('khalti')} disabled={busy} className="rounded-lg bg-navy px-5 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-navy-dark disabled:cursor-not-allowed disabled:opacity-60">Pay with Khalti</button>
                   <button onClick={payCod} disabled={busy} className="rounded-lg border-2 border-dashed border-line px-5 py-3.5 text-sm font-bold text-muted transition hover:border-ink hover:text-ink disabled:cursor-not-allowed disabled:opacity-60">Reserve order · Pay on delivery</button>
                 </div>
-                <div role="status" aria-live="polite">{message && <p className="mt-4 text-sm font-bold text-signal">{message}</p>}</div>
+                <div role="status" aria-live="polite">{message && <p className="mt-4 text-sm font-bold text-gold">{message}</p>}</div>
               </div>
             </section>
           </div>

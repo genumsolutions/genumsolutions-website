@@ -2,8 +2,9 @@
 
 import { FormEvent, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
+import { Activity, ChevronLeft, ChevronRight, LayoutDashboard, MessageSquare, Package, ShoppingBag, Users, Wallet, Wrench } from 'lucide-react'
 import { formatNPR } from '../lib/catalog'
-import { inputClass } from '../lib/styles'
+import { inputClass, tabActive, tabBase, tabInactive } from '../lib/styles'
 import type { Product } from '../lib/content-store'
 
 type Props = { initialProducts: Product[] }
@@ -23,6 +24,17 @@ type PageViewStat = { path: string; count: number; uniqueUsers: number }
 
 const STATUSES = ['pending', 'paid', 'fulfilled', 'cancelled']
 const TABS = ['Dashboard', 'Products', 'Services', 'Orders', 'Finance', 'Users', 'Messages', 'Activity'] as const
+
+const TAB_ICONS = {
+  Dashboard: LayoutDashboard,
+  Products: Package,
+  Services: Wrench,
+  Orders: ShoppingBag,
+  Finance: Wallet,
+  Users: Users,
+  Messages: MessageSquare,
+  Activity: Activity,
+} as const
 type Tab = typeof TABS[number]
 const PAGE_SIZE = 10
 
@@ -32,9 +44,9 @@ function Pager({ page, totalPages, onPage }: { page: number; totalPages: number;
   if (totalPages <= 1) return null
   return (
     <nav aria-label="Pagination" className="mt-4 flex items-center justify-between text-sm font-bold">
-      <button onClick={() => onPage(page - 1)} disabled={page <= 1} className="border border-line px-3 py-1.5 transition hover:border-cobalt hover:text-cobalt disabled:cursor-not-allowed disabled:opacity-40">← Prev</button>
+      <button onClick={() => onPage(page - 1)} disabled={page <= 1} className="inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 transition hover:border-navy hover:text-navy disabled:cursor-not-allowed disabled:opacity-40"><ChevronLeft size={14} aria-hidden="true" /> Prev</button>
       <span aria-live="polite" className="text-slate-500">Page {page} of {totalPages}</span>
-      <button onClick={() => onPage(page + 1)} disabled={page >= totalPages} className="border border-line px-3 py-1.5 transition hover:border-cobalt hover:text-cobalt disabled:cursor-not-allowed disabled:opacity-40">Next →</button>
+      <button onClick={() => onPage(page + 1)} disabled={page >= totalPages} className="inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 transition hover:border-navy hover:text-navy disabled:cursor-not-allowed disabled:opacity-40">Next <ChevronRight size={14} aria-hidden="true" /></button>
     </nav>
   )
 }
@@ -286,13 +298,27 @@ export default function AdminPanel({ initialProducts }: Props) {
 
   return (
     <div className="mx-auto max-w-7xl px-5 py-10 lg:px-8">
-      <div role="tablist" aria-label="Admin sections" className="flex flex-wrap gap-2 border-b border-line pb-4">
-        {TABS.map((name) => (
-          <button key={name} role="tab" id={`tab-${name.toLowerCase()}`} aria-selected={tab === name} aria-controls={`panel-${name.toLowerCase()}`} onClick={() => openTab(name)} className={`rounded-full px-5 py-2.5 text-sm font-bold transition ${tab === name ? 'bg-cobalt text-white' : 'border border-line bg-white text-muted hover:border-cobalt hover:text-cobalt'}`}>{name}</button>
-        ))}
+      <div role="tablist" aria-label="Admin sections" className="flex flex-wrap gap-x-6 border-b border-line">
+        {TABS.map((name) => {
+          const Icon = TAB_ICONS[name]
+          return (
+            <button
+              key={name}
+              role="tab"
+              id={`tab-${name.toLowerCase()}`}
+              aria-selected={tab === name}
+              aria-controls={`panel-${name.toLowerCase()}`}
+              onClick={() => openTab(name)}
+              className={`${tabBase} text-[13px] ${tab === name ? tabActive : tabInactive}`}
+            >
+              <Icon size={15} aria-hidden="true" />
+              {name}
+            </button>
+          )
+        })}
       </div>
 
-      {message && <p role="status" className="mt-4 border-l-4 border-cobalt bg-white px-4 py-3 text-sm font-bold text-ink">{message}</p>}
+      {message && <p role="status" className="mt-4 border-l-4 border-navy bg-white px-4 py-3 text-sm font-bold text-ink">{message}</p>}
 
       {/* ═══════ DASHBOARD ═══════ */}
       {tab === 'Dashboard' && (
@@ -332,7 +358,7 @@ export default function AdminPanel({ initialProducts }: Props) {
                     {analytics.viewsByDay.map((d) => {
                       const max = Math.max(...analytics.viewsByDay.map((x) => x.count), 1)
                       return (
-                        <div key={d.date} className="flex-1 bg-cobalt" style={{ height: `${(d.count / max) * 100}%`, minHeight: 2 }} title={`${d.date}: ${d.count}`} />
+                        <div key={d.date} className="flex-1 bg-navy" style={{ height: `${(d.count / max) * 100}%`, minHeight: 2 }} title={`${d.date}: ${d.count}`} />
                       )
                     })}
                   </div>
@@ -359,7 +385,7 @@ export default function AdminPanel({ initialProducts }: Props) {
                   <div key={item.id} className="flex items-center justify-between gap-2 py-2">
                     <span className="truncate text-sm"><strong>{item.name}</strong> <span className="text-slate-400">{item.sku}</span></span>
                     <span className="flex shrink-0 gap-2">
-                      <button onClick={() => { setProduct(item); window.scrollTo({ top: 0, behavior: 'smooth' }) }} className="text-xs font-bold text-cobalt underline">Edit</button>
+                      <button onClick={() => { setProduct(item); window.scrollTo({ top: 0, behavior: 'smooth' }) }} className="text-xs font-bold text-navy underline">Edit</button>
                       <button onClick={() => removeProduct(item.id)} className="text-xs font-bold text-red-600 underline">Delete</button>
                     </span>
                   </div>
@@ -381,13 +407,13 @@ export default function AdminPanel({ initialProducts }: Props) {
                     {product.image && <Image src={product.image} alt={product.name || 'Product preview'} width={64} height={64} className="rounded object-cover" />}
                     <input value={product.image || ''} onChange={(e) => updateProduct('image', e.target.value)} placeholder="https://... or upload below" aria-label="Product image URL" className={`min-w-0 flex-1 ${inputClass}`} />
                     <input ref={fileInput} type="file" accept="image/*" onChange={(e) => { const file = e.target.files?.[0]; if (file) void uploadImage(file); e.currentTarget.value = '' }} className="hidden" />
-                    <button type="button" disabled={uploading} onClick={() => fileInput.current?.click()} className="bg-cobalt px-4 py-2 text-xs font-black text-white disabled:opacity-60">{uploading ? 'Uploading...' : 'Upload'}</button>
+                    <button type="button" disabled={uploading} onClick={() => fileInput.current?.click()} className="bg-navy px-4 py-2 text-xs font-black text-white disabled:opacity-60">{uploading ? 'Uploading...' : 'Upload'}</button>
                   </div>
                 </div>
               </div>
               <div className="mt-5 flex gap-3">
-                <button type="submit" disabled={busy === 'product' || uploading} className="bg-signal px-5 py-3 text-sm font-black text-ink transition hover:bg-yellow-500 disabled:opacity-60">{busy === 'product' ? 'Saving...' : 'Save product'}</button>
-                {product.id && <button type="button" onClick={() => setProduct(emptyProduct)} className="border border-line px-5 py-3 text-sm font-black text-ink transition hover:border-cobalt">New product</button>}
+                <button type="submit" disabled={busy === 'product' || uploading} className="bg-gold px-5 py-3 text-sm font-black text-ink transition hover:bg-gold-dark disabled:opacity-60">{busy === 'product' ? 'Saving...' : 'Save product'}</button>
+                {product.id && <button type="button" onClick={() => setProduct(emptyProduct)} className="border border-line px-5 py-3 text-sm font-black text-ink transition hover:border-navy">New product</button>}
               </div>
             </form>
           </section>
@@ -409,7 +435,7 @@ export default function AdminPanel({ initialProducts }: Props) {
                         {!s.active && <span className="ml-2 text-[10px] font-black uppercase text-red-500">inactive</span>}
                       </div>
                       <span className="flex shrink-0 gap-2">
-                        <button onClick={() => { setService(s); window.scrollTo({ top: 0, behavior: 'smooth' }) }} className="text-xs font-bold text-cobalt underline">Edit</button>
+                        <button onClick={() => { setService(s); window.scrollTo({ top: 0, behavior: 'smooth' }) }} className="text-xs font-bold text-navy underline">Edit</button>
                         <button onClick={() => removeService(s.id)} className="text-xs font-bold text-red-600 underline">Delete</button>
                       </span>
                     </div>
@@ -432,8 +458,8 @@ export default function AdminPanel({ initialProducts }: Props) {
                 <label className="flex items-center gap-2 text-sm font-bold"><input type="checkbox" checked={service.active} onChange={(e) => updateService('active', e.target.checked)} className="h-4 w-4" /> Active (visible on site)</label>
               </div>
               <div className="mt-5 flex gap-3">
-                <button type="submit" disabled={busy === 'service'} className="bg-signal px-5 py-3 text-sm font-black text-ink transition hover:bg-yellow-500 disabled:opacity-60">{busy === 'service' ? 'Saving...' : 'Save service'}</button>
-                {service.id && <button type="button" onClick={() => setService(emptyService)} className="border border-line px-5 py-3 text-sm font-black text-ink transition hover:border-cobalt">New service</button>}
+                <button type="submit" disabled={busy === 'service'} className="bg-gold px-5 py-3 text-sm font-black text-ink transition hover:bg-gold-dark disabled:opacity-60">{busy === 'service' ? 'Saving...' : 'Save service'}</button>
+                {service.id && <button type="button" onClick={() => setService(emptyService)} className="border border-line px-5 py-3 text-sm font-black text-ink transition hover:border-navy">New service</button>}
               </div>
             </form>
           </section>
@@ -454,7 +480,7 @@ export default function AdminPanel({ initialProducts }: Props) {
                 {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
             </label>
-            <button onClick={() => void loadOrders(1)} className="bg-cobalt px-4 py-2 text-xs font-black text-white transition hover:bg-cobalt-dark">Apply</button>
+            <button onClick={() => void loadOrders(1)} className="bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark">Apply</button>
           </div>
           {!ordersLoaded ? <p className="text-sm text-slate-500" role="status">Loading…</p> : orderData.orders.length === 0 ? <p className="text-sm text-slate-500">No orders found.</p> : (
             <>
@@ -532,7 +558,7 @@ export default function AdminPanel({ initialProducts }: Props) {
             <label className="ml-auto text-sm font-bold text-slate-500">Search
               <input value={userQuery} onChange={(e) => setUserQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && void loadUsers(1)} placeholder="email or name" aria-label="Search users" className={`ml-2 w-56 ${inputClass}`} />
             </label>
-            <button onClick={() => void loadUsers(1)} className="bg-cobalt px-4 py-2 text-xs font-black text-white transition hover:bg-cobalt-dark">Apply</button>
+            <button onClick={() => void loadUsers(1)} className="bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark">Apply</button>
           </div>
           {!usersLoaded ? <p className="text-sm text-slate-500" role="status">Loading…</p> : userData.users.length === 0 ? <p className="text-sm text-slate-500">No users found.</p> : (
             <>
@@ -544,12 +570,12 @@ export default function AdminPanel({ initialProducts }: Props) {
                       {user.phone && <p className="text-xs text-slate-400">{user.phone}</p>}
                       {user.address && <p className="text-xs text-slate-400">{user.address}</p>}
                       <p className="text-xs text-slate-400">Joined {new Date(user.createdAt).toLocaleDateString()}{user.lastSignInAt ? ` · Last seen ${new Date(user.lastSignInAt).toLocaleDateString()}` : ''}</p>
-                      <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${user.role === 'admin' ? 'bg-signal text-ink' : 'bg-sky text-cobalt'}`}>{user.role}</span>
+                      <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${user.role === 'admin' ? 'bg-gold text-ink' : 'bg-sky text-navy'}`}>{user.role}</span>
                     </div>
                     <span className="flex shrink-0 gap-2">
                       {user.role === 'admin'
                         ? <button onClick={() => setUserRole(user.id, 'customer')} className="border border-red-200 px-3 py-1.5 text-xs font-bold text-red-600 transition hover:bg-red-50">Revoke admin</button>
-                        : <button onClick={() => setUserRole(user.id, 'admin')} className="border border-line px-3 py-1.5 text-xs font-bold text-cobalt transition hover:border-cobalt">Make admin</button>}
+                        : <button onClick={() => setUserRole(user.id, 'admin')} className="border border-line px-3 py-1.5 text-xs font-bold text-navy transition hover:border-navy">Make admin</button>}
                     </span>
                   </li>
                 ))}
@@ -572,19 +598,19 @@ export default function AdminPanel({ initialProducts }: Props) {
                 <option value="replied">Replied</option>
               </select>
             </label>
-            <button onClick={() => void loadMessages(1)} className="bg-cobalt px-4 py-2 text-xs font-black text-white transition hover:bg-cobalt-dark">Apply</button>
+            <button onClick={() => void loadMessages(1)} className="bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark">Apply</button>
           </div>
           {!messagesLoaded ? <p className="text-sm text-slate-500" role="status">Loading…</p> : messages.length === 0 ? <p className="text-sm text-slate-500">No messages found.</p> : (
             <>
               <ul className="space-y-3">
                 {messages.map((msg) => (
-                  <li key={msg.id} className={`border bg-white p-4 ${msg.status === 'new' ? 'border-l-4 border-l-cobalt border-line' : 'border-line'}`}>
+                  <li key={msg.id} className={`border bg-white p-4 ${msg.status === 'new' ? 'border-l-4 border-l-navy border-line' : 'border-line'}`}>
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div>
                         <p className="text-sm font-bold">{msg.name} <span className="font-normal text-slate-500">· {msg.email}</span></p>
                         <p className="mt-1 text-xs text-slate-400">{formatTimestamp(msg.created_at)}</p>
                       </div>
-                      {msg.status === 'new' && <button onClick={() => markMessageReplied(msg.id)} className="border border-line px-3 py-1.5 text-xs font-bold text-cobalt transition hover:border-cobalt">Mark replied</button>}
+                      {msg.status === 'new' && <button onClick={() => markMessageReplied(msg.id)} className="border border-line px-3 py-1.5 text-xs font-bold text-navy transition hover:border-navy">Mark replied</button>}
                       {msg.status === 'replied' && <span className="text-[10px] font-black uppercase text-emerald-600">Replied</span>}
                     </div>
                     <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-700">{msg.message}</p>
@@ -609,7 +635,7 @@ export default function AdminPanel({ initialProducts }: Props) {
               <ul className="space-y-2">
                 {activities.map((entry) => (
                   <li key={entry.id} className="flex items-start gap-3 border border-line bg-white px-4 py-3">
-                    <span className={`mt-0.5 inline-block h-2 w-2 shrink-0 rounded-full ${entry.action.includes('deleted') ? 'bg-red-500' : entry.action.includes('saved') ? 'bg-emerald-500' : entry.action.includes('status') ? 'bg-amber-500' : 'bg-cobalt'}`} />
+                    <span className={`mt-0.5 inline-block h-2 w-2 shrink-0 rounded-full ${entry.action.includes('deleted') ? 'bg-red-500' : entry.action.includes('saved') ? 'bg-emerald-500' : entry.action.includes('status') ? 'bg-amber-500' : 'bg-navy'}`} />
                     <div className="min-w-0 flex-1">
                       <p className="text-sm"><span className="font-bold">{entry.action}</span> <span className="text-slate-400">{entry.entityType}{entry.entityId ? ` / ${entry.entityId}` : ''}</span></p>
                       {Object.keys(entry.details).length > 0 && <p className="mt-0.5 text-xs text-slate-500">{JSON.stringify(entry.details)}</p>}

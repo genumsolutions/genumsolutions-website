@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import { ArrowRight } from 'lucide-react'
 import PageIntro from '../../components/PageIntro'
 import PageShell from '../../components/PageShell'
 
@@ -55,7 +56,7 @@ export default function AboutPage() {
 
         <div className="mt-16 grid gap-10 lg:grid-cols-[.8fr_1.2fr]">
           <div>
-            <p className="text-xs font-black uppercase tracking-[.24em] text-cobalt">How we work</p>
+            <p className="text-xs font-black uppercase tracking-[.24em] text-navy">How we work</p>
             <h2 className="mt-3 font-display text-4xl font-bold">Make the complex useful.</h2>
           </div>
           <div>
@@ -76,15 +77,15 @@ export default function AboutPage() {
       {/* ─── What We Do (cross-links) ─── */}
       <section className="border-y border-line bg-mist">
         <div className="mx-auto max-w-7xl px-5 py-14 lg:px-8">
-          <p className="text-xs font-black uppercase tracking-[.24em] text-cobalt">What we do</p>
+          <p className="text-xs font-black uppercase tracking-[.24em] text-navy">What we do</p>
           <h2 className="mt-2 font-display text-3xl font-bold tracking-tight">Our work in practice.</h2>
           <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {whatWeDo.map((item) => (
-              <article key={item.title} className="flex flex-col rounded-2xl border border-line bg-white p-6 transition hover:-translate-y-0.5 hover:border-cobalt hover:shadow-lg">
+              <article key={item.title} className="flex flex-col rounded-2xl border border-line bg-white p-6 transition hover:-translate-y-0.5 hover:border-navy hover:shadow-lg">
                 <h3 className="font-display text-lg font-bold leading-snug">{item.title}</h3>
                 <p className="mt-2 flex-1 text-sm leading-6 text-slate-600">{item.body}</p>
-                <Link href={item.href} className="mt-4 inline-flex items-center gap-1 text-sm font-black text-cobalt transition hover:gap-2">
-                  {item.cta} <span aria-hidden="true">→</span>
+                <Link href={item.href} className="mt-4 inline-flex items-center gap-1.5 text-sm font-black text-navy transition hover:gap-2.5">
+                  {item.cta} <ArrowRight size={14} aria-hidden="true" />
                 </Link>
               </article>
             ))}
@@ -94,11 +95,11 @@ export default function AboutPage() {
 
       {/* ─── Technical foundation ─── */}
       <section className="mx-auto max-w-7xl px-5 py-14 lg:px-8">
-        <p className="text-xs font-black uppercase tracking-[.24em] text-cobalt">Technical foundation</p>
+        <p className="text-xs font-black uppercase tracking-[.24em] text-navy">Technical foundation</p>
         <h2 className="mt-3 font-display text-4xl font-bold">Capabilities we bring to every project.</h2>
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {competencies.map(([title, text]) => (
-            <article key={title} className="border-l-2 border-signal bg-white p-5">
+            <article key={title} className="border-l-2 border-gold bg-white p-5">
               <h3 className="font-display text-xl font-bold">{title}</h3>
               <p className="mt-2 text-sm leading-6 text-slate-600">{text}</p>
             </article>

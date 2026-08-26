@@ -28,33 +28,33 @@ export default function PrintingPage() {
         <div className="grid gap-4 lg:grid-cols-3">
           {offers.map((offer) => (
             <article key={offer.title} className="border-t-2 border-ink bg-white p-6">
-              <p className="text-xs font-black uppercase tracking-widest text-cobalt">{offer.meta}</p>
+              <p className="text-xs font-black uppercase tracking-widest text-navy">{offer.meta}</p>
               <h2 className="mt-12 font-display text-2xl font-bold">{offer.title}</h2>
               <p className="mt-3 leading-7 text-muted">{offer.text}</p>
-              <Link href="/contact" className="mt-7 inline-block rounded-full bg-cobalt px-5 py-3 text-sm font-black text-white transition hover:bg-cobalt-dark">Request a quote ↗</Link>
+              <Link href="/contact" className="mt-7 inline-block rounded-full bg-navy px-5 py-3 text-sm font-black text-white transition hover:bg-navy-dark">Request a quote ↗</Link>
             </article>
           ))}
         </div>
 
         <div className="mt-12 grid gap-8 border-y border-line py-10 lg:grid-cols-[.8fr_1.2fr]">
           <div>
-            <p className="text-xs font-black uppercase tracking-[.24em] text-cobalt">The workflow</p>
+            <p className="text-xs font-black uppercase tracking-[.24em] text-navy">The workflow</p>
             <h2 className="mt-3 font-display text-3xl font-bold">A useful loop, not a mystery box.</h2>
           </div>
           <ol className="grid gap-4 sm:grid-cols-2">
-            <li className="border-l-2 border-signal pl-4">
+            <li className="border-l-2 border-gold pl-4">
               <strong>01 · Share</strong>
               <p className="mt-1 text-sm leading-6 text-muted">Send an STL, STEP, sketch, or reference.</p>
             </li>
-            <li className="border-l-2 border-signal pl-4">
+            <li className="border-l-2 border-gold pl-4">
               <strong>02 · Review</strong>
               <p className="mt-1 text-sm leading-6 text-muted">We check fit, material, supports, and finish.</p>
             </li>
-            <li className="border-l-2 border-signal pl-4">
+            <li className="border-l-2 border-gold pl-4">
               <strong>03 · Print</strong>
               <p className="mt-1 text-sm leading-6 text-muted">You approve the estimate before the machine starts.</p>
             </li>
-            <li className="border-l-2 border-signal pl-4">
+            <li className="border-l-2 border-gold pl-4">
               <strong>04 · Learn</strong>
               <p className="mt-1 text-sm leading-6 text-muted">Get the part plus notes for the next iteration.</p>
             </li>
@@ -65,10 +65,10 @@ export default function PrintingPage() {
 
         <div className="mt-10 flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-ink p-7 text-white">
           <div>
-            <p className="text-xs font-black uppercase tracking-[.24em] text-signal">Have a file?</p>
+            <p className="text-xs font-black uppercase tracking-[.24em] text-gold">Have a file?</p>
             <h2 className="mt-2 font-display text-2xl font-bold">Let us review the first print.</h2>
           </div>
-          <Link href="/contact" className="rounded-full bg-signal px-5 py-3 text-sm font-black text-ink transition hover:bg-yellow-500">Request a print review ↗</Link>
+          <Link href="/contact" className="rounded-full bg-gold px-5 py-3 text-sm font-black text-ink transition hover:bg-gold-dark">Request a print review ↗</Link>
         </div>
       </section>
     </PageShell>

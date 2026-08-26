@@ -3,36 +3,36 @@
 @tailwind utilities;
 
 :root {
-  --brand-blue: #2563eb;
-  --brand-blue-dark: #1d4ed8;
-  --brand-signal: #f59e0b;
-  --brand-paper: #f9fafb;
-  --ink: #111827;
-  --line: #d1d5db;
+  --brand-navy: #1e3a8a;
+  --brand-navy-dark: #172554;
+  --brand-gold: #b45309;
+  --brand-paper: #f8fafc;
+  --ink: #0f172a;
+  --line: #e2e8f0;
   --radius: 0.5rem;
 }
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-body { margin: 0; background: #f9fafb; color: var(--ink); font-family: var(--font-manrope), sans-serif; }
+body { margin: 0; background: #f8fafc; color: var(--ink); font-family: var(--font-inter), sans-serif; }
 button, a { transition: all .2s ease; }
 
 .grid-paper {
-  background-image: linear-gradient(#d1d5db 1px, transparent 1px), linear-gradient(90deg, #d1d5db 1px, transparent 1px);
+  background-image: linear-gradient(#e2e8f0 1px, transparent 1px), linear-gradient(90deg, #e2e8f0 1px, transparent 1px);
   background-size: 28px 28px;
 }
 
-.stamp-ring { box-shadow: 0 0 0 1px rgba(37,99,235,.2), 0 18px 45px rgba(17,24,39,.1); }
+.stamp-ring { box-shadow: 0 0 0 1px rgba(30,58,138,.18), 0 18px 45px rgba(15,23,39,.1); }
 
 .brand-motif {
   position: relative; display: grid; height: 56px; width: 56px; place-items: center;
-  overflow: hidden; border: 2px solid var(--brand-blue); border-radius: 999px; color: var(--brand-blue);
+  overflow: hidden; border: 2px solid var(--brand-navy); border-radius: 999px; color: var(--brand-navy);
 }
-.brand-motif::before, .brand-motif::after { content: ''; position: absolute; border: 1px solid var(--brand-blue); border-radius: 999px; }
+.brand-motif::before, .brand-motif::after { content: ''; position: absolute; border: 1px solid var(--brand-navy); border-radius: 999px; }
 .brand-motif::before { inset: 5px; }
 .brand-motif::after { inset: 12px; }
 .brand-motif span { position: relative; z-index: 1; font-size: 18px; }
-.brand-motif i, .brand-motif b { position: absolute; bottom: 9px; height: 1px; width: 18px; background: var(--brand-blue); }
+.brand-motif i, .brand-motif b { position: absolute; bottom: 9px; height: 1px; width: 18px; background: var(--brand-navy); }
 .brand-motif i { left: 4px; transform: rotate(18deg); }
 .brand-motif b { right: 4px; transform: rotate(-18deg); }
 
@@ -44,18 +44,17 @@ html[data-theme='dim'] .text-ink { color: #f1f5f9 !important; }
 html[data-theme='dim'] .text-slate-400, html[data-theme='dim'] .text-slate-500, html[data-theme='dim'] .text-slate-600 { color: #94a3b8 !important; }
 html[data-theme='dim'] .text-slate-700, html[data-theme='dim'] .text-slate-800 { color: #e2e8f0 !important; }
 html[data-theme='dim'] .border-line { border-color: #334155 !important; }
-html[data-theme='dim'] .grid-paper { background-image: linear-gradient(#1e293b 1px, transparent 1px), linear-gradient(90deg, #1e293b 1px, transparent 1px); }
-html[data-theme='dim'] .bg-cobalt { background-color: #3b82f6 !important; }
-html[data-theme='dim'] .bg-cobalt-light { background-color: #1e3a5f !important; }
+html[data-theme='dim'] .bg-navy { background-color: #2f4f9e !important; }
+html[data-theme='dim'] .bg-navy-light { background-color: #1e2f55 !important; }
 html[data-theme='dim'] .border-ink { border-color: #334155 !important; }
-html[data-theme='dim'] .border-cobalt { border-color: #3b82f6 !important; }
-html[data-theme='dim'] .border-signal { border-color: #f59e0b !important; }
+html[data-theme='dim'] .border-navy { border-color: #4a6db8 !important; }
+html[data-theme='dim'] .border-gold { border-color: #d97706 !important; }
 html[data-theme='dim'] .bg-amber-50, html[data-theme='dim'] .bg-amber-100 { background-color: #1e293b !important; }
 html[data-theme='dim'] .bg-emerald-50, html[data-theme='dim'] .bg-emerald-100 { background-color: #1e293b !important; }
 html[data-theme='dim'] .bg-red-50, html[data-theme='dim'] .bg-red-100 { background-color: #1e293b !important; }
 html[data-theme='dim'] .bg-blue-50, html[data-theme='dim'] .bg-blue-100 { background-color: #1e293b !important; }
 html[data-theme='dim'] .bg-indigo-50, html[data-theme='dim'] .bg-indigo-100 { background-color: #1e293b !important; }
-html[data-theme='dim'] .bg-signal-light { background-color: #292524 !important; }
+html[data-theme='dim'] .bg-gold-light { background-color: #292524 !important; }
 html[data-theme='dim'] .shadow-sm { box-shadow: 0 1px 2px rgba(0,0,0,.3) !important; }
 html[data-theme='dim'] .shadow-xl { box-shadow: 0 8px 24px rgba(0,0,0,.4) !important; }
 

@@ -25,16 +25,16 @@ export default function JournalPage() {
         <div className="grid gap-4 lg:grid-cols-3">
           {posts.map((post) => (
             <article key={post.title} className="border-t-2 border-ink bg-white p-6">
-              <p className="text-xs font-black uppercase tracking-widest text-cobalt">{post.tag}</p>
+              <p className="text-xs font-black uppercase tracking-widest text-navy">{post.tag}</p>
               <h2 className="mt-10 font-display text-2xl font-bold">{post.title}</h2>
               <p className="mt-3 leading-7 text-muted">{post.text}</p>
-              <a className="mt-7 inline-block text-sm font-black text-cobalt underline decoration-signal decoration-2 underline-offset-4 transition hover:text-cobalt-dark" href="/contact">Get in touch about this ↗</a>
+              <a className="mt-7 inline-block text-sm font-black text-navy underline decoration-gold decoration-2 underline-offset-4 transition hover:text-navy-dark" href="/contact">Get in touch about this ↗</a>
             </article>
           ))}
         </div>
 
         <div className="mt-12 border-y border-line py-8">
-          <p className="text-xs font-black uppercase tracking-[.24em] text-cobalt">Trend brief · August 2026</p>
+          <p className="text-xs font-black uppercase tracking-[.24em] text-navy">Trend brief · August 2026</p>
           <h2 className="mt-3 font-display text-3xl font-bold">The useful future is more human than the hype cycle.</h2>
           <p className="mt-4 max-w-3xl leading-7 text-muted">
             The World Economic Forum points to technology change and skills gaps as major forces through 2030.
@@ -43,9 +43,9 @@ export default function JournalPage() {
             critical thinking, and ethics at the center of AI learning. That is the standard we are building toward.
           </p>
           <div className="mt-5 flex flex-wrap gap-4 text-xs font-bold">
-            <a className="text-cobalt underline underline-offset-4 transition hover:text-cobalt-dark" href="https://www.weforum.org/publications/the-future-of-jobs-report-2025/" target="_blank" rel="noreferrer">WEF Future of Jobs 2025 ↗</a>
-            <a className="text-cobalt underline underline-offset-4 transition hover:text-cobalt-dark" href="https://ifr.org/ifr-press-releases/news/world-robotics-2025-report-asia-leads-global-robotics-growth" target="_blank" rel="noreferrer">IFR robotics research ↗</a>
-            <a className="text-cobalt underline underline-offset-4 transition hover:text-cobalt-dark" href="https://www.unesco.org/en/digital-education" target="_blank" rel="noreferrer">UNESCO digital education ↗</a>
+            <a className="text-navy underline underline-offset-4 transition hover:text-navy-dark" href="https://www.weforum.org/publications/the-future-of-jobs-report-2025/" target="_blank" rel="noreferrer">WEF Future of Jobs 2025 ↗</a>
+            <a className="text-navy underline underline-offset-4 transition hover:text-navy-dark" href="https://ifr.org/ifr-press-releases/news/world-robotics-2025-report-asia-leads-global-robotics-growth" target="_blank" rel="noreferrer">IFR robotics research ↗</a>
+            <a className="text-navy underline underline-offset-4 transition hover:text-navy-dark" href="https://www.unesco.org/en/digital-education" target="_blank" rel="noreferrer">UNESCO digital education ↗</a>
           </div>
         </div>
       </section>

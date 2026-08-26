@@ -85,7 +85,7 @@ export default function TermsPage() {
   return (
     <PageShell>
       <main className="mx-auto max-w-3xl px-5 py-16 lg:px-8">
-        <p className="text-xs font-black uppercase tracking-[.24em] text-cobalt">Legal</p>
+        <p className="text-xs font-black uppercase tracking-[.24em] text-navy">Legal</p>
         <h1 className="mt-2 font-display text-4xl font-bold tracking-tight">Terms of Service</h1>
         <p className="mt-2 text-sm text-slate-500">Last updated: August 2026</p>
         <div className="mt-10 space-y-8 text-sm leading-7 text-slate-600">

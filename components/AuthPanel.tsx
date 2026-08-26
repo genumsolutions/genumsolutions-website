@@ -101,12 +101,12 @@ export default function AuthPanel({ initialMode = 'signin' }: { initialMode?: Mo
     <main className="grid-paper min-h-[calc(100vh-64px)]">
       <div className="mx-auto grid w-full max-w-6xl items-center gap-10 px-5 py-14 lg:grid-cols-[1fr_420px] lg:gap-16 lg:px-8">
         <aside className="hidden lg:block">
-          <p className="text-xs font-black uppercase tracking-[.25em] text-cobalt">GENUM Solutions Pvt. Ltd.</p>
+          <p className="text-xs font-black uppercase tracking-[.25em] text-navy">GENUM Solutions Pvt. Ltd.</p>
           <h2 className="mt-4 font-display text-5xl font-bold leading-[1.05] text-ink">One account.<br />Every build.</h2>
           <ul className="mt-10 space-y-7">
             {perks.map((perk) => (
               <li key={perk.title} className="flex gap-4">
-                <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-cobalt text-xs font-black text-white">{initials(perk.title).slice(0, 1)}</span>
+                <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-navy text-xs font-black text-white">{initials(perk.title).slice(0, 1)}</span>
                 <span><strong className="block font-display text-lg text-ink">{perk.title}</strong><span className="mt-1 block text-sm leading-6 text-muted">{perk.body}</span></span>
               </li>
             ))}
@@ -115,8 +115,8 @@ export default function AuthPanel({ initialMode = 'signin' }: { initialMode?: Mo
         </aside>
 
         <section className="w-full justify-self-center">
-          <div className="stamp-ring border-t-4 border-cobalt bg-white p-7 sm:p-9">
-            <Link href="/" className="text-sm font-bold text-cobalt lg:hidden">GENUM SOLUTIONS</Link>
+          <div className="stamp-ring border-t-4 border-navy bg-white p-7 sm:p-9">
+            <Link href="/" className="text-sm font-bold text-navy lg:hidden">GENUM SOLUTIONS</Link>
             <h1 className="mt-8 font-display text-3xl font-bold text-ink sm:text-4xl lg:mt-0">{copy[mode].title}</h1>
             <p className="mt-3 text-sm leading-6 text-muted">{copy[mode].body}</p>
 
@@ -134,7 +134,7 @@ export default function AuthPanel({ initialMode = 'signin' }: { initialMode?: Mo
                   Password
                   <span className="relative mt-2 block">
                     <input name="password" type={showPassword ? 'text' : 'password'} required minLength={6} autoComplete={mode === 'signin' ? 'current-password' : 'new-password'} className={`mt-2 w-full ${inputClass} pr-16`} />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Hide password' : 'Show password'} className="absolute inset-y-0 right-0 px-4 text-xs font-bold uppercase tracking-wide text-muted transition hover:text-cobalt">
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Hide password' : 'Show password'} className="absolute inset-y-0 right-0 px-4 text-xs font-bold uppercase tracking-wide text-muted transition hover:text-navy">
                       {showPassword ? 'Hide' : 'Show'}
                     </button>
                   </span>
@@ -142,10 +142,10 @@ export default function AuthPanel({ initialMode = 'signin' }: { initialMode?: Mo
               )}
 
               {mode === 'signin' && (
-                <button type="button" onClick={() => switchMode('forgot')} className="mt-3 block text-sm font-semibold text-cobalt transition hover:text-cobalt-dark">Forgot password?</button>
+                <button type="button" onClick={() => switchMode('forgot')} className="mt-3 block text-sm font-semibold text-navy transition hover:text-navy-dark">Forgot password?</button>
               )}
 
-              <button disabled={busy} className="mt-7 w-full rounded-lg bg-cobalt px-5 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-cobalt-dark disabled:opacity-60">
+              <button disabled={busy} className="mt-7 w-full rounded-lg bg-navy px-5 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-navy-dark disabled:opacity-60">
                 {busy ? 'Please wait…' : copy[mode].button}
               </button>
             </form>
@@ -153,14 +153,14 @@ export default function AuthPanel({ initialMode = 'signin' }: { initialMode?: Mo
             {mode !== 'forgot' && (
               <>
                 <div className="my-6 flex items-center gap-3 text-xs font-bold uppercase tracking-widest text-muted"><span className="h-px flex-1 bg-line" />or<span className="h-px flex-1 bg-line" /></div>
-                <a href="/api/auth/google" className="flex w-full items-center justify-center gap-3 rounded-lg border-2 border-line bg-white px-5 py-3.5 text-sm font-bold text-ink transition hover:border-cobalt hover:bg-cobalt-light">{GoogleIcon}Continue with Google</a>
+                <a href="/api/auth/google" className="flex w-full items-center justify-center gap-3 rounded-lg border-2 border-line bg-white px-5 py-3.5 text-sm font-bold text-ink transition hover:border-navy hover:bg-navy-light">{GoogleIcon}Continue with Google</a>
               </>
             )}
 
             <div className="mt-6 space-y-2 border-t border-line pt-5">
-              {mode !== 'signup' && <button type="button" onClick={() => switchMode('signup')} className="block text-sm font-semibold text-cobalt transition hover:text-cobalt-dark">New here? Create a customer account</button>}
-              {mode !== 'signin' && <button type="button" onClick={() => switchMode('signin')} className="block text-sm font-semibold text-cobalt transition hover:text-cobalt-dark">I already have an account</button>}
-              {mode === 'forgot' && <button type="button" onClick={() => switchMode('signin')} className="block text-sm font-semibold text-cobalt transition hover:text-cobalt-dark">Back to sign in</button>}
+              {mode !== 'signup' && <button type="button" onClick={() => switchMode('signup')} className="block text-sm font-semibold text-navy transition hover:text-navy-dark">New here? Create a customer account</button>}
+              {mode !== 'signin' && <button type="button" onClick={() => switchMode('signin')} className="block text-sm font-semibold text-navy transition hover:text-navy-dark">I already have an account</button>}
+              {mode === 'forgot' && <button type="button" onClick={() => switchMode('signin')} className="block text-sm font-semibold text-navy transition hover:text-navy-dark">Back to sign in</button>}
             </div>
           </div>
         </section>

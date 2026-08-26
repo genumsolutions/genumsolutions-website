@@ -4,6 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { Menu, Moon, ShoppingBag, Sun, X } from 'lucide-react'
 import HeaderSession from './HeaderSession'
 import { useCart } from './cart-provider'
 
@@ -63,19 +64,22 @@ export default function SiteHeader() {
 
   const linkClass = (href: string) => {
     const active = isActive(pathname ?? '', href)
-    return `rounded-full px-2.5 py-1 text-sm font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cobalt ${
-      active ? 'text-cobalt font-bold' : 'text-ink/60 hover:text-cobalt'
+    return `rounded-full px-2.5 py-1 text-sm font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy ${
+      active ? 'text-navy font-bold' : 'text-ink/60 hover:text-navy'
     }`
   }
 
   return (
     <header className="border-b border-line bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3.5 lg:px-8">
-        <Link href="/" className="flex shrink-0 items-center gap-3" aria-label="GENUM SOLUTIONS home">
-          <Image src="/logo.png" alt="GENUM SOLUTIONS stamp" width={48} height={48} className="h-10 w-10 object-contain" priority />
+        <Link href="/" className="group flex shrink-0 items-center gap-3.5" aria-label="GENUM SOLUTIONS home">
+          <span className="relative block h-14 w-14 shrink-0 overflow-hidden rounded-full bg-white shadow-card ring-1 ring-line transition group-hover:ring-navy/40">
+            <Image src="/logo.png" alt="GENUM SOLUTIONS stamp" width={112} height={112} className="h-full w-full object-contain" priority />
+          </span>
+          <span aria-hidden="true" className="hidden h-10 w-px bg-line sm:block" />
           <span className="leading-none">
-            <strong className="font-display text-lg font-bold text-ink">GENUM</strong>
-            <span className="block text-[9px] font-bold uppercase tracking-[.25em] text-cobalt">Solutions Pvt. Ltd.</span>
+            <strong className="block font-display text-[22px] font-bold tracking-tight text-ink">GENUM</strong>
+            <span className="mt-1.5 block text-[10px] font-bold uppercase tracking-[0.32em] text-navy">Solutions Pvt.&thinsp;Ltd.</span>
           </span>
         </Link>
 
@@ -93,18 +97,18 @@ export default function SiteHeader() {
             onClick={toggleTheme}
             aria-label={dim ? 'Use light mode' : 'Use dim mode'}
             title={dim ? 'Light mode' : 'Dim mode'}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-white text-sm text-ink transition hover:border-cobalt hover:text-cobalt"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-white text-muted transition hover:border-navy hover:text-navy"
           >
-            {dim ? '☀' : <span aria-hidden="true">◐</span>}
+            {dim ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
           </button>
           <Link
             href="/checkout"
             aria-label={hydrated && count > 0 ? `Open checkout, ${count} item${count === 1 ? '' : 's'}` : 'Open checkout'}
-            className="relative flex h-9 w-9 items-center justify-center rounded-full bg-ink text-sm text-white transition hover:bg-cobalt"
+            className="relative flex h-9 w-9 items-center justify-center rounded-full bg-ink text-white transition hover:bg-navy"
           >
-            ⌑
+            <ShoppingBag size={16} aria-hidden="true" />
             {hydrated && count > 0 && (
-              <span aria-hidden="true" className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-signal px-1 text-[10px] font-black text-ink">
+              <span aria-hidden="true" className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-gold px-1 text-[10px] font-black text-ink">
                 {count}
               </span>
             )}
@@ -115,13 +119,9 @@ export default function SiteHeader() {
             aria-expanded={open}
             aria-controls="mobile-navigation"
             aria-label={open ? 'Close navigation menu' : 'Open navigation menu'}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-white text-ink transition hover:border-cobalt hover:text-cobalt xl:hidden"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-white text-ink transition hover:border-navy hover:text-navy xl:hidden"
           >
-            {open ? (
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 4l8 8M12 4l-8 8" /></svg>
-            ) : (
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M2 4h12M2 8h12M2 12h12" /></svg>
-            )}
+            {open ? <X size={18} aria-hidden="true" /> : <Menu size={18} aria-hidden="true" />}
           </button>
         </div>
       </div>
@@ -137,7 +137,7 @@ export default function SiteHeader() {
                     <Link
                       href={item.href}
                       onClick={() => setOpen(false)}
-                      className={`block rounded-lg px-3 py-2.5 font-semibold transition ${active ? 'bg-cobalt text-white' : 'text-ink hover:bg-mist'}`}
+                      className={`block rounded-lg px-3 py-2.5 font-semibold transition ${active ? 'bg-navy text-white' : 'text-ink hover:bg-mist'}`}
                       aria-current={active ? 'page' : undefined}
                     >
                       {item.label}
@@ -146,10 +146,10 @@ export default function SiteHeader() {
                 )
               })}
               <li className="col-span-2 mt-1 border-t border-line pt-2">
-                <Link href="/account" onClick={() => setOpen(false)} className="block rounded-lg px-3 py-2.5 font-semibold text-cobalt hover:bg-cobalt-light">My Account</Link>
+                <Link href="/account" onClick={() => setOpen(false)} className="block rounded-lg px-3 py-2.5 font-semibold text-navy hover:bg-navy-light">My Account</Link>
               </li>
               <li className="col-span-2">
-                <Link href="/login" onClick={() => setOpen(false)} className="block rounded-lg bg-cobalt px-3 py-2.5 text-center font-bold text-white hover:bg-cobalt-dark">Sign in</Link>
+                <Link href="/login" onClick={() => setOpen(false)} className="block rounded-lg bg-navy px-3 py-2.5 text-center font-bold text-white hover:bg-navy-dark">Sign in</Link>
               </li>
             </ul>
           </nav>

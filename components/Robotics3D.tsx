@@ -6,7 +6,7 @@ export function RoboticArm() {
   return (
     <div className="relative w-48 h-64 md:w-64 md:h-80 orbit-pattern" aria-hidden="true">
       {/* Base */}
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-8 bg-cobalt rounded-full border-2 border-line" aria-hidden="true" />
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-8 bg-navy rounded-full border-2 border-line" aria-hidden="true" />
 
       {/* Upper Arm */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-24 bg-slate-800 rounded-t rounded-br-3xl rounded-bl-3xl transform origin-bottom transition-all duration-700" aria-hidden="true" />

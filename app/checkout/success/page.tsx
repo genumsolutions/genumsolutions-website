@@ -45,7 +45,7 @@ function SuccessPanel() {
 
   return (
     <section className="max-w-lg rounded-2xl border border-line bg-white p-8 text-center shadow-sm">
-      <p className="text-xs font-black uppercase tracking-[.24em] text-cobalt">Order received</p>
+      <p className="text-xs font-black uppercase tracking-[.24em] text-navy">Order received</p>
       <h1 className="mt-3 font-display text-4xl font-bold">{state === 'checking' ? 'Confirming payment...' : state === 'confirmed' ? 'Payment confirmed.' : 'Your build is in motion.'}</h1>
       <p className="mt-4 leading-7 text-slate-600">
         {state === 'confirmed' && total !== null
@@ -55,7 +55,7 @@ function SuccessPanel() {
       </p>
       {(sessionId || provider) && state === 'received' && <p className="mt-2 text-xs text-slate-400">Payment verification is still processing. Your order is saved and will update shortly.</p>}
       <div className="mt-7 flex flex-wrap justify-center gap-3">
-        <Link href="/account" className="rounded-full bg-cobalt px-5 py-3 text-sm font-black text-white">View my orders</Link>
+        <Link href="/account" className="rounded-full bg-navy px-5 py-3 text-sm font-black text-white">View my orders</Link>
         <Link href="/products" className="rounded-full border border-line px-5 py-3 text-sm font-black text-ink">Keep exploring</Link>
       </div>
     </section>

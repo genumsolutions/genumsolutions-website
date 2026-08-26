@@ -51,7 +51,7 @@ export default function HeaderSession() {
   if (!ready) return <span className="h-10 w-28 animate-pulse rounded-full border border-line" aria-hidden="true" />
 
   if (!user) {
-    return <Link href="/login" className="rounded-full bg-cobalt px-5 py-2 text-sm font-black text-white transition hover:bg-cobalt-dark">Sign in</Link>
+    return <Link href="/login" className="rounded-full bg-navy px-5 py-2 text-sm font-black text-white transition hover:bg-navy-dark">Sign in</Link>
   }
 
   return (
@@ -62,7 +62,7 @@ export default function HeaderSession() {
         aria-expanded={open}
         aria-label={`Account menu for ${user.name}`}
         title={user.name}
-        className="flex h-10 w-10 items-center justify-center rounded-full bg-cobalt text-xs font-black tracking-wide text-white ring-offset-2 hover:ring-2 hover:ring-cobalt"
+        className="flex h-10 w-10 items-center justify-center rounded-full bg-navy text-xs font-black tracking-wide text-white ring-offset-2 hover:ring-2 hover:ring-navy"
       >
         {initials(user.name)}
       </button>
@@ -72,7 +72,7 @@ export default function HeaderSession() {
           <div className="border-b border-line px-4 py-3">
             <p className="truncate text-sm font-black text-ink">{user.name}</p>
             <p className="mt-0.5 truncate text-xs text-slate-500">{user.email}</p>
-            {user.role === 'admin' && <span className="mt-2 inline-block rounded-full bg-signal px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-ink">Admin</span>}
+            {user.role === 'admin' && <span className="mt-2 inline-block rounded-full bg-gold px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-ink">Admin</span>}
           </div>
           <div className="p-1.5">
             <Link href="/account" role="menuitem" onClick={() => setOpen(false)} className="block px-3 py-2 text-sm font-bold text-ink hover:bg-mist">Your account</Link>

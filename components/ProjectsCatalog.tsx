@@ -3,9 +3,11 @@
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { Check, Search } from 'lucide-react'
 import type { Product } from '../lib/catalog'
 import { getProductMedia } from '../lib/product-media'
 import { useCart } from './cart-provider'
+import { tabActive, tabBase, tabInactive } from '../lib/styles'
 
 type ProjectTab = 'packages' | 'robot-cars'
 
@@ -50,30 +52,31 @@ export default function ProjectsCatalog({ products = [] }: { products?: Product[
 
   return (
     <section className="mx-auto max-w-7xl px-5 py-12 lg:px-8 lg:py-16">
-      <div className="flex flex-col gap-5 border-b border-line pb-6 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <div className="flex flex-wrap gap-2">
-            {([
-              { key: 'packages' as const, label: 'Project Packages', count: packageProducts.length },
-              { key: 'robot-cars' as const, label: 'Robot Car Projects', count: robotCarProducts.length },
-            ]).map((item) => (
-              <button
-                key={item.key}
-                onClick={() => { setTab(item.key); setQuery('') }}
-                className={`rounded-full px-4 py-2 text-xs font-bold transition ${tab === item.key ? 'bg-cobalt text-white' : 'border border-line bg-white text-muted hover:border-cobalt hover:text-cobalt'}`}
-              >
-                {item.label} ({item.count})
-              </button>
-            ))}
-          </div>
-          <label className="mt-3 flex items-center gap-3 rounded-full border border-line bg-white px-4 py-2 text-sm text-muted">
-            <span aria-hidden="true">⌕</span>
-            <input value={query} onChange={(e) => setQuery(e.target.value)} className="w-full bg-transparent outline-none placeholder:text-muted lg:w-52" placeholder="Search this section" aria-label="Search projects" />
-          </label>
-        </div>
-        <div className="mt-5 flex items-center justify-between text-sm text-muted">
+      <div role="tablist" aria-label="Project sections" className="flex flex-wrap gap-x-7 border-b border-line">
+        {([
+          { key: 'packages' as const, label: 'Project Packages', count: packageProducts.length },
+          { key: 'robot-cars' as const, label: 'Robot Car Projects', count: robotCarProducts.length },
+        ]).map((item) => (
+          <button
+            key={item.key}
+            role="tab"
+            aria-selected={tab === item.key}
+            onClick={() => { setTab(item.key); setQuery('') }}
+            className={`${tabBase} ${tab === item.key ? tabActive : tabInactive}`}
+          >
+            {item.label}
+            <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-black ${tab === item.key ? 'bg-navy-light text-navy' : 'bg-mist text-muted'}`}>{item.count}</span>
+          </button>
+        ))}
+      </div>
+      <div className="mt-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <label className="flex w-full max-w-xs items-center gap-3 rounded-full border border-line bg-white px-4 py-2 text-sm text-muted">
+          <Search size={15} aria-hidden="true" />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} className="w-full bg-transparent outline-none placeholder:text-muted" placeholder="Search this section" aria-label="Search projects" />
+        </label>
+        <div className="flex items-center justify-between gap-6 text-sm text-muted">
           <span>{visibleProducts.length} listing{visibleProducts.length === 1 ? '' : 's'}</span>
-          <span aria-live="polite" className="font-bold text-cobalt">{hydrated && count > 0 ? `${count} item${count === 1 ? '' : 's'} in build list` : 'Quote by scope'}</span>
+          <span aria-live="polite" className="font-bold text-navy">{hydrated && count > 0 ? `${count} item${count === 1 ? '' : 's'} in build list` : 'Quote by scope'}</span>
         </div>
       </div>
 
@@ -108,21 +111,21 @@ export default function ProjectsCatalog({ products = [] }: { products?: Product[
                 <span className="absolute bottom-3 left-4 text-xs font-black uppercase tracking-widest text-white">{product.category}</span>
               </Link>
               <div className="p-5">
-                <p className="text-xs font-black uppercase tracking-widest text-cobalt">{tab === 'robot-cars' ? 'Robot Car' : product.productType}</p>
+                <p className="text-xs font-black uppercase tracking-widest text-navy">{tab === 'robot-cars' ? 'Robot Car' : product.productType}</p>
                 <h2 className="mt-2 font-display text-xl font-bold leading-snug">{product.name}</h2>
                 <p className="mt-2 min-h-12 text-sm leading-6 text-muted">{product.note || product.description?.split('. ')[0]}</p>
                 <div className="mt-5 flex items-center justify-between gap-3">
                   <strong className="font-display text-lg">{product.priceLabel}</strong>
                   {quoteOnly ? (
-                    <Link href={`/products/${product.id}`} className="rounded-full bg-cobalt px-4 py-2 text-xs font-black text-white transition hover:bg-cobalt-dark" aria-label={`View details for ${product.name}`}>View details</Link>
+                    <Link href={`/products/${product.id}`} className="rounded-full bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark" aria-label={`View details for ${product.name}`}>View details</Link>
                   ) : (
                     <button
                       onClick={() => addToCart(product.id)}
-                      className={`rounded-full px-4 py-2 text-xs font-black text-white transition ${addedId === product.id ? 'bg-emerald-600' : 'bg-cobalt hover:bg-cobalt-dark'}`}
+                      className={`rounded-full px-4 py-2 text-xs font-black text-white transition ${addedId === product.id ? 'bg-emerald-600' : 'bg-navy hover:bg-navy-dark'}`}
                       aria-label={`${addedId === product.id ? 'Added' : 'Add'} ${product.name} to build list`}
                       aria-live="polite"
                     >
-                      {addedId === product.id ? 'Added ✓' : 'Add'}
+                      {addedId === product.id ? <span className="inline-flex items-center gap-1.5"><Check size={13} aria-hidden="true" /> Added</span> : 'Add'}
                     </button>
                   )}
                 </div>

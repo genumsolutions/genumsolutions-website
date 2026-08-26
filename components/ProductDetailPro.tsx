@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
+import { ArrowLeft, ArrowUpRight, Check } from 'lucide-react'
 import { RoboticArm } from './Robotics3D'
 import { useCart } from './cart-provider'
 import type { Product } from '../lib/catalog'
@@ -28,7 +29,9 @@ export default function ProductDetailPro({ product }: { product: Product }) {
   return (
     <div className="min-h-screen bg-mist">
       <div className="mx-auto max-w-7xl px-5 py-8 lg:px-8">
-        <Link href="/products" className="text-sm font-bold text-cobalt">← Back to the shop</Link>
+        <Link href="/products" className="inline-flex items-center gap-1.5 text-sm font-bold text-navy transition hover:text-navy-dark">
+          <ArrowLeft size={15} aria-hidden="true" /> Back to the shop
+        </Link>
         <div className="mt-8 grid gap-10 lg:grid-cols-[.9fr_1.1fr] lg:items-start">
           <div className="relative aspect-square overflow-hidden rounded-3xl bg-ink">
             <Image
@@ -41,7 +44,7 @@ export default function ProductDetailPro({ product }: { product: Product }) {
             <RoboticArm />
           </div>
           <div>
-            <p className="text-xs font-black uppercase tracking-[.24em] text-cobalt">
+            <p className="text-xs font-black uppercase tracking-[.24em] text-navy">
               {product.category} · {product.badge || product.productType}
             </p>
             <h1 className="mt-3 font-display text-5xl font-bold leading-none tracking-[-.04em] text-ink">
@@ -67,9 +70,12 @@ export default function ProductDetailPro({ product }: { product: Product }) {
               <Link
                 href={isQuote ? '/contact' : '/checkout'}
                 onClick={isQuote ? undefined : addToBuildList}
-                className={`rounded-full px-6 py-3.5 text-sm font-black text-white transition ${added ? 'bg-emerald-600' : 'bg-cobalt hover:bg-cobalt-dark'}`}
+                className={`rounded-full px-6 py-3.5 text-sm font-black text-white transition ${added ? 'bg-emerald-600' : 'bg-navy hover:bg-navy-dark'}`}
                 aria-label={isQuote ? `Request a quote for ${product.name}` : added ? `${product.name} added to build list` : `Add ${product.name} to build list`}>
-                {isQuote ? 'Request a scoped quote ↗' : added ? 'Added to build list ✓' : 'Add to build list'}
+                <span className="inline-flex items-center gap-1.5">
+                  {isQuote ? 'Request a scoped quote' : added ? 'Added to build list' : 'Add to build list'}
+                  {isQuote ? <ArrowUpRight size={15} aria-hidden="true" /> : added ? <Check size={15} aria-hidden="true" /> : null}
+                </span>
               </Link>
             </div>
           </div>
@@ -77,7 +83,7 @@ export default function ProductDetailPro({ product }: { product: Product }) {
 
         <div className="mt-10 grid gap-4 border-y border-line py-6 sm:grid-cols-2">
           <div>
-            <p className="text-xs font-black uppercase tracking-widest text-cobalt">Audience</p>
+            <p className="text-xs font-black uppercase tracking-widest text-navy">Audience</p>
             <p className="mt-2 text-sm leading-6 text-muted">
               {product.audience}
             </p>
@@ -86,7 +92,7 @@ export default function ProductDetailPro({ product }: { product: Product }) {
             </p>
           </div>
           <div>
-            <p className="text-xs font-black uppercase tracking-widest text-cobalt">Warranty</p>
+            <p className="text-xs font-black uppercase tracking-widest text-navy">Warranty</p>
             <p className="mt-2 text-sm leading-6 text-muted">
               {product.warranty}
             </p>
@@ -95,13 +101,13 @@ export default function ProductDetailPro({ product }: { product: Product }) {
 
         <div className="mt-10 grid gap-4 border-t-2 border-line py-6 sm:grid-cols-2">
           <div>
-            <p className="text-xs font-black uppercase tracking-widest text-cobalt">Color</p>
+            <p className="text-xs font-black uppercase tracking-widest text-navy">Color</p>
             <p className="mt-2 text-sm leading-6 text-muted">
               {product.color ? product.color.replace(/from-\[.*?\]\s*to-\[.*?\]/, 'Standard finish') : 'Standard finish'}
             </p>
           </div>
           <div>
-            <p className="text-xs font-black uppercase tracking-widest text-cobalt">Delivery</p>
+            <p className="text-xs font-black uppercase tracking-widest text-navy">Delivery</p>
             <p className="mt-2 text-sm leading-6 text-muted">
               {product.delivery}
             </p>
