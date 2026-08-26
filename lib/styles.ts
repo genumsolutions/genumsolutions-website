@@ -1,4 +1,4 @@
-export const inputClass = 'rounded-lg border border-line bg-white px-4 py-3 text-sm font-medium outline-none transition placeholder:text-muted focus:border-navy focus:ring-2 focus:ring-navy/20 dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700'
+export const inputClass = 'rounded-lg border border-line bg-white px-4 py-3 text-sm font-medium outline-none transition placeholder:text-muted focus:border-navy focus:ring-2 focus:ring-navy/20'
 
 export const btnPrimary = 'rounded-full bg-navy px-5 py-3 text-sm font-black text-white transition hover:bg-navy-dark'
 
