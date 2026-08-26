@@ -2,10 +2,15 @@ import { NextResponse } from 'next/server'
 import { sendEmail } from '../../../lib/email'
 import { getSessionUser } from '../../../lib/supabase/server'
 import { addCustomerMessage } from '../../../lib/customer-store'
+import { checkRateLimit, clientIp } from '../../../lib/rate-limit'
 
 export const runtime = 'nodejs'
 
 export async function POST(request: Request) {
+  const limit = checkRateLimit(`contact:${clientIp(request)}`, 5, 60_000)
+  if (!limit.allowed) {
+    return NextResponse.json({ error: 'Too many inquiries sent. Please wait a minute and try again.' }, { status: 429, headers: { 'Retry-After': String(limit.retryAfterSeconds) } })
+  }
   try {
     const body = await request.json()
     const name = typeof body.name === 'string' ? body.name.trim() : ''

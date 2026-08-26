@@ -1,9 +1,15 @@
 import { NextResponse } from 'next/server'
 import { createClient, supabaseConfigured } from '../../../../lib/supabase/server'
+import { checkRateLimit, clientIp } from '../../../../lib/rate-limit'
 
 // Creates a customer account with email + password (works for Gmail or any address).
 export async function POST(request: Request) {
   if (!supabaseConfigured()) return NextResponse.json({ error: 'Accounts are not configured.' }, { status: 503 })
+
+  const limit = checkRateLimit(`register:${clientIp(request)}`, 5, 60_000)
+  if (!limit.allowed) {
+    return NextResponse.json({ error: 'Too many sign-up attempts. Please wait a minute and try again.' }, { status: 429, headers: { 'Retry-After': String(limit.retryAfterSeconds) } })
+  }
 
   const body = await request.json().catch(() => ({}))
   const name = String(body.name || '').trim()

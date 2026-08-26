@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import crypto from 'node:crypto'
 import { getSessionUser } from '../../../../lib/supabase/server'
 import { priceRequestedItems, readCustomerFields } from '../../../../lib/checkout'
-import { createOrder, logTransaction, setOrderRef } from '../../../../lib/orders'
+import { createOrder, logTransaction } from '../../../../lib/orders'
 
 export const runtime = 'nodejs'
 
@@ -12,8 +12,10 @@ function esewaConfigured() {
 
 // Builds the eSewa ePay v2 signature: base64(HMAC-SHA256(secret, signed fields joined as k=v,...)).
 function signFields(fields: Record<string, string>, secret: string) {
-  const names = fields.signed_field_names.split(',')
-  const message = names.map((name) => `${name}=${fields[name]}`).join(',')
+  const signedNames = fields.signed_field_names
+  if (!signedNames) throw new Error('signed_field_names is required')
+  const names = signedNames.split(',')
+  const message = names.map((name) => `${name}=${fields[name] ?? ''}`).join(',')
   return crypto.createHmac('sha256', secret).update(message).digest('base64')
 }
 

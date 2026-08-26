@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient, supabaseConfigured } from '../../../../lib/supabase/server'
+import { checkRateLimit, clientIp } from '../../../../lib/rate-limit'
 
 // Canonical email + password sign-in. Returns the caller's role so the UI
 // can route admins to /admin and customers to /account.
@@ -10,6 +11,14 @@ export async function POST(request: Request) {
   const email = String(body.email || '').trim().toLowerCase()
   const password = String(body.password || '')
   if (!email || !password) return NextResponse.json({ error: 'Email and password are required.' }, { status: 400 })
+
+  // Throttle per IP and per account to slow credential stuffing.
+  for (const key of [`login-ip:${clientIp(request)}`, `login-acct:${email}`]) {
+    const limit = checkRateLimit(key, 10, 60_000)
+    if (!limit.allowed) {
+      return NextResponse.json({ error: 'Too many sign-in attempts. Please wait a minute and try again.' }, { status: 429, headers: { 'Retry-After': String(limit.retryAfterSeconds) } })
+    }
+  }
 
   try {
     const supabase = createClient()
