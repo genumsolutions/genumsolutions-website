@@ -28,7 +28,7 @@ export default function ProductCatalog({ scope = 'components', products = [] }: 
       return products.filter((product) => product.productType === 'Project package')
     }
     return products.filter((product) =>
-      !['Robot Cars', '3D Printing Materials', 'Pre-packaged Kits'].includes(product.category) &&
+      !['Robot Cars', 'Pre-packaged Kits'].includes(product.category) &&
       product.productType !== 'Project package'
     )
   }, [scope, products])
@@ -51,7 +51,7 @@ export default function ProductCatalog({ scope = 'components', products = [] }: 
   }
 
   const filters = scope === 'components'
-    ? ['All', 'Controllers & Boards', 'Motors & Motion', 'Sensors & Modules', 'Communication Modules', 'Displays & Interfaces', 'Power & Charging', 'Mechanical Parts', 'Connectors & Cables', 'Tools & Fabrication']
+    ? ['All', 'Controllers & Boards', 'Motors & Motion', 'Sensors & Modules', 'Communication Modules', 'Displays & Interfaces', 'Power & Charging', 'Mechanical Parts', 'Connectors & Cables', '3D Printing Materials', 'Tools & Fabrication']
     : ['All']
 
   return (
