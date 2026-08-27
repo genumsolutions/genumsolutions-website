@@ -92,7 +92,7 @@ export default function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-2.5">
-          <div className="hidden sm:block"><HeaderSession /></div>
+          <HeaderSession />
           <button
             onClick={toggleTheme}
             aria-label={dim ? 'Use light mode' : 'Use dim mode'}

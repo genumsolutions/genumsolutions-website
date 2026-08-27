@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { User } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { initials } from '../lib/identity'
 import { signOut } from '../lib/auth'
@@ -48,10 +49,15 @@ export default function HeaderSession() {
     await signOut('/')
   }
 
-  if (!ready) return <span className="h-10 w-28 animate-pulse rounded-full border border-line" aria-hidden="true" />
+  if (!ready) return <span className="h-10 w-10 animate-pulse rounded-full border border-line" aria-hidden="true" />
 
   if (!user) {
-    return <Link href="/login" className="rounded-full bg-navy px-5 py-2 text-sm font-black text-white transition hover:bg-navy-dark">Sign in</Link>
+    return (
+      <Link href="/login" className="flex h-10 w-10 items-center justify-center rounded-full bg-navy text-white transition hover:bg-navy-dark sm:h-auto sm:w-auto sm:gap-1.5 sm:px-5 sm:py-2" aria-label="Sign in">
+        <User size={16} aria-hidden="true" />
+        <span className="hidden text-sm font-black sm:inline">Sign in</span>
+      </Link>
+    )
   }
 
   return (
