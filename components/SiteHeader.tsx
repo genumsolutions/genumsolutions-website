@@ -92,7 +92,7 @@ export default function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-2.5">
-          <HeaderSession />
+          <div className="hidden sm:block"><HeaderSession /></div>
           <button
             onClick={toggleTheme}
             aria-label={dim ? 'Use light mode' : 'Use dim mode'}
@@ -119,7 +119,7 @@ export default function SiteHeader() {
             aria-expanded={open}
             aria-controls="mobile-navigation"
             aria-label={open ? 'Close navigation menu' : 'Open navigation menu'}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-white text-ink transition hover:border-navy hover:text-navy sm:h-9 sm:w-9 xl:hidden"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-white text-ink transition hover:border-navy hover:text-navy sm:h-9 sm:w-9 lg:hidden"
           >
             {open ? <X size={18} aria-hidden="true" /> : <Menu size={18} aria-hidden="true" />}
           </button>
