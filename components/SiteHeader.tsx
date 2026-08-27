@@ -64,22 +64,22 @@ export default function SiteHeader() {
 
   const linkClass = (href: string) => {
     const active = isActive(pathname ?? '', href)
-    return `rounded-full px-2.5 py-1 text-sm font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy ${
+    return `rounded-full px-3 py-2 text-sm font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy ${
       active ? 'text-navy font-bold' : 'text-ink/60 hover:text-navy'
     }`
   }
 
   return (
     <header className="border-b border-line bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3.5 lg:px-8">
-        <Link href="/" className="group flex shrink-0 items-center gap-3.5" aria-label="GENUM SOLUTIONS home">
-          <span className="relative block h-14 w-14 shrink-0 overflow-hidden rounded-full bg-white shadow-card ring-1 ring-line transition group-hover:ring-navy/40">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-5 sm:gap-4 sm:py-3.5 lg:px-8">
+        <Link href="/" className="group flex shrink-0 items-center gap-3" aria-label="GENUM SOLUTIONS home">
+          <span className="relative block h-11 w-11 shrink-0 overflow-hidden rounded-full bg-white shadow-card ring-1 ring-line transition group-hover:ring-navy/40 sm:h-14 sm:w-14">
             <Image src="/logo.png" alt="GENUM SOLUTIONS stamp" width={112} height={112} className="h-full w-full object-contain" priority />
           </span>
           <span aria-hidden="true" className="hidden h-10 w-px bg-line sm:block" />
           <span className="leading-none">
-            <strong className="block font-display text-[22px] font-bold tracking-tight text-ink">GENUM</strong>
-            <span className="mt-1.5 block text-[10px] font-bold uppercase tracking-[0.32em] text-navy">Solutions Pvt.&thinsp;Ltd.</span>
+            <strong className="block font-display text-lg font-bold tracking-tight text-ink sm:text-[22px]">GENUM</strong>
+            <span className="mt-1 block text-[9px] font-bold uppercase tracking-[0.32em] text-navy sm:text-[10px]">Solutions Pvt.&thinsp;Ltd.</span>
           </span>
         </Link>
 
@@ -91,20 +91,20 @@ export default function SiteHeader() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 sm:gap-2.5">
           <HeaderSession />
           <button
             onClick={toggleTheme}
             aria-label={dim ? 'Use light mode' : 'Use dim mode'}
             title={dim ? 'Light mode' : 'Dim mode'}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-white text-muted transition hover:border-navy hover:text-navy"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-white text-muted transition hover:border-navy hover:text-navy sm:h-9 sm:w-9"
           >
             {dim ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
           </button>
           <Link
             href="/checkout"
             aria-label={hydrated && count > 0 ? `Open checkout, ${count} item${count === 1 ? '' : 's'}` : 'Open checkout'}
-            className="relative flex h-9 w-9 items-center justify-center rounded-full bg-ink text-white transition hover:bg-navy"
+            className="relative flex h-10 w-10 items-center justify-center rounded-full bg-ink text-white transition hover:bg-navy sm:h-9 sm:w-9"
           >
             <ShoppingBag size={16} aria-hidden="true" />
             {hydrated && count > 0 && (
@@ -119,7 +119,7 @@ export default function SiteHeader() {
             aria-expanded={open}
             aria-controls="mobile-navigation"
             aria-label={open ? 'Close navigation menu' : 'Open navigation menu'}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-white text-ink transition hover:border-navy hover:text-navy xl:hidden"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-white text-ink transition hover:border-navy hover:text-navy sm:h-9 sm:w-9 xl:hidden"
           >
             {open ? <X size={18} aria-hidden="true" /> : <Menu size={18} aria-hidden="true" />}
           </button>
@@ -128,8 +128,8 @@ export default function SiteHeader() {
 
       <div id="mobile-navigation" ref={mobileNavRef}>
         {open && (
-          <nav aria-label="Mobile" className="border-t border-line bg-white px-5 py-4 lg:hidden animate-fade-in-up">
-            <ul className="grid grid-cols-2 gap-1 text-sm">
+          <nav aria-label="Mobile" className="border-t border-line bg-white px-4 py-4 sm:px-5 lg:hidden animate-fade-in-up">
+            <ul className="grid grid-cols-2 gap-1.5 text-sm">
               {nav.map((item) => {
                 const active = isActive(pathname ?? '', item.href)
                 return (
@@ -137,7 +137,7 @@ export default function SiteHeader() {
                     <Link
                       href={item.href}
                       onClick={() => setOpen(false)}
-                      className={`block rounded-lg px-3 py-2.5 font-semibold transition ${active ? 'bg-navy text-white' : 'text-ink hover:bg-mist'}`}
+                      className={`flex h-12 items-center rounded-lg px-3 font-semibold transition ${active ? 'bg-navy text-white' : 'text-ink hover:bg-mist'}`}
                       aria-current={active ? 'page' : undefined}
                     >
                       {item.label}
@@ -146,10 +146,10 @@ export default function SiteHeader() {
                 )
               })}
               <li className="col-span-2 mt-1 border-t border-line pt-2">
-                <Link href="/account" onClick={() => setOpen(false)} className="block rounded-lg px-3 py-2.5 font-semibold text-navy hover:bg-navy-light">My Account</Link>
+                <Link href="/account" onClick={() => setOpen(false)} className="flex h-12 items-center rounded-lg px-3 font-semibold text-navy hover:bg-navy-light">My Account</Link>
               </li>
               <li className="col-span-2">
-                <Link href="/login" onClick={() => setOpen(false)} className="block rounded-lg bg-navy px-3 py-2.5 text-center font-bold text-white hover:bg-navy-dark">Sign in</Link>
+                <Link href="/login" onClick={() => setOpen(false)} className="flex h-12 items-center justify-center rounded-lg bg-navy px-3 font-bold text-white hover:bg-navy-dark">Sign in</Link>
               </li>
             </ul>
           </nav>

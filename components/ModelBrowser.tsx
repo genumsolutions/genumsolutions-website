@@ -15,11 +15,11 @@ const modelSites: ModelSite[] = [
 
 export default function ModelBrowser() {
   return (
-    <section className="mt-16 border-t border-line pt-10">
+    <section className="mt-12 border-t border-line pt-8 sm:mt-16 sm:pt-10">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs font-black uppercase tracking-[.24em] text-navy">Open model library</p>
-          <h2 className="mt-2 font-display text-3xl font-bold">Browse before you design.</h2>
+          <h2 className="mt-2 font-display text-2xl font-bold sm:text-3xl">Browse before you design.</h2>
         </div>
         <p className="max-w-md text-sm leading-6 text-muted">These libraries open in a new tab - they do not allow embedding, so we link straight to the source.</p>
       </div>

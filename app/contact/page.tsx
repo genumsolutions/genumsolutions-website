@@ -17,7 +17,7 @@ export default function ContactPage() {
         title="Bring the half-formed idea."
         body="Tell us what you are trying to make. We will help turn the interesting parts into a clear next step."
       />
-      <section className="mx-auto grid max-w-7xl gap-10 px-5 py-14 lg:grid-cols-2 lg:px-8">
+      <section className="mx-auto grid max-w-7xl gap-8 px-5 py-10 sm:gap-10 sm:py-14 lg:grid-cols-2 lg:px-8">
         <ContactForm />
         <div className="border-t-2 border-ink pt-5">
           <p className="text-sm font-bold">{company.name}</p>

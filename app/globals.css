@@ -13,9 +13,11 @@
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
-body { margin: 0; background: #f8fafc; color: var(--ink); font-family: var(--font-inter), sans-serif; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: #f8fafc; color: var(--ink); font-family: var(--font-inter), sans-serif; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
 button, a { transition: all .2s ease; }
+img, video { max-width: 100%; height: auto; }
+input, textarea, select { font-size: 16px; }
 
 .grid-paper {
   background-image: linear-gradient(#e2e8f0 1px, transparent 1px), linear-gradient(90deg, #e2e8f0 1px, transparent 1px);

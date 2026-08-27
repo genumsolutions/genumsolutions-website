@@ -28,12 +28,12 @@ export default function ProductDetailPro({ product }: { product: Product }) {
 
   return (
     <div className="min-h-screen bg-mist">
-      <div className="mx-auto max-w-7xl px-5 py-8 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-5 sm:py-8 lg:px-8">
         <Link href="/products" className="inline-flex items-center gap-1.5 text-sm font-bold text-navy transition hover:text-navy-dark">
           <ArrowLeft size={15} aria-hidden="true" /> Back to the shop
         </Link>
-        <div className="mt-8 grid gap-10 lg:grid-cols-[.9fr_1.1fr] lg:items-start">
-          <div className="relative aspect-square overflow-hidden rounded-3xl bg-ink">
+        <div className="mt-6 grid gap-8 sm:mt-8 sm:gap-10 lg:grid-cols-[.9fr_1.1fr] lg:items-start">
+          <div className="relative aspect-square overflow-hidden rounded-2xl bg-ink sm:rounded-3xl">
             <Image
               src={product.image || '/placeholder.jpg'}
               alt={product.name}
@@ -47,10 +47,10 @@ export default function ProductDetailPro({ product }: { product: Product }) {
             <p className="text-xs font-black uppercase tracking-[.24em] text-navy">
               {product.category} · {product.badge || product.productType}
             </p>
-            <h1 className="mt-3 font-display text-5xl font-bold leading-none tracking-[-.04em] text-ink">
+            <h1 className="mt-3 font-display text-2xl font-bold leading-none tracking-[-.03em] text-ink sm:text-3xl sm:leading-tight lg:text-5xl">
               {product.name}
             </h1>
-            <p className="mt-5 max-w-xl text-lg leading-8 text-muted">
+            <p className="mt-4 max-w-xl text-base leading-7 text-muted sm:mt-5 sm:text-lg">
               {product.description}
             </p>
             <div className="mt-7 flex flex-wrap items-baseline gap-3">

@@ -112,7 +112,7 @@ export default function CheckoutPage() {
       </header>
       <div className="mx-auto max-w-7xl px-5 py-12 lg:px-8">
         <p className="text-xs font-black uppercase tracking-[.24em] text-navy">Secure order</p>
-        <h1 className="mt-3 font-display text-4xl font-bold tracking-tight sm:text-5xl">Ready to build?</h1>
+        <h1 className="mt-3 font-display text-2xl font-bold tracking-tight sm:text-3xl lg:text-4xl">Ready to build?</h1>
         {!account && hydrated && lines.length > 0 && (
           <div className="mt-6 rounded-2xl border border-navy/20 bg-navy-light p-5 text-sm text-ink">
             <strong>Sign in to place your order.</strong> Your build list is already saved and will merge into your account.{' '}
@@ -133,7 +133,7 @@ export default function CheckoutPage() {
             <Link href="/products" className="mt-5 inline-block rounded-lg bg-navy px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-navy-dark">Browse products</Link>
           </div>
         ) : (
-          <div className="mt-10 grid gap-10 lg:grid-cols-[1.1fr_.9fr]">
+          <div className="mt-8 grid gap-8 sm:mt-10 sm:gap-10 lg:grid-cols-[1.1fr_.9fr]">
             <section aria-labelledby="delivery-heading" className="rounded-2xl border border-line bg-white p-6">
               <h2 id="delivery-heading" className="font-display text-2xl font-bold">Delivery details</h2>
               <form className="mt-6 grid gap-3 sm:grid-cols-2" onSubmit={(event) => event.preventDefault()}>

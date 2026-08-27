@@ -55,26 +55,26 @@ export default function ProductCatalog({ scope = 'components', products = [] }: 
     : ['All']
 
   return (
-    <section className="mx-auto max-w-7xl px-5 py-12 lg:px-8 lg:py-16">
-      <div className="flex flex-col gap-5 border-b border-line pb-6 lg:flex-row lg:items-center lg:justify-between">
+    <section className="mx-auto max-w-7xl px-4 py-10 sm:px-5 sm:py-12 lg:px-8 lg:py-16">
+      <div className="flex flex-col gap-4 border-b border-line pb-5 sm:flex-row sm:items-center sm:justify-between sm:gap-5 sm:pb-6">
         <div>
           <div className="flex flex-wrap gap-2">
             {filters.map((item) => (
               <button
                 key={item}
                 onClick={() => setCategory(item)}
-                className={`rounded-full px-4 py-2 text-xs font-bold transition ${category === item ? 'bg-navy text-white' : 'border border-line bg-white text-muted hover:border-navy hover:text-navy'}`}
+                className={`min-h-[44px] rounded-full px-4 py-2 text-xs font-bold transition ${category === item ? 'bg-navy text-white' : 'border border-line bg-white text-muted hover:border-navy hover:text-navy'}`}
               >
                 {item}{item !== 'All' && ` · ${products.filter((p) => p.category === item).length}`}
               </button>
             ))}
           </div>
-          <label className="flex items-center gap-3 rounded-full border border-line bg-white px-4 py-2 text-sm text-muted">
+          <label className="mt-3 flex items-center gap-3 rounded-full border border-line bg-white px-4 py-2.5 text-sm text-muted sm:mt-0">
             <Search size={15} aria-hidden="true" />
             <input value={query} onChange={(event) => setQuery(event.target.value)} className="w-full bg-transparent outline-none placeholder:text-muted lg:w-52" placeholder="Search this section" aria-label="Search products" />
           </label>
         </div>
-        <div className="mt-5 flex items-center justify-between text-sm text-muted">
+        <div className="flex items-center justify-between text-sm text-muted">
           <span>{visibleProducts.length} listing{visibleProducts.length === 1 ? '' : 's'} found</span>
           <span aria-live="polite" className="font-bold text-navy">{hydrated && count > 0 ? `${count} item${count === 1 ? '' : 's'} in your build list` : scope === 'components' ? 'Components and materials only' : 'Quote by scope'}</span>
         </div>

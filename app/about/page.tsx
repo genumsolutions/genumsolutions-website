@@ -34,30 +34,30 @@ export default function AboutPage() {
         body="GENUM brings a decade of telecom, IoT, embedded systems, project delivery, and STEAM education experience into a company built for practical technology."
       />
 
-      <section className="mx-auto max-w-7xl px-5 py-14 lg:px-8">
-        <div className="grid gap-4 sm:grid-cols-4">
+      <section className="mx-auto max-w-7xl px-5 py-10 sm:py-14 lg:px-8">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <div className="border-t-2 border-ink pt-4">
-            <strong className="font-display text-3xl">25+</strong>
-            <p className="mt-1 text-sm text-slate-500">projects completed</p>
+            <strong className="font-display text-2xl sm:text-3xl">25+</strong>
+            <p className="mt-1 text-xs text-slate-500 sm:text-sm">projects completed</p>
           </div>
           <div className="border-t-2 border-ink pt-4">
-            <strong className="font-display text-3xl">10+</strong>
-            <p className="mt-1 text-sm text-slate-500">years in engineering</p>
+            <strong className="font-display text-2xl sm:text-3xl">10+</strong>
+            <p className="mt-1 text-xs text-slate-500 sm:text-sm">years in engineering</p>
           </div>
           <div className="border-t-2 border-ink pt-4">
-            <strong className="font-display text-3xl">50+</strong>
-            <p className="mt-1 text-sm text-slate-500">clients served</p>
+            <strong className="font-display text-2xl sm:text-3xl">50+</strong>
+            <p className="mt-1 text-xs text-slate-500 sm:text-sm">clients served</p>
           </div>
           <div className="border-t-2 border-ink pt-4">
-            <strong className="font-display text-3xl">500+</strong>
-            <p className="mt-1 text-sm text-slate-500">students trained</p>
+            <strong className="font-display text-2xl sm:text-3xl">500+</strong>
+            <p className="mt-1 text-xs text-slate-500 sm:text-sm">students trained</p>
           </div>
         </div>
 
-        <div className="mt-16 grid gap-10 lg:grid-cols-[.8fr_1.2fr]">
+        <div className="mt-12 grid gap-8 sm:mt-16 sm:gap-10 lg:grid-cols-[.8fr_1.2fr]">
           <div>
             <p className="text-xs font-black uppercase tracking-[.24em] text-navy">How we work</p>
-            <h2 className="mt-3 font-display text-4xl font-bold">Make the complex useful.</h2>
+            <h2 className="mt-3 font-display text-2xl font-bold sm:text-3xl lg:text-4xl">Make the complex useful.</h2>
           </div>
           <div>
             <p className="leading-8 text-slate-600">
@@ -76,9 +76,9 @@ export default function AboutPage() {
 
       {/* ─── What We Do (cross-links) ─── */}
       <section className="border-y border-line bg-mist">
-        <div className="mx-auto max-w-7xl px-5 py-14 lg:px-8">
+        <div className="mx-auto max-w-7xl px-5 py-10 sm:py-14 lg:px-8">
           <p className="text-xs font-black uppercase tracking-[.24em] text-navy">What we do</p>
-          <h2 className="mt-2 font-display text-3xl font-bold tracking-tight">Our work in practice.</h2>
+          <h2 className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl">Our work in practice.</h2>
           <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {whatWeDo.map((item) => (
               <article key={item.title} className="flex flex-col rounded-2xl border border-line bg-white p-6 transition hover:-translate-y-0.5 hover:border-navy hover:shadow-lg">
@@ -94,9 +94,9 @@ export default function AboutPage() {
       </section>
 
       {/* ─── Technical foundation ─── */}
-      <section className="mx-auto max-w-7xl px-5 py-14 lg:px-8">
+      <section className="mx-auto max-w-7xl px-5 py-10 sm:py-14 lg:px-8">
         <p className="text-xs font-black uppercase tracking-[.24em] text-navy">Technical foundation</p>
-        <h2 className="mt-3 font-display text-4xl font-bold">Capabilities we bring to every project.</h2>
+        <h2 className="mt-3 font-display text-2xl font-bold sm:text-3xl lg:text-4xl">Capabilities we bring to every project.</h2>
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {competencies.map(([title, text]) => (
             <article key={title} className="border-l-2 border-gold bg-white p-5">

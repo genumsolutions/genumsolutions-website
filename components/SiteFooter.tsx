@@ -20,10 +20,10 @@ const supportLinks = [
 export default function SiteFooter() {
   return (
     <footer className="border-t border-line bg-ink text-white">
-      <div className="mx-auto grid max-w-7xl gap-10 px-5 py-12 text-sm lg:grid-cols-[1.2fr_1fr_1fr] lg:px-8">
-        <div>
-          <Link href="/" className="flex items-center gap-3.5" aria-label="GENUM SOLUTIONS home">
-            <Image src="/logo.png" alt="GENUM SOLUTIONS stamp" width={88} height={88} className="h-11 w-11 shrink-0 rounded-full object-contain ring-1 ring-white/20" />
+      <div className="mx-auto grid max-w-7xl gap-8 px-5 py-10 text-sm sm:gap-10 sm:py-12 sm:grid-cols-2 lg:grid-cols-[1.2fr_1fr_1fr] lg:px-8">
+        <div className="sm:col-span-2 lg:col-span-1">
+          <Link href="/" className="flex items-center gap-3 sm:gap-3.5" aria-label="GENUM SOLUTIONS home">
+            <Image src="/logo.png" alt="GENUM SOLUTIONS stamp" width={88} height={88} className="h-10 w-10 shrink-0 rounded-full object-contain ring-1 ring-white/20 sm:h-11 sm:w-11" />
             <span aria-hidden="true" className="hidden h-9 w-px bg-white/20 sm:block" />
             <span className="leading-none">
               <strong className="block font-display text-xl font-bold tracking-tight text-white">{company.shortName}</strong>

@@ -28,11 +28,11 @@ export default async function ServicesPage() {
       />
 
       {/* ─── Services ─── */}
-      <section id="services" className="mx-auto max-w-7xl px-5 py-14 lg:px-8">
+      <section id="services" className="mx-auto max-w-7xl px-5 py-10 sm:py-14 lg:px-8">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-xs font-black uppercase tracking-[.24em] text-navy">What we offer</p>
-            <h2 className="mt-2 font-display text-3xl font-bold tracking-tight">Our Services</h2>
+            <h2 className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl">Our Services</h2>
           </div>
         </div>
         <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -50,10 +50,10 @@ export default async function ServicesPage() {
           )}
         </div>
 
-        <div className="mt-16 grid gap-8 border-y border-line py-10 lg:grid-cols-[.8fr_1.2fr]">
+        <div className="mt-12 grid gap-8 border-y border-line py-8 sm:py-10 lg:grid-cols-[.8fr_1.2fr]">
           <div>
             <p className="text-xs font-black uppercase tracking-[.24em] text-navy">How it works</p>
-            <h3 className="mt-3 font-display text-3xl font-bold">Clear scope before commitment.</h3>
+            <h3 className="mt-3 font-display text-2xl font-bold sm:text-3xl">Clear scope before commitment.</h3>
             <p className="mt-4 leading-7 text-slate-600">For websites, print jobs, workshops, and lab projects, we separate the deliverables, materials, schedule, and handover so the next step is easy to approve.</p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -69,11 +69,11 @@ export default async function ServicesPage() {
 
       {/* ─── Training Programs ─── */}
       <section id="training" className="border-y border-line bg-mist">
-        <div className="mx-auto max-w-7xl px-5 py-14 lg:px-8">
+        <div className="mx-auto max-w-7xl px-5 py-10 sm:py-14 lg:px-8">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="text-xs font-black uppercase tracking-[.24em] text-navy">Training programs</p>
-              <h2 className="mt-2 font-display text-3xl font-bold tracking-tight">Programs that Build Careers</h2>
+              <h2 className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl">Programs that Build Careers</h2>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
                 GENUM&apos;s source curriculum combines 100+ age-banded STEM projects with
                 modular robotics, teacher enablement, and measurable pilot support.
@@ -97,17 +97,18 @@ export default async function ServicesPage() {
       </section>
 
       {/* ─── School Packages & Pilot Costs ─── */}
-      <section id="pilots" className="mx-auto max-w-7xl px-5 py-14 lg:px-8">
-        <div className="grid gap-10 lg:grid-cols-[.9fr_1.1fr]">
+      <section id="pilots" className="mx-auto max-w-7xl px-5 py-10 sm:py-14 lg:px-8">
+        <div className="grid gap-8 sm:gap-10 lg:grid-cols-[.9fr_1.1fr]">
           <div>
             <p className="text-xs font-black uppercase tracking-[.24em] text-navy">Illustrative pilot costing</p>
-            <h2 className="mt-3 font-display text-3xl font-bold tracking-tight">A transparent starting point for a school proposal.</h2>
+            <h2 className="mt-3 font-display text-2xl font-bold tracking-tight sm:text-3xl">A transparent starting point for a school proposal.</h2>
             <p className="mt-4 leading-7 text-slate-600">
               The source proposal models a three-classroom pilot with 30 kits. These figures are illustrative, shown
               in NPR for planning, and confirmed after scope, taxes, delivery, and local procurement review.
             </p>
-            <p className="mt-5 font-display text-3xl font-bold text-navy">NPR 8,40,000 <span className="font-sans text-sm font-normal text-slate-500">illustrative total</span></p>
-            <table className="mt-8 w-full text-left text-sm">
+            <p className="mt-5 font-display text-2xl font-bold text-navy sm:text-3xl">NPR 8,40,000 <span className="font-sans text-sm font-normal text-slate-500">illustrative total</span></p>
+            <div className="mt-8 overflow-x-auto">
+              <table className="w-full min-w-[400px] text-left text-sm">
               <caption className="sr-only">Illustrative three-classroom pilot cost breakdown in NPR</caption>
               <thead>
                 <tr className="border-b border-line text-xs uppercase tracking-wider text-slate-400">
@@ -126,7 +127,8 @@ export default async function ServicesPage() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+              </table>
+            </div>
           </div>
           <div>
             <h3 className="font-display text-2xl font-bold tracking-tight">STEM Project Highlights</h3>
@@ -142,8 +144,8 @@ export default async function ServicesPage() {
               ))}
             </div>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/contact" className="rounded-full bg-navy px-6 py-3.5 text-sm font-bold text-white transition hover:bg-navy-dark">Request a school proposal</Link>
-              <Link href="/products" className="rounded-full border border-line bg-white px-6 py-3.5 text-sm font-black text-ink transition hover:border-navy hover:text-navy">Browse products</Link>
+              <Link href="/contact" className="inline-flex h-12 items-center rounded-full bg-navy px-6 text-sm font-bold text-white transition hover:bg-navy-dark">Request a school proposal</Link>
+              <Link href="/products" className="inline-flex h-12 items-center rounded-full border border-line bg-white px-6 text-sm font-black text-ink transition hover:border-navy hover:text-navy">Browse products</Link>
             </div>
           </div>
         </div>

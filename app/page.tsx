@@ -49,34 +49,34 @@ export default async function HomePage() {
     <PageShell>
       <main>
         <section className="grid-paper border-b border-line">
-          <div className="mx-auto grid max-w-7xl items-center gap-10 px-5 py-16 lg:grid-cols-[1.1fr_.9fr] lg:gap-14 lg:px-8 lg:py-24">
+          <div className="mx-auto grid max-w-7xl items-center gap-8 px-5 py-12 sm:py-16 lg:grid-cols-[1.1fr_.9fr] lg:gap-14 lg:px-8 lg:py-24">
             <div>
-              <p className="mb-5 flex items-center gap-2 text-xs font-black uppercase tracking-[.24em] text-navy">
+              <p className="mb-4 flex items-center gap-2 text-xs font-black uppercase tracking-[.24em] text-navy sm:mb-5">
                 <span className="h-2 w-2 rounded-full bg-gold" aria-hidden="true" /> Kathmandu · Nepal
               </p>
-              <h1 className="max-w-3xl font-display text-4xl font-bold leading-[1.05] tracking-[-.03em] text-ink sm:text-6xl lg:text-7xl lg:leading-[.98]">
+              <h1 className="max-w-3xl font-display text-3xl font-bold leading-[1.1] tracking-[-.03em] text-ink sm:text-4xl sm:leading-[1.05] lg:text-6xl lg:leading-[.98]">
                 Technology you can <span className="text-navy">touch</span>, test, and trust.
               </h1>
-              <p className="mt-7 max-w-xl text-base leading-7 text-slate-600">
+              <p className="mt-6 max-w-xl text-base leading-7 text-slate-600 sm:mt-7 sm:text-lg">
                 Robotics kits, project solutions, fabrication, open tools, and training for curious builders,
                 schools, and teams — designed in Kathmandu, delivered across Nepal, with eSewa, Khalti, card,
                 and cash-on-delivery payment.
               </p>
-              <div className="mt-9 flex flex-wrap gap-3">
+              <div className="mt-7 flex flex-wrap gap-3 sm:mt-9">
                 <Link
                   href="/products"
-                  className="rounded-full bg-navy px-6 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-navy-dark hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
+                  className="inline-flex h-12 items-center rounded-full bg-navy px-6 text-sm font-bold text-white shadow-sm transition hover:bg-navy-dark hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
                 >
                   Get started
                 </Link>
                 <Link
                   href="/contact"
-                  className="rounded-full border border-line bg-white px-6 py-3.5 text-sm font-black text-ink transition hover:border-navy hover:text-navy focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
+                  className="inline-flex h-12 items-center rounded-full border border-line bg-white px-6 text-sm font-black text-ink transition hover:border-navy hover:text-navy focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
                 >
                   Contact us
                 </Link>
               </div>
-              <dl className="mt-12 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-line pt-8 sm:grid-cols-4">
+              <dl className="mt-10 grid grid-cols-2 gap-x-4 gap-y-5 border-t border-line pt-8 sm:mt-12 sm:grid-cols-4 sm:gap-x-6">
                 {stats.map(([value, label]) => (
                   <div key={label}>
                     <dt className="order-last mt-1 text-xs leading-5 text-slate-500">{label}</dt>
@@ -85,7 +85,7 @@ export default async function HomePage() {
                 ))}
               </dl>
             </div>
-            <div className="relative overflow-hidden rounded-3xl bg-ink shadow-2xl">
+            <div className="relative aspect-[4/3] overflow-hidden rounded-3xl bg-ink shadow-2xl sm:aspect-square lg:aspect-[4/3]">
               <Image
                 src={heroMedia.src}
                 alt={heroMedia.alt}
@@ -94,19 +94,19 @@ export default async function HomePage() {
                 sizes="(max-width: 1024px) 100vw, 45vw"
                 className="object-cover opacity-90"
               />
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/90 to-transparent p-6 text-white">
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/90 to-transparent p-5 text-white sm:p-6">
                 <p className="text-xs font-black uppercase tracking-[.2em] text-gold">Build what matters</p>
-                <p className="mt-2 max-w-xs font-display text-2xl font-bold leading-snug">From first circuit to real-world launch.</p>
+                <p className="mt-2 max-w-xs font-display text-xl font-bold leading-snug sm:text-2xl">From first circuit to real-world launch.</p>
               </div>
             </div>
           </div>
         </section>
 
-        <section aria-labelledby="services-heading" className="mx-auto max-w-7xl px-5 py-16 lg:px-8 lg:py-20">
-          <div className="flex flex-wrap items-end justify-between gap-5">
+        <section aria-labelledby="services-heading" className="mx-auto max-w-7xl px-5 py-12 lg:px-8 lg:py-20">
+          <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="text-xs font-black uppercase tracking-[.24em] text-navy">What GENUM does</p>
-              <h2 id="services-heading" className="mt-2 font-display text-3xl font-bold tracking-tight sm:text-4xl">A practical build partner.</h2>
+              <h2 id="services-heading" className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl lg:text-4xl">A practical build partner.</h2>
             </div>
             <Link
               href="/services"
@@ -117,7 +117,7 @@ export default async function HomePage() {
           </div>
           <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {services.map((service) => (
-              <article key={service.title} className="flex flex-col rounded-2xl border border-line bg-white p-6 transition hover:-translate-y-0.5 hover:border-navy hover:shadow-lg">
+              <article key={service.title} className="flex flex-col rounded-2xl border border-line bg-white p-5 transition hover:-translate-y-0.5 hover:border-navy hover:shadow-lg sm:p-6">
                 <h3 className="font-display text-lg font-bold leading-snug">{service.title}</h3>
                 <p className="mt-2 flex-1 text-sm leading-6 text-slate-600">{service.body}</p>
                 <Link href={service.href} className="mt-4 inline-flex items-center gap-1.5 text-sm font-black text-navy transition hover:gap-2.5" aria-label={`${service.cta}: ${service.title}`}>
@@ -128,20 +128,20 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <section aria-labelledby="curriculum-heading" className="border-y border-line bg-mist py-16 lg:py-20">
+        <section aria-labelledby="curriculum-heading" className="border-y border-line bg-mist py-12 lg:py-20">
           <div className="mx-auto max-w-7xl px-5 lg:px-8">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
                 <p className="text-xs font-black uppercase tracking-[.24em] text-navy">100+ project curriculum</p>
-                <h2 id="curriculum-heading" className="mt-2 max-w-2xl font-display text-3xl font-bold tracking-tight sm:text-4xl">Ages, materials, and outcomes stay visible.</h2>
+                <h2 id="curriculum-heading" className="mt-2 max-w-2xl font-display text-2xl font-bold tracking-tight sm:text-3xl lg:text-4xl">Ages, materials, and outcomes stay visible.</h2>
               </div>
               <Link href="/contact" className="inline-flex items-center gap-1.5 text-sm font-bold text-navy underline decoration-gold decoration-2 underline-offset-4 transition hover:text-navy-dark">
                 Request the full catalog <ArrowRight size={15} aria-hidden="true" />
               </Link>
             </div>
-            <ul className="mt-8 grid gap-4 md:grid-cols-3">
+            <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {stemProjectHighlights.map(([ages, ...projects]) => (
-                <li key={ages} className="rounded-2xl border border-line bg-white p-6">
+                <li key={ages} className="rounded-2xl border border-line bg-white p-5 sm:p-6">
                   <p className="text-xs font-black uppercase tracking-widest text-gold">{ages}</p>
                   <ul className="mt-4 space-y-2 text-sm leading-6 text-slate-600">
                     {projects.map((project) => <li key={project}>{project}</li>)}
@@ -152,45 +152,47 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <section aria-labelledby="training-heading" className="mx-auto grid max-w-7xl gap-10 px-5 py-16 lg:grid-cols-[.9fr_1.1fr] lg:px-8 lg:py-20">
+        <section aria-labelledby="training-heading" className="mx-auto max-w-7xl px-5 py-12 lg:grid lg:grid-cols-[.9fr_1.1fr] lg:gap-10 lg:px-8 lg:py-20">
           <div>
             <p className="text-xs font-black uppercase tracking-[.24em] text-navy">Illustrative pilot costing</p>
-            <h2 id="training-heading" className="mt-3 font-display text-3xl font-bold tracking-tight">A transparent starting point for a school proposal.</h2>
+            <h2 id="training-heading" className="mt-3 font-display text-2xl font-bold tracking-tight sm:text-3xl">A transparent starting point for a school proposal.</h2>
             <p className="mt-4 leading-7 text-slate-600">
               The source proposal models a three-classroom pilot with 30 kits. These figures are illustrative, shown
               in NPR for planning, and confirmed after scope, taxes, delivery, and local procurement review.
             </p>
-            <p className="mt-5 font-display text-3xl font-bold text-navy">NPR 8,40,000 <span className="font-sans text-sm font-normal text-slate-500">illustrative total</span></p>
-            <table className="mt-8 w-full text-left text-sm">
-              <caption className="sr-only">Illustrative three-classroom pilot cost breakdown in NPR</caption>
-              <thead>
-                <tr className="border-b border-line text-xs uppercase tracking-wider text-slate-400">
-                  <th scope="col" className="py-2 pr-4 font-bold">Line item</th>
-                  <th scope="col" className="py-2 font-bold">Cost</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pilotCosts.map(([item, cost, note]) => (
-                  <tr key={item} className="border-b border-line last:border-b-0">
-                    <th scope="row" className="py-3 pr-4 align-top font-semibold text-ink">
-                      {item}
-                      <span className="block text-xs font-normal leading-5 text-slate-500">{note}</span>
-                    </th>
-                    <td className="py-3 align-top font-display font-bold">{cost}</td>
+            <p className="mt-5 font-display text-2xl font-bold text-navy sm:text-3xl">NPR 8,40,000 <span className="font-sans text-sm font-normal text-slate-500">illustrative total</span></p>
+            <div className="mt-8 overflow-x-auto">
+              <table className="w-full min-w-[400px] text-left text-sm">
+                <caption className="sr-only">Illustrative three-classroom pilot cost breakdown in NPR</caption>
+                <thead>
+                  <tr className="border-b border-line text-xs uppercase tracking-wider text-slate-400">
+                    <th scope="col" className="py-2 pr-4 font-bold">Line item</th>
+                    <th scope="col" className="py-2 font-bold">Cost</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {pilotCosts.map(([item, cost, note]) => (
+                    <tr key={item} className="border-b border-line last:border-b-0">
+                      <th scope="row" className="py-3 pr-4 align-top font-semibold text-ink">
+                        {item}
+                        <span className="block text-xs font-normal leading-5 text-slate-500">{note}</span>
+                      </th>
+                      <td className="py-3 align-top font-display font-bold">{cost}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-          <div>
-            <h3 className="font-display text-2xl font-bold tracking-tight">Our training programs</h3>
+          <div className="mt-10 lg:mt-0">
+            <h3 className="font-display text-xl font-bold tracking-tight sm:text-2xl">Our training programs</h3>
             <p className="mt-3 text-sm leading-6 text-slate-600">
               From a single robotics lab to a three-classroom pilot with kits, curriculum, teacher training,
               coaching, and reporting.
             </p>
             <ul className="mt-6 space-y-4">
               {trainingPrograms.map((program) => (
-                <li key={program.title} className="rounded-2xl border border-line bg-white p-6">
+                <li key={program.title} className="rounded-2xl border border-line bg-white p-5 sm:p-6">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <h4 className="font-display text-lg font-bold">{program.title}</h4>
                     <span className="rounded-full bg-sky px-3 py-1 text-xs font-bold text-navy">{program.duration}</span>
@@ -203,7 +205,7 @@ export default async function HomePage() {
             </ul>
             <Link
               href="/services#training"
-              className="mt-7 inline-flex items-center gap-2 rounded-full bg-gold px-6 py-3.5 text-sm font-black text-ink transition hover:bg-gold-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+              className="mt-7 inline-flex h-12 items-center gap-2 rounded-full bg-gold px-6 text-sm font-black text-ink transition hover:bg-gold-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
             >
               See training programs <ArrowRight size={15} aria-hidden="true" />
             </Link>
@@ -211,14 +213,14 @@ export default async function HomePage() {
         </section>
 
         <section className="border-t border-line bg-ink">
-          <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-6 px-5 py-14 text-white lg:flex-nowrap lg:px-8">
+          <div className="mx-auto grid max-w-7xl gap-6 px-5 py-12 text-white sm:grid-cols-1 sm:items-center sm:py-14 lg:grid-cols-[1fr_auto] lg:px-8">
             <div>
               <p className="text-xs font-black uppercase tracking-[.24em] text-gold">Need a starting point?</p>
-              <h2 className="mt-2 max-w-xl font-display text-3xl font-bold tracking-tight">Use the open tools or bring us the brief.</h2>
+              <h2 className="mt-2 max-w-xl font-display text-2xl font-bold tracking-tight sm:text-3xl">Use the open tools or bring us the brief.</h2>
             </div>
             <div className="flex flex-wrap gap-3">
-              <Link href="/tools" className="rounded-full bg-white px-6 py-3.5 text-sm font-black text-ink transition hover:bg-mist focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">Open tools</Link>
-              <Link href="/contact" className="rounded-full border border-white/40 px-6 py-3.5 text-sm font-black text-white transition hover:border-white hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">Contact GENUM</Link>
+              <Link href="/tools" className="inline-flex h-12 items-center rounded-full bg-white px-6 text-sm font-black text-ink transition hover:bg-mist focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">Open tools</Link>
+              <Link href="/contact" className="inline-flex h-12 items-center rounded-full border border-white/40 px-6 text-sm font-black text-white transition hover:border-white hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">Contact GENUM</Link>
             </div>
           </div>
         </section>
