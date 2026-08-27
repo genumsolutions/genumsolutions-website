@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://genumsolutions-website.vercel.app/sitemap.xml
