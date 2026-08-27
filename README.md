@@ -184,6 +184,29 @@ Safe pattern everywhere: the order is saved `pending` server-side, prices are **
 - **Orders:** customers track status in `/account`; admins update statuses in `/admin` → Orders.
 - **Payments ledger:** query `public.transactions` in the Supabase dashboard (admins can also read it via RLS).
 
+## Security & compliance
+
+The storefront follows a defense-in-depth posture suitable for a client deployment:
+
+- **Authentication & RBAC** — Supabase Auth (email/password + Google OAuth, PKCE). Admin access is restricted to users whose `profiles.role = 'admin'`. Page-level guards (`getCurrentAdmin`) and per-route `isAdminRequest()` checks run on every admin API; an **edge middleware guard** additionally bounces unauthenticated visitors away from `/admin` (except `/admin/login`) before any page renders.
+- **Row Level Security** — all tables ship with RLS policies in `supabase/schema.sql`. The service-role client (used only in server code) bypasses RLS and is **never** exposed to the browser (`SUPABASE_SERVICE_ROLE_KEY` is server-only, never `NEXT_PUBLIC_`).
+- **Secrets** — all credentials live in environment variables (Vercel + `.env.local`, gitignored). `.env.example` documents every key; nothing secret is committed to the repo.
+- **HTTPS & headers** — Vercel terminates TLS; `next.config.mjs` sets strict transport (`Strict-Transport-Security`), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, a restrictive `Referrer-Policy`, and a locked-down `Permissions-Policy`.
+- **Payment safety** — prices are **re-priced server-side** against the database (`lib/checkout.ts`); gateways are confirmed only via **server-to-server** verification (eSewa `COMPLETE` + amount match, Khalti `Completed` + paisa match); every event appends to the immutable `transactions` ledger; and an `transactionAlreadySucceeded` guard makes confirm endpoints **idempotent** (double-fire cannot duplicate a payment).
+- **CSRF** — auth/session cookies are SameSite, so cross-site mutating requests from browsers are not auto-sent. Admin actions additionally require an authenticated session verified server-side on every request.
+- **Audit logging** — product/order/user/service mutations write structured entries to `activity_log` (viewable in `/admin` → Activity), giving a tamper-evident admin action trail.
+- **Input handling** — Supabase queries are parameterized; admin CRUD validates required fields, numeric bounds (`price ≥ 0`, integer `stock ≥ 0`), length caps, and slug-formatted ids. React escapes all rendered output; the only `dangerouslySetInnerHTML` uses are a static theme bootstrap script and JSON-LD (no user input).
+- **Accessibility** — semantic landmarks, a skip-to-content link, visible focus states, `prefers-reduced-motion` support, and a route-level `error.tsx` + global `global-error.tsx` boundary.
+
+### Pre-deploy security checklist
+
+1. Set every variable from the environment table in Vercel (Production **and** Preview); never commit `.env.local`.
+2. Confirm `SUPABASE_SERVICE_ROLE_KEY` is present server-side only and absent from any `NEXT_PUBLIC_*` var.
+3. Verify Supabase Site URL + redirect URLs match the live domain (see Auth redirect URLs).
+4. Rotate any keys that may have been shared, and use **live** eSewa/Khalti credentials only after sandbox testing.
+5. Run the sandbox payment checklist (eSewa UAT + Khalti test) and confirm rows appear in `transactions` without duplicates.
+6. `npm run lint`, `tsc --noEmit`, and `npm run build` all pass before shipping.
+
 ## Validation
 
 ```powershell

@@ -47,6 +47,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('theme');if(t==='dim')document.documentElement.setAttribute('data-theme','dim')}catch(e){}` }} />
       </head>
       <body className={`${inter.variable} ${sora.variable}`}>
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-navy focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-white"
+        >
+          Skip to content
+        </a>
         <OrganizationJsonLd />
         <PageViewTracker />
         <WebVitals />

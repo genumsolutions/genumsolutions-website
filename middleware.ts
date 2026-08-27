@@ -13,7 +13,8 @@ function needsAuthRefresh(pathname: string) {
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request })
 
-  if (!needsAuthRefresh(request.nextUrl.pathname)) return response
+  const { pathname } = request.nextUrl
+  if (!needsAuthRefresh(pathname)) return response
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -33,7 +34,17 @@ export async function middleware(request: NextRequest) {
   })
 
   try {
-    await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    // Edge guard for the admin UI: bounce unauthenticated users to login.
+    // /admin/login is the sign-in page itself, so it stays reachable.
+    if (pathname.startsWith('/admin') && pathname !== '/admin/login' && !user) {
+      const loginUrl = request.nextUrl.clone()
+      loginUrl.pathname = '/login'
+      loginUrl.search = `?next=${encodeURIComponent(pathname)}`
+      return NextResponse.redirect(loginUrl)
+    }
   } catch {
     // Network hiccup - pages handle unauthenticated state gracefully.
   }

@@ -4,7 +4,13 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   images: {
-    domains: ['localhost', 'genumsolutions-website.vercel.app', 'images.unsplash.com', 'bkylfnlybtsujwzropru.supabase.co'],
+    remotePatterns: [
+      { protocol: 'http', hostname: 'localhost' },
+      { protocol: 'https', hostname: 'localhost' },
+      { protocol: 'https', hostname: 'genumsolutions-website.vercel.app' },
+      { protocol: 'https', hostname: 'images.unsplash.com' },
+      { protocol: 'https', hostname: 'bkylfnlybtsujwzropru.supabase.co' },
+    ],
     formats: ['image/avif', 'image/webp'],
   },
   async redirects() {

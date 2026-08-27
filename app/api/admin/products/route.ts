@@ -31,8 +31,18 @@ export async function PUT(request: Request) {
   try {
     const body = await request.json().catch(() => null)
     if (!body?.id || !body?.name || !body?.category) return NextResponse.json({ error: 'Product id, name, and category are required.' }, { status: 400 })
-    const specs = Array.isArray(body.specs) ? body.specs.filter((line: unknown) => typeof line === 'string' && line.trim()) : []
-    const product: Product = { ...body, id: String(body.id).trim(), name: String(body.name).trim(), category: String(body.category).trim(), specs }
+    const id = String(body.id).trim().toLowerCase().replace(/\s+/g, '-').slice(0, 120)
+    if (!/^[a-z0-9-]+$/.test(id)) return NextResponse.json({ error: 'Product id must be alphanumeric with dashes only.' }, { status: 400 })
+    const name = String(body.name).trim().slice(0, 200)
+    const category = String(body.category).trim().slice(0, 80)
+    const price = Number(body.price)
+    const stock = Number(body.stock)
+    if (body.price != null && (!Number.isFinite(price) || price < 0)) return NextResponse.json({ error: 'Price must be a number of zero or more.' }, { status: 400 })
+    if (body.stock != null && (!Number.isInteger(stock) || stock < 0)) return NextResponse.json({ error: 'Stock must be a whole number of zero or more.' }, { status: 400 })
+    const specs = Array.isArray(body.specs) ? body.specs.filter((line: unknown) => typeof line === 'string' && line.trim()).map((line: string) => line.slice(0, 500)) : []
+    const product: Product = { ...body, id, name, category, specs }
+    if (Number.isFinite(price)) product.price = price
+    if (Number.isInteger(stock)) product.stock = stock
     await saveProduct(product)
     await logActivity({ action: 'product.saved', entityType: 'product', entityId: product.id, details: { name: product.name } })
     return NextResponse.json({ ok: true, product })
