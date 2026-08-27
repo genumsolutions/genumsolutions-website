@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter, Sora } from 'next/font/google'
 import OrganizationJsonLd from '../components/OrganizationJsonLd'
+import WebSiteJsonLd from '../components/WebSiteJsonLd'
 import { CartProvider } from '../components/cart-provider'
 import PageViewTracker from '../components/PageViewTracker'
 import WebVitals from '../components/WebVitals'
@@ -54,6 +55,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           Skip to content
         </a>
         <OrganizationJsonLd />
+        <WebSiteJsonLd />
         <PageViewTracker />
         <WebVitals />
         <CartProvider>{children}</CartProvider>

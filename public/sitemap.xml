@@ -4,9 +4,27 @@
     <loc>https://genumsolutions-website.vercel.app/</loc>
   </url>
   <url>
-    <loc>https://genumsolutions-website.vercel.app/shop</loc>
+    <loc>https://genumsolutions-website.vercel.app/products</loc>
   </url>
   <url>
-    <loc>https://genumsolutions-website.vercel.app/workshop</loc>
+    <loc>https://genumsolutions-website.vercel.app/services</loc>
+  </url>
+  <url>
+    <loc>https://genumsolutions-website.vercel.app/3d-printing</loc>
+  </url>
+  <url>
+    <loc>https://genumsolutions-website.vercel.app/projects</loc>
+  </url>
+  <url>
+    <loc>https://genumsolutions-website.vercel.app/journal</loc>
+  </url>
+  <url>
+    <loc>https://genumsolutions-website.vercel.app/tools</loc>
+  </url>
+  <url>
+    <loc>https://genumsolutions-website.vercel.app/about</loc>
+  </url>
+  <url>
+    <loc>https://genumsolutions-website.vercel.app/contact</loc>
   </url>
 </urlset>

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import ProductDetailPro from '../../../components/ProductDetailPro'
 import ProductJsonLd from '../../../components/ProductJsonLd'
+import BreadcrumbListJsonLd from '../../../components/BreadcrumbListJsonLd'
 import PageShell from '../../../components/PageShell'
 import { getManagedProducts } from '../../../lib/content-store'
 
@@ -34,6 +35,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
   return (
     <>
       <ProductJsonLd product={product} />
+      <BreadcrumbListJsonLd items={[{ name: 'Home', path: '/' }, { name: 'Products', path: '/products' }, { name: product.name, path: `/products/${product.id}` }]} />
       <PageShell><ProductDetailPro product={product} /></PageShell>
     </>
   )
