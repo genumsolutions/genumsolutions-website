@@ -99,12 +99,12 @@ export default function CheckoutPage() {
   return (
     <main className="min-h-screen bg-mist">
       <header className="border-b border-line bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 lg:px-8">
-          <Link href="/" className="flex items-center gap-3" aria-label="GENUM SOLUTIONS home">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-5 py-4 lg:px-8">
+          <Link href="/" className="flex shrink-0 items-center gap-3" aria-label="GENUM SOLUTIONS home">
             <Image src="/logo.png" alt="GENUM SOLUTIONS stamp" width={48} height={48} className="h-11 w-11 object-contain" />
             <span className="font-display text-lg font-bold">GENUM checkout</span>
           </Link>
-          <div className="flex items-center gap-5">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-5">
             <Link href="/products" className="text-sm font-bold text-navy hover:underline">Continue shopping</Link>
             {account && <Link href="/account" className="text-sm font-bold text-navy hover:underline">My account</Link>}
           </div>

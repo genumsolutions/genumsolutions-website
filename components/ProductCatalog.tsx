@@ -113,7 +113,7 @@ export default function ProductCatalog({ scope = 'components', products = [] }: 
                 <p className="text-xs font-black uppercase tracking-widest text-navy">{product.badge || product.productType}</p>
                 <h2 className="mt-2 font-display text-xl font-bold leading-snug">{product.name}</h2>
                 <p className="mt-2 min-h-12 text-sm leading-6 text-muted">{product.note || product.description?.split('. ')[0]}</p>
-                <div className="mt-5 flex items-center justify-between gap-3">
+                <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
                   <strong className="font-display text-lg">{product.priceLabel}</strong>
                   {quoteOnly ? (
                     <Link href={`/products/${product.id}`} className="rounded-full bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark" aria-label={`View details for ${product.name}`}>View details</Link>

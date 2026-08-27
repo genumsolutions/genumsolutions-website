@@ -14,7 +14,7 @@
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; overflow-x: clip; }
-body { margin: 0; background: #f8fafc; color: var(--ink); font-family: var(--font-inter), sans-serif; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); overflow-x: clip; }
+body { margin: 0; background: #f8fafc; color: var(--ink); font-family: var(--font-inter), sans-serif; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); overflow-x: clip; overflow-wrap: break-word; }
 button, a { transition: all .2s ease; }
 img, video { max-width: 100%; height: auto; }
 input, textarea, select { font-size: 16px; }

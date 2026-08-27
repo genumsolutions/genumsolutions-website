@@ -343,9 +343,9 @@ export default function AdminPanel({ initialProducts }: Props) {
                   <h3 className="font-display text-lg font-bold">Top Pages (30 days)</h3>
                   <ul className="mt-3 divide-y divide-line">
                     {analytics.topPaths.slice(0, 10).map((pv) => (
-                      <li key={pv.path} className="flex items-center justify-between py-2 text-sm">
-                        <span className="font-mono text-xs text-slate-600">{pv.path}</span>
-                        <span className="font-bold">{pv.count} views</span>
+                      <li key={pv.path} className="flex items-center justify-between gap-3 py-2 text-sm">
+                        <span className="min-w-0 truncate font-mono text-xs text-slate-600">{pv.path}</span>
+                        <span className="shrink-0 font-bold">{pv.count} views</span>
                       </li>
                     ))}
                   </ul>
@@ -383,7 +383,9 @@ export default function AdminPanel({ initialProducts }: Props) {
               <div className="mt-3 divide-y divide-line">
                 {shownProducts.map((item) => (
                   <div key={item.id} className="flex items-center justify-between gap-2 py-2">
-                    <span className="truncate text-sm"><strong>{item.name}</strong> <span className="text-slate-400">{item.sku}</span></span>
+                    <div className="min-w-0">
+                      <span className="truncate text-sm"><strong>{item.name}</strong> <span className="text-slate-400">{item.sku}</span></span>
+                    </div>
                     <span className="flex shrink-0 gap-2">
                       <button onClick={() => { setProduct(item); window.scrollTo({ top: 0, behavior: 'smooth' }) }} className="text-xs font-bold text-navy underline">Edit</button>
                       <button onClick={() => removeProduct(item.id)} className="text-xs font-bold text-red-600 underline">Delete</button>
@@ -472,7 +474,7 @@ export default function AdminPanel({ initialProducts }: Props) {
           <div className="flex flex-wrap items-end gap-3 border-t-2 border-ink bg-white p-6">
             <h2 className="font-display text-xl font-bold">Customer orders</h2>
             <label className="ml-auto text-sm font-bold text-slate-500">Search buyer
-              <input value={orderQuery} onChange={(e) => setOrderQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && void loadOrders(1)} placeholder="email or name" aria-label="Search orders" className={`ml-2 w-48 ${inputClass}`} />
+              <input value={orderQuery} onChange={(e) => setOrderQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && void loadOrders(1)} placeholder="email or name" aria-label="Search orders" className={`mt-1 w-full sm:ml-2 sm:mt-0 sm:w-48 ${inputClass}`} />
             </label>
             <label className="text-sm font-bold text-slate-500">Status
               <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} aria-label="Filter by status" className="ml-2 border border-line px-3 py-2 text-sm font-bold">
@@ -488,10 +490,10 @@ export default function AdminPanel({ initialProducts }: Props) {
                 {orderData.orders.map((order) => (
                   <li key={order.id} className="border border-line bg-white p-4">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-sm font-black">#{order.id.slice(0, 8).toUpperCase()} · {formatNPR(order.totalNpr)}</p>
-                        <p className="text-xs text-slate-500">{order.customerName} · {order.email}</p>
-                        <p className="text-xs text-slate-400">{order.address}</p>
+                        <p className="break-words text-xs text-slate-500">{order.customerName} · {order.email}</p>
+                        <p className="break-words text-xs text-slate-400">{order.address}</p>
                         <p className="text-xs text-slate-400">{order.provider} · {formatTimestamp(order.createdAt)}</p>
                       </div>
                       <select value={order.status} onChange={(e) => setOrderStatus(order.id, e.target.value)} aria-label={`Status for ${order.id.slice(0, 8)}`} className="border border-line px-2 py-1 text-xs font-bold">{STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}</select>
@@ -556,7 +558,7 @@ export default function AdminPanel({ initialProducts }: Props) {
           <div className="flex flex-wrap items-end gap-3 border-t-2 border-ink bg-white p-6">
             <h2 className="font-display text-xl font-bold">Users</h2>
             <label className="ml-auto text-sm font-bold text-slate-500">Search
-              <input value={userQuery} onChange={(e) => setUserQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && void loadUsers(1)} placeholder="email or name" aria-label="Search users" className={`ml-2 w-56 ${inputClass}`} />
+              <input value={userQuery} onChange={(e) => setUserQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && void loadUsers(1)} placeholder="email or name" aria-label="Search users" className={`mt-1 w-full sm:ml-2 sm:mt-0 sm:w-56 ${inputClass}`} />
             </label>
             <button onClick={() => void loadUsers(1)} className="bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark">Apply</button>
           </div>
@@ -637,8 +639,8 @@ export default function AdminPanel({ initialProducts }: Props) {
                   <li key={entry.id} className="flex items-start gap-3 border border-line bg-white px-4 py-3">
                     <span className={`mt-0.5 inline-block h-2 w-2 shrink-0 rounded-full ${entry.action.includes('deleted') ? 'bg-red-500' : entry.action.includes('saved') ? 'bg-emerald-500' : entry.action.includes('status') ? 'bg-amber-500' : 'bg-navy'}`} />
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm"><span className="font-bold">{entry.action}</span> <span className="text-slate-400">{entry.entityType}{entry.entityId ? ` / ${entry.entityId}` : ''}</span></p>
-                      {Object.keys(entry.details).length > 0 && <p className="mt-0.5 text-xs text-slate-500">{JSON.stringify(entry.details)}</p>}
+                      <p className="break-words text-sm"><span className="font-bold">{entry.action}</span> <span className="text-slate-400">{entry.entityType}{entry.entityId ? ` / ${entry.entityId}` : ''}</span></p>
+                      {Object.keys(entry.details).length > 0 && <p className="mt-0.5 break-words text-xs text-slate-500">{JSON.stringify(entry.details)}</p>}
                     </div>
                     <span className="shrink-0 text-xs text-slate-400">{formatTimestamp(entry.createdAt)}</span>
                   </li>
