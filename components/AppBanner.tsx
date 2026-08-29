@@ -20,7 +20,6 @@ export default function AppBanner() {
   useEffect(() => {
     try {
       if (typeof (window as { GENUM_APP?: unknown }).GENUM_APP !== 'undefined') return
-      if (JSON.parse(window.localStorage.getItem(DISMISS_KEY) || 'false') === true) return
       setVisible(true)
     } catch {
       setVisible(false)
@@ -29,11 +28,6 @@ export default function AppBanner() {
 
   function dismiss() {
     setVisible(false)
-    try {
-      window.localStorage.setItem(DISMISS_KEY, 'true')
-    } catch {
-      // ignore storage failures
-    }
   }
 
   if (!visible) return null
