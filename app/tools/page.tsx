@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import DeviceControl from '../../components/DeviceControl'
 import PageIntro from '../../components/PageIntro'
 import PageShell from '../../components/PageShell'
 import OpenTools from '../../components/OpenTools'
@@ -17,6 +18,7 @@ export default function ToolsPage() {
         body="A small, practical directory for designing, simulating, programming, and documenting robotics and fabrication work."
       />
       <OpenTools />
+      <DeviceControl />
     </PageShell>
   )
 }
