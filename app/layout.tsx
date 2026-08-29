@@ -4,6 +4,7 @@ import OrganizationJsonLd from '../components/OrganizationJsonLd'
 import WebSiteJsonLd from '../components/WebSiteJsonLd'
 import { CartProvider } from '../components/cart-provider'
 import PageViewTracker from '../components/PageViewTracker'
+import ServiceWorkerRegister from '../components/ServiceWorkerRegister'
 import WebVitals from '../components/WebVitals'
 import { company } from '../lib/company'
 import './globals.css'
@@ -58,6 +59,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <WebSiteJsonLd />
         <PageViewTracker />
         <WebVitals />
+        <ServiceWorkerRegister />
         <CartProvider>{children}</CartProvider>
       </body>
     </html>
