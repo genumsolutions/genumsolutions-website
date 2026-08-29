@@ -6,21 +6,28 @@
  *  - Navigation (page) requests  -> network-first, fall back to cache (so a
  *    visited page stays available while offline), then the offline page.
  *  - Static assets                -> stale-while-revalidate.
- *  - Private / dynamic routes are NEVER cached: /api/*, /account, /admin,
- *    /checkout, /login, /auth/*.
+ *  - Public /api/products list    -> stale-while-revalidate (offline catalog).
+ *  - Private / dynamic routes are NEVER cached: /account, /admin, /checkout,
+ *    /login, /auth/* and every other /api/* endpoint.
  *
  * The app (WebView) and the website both benefit: the mobile app mirrors the
  * site, so once a page has been loaded the WebView can serve it from this
  * cache while the device is offline.
  * ========================================================================= */
 
-const VERSION = 'v1'
+const VERSION = 'v2'
 
 const OFFLINE_URL = '/offline'
 
 const APP_SHELL = [
   '/',
   '/products',
+  '/services',
+  '/about',
+  '/projects',
+  '/3d-printing',
+  '/journal',
+  '/contact',
   '/tools',
   OFFLINE_URL,
   '/manifest.json',
@@ -32,9 +39,12 @@ const APP_SHELL = [
 const CACHE_NAME = `genum-shell-${VERSION}`
 const ASSET_CACHE = `genum-assets-${VERSION}`
 
-// Private / dynamic paths that must never be served from cache.
+// Private / dynamic paths that must never be served from cache. The public
+// products API is the one exception: it powers the offline catalog, so its
+// GET responses are cached stale-while-revalidate (see below).
 function isPrivate(url) {
   const path = url.pathname
+  if (path === '/api/products') return false
   return (
     path.startsWith('/api/') ||
     path.startsWith('/account') ||
@@ -81,6 +91,26 @@ self.addEventListener('fetch', (event) => {
   const isImageOrIcon = url.pathname.startsWith('/images/')
   const isStaticAsset =
     /\.(js|css|png|jpg|jpeg|webp|avif|svg|ico|woff2?|ttf)$/.test(url.pathname)
+
+  // Public products API: stale-while-revalidate so the catalog (and its
+  // search) keeps working with the last-good data while offline.
+  if (url.pathname === '/api/products') {
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        const fetchPromise = fetch(request)
+          .then((response) => {
+            if (response && response.ok) {
+              const copy = response.clone()
+              caches.open(ASSET_CACHE).then((cache) => cache.put(request, copy))
+            }
+            return response
+          })
+          .catch(() => cached)
+        return cached || fetchPromise
+      })
+    )
+    return
+  }
 
   if (isNavigation) {
     // Network-first: prefer the live page, fall back to cache, then /offline.

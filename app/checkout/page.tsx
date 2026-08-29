@@ -10,13 +10,17 @@ import { useCart } from '../../components/cart-provider'
 export default function CheckoutPage() {
   const { lines, setQuantity, clear, hydrated } = useCart()
   const [products, setProducts] = useState<Product[]>([])
+  const [productsState, setProductsState] = useState<'loading' | 'ready' | 'failed'>('loading')
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
   const [customer, setCustomer] = useState({ name: '', email: '', phone: '', address: '' })
   const [account, setAccount] = useState<{ name: string; email: string } | null>(null)
 
   useEffect(() => {
-    fetch('/api/products').then((response) => response.json()).then(setProducts).catch(() => undefined)
+    fetch('/api/products')
+      .then((response) => (response.ok ? response.json() : Promise.reject()))
+      .then((data) => { setProducts(data); setProductsState('ready') })
+      .catch(() => setProductsState('failed'))
     fetch('/api/customer/me').then((response) => response.json()).then((data) => {
       const me = data.customer
       if (!me) return
@@ -121,6 +125,16 @@ export default function CheckoutPage() {
         )}
         {!hydrated ? (
           <div className="mt-10 animate-pulse rounded-2xl border border-line bg-white p-12 text-center text-sm font-bold text-muted" role="status">Loading your build list...</div>
+        ) : productsState === 'loading' && lines.length > 0 ? (
+          // Wait for the catalog before judging the cart: products resolve the
+          // names/prices, so while they load we must NOT show the empty states.
+          <div className="mt-10 animate-pulse rounded-2xl border border-line bg-white p-12 text-center text-sm font-bold text-muted" role="status">Loading your build list...</div>
+        ) : productsState === 'failed' && lines.length > 0 ? (
+          <div className="mt-10 rounded-2xl border border-dashed border-line bg-white p-12 text-center">
+            <h2 className="font-display text-xl font-bold">We couldn&rsquo;t load your build list details.</h2>
+            <p className="mt-2 text-sm text-muted">Check your connection and try again - your items are saved.</p>
+            <Link href="/products" className="mt-5 inline-block rounded-lg bg-navy px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-navy-dark">Back to products</Link>
+          </div>
         ) : items.length === 0 && lines.length > 0 ? (
           <div className="mt-10 rounded-2xl border border-dashed border-gold bg-white p-8 text-center">
             <h2 className="font-display text-xl font-bold">Some items in your build list are no longer available.</h2>

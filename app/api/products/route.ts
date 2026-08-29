@@ -16,7 +16,11 @@ export async function GET(request: NextRequest) {
     const wantsPagination =
       params.has('page') || params.has('limit') || params.has('q') || params.has('category') || params.has('scope')
     if (!wantsPagination) {
-      return NextResponse.json(products)
+      const response = NextResponse.json(products)
+      // Public read-only data - safe for browsers / the service worker to
+      // cache stale-while-revalidate so the catalog works offline.
+      response.headers.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=600')
+      return response
     }
 
     const scope = params.get('scope') || 'components'

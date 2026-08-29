@@ -23,7 +23,8 @@ type Message = { id: string; name: string; email: string; message: string; statu
 type PageViewStat = { path: string; count: number; uniqueUsers: number }
 
 const STATUSES = ['pending', 'paid', 'fulfilled', 'cancelled']
-const TABS = ['Dashboard', 'Products', 'Services', 'Orders', 'Finance', 'Users', 'Messages', 'Activity'] as const
+// Operations-first order: a shop manager needs orders over dashboarding.
+const TABS = ['Orders', 'Products', 'Messages', 'Services', 'Finance', 'Users', 'Dashboard', 'Activity'] as const
 
 const TAB_ICONS = {
   Dashboard: LayoutDashboard,
@@ -66,7 +67,7 @@ function formatTimestamp(ts: string) {
 }
 
 export default function AdminPanel({ initialProducts }: Props) {
-  const [tab, setTab] = useState<Tab>('Dashboard')
+  const [tab, setTab] = useState<Tab>('Orders')
   const [products, setProducts] = useState(initialProducts)
   const [product, setProduct] = useState<Product>(emptyProduct)
   const [message, setMessage] = useState('')
@@ -115,6 +116,11 @@ export default function AdminPanel({ initialProducts }: Props) {
   const [activityTotalPages, setActivityTotalPages] = useState(1)
 
   useEffect(() => { setProductPage(1) }, [query])
+
+  // Orders is the default tab - fetch its first page on mount.
+  // loadOrders is recreated each render, so exclude it (mount-only intent).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { void loadOrders(1) }, [])
 
   // ─── Data loaders ───
 
@@ -298,7 +304,7 @@ export default function AdminPanel({ initialProducts }: Props) {
 
   return (
     <div className="mx-auto max-w-7xl px-5 py-10 lg:px-8">
-      <div role="tablist" aria-label="Admin sections" className="flex flex-wrap gap-x-6 border-b border-line">
+      <div role="tablist" aria-label="Admin sections" className="-mx-5 flex items-center gap-x-6 overflow-x-auto border-b border-line px-5 lg:mx-0 lg:px-0">
         {TABS.map((name) => {
           const Icon = TAB_ICONS[name]
           return (
@@ -309,7 +315,7 @@ export default function AdminPanel({ initialProducts }: Props) {
               aria-selected={tab === name}
               aria-controls={`panel-${name.toLowerCase()}`}
               onClick={() => openTab(name)}
-              className={`${tabBase} text-[13px] ${tab === name ? tabActive : tabInactive}`}
+              className={`${tabBase} shrink-0 text-[13px] ${tab === name ? tabActive : tabInactive}`}
             >
               <Icon size={15} aria-hidden="true" />
               {name}
@@ -498,7 +504,7 @@ export default function AdminPanel({ initialProducts }: Props) {
                       </div>
                       <select value={order.status} onChange={(e) => setOrderStatus(order.id, e.target.value)} aria-label={`Status for ${order.id.slice(0, 8)}`} className="border border-line px-2 py-1 text-xs font-bold">{STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}</select>
                     </div>
-                    <ul className="mt-2 text-xs leading-5 text-slate-600">{order.items.map((item) => <li key={`${order.id}-${item.name}`}>{item.quantity} × {item.name} ({formatNPR(item.price * item.quantity)})</li>)}</ul>
+                    <ul className="mt-2 text-xs leading-5 text-slate-600">{order.items.map((item) => <li key={`${order.id}-${item.name}`} className="truncate">{item.quantity} × {item.name} ({formatNPR(item.price * item.quantity)})</li>)}</ul>
                   </li>
                 ))}
               </ul>
@@ -608,8 +614,8 @@ export default function AdminPanel({ initialProducts }: Props) {
                 {messages.map((msg) => (
                   <li key={msg.id} className={`border bg-white p-4 ${msg.status === 'new' ? 'border-l-4 border-l-navy border-line' : 'border-line'}`}>
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div>
-                        <p className="text-sm font-bold">{msg.name} <span className="font-normal text-slate-500">· {msg.email}</span></p>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-bold">{msg.name} <span className="font-normal text-slate-500">· {msg.email}</span></p>
                         <p className="mt-1 text-xs text-slate-400">{formatTimestamp(msg.created_at)}</p>
                       </div>
                       {msg.status === 'new' && <button onClick={() => markMessageReplied(msg.id)} className="border border-line px-3 py-1.5 text-xs font-bold text-navy transition hover:border-navy">Mark replied</button>}
