@@ -5,7 +5,7 @@ import { Download, Smartphone, X } from 'lucide-react'
 import { company } from '../lib/company'
 
 const APK_URL = 'https://bkylfnlybtsujwzropru.supabase.co/storage/v1/object/public/app-releases/genum-solutions-latest.apk'
-const APK_VERSION = '1.3.0'
+const APK_VERSION = '1.3.1'
 const APK_SIZE = '23 MB'
 const APK_ARCH = 'Android · 64-bit'
 
