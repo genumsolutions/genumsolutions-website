@@ -8,6 +8,7 @@ const shopLinks = [
   { href: '/3d-printing', label: '3D Printing' },
   { href: '/tools', label: 'Tools' },
   { href: '/projects', label: 'Projects' },
+  { href: '/#app', label: 'Get the app' },
 ]
 
 const supportLinks = [
