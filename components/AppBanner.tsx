@@ -8,7 +8,6 @@ const APK_URL = 'https://bkylfnlybtsujwzropru.supabase.co/storage/v1/object/publ
 const APK_VERSION = '1.3.0'
 const APK_SIZE = '23 MB'
 const APK_ARCH = 'Android · 64-bit'
-const DISMISS_KEY = 'genum-app-banner-dismissed'
 
 // Slide-in sticky bottom sticker. Hidden when the visitor has dismissed it
 // (persisted locally) or when the site is being shown inside the native app
