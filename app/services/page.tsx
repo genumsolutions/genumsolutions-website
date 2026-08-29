@@ -99,7 +99,7 @@ export default async function ServicesPage() {
       {/* ─── School Packages & Pilot Costs ─── */}
       <section id="pilots" className="mx-auto max-w-7xl px-5 py-10 sm:py-14 lg:px-8">
         <div className="grid gap-8 sm:gap-10 lg:grid-cols-[.9fr_1.1fr]">
-          <div>
+          <div className="min-w-0">
             <p className="text-xs font-black uppercase tracking-[.24em] text-navy">Illustrative pilot costing</p>
             <h2 className="mt-3 font-display text-2xl font-bold tracking-tight sm:text-3xl">A transparent starting point for a school proposal.</h2>
             <p className="mt-4 leading-7 text-slate-600">
@@ -108,7 +108,7 @@ export default async function ServicesPage() {
             </p>
             <p className="mt-5 font-display text-2xl font-bold text-navy sm:text-3xl">NPR 8,40,000 <span className="font-sans text-sm font-normal text-slate-500">illustrative total</span></p>
             <div className="mt-8 overflow-x-auto">
-              <table className="w-full min-w-[400px] text-left text-sm">
+              <table className="w-full min-w-[320px] sm:min-w-[400px] text-left text-sm">
               <caption className="sr-only">Illustrative three-classroom pilot cost breakdown in NPR</caption>
               <thead>
                 <tr className="border-b border-line text-xs uppercase tracking-wider text-slate-400">
@@ -130,7 +130,7 @@ export default async function ServicesPage() {
               </table>
             </div>
           </div>
-          <div>
+          <div className="min-w-0">
             <h3 className="font-display text-2xl font-bold tracking-tight">STEM Project Highlights</h3>
             <p className="mt-3 text-sm leading-6 text-slate-600">Age-banded project examples from our 100+ project curriculum catalog.</p>
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

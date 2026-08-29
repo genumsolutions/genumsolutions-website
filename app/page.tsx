@@ -154,7 +154,7 @@ export default async function HomePage() {
         </section>
 
         <section aria-labelledby="training-heading" className="mx-auto max-w-7xl px-5 py-12 lg:grid lg:grid-cols-[.9fr_1.1fr] lg:gap-10 lg:px-8 lg:py-20">
-          <div>
+          <div className="min-w-0">
             <p className="text-xs font-black uppercase tracking-[.24em] text-navy">Illustrative pilot costing</p>
             <h2 id="training-heading" className="mt-3 font-display text-2xl font-bold tracking-tight sm:text-3xl">A transparent starting point for a school proposal.</h2>
             <p className="mt-4 leading-7 text-slate-600">
@@ -163,7 +163,7 @@ export default async function HomePage() {
             </p>
             <p className="mt-5 font-display text-2xl font-bold text-navy sm:text-3xl">NPR 8,40,000 <span className="font-sans text-sm font-normal text-slate-500">illustrative total</span></p>
             <div className="mt-8 overflow-x-auto">
-              <table className="w-full min-w-[400px] text-left text-sm">
+              <table className="w-full min-w-[320px] sm:min-w-[400px] text-left text-sm">
                 <caption className="sr-only">Illustrative three-classroom pilot cost breakdown in NPR</caption>
                 <thead>
                   <tr className="border-b border-line text-xs uppercase tracking-wider text-slate-400">
@@ -185,7 +185,7 @@ export default async function HomePage() {
               </table>
             </div>
           </div>
-          <div className="mt-10 lg:mt-0">
+          <div className="mt-10 min-w-0 lg:mt-0">
             <h3 className="font-display text-xl font-bold tracking-tight sm:text-2xl">Our training programs</h3>
             <p className="mt-3 text-sm leading-6 text-slate-600">
               From a single robotics lab to a three-classroom pilot with kits, curriculum, teacher training,
