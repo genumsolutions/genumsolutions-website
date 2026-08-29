@@ -3,7 +3,6 @@ import Image from 'next/image'
 import type { Metadata } from 'next'
 import { ArrowRight } from 'lucide-react'
 import PageShell from '../components/PageShell'
-import AppDownload from '../components/AppDownload'
 import { getProductMedia } from '../lib/product-media'
 import { trainingPrograms, pilotCosts, stemProjectHighlights } from '../lib/programs'
 import { getSiteContent } from '../lib/content-store'
@@ -212,8 +211,6 @@ export default async function HomePage() {
             </Link>
           </div>
         </section>
-
-        <AppDownload />
 
         <section className="border-t border-line bg-ink">
           <div className="mx-auto grid max-w-7xl gap-6 px-5 py-12 text-white sm:grid-cols-1 sm:items-center sm:py-14 lg:grid-cols-[1fr_auto] lg:px-8">

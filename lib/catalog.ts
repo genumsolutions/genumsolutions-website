@@ -287,3 +287,38 @@ const quotationProducts: Product[] = quotationItems.filter(([, variant]) => !exi
 export const products: Product[] = [...inventoryProducts, ...additionalInventoryProducts, ...quotationProducts, ...robotCarProducts, ...projectProducts]
 export const formatNPR = (value: number) => `NPR ${value.toLocaleString('en-IN')}`
 export const findProduct = (slug: string) => products.find((product) => product.id === slug)
+
+export const PAGE_SIZE = 12
+
+// Narrow a product list by catalog scope. Mirrors the behaviour the catalog UI
+// used to hardcode: "components" is everything except robot cars, pre-packaged
+// kits and project packages; "cars" is robot cars only; "projects" is project
+// packages only.
+export function applyScope(all: Product[], scope: string): Product[] {
+  if (scope === 'cars') return all.filter((p) => p.category === 'Robot Cars')
+  if (scope === 'projects') return all.filter((p) => p.productType === 'Project package')
+  return all.filter(
+    (p) =>
+      !['Robot Cars', 'Pre-packaged Kits'].includes(p.category) &&
+      p.productType !== 'Project package',
+  )
+}
+
+// Combine a category and a free-text query into a single filter predicate.
+export function filterProducts(list: Product[], category: string, query: string): Product[] {
+  const needle = query.trim().toLowerCase()
+  return list.filter((p) => {
+    if (category !== 'All' && p.category !== category) return false
+    if (!needle) return true
+    return `${p.name} ${p.note} ${p.description}`.toLowerCase().includes(needle)
+  })
+}
+
+// Split a (already scoped + filtered) list into pages for the catalog.
+export function paginate(list: Product[], page: number, pageSize = PAGE_SIZE) {
+  const total = list.length
+  const totalPages = Math.max(1, Math.ceil(total / pageSize))
+  const safePage = Math.min(Math.max(1, page), totalPages)
+  const start = (safePage - 1) * pageSize
+  return { items: list.slice(start, start + pageSize), page: safePage, total, totalPages, hasMore: safePage < totalPages }
+}

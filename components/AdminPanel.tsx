@@ -375,16 +375,16 @@ export default function AdminPanel({ initialProducts }: Props) {
 
       {/* ═══════ PRODUCTS ═══════ */}
       {tab === 'Products' && (
-        <div role="tabpanel" id="panel-products" aria-labelledby="tab-products" className="mt-8 grid gap-8 xl:grid-cols-[1fr_1.3fr]">
-          <section aria-label="Product list" className="space-y-6">
-            <div className="border-t-2 border-ink bg-white p-6">
+        <div role="tabpanel" id="panel-products" aria-labelledby="tab-products" className="mt-8 grid min-w-0 gap-8 xl:grid-cols-[1fr_1.3fr]">
+          <section aria-label="Product list" className="min-w-0 space-y-6">
+            <div className="min-w-0 overflow-x-auto border-t-2 border-ink bg-white p-6">
               <h2 className="font-display text-xl font-bold">Products ({filteredProducts.length})</h2>
               <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by name, SKU, or id" aria-label="Search products" className={`mt-3 w-full ${inputClass}`} />
               <div className="mt-3 divide-y divide-line">
                 {shownProducts.map((item) => (
                   <div key={item.id} className="flex items-center justify-between gap-2 py-2">
                     <div className="min-w-0">
-                      <span className="truncate text-sm"><strong>{item.name}</strong> <span className="text-slate-400">{item.sku}</span></span>
+                      <span className="block break-words text-sm"><strong>{item.name}</strong> <span className="text-slate-400">{item.sku}</span></span>
                     </div>
                     <span className="flex shrink-0 gap-2">
                       <button onClick={() => { setProduct(item); window.scrollTo({ top: 0, behavior: 'smooth' }) }} className="text-xs font-bold text-navy underline">Edit</button>
@@ -397,16 +397,16 @@ export default function AdminPanel({ initialProducts }: Props) {
               <Pager page={productPage} totalPages={productTotalPages} onPage={setProductPage} />
             </div>
           </section>
-          <section aria-label="Product editor">
-            <form onSubmit={saveProduct} className="border-t-2 border-ink bg-white p-6">
+          <section aria-label="Product editor" className="min-w-0">
+            <form onSubmit={saveProduct} className="min-w-0 overflow-hidden border-t-2 border-ink bg-white p-6">
               <h2 className="font-display text-2xl font-bold">{products.some((item) => item.id === product.id) ? `Edit ${product.id}` : 'Add a new product'}</h2>
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                {fields.map((key) => <label key={key} className="text-sm font-bold capitalize">{key}<input value={String(product[key] ?? '')} onChange={(e) => updateProduct(key, ['price', 'stock'].includes(key) ? Number(e.target.value) : e.target.value)} className={`mt-2 w-full ${inputClass}`} /></label>)}
-                <label className="text-sm font-bold sm:col-span-2">Specs, one per line<textarea value={Array.isArray(product.specs) ? product.specs.join('\n') : String(product.specs)} onChange={(e) => updateProduct('specs', e.target.value.split('\n'))} rows={4} className={`mt-2 w-full ${inputClass}`} /></label>
-                <div className="sm:col-span-2">
+                {fields.map((key) => <label key={key} className="min-w-0 text-sm font-bold capitalize">{key}<input value={String(product[key] ?? '')} onChange={(e) => updateProduct(key, ['price', 'stock'].includes(key) ? Number(e.target.value) : e.target.value)} className={`mt-2 w-full ${inputClass}`} /></label>)}
+                <label className="min-w-0 text-sm font-bold sm:col-span-2">Specs, one per line<textarea value={Array.isArray(product.specs) ? product.specs.join('\n') : String(product.specs)} onChange={(e) => updateProduct('specs', e.target.value.split('\n'))} rows={4} className={`mt-2 w-full ${inputClass}`} /></label>
+                <div className="min-w-0 sm:col-span-2">
                   <p className="text-sm font-bold">Product image</p>
-                  <div className="mt-2 flex flex-wrap items-center gap-3">
-                    {product.image && <Image src={product.image} alt={product.name || 'Product preview'} width={64} height={64} className="rounded object-cover" />}
+                  <div className="mt-2 flex min-w-0 flex-wrap items-center gap-3">
+                    {product.image && <Image src={product.image} alt={product.name || 'Product preview'} width={64} height={64} className="shrink-0 rounded object-cover" />}
                     <input value={product.image || ''} onChange={(e) => updateProduct('image', e.target.value)} placeholder="https://... or upload below" aria-label="Product image URL" className={`min-w-0 flex-1 ${inputClass}`} />
                     <input ref={fileInput} type="file" accept="image/*" onChange={(e) => { const file = e.target.files?.[0]; if (file) void uploadImage(file); e.currentTarget.value = '' }} className="hidden" />
                     <button type="button" disabled={uploading} onClick={() => fileInput.current?.click()} className="bg-navy px-4 py-2 text-xs font-black text-white disabled:opacity-60">{uploading ? 'Uploading...' : 'Upload'}</button>
@@ -424,16 +424,16 @@ export default function AdminPanel({ initialProducts }: Props) {
 
       {/* ═══════ SERVICES ═══════ */}
       {tab === 'Services' && (
-        <div role="tabpanel" id="panel-services" aria-labelledby="tab-services" className="mt-8 grid gap-8 xl:grid-cols-[1fr_1.3fr]">
-          <section aria-label="Service list" className="space-y-6">
-            <div className="border-t-2 border-ink bg-white p-6">
+        <div role="tabpanel" id="panel-services" aria-labelledby="tab-services" className="mt-8 grid min-w-0 gap-8 xl:grid-cols-[1fr_1.3fr]">
+          <section aria-label="Service list" className="min-w-0 space-y-6">
+            <div className="min-w-0 overflow-x-auto border-t-2 border-ink bg-white p-6">
               <h2 className="font-display text-xl font-bold">Services ({services.length})</h2>
               {!servicesLoaded ? <p className="text-sm text-slate-500" role="status">Loading…</p> : (
                 <div className="mt-3 divide-y divide-line">
                   {services.map((s) => (
                     <div key={s.id} className="flex items-center justify-between gap-2 py-2">
                       <div className="min-w-0">
-                        <span className="truncate text-sm"><strong>{s.name}</strong> <span className="text-slate-400">{s.priceLabel}</span></span>
+                        <span className="block break-words text-sm"><strong>{s.name}</strong> <span className="text-slate-400">{s.priceLabel}</span></span>
                         {!s.active && <span className="ml-2 text-[10px] font-black uppercase text-red-500">inactive</span>}
                       </div>
                       <span className="flex shrink-0 gap-2">
@@ -446,17 +446,17 @@ export default function AdminPanel({ initialProducts }: Props) {
               )}
             </div>
           </section>
-          <section aria-label="Service editor">
-            <form onSubmit={saveServiceItem} className="border-t-2 border-ink bg-white p-6">
+          <section aria-label="Service editor" className="min-w-0">
+            <form onSubmit={saveServiceItem} className="min-w-0 overflow-hidden border-t-2 border-ink bg-white p-6">
               <h2 className="font-display text-2xl font-bold">{services.some((s) => s.id === service.id) ? `Edit ${service.id}` : 'Add a new service'}</h2>
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                <label className="text-sm font-bold">Id<input value={service.id} onChange={(e) => updateService('id', e.target.value)} className={`mt-2 w-full ${inputClass}`} placeholder="e.g. website-design" /></label>
-                <label className="text-sm font-bold">Name<input value={service.name} onChange={(e) => updateService('name', e.target.value)} className={`mt-2 w-full ${inputClass}`} /></label>
-                <label className="text-sm font-bold">Category<input value={service.category} onChange={(e) => updateService('category', e.target.value)} className={`mt-2 w-full ${inputClass}`} /></label>
-                <label className="text-sm font-bold">Price Label<input value={service.priceLabel} onChange={(e) => updateService('priceLabel', e.target.value)} className={`mt-2 w-full ${inputClass}`} placeholder="from NPR 35,000" /></label>
-                <label className="text-sm font-bold">Tag / Badge<input value={service.tag} onChange={(e) => updateService('tag', e.target.value)} className={`mt-2 w-full ${inputClass}`} placeholder="Website, Fabrication, etc." /></label>
-                <label className="text-sm font-bold">Sort Order<input type="number" value={service.sortOrder} onChange={(e) => updateService('sortOrder', Number(e.target.value))} className={`mt-2 w-full ${inputClass}`} /></label>
-                <label className="text-sm font-bold sm:col-span-2">Description<textarea value={service.description} onChange={(e) => updateService('description', e.target.value)} rows={3} className={`mt-2 w-full ${inputClass}`} /></label>
+                <label className="min-w-0 text-sm font-bold">Id<input value={service.id} onChange={(e) => updateService('id', e.target.value)} className={`mt-2 w-full ${inputClass}`} placeholder="e.g. website-design" /></label>
+                <label className="min-w-0 text-sm font-bold">Name<input value={service.name} onChange={(e) => updateService('name', e.target.value)} className={`mt-2 w-full ${inputClass}`} /></label>
+                <label className="min-w-0 text-sm font-bold">Category<input value={service.category} onChange={(e) => updateService('category', e.target.value)} className={`mt-2 w-full ${inputClass}`} /></label>
+                <label className="min-w-0 text-sm font-bold">Price Label<input value={service.priceLabel} onChange={(e) => updateService('priceLabel', e.target.value)} className={`mt-2 w-full ${inputClass}`} placeholder="from NPR 35,000" /></label>
+                <label className="min-w-0 text-sm font-bold">Tag / Badge<input value={service.tag} onChange={(e) => updateService('tag', e.target.value)} className={`mt-2 w-full ${inputClass}`} placeholder="Website, Fabrication, etc." /></label>
+                <label className="min-w-0 text-sm font-bold">Sort Order<input type="number" value={service.sortOrder} onChange={(e) => updateService('sortOrder', Number(e.target.value))} className={`mt-2 w-full ${inputClass}`} /></label>
+                <label className="min-w-0 text-sm font-bold sm:col-span-2">Description<textarea value={service.description} onChange={(e) => updateService('description', e.target.value)} rows={3} className={`mt-2 w-full ${inputClass}`} /></label>
                 <label className="flex items-center gap-2 text-sm font-bold"><input type="checkbox" checked={service.active} onChange={(e) => updateService('active', e.target.checked)} className="h-4 w-4" /> Active (visible on site)</label>
               </div>
               <div className="mt-5 flex gap-3">

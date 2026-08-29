@@ -17,7 +17,6 @@ const nav = [
   { label: '3D Printing', href: '/3d-printing' },
   { label: 'Journal', href: '/journal' },
   { label: 'Contact', href: '/contact' },
-  { label: 'App', href: '/#app' },
 ]
 
 function isActive(pathname: string, href: string) {

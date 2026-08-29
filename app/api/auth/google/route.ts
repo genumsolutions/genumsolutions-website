@@ -13,7 +13,13 @@ export async function GET(request: NextRequest) {
   try {
     const { data, error } = await createClient().auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}` },
+      options: {
+        redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}`,
+        // Always show Google's account chooser so a user with several Google
+        // accounts can pick the right one instead of dropping silently into a
+        // previously signed-in session.
+        queryParams: { prompt: 'select_account' },
+      },
     })
     if (error || !data.url) return NextResponse.redirect(`${origin}/login?error=google`)
     return NextResponse.redirect(data.url)
