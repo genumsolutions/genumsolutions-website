@@ -12,6 +12,7 @@ const installSteps = [
   'Tap the "Get the app" button to download the APK file.',
   'When the download finishes, open it from your notifications or Downloads folder.',
   "If Android asks about installing from this browser/source, allow it once.",
+  'Google Play Protect may warn that this app is from an unknown source — tap "Install anyway". This is normal for apps downloaded directly, and the APK is signed by GENUM, so it\'s safe.',
   'Open GENUM and sign in — browsing, tools, and device controls are ready.',
 ]
 
