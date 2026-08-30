@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import { Gamepad2 } from 'lucide-react'
 import PageIntro from '../../components/PageIntro'
 import PageShell from '../../components/PageShell'
 import IotRemote from '../../app/iot-remote/page'

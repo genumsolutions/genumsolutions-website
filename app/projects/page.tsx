@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Moon } from 'lucide-react'
 import PageIntro from '../../components/PageIntro'
 import PageShell from '../../components/PageShell'
 import ProjectsCatalog from '../../components/ProjectsCatalog'
@@ -57,9 +57,9 @@ export default async function ProjectsPage() {
               >
                 <Moon size={16} aria-hidden="true" /> Download APK
               </a>
-              <View className="h-10 w-10 items-center justify-center rounded-full bg-white px-1">
-                <Text className="text-2xl text-navy">📱</Text>
-              </View>
+              <div className="h-10 w-10 items-center justify-center rounded-full bg-white px-1">
+<p className="text-2xl text-navy">📱</p>
+</div>
             </div>
           </div>
           <div className="mt-4 text-sm text-muted">
