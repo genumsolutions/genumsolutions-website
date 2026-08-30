@@ -6,7 +6,7 @@ import { company } from '../lib/company'
 
 const APK_URL = 'https://bkylfnlybtsujwzropru.supabase.co/storage/v1/object/public/app-releases/genum-solutions-latest.apk'
 const APK_VERSION = '1.4.0'
-const APK_SIZE = '23 MB'
+const APK_SIZE = '28 MB'
 const APK_ARCH = 'Android · 64-bit'
 const STORAGE_KEY = 'genum-app-version'
 

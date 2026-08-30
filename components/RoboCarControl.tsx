@@ -36,10 +36,10 @@ export default function RoboCarControl() {
   // Touch-control state.
   const [speed, setSpeed] = useState(170)
   const [servo, setServo] = useState(90)
-  const [holdDir, setHoldDir] = useState<'F' | 'B' | 'L' | 'R' | 'S' | null>(null)
   const [pid, setPid] = useState({ kp: 12.0, ki: 3.0, kd: 1.0, out: 0, off: 0 })
 
   const transportRef = useRef<CarTransport | null>(null)
+  const holdDirRef = useRef<'F' | 'B' | 'L' | 'R' | 'S' | null>(null)
   const mode: RoboCarMode = ROBOCAR_MODES.find((m) => m.id === active) ?? ROBOCAR_MODES[0]!
 
   const options: TransportOptions = {
@@ -54,10 +54,21 @@ export default function RoboCarControl() {
   // Clean up on unmount.
   useEffect(() => {
     return () => {
+      holdDirRef.current = null
       transportRef.current?.disconnect().catch(() => {})
       transportRef.current = null
     }
   }, [])
+
+  // Safety: if control is lost (disconnect, or switching to a mode that can't
+  // be driven from here) while a direction is held, always send a hard stop.
+  const lock = !connected || !canControlHere(mode)
+  useEffect(() => {
+    if (lock && holdDirRef.current) {
+      holdDirRef.current = null
+      transportRef.current?.sendLine('S').catch(() => {})
+    }
+  }, [lock])
 
   const handleConnectWifi = async () => {
     setBusy(true)
@@ -108,15 +119,15 @@ export default function RoboCarControl() {
     }
   }, [])
 
-  const lock = !connected || !canControlHere(mode)
-
   const tapDir = (d: 'F' | 'B' | 'L' | 'R') => {
-    setHoldDir(d)
+    holdDirRef.current = d
     void send(d)
   }
   const releaseDir = () => {
-    if (holdDir) void send('S')
-    setHoldDir(null)
+    if (holdDirRef.current) {
+      holdDirRef.current = null
+      void send('S')
+    }
   }
 
   const applySpeed = (value: number) => {
@@ -297,7 +308,7 @@ export default function RoboCarControl() {
                   <DirBtn label="▲" onPress={() => tapDir('F')} onRelease={releaseDir} />
                   <span />
                   <DirBtn label="◀" onPress={() => tapDir('L')} onRelease={releaseDir} />
-                  <DirBtn label="■ Stop" onPress={() => { void send('S'); setHoldDir(null) }} onRelease={() => { setHoldDir(null) }} />
+                  <DirBtn label="■ Stop" onPress={() => { holdDirRef.current = null; void send('S') }} onRelease={() => { holdDirRef.current = null }} />
                   <DirBtn label="▶" onPress={() => tapDir('R')} onRelease={releaseDir} />
                   <span />
                   <DirBtn label="▼" onPress={() => tapDir('B')} onRelease={releaseDir} />
@@ -418,6 +429,8 @@ function DirBtn({
       onPointerDown={onPress}
       onPointerUp={onRelease}
       onPointerLeave={onRelease}
+      onPointerCancel={onRelease}
+      onContextMenu={(e) => e.preventDefault()}
       className="flex h-12 items-center justify-center rounded-xl border border-line bg-mist text-sm font-black text-ink transition active:bg-navy active:text-white"
     >
       {label}
