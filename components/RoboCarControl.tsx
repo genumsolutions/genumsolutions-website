@@ -6,10 +6,17 @@ import {
   ChevronRight,
   Loader2,
   Radio,
+  RefreshCw,
   Wifi,
   X,
 } from 'lucide-react'
-import { ROBOCAR_MODES, type CarType, type RoboCarMode } from '../lib/robo-car-catalog'
+import {
+  nextDeviceMode,
+  resolveCarType,
+  ROBOCAR_MODES,
+  type CarType,
+  type RoboCarMode,
+} from '../lib/robo-car-catalog'
 import {
   createCarTransport,
   type CarTransport,
@@ -40,12 +47,42 @@ export default function RoboCarControl() {
 
   const transportRef = useRef<CarTransport | null>(null)
   const holdDirRef = useRef<'F' | 'B' | 'L' | 'R' | 'S' | null>(null)
+  const lastAckedModeRef = useRef<string | null>(null)
   const mode: RoboCarMode = ROBOCAR_MODES.find((m) => m.id === active) ?? ROBOCAR_MODES[0]!
 
   const options: TransportOptions = {
-    onTelemetry: (t) => setTelemetry((prev) => ({ ...prev, ...t })),
+    onTelemetry: (t) => {
+      setTelemetry((prev) => ({ ...prev, ...t }))
+      // The car is the source of truth for the current mode (reported via
+      // STATE;MODE=...). Mirror it into the UI so the app stays in sync with
+      // the device's physical mode button. We ignore echoes of a mode we just
+      // selected locally (lastAckedModeRef) to avoid re-sending.
+      if (t.mode) {
+        const reportedMode = t.mode
+        const isSelfAck = lastAckedModeRef.current !== null && lastAckedModeRef.current === reportedMode
+        // Once the car confirms a mode we asked for, stop treating further
+        // echoes as self-acks so later device-side changes always sync.
+        if (isSelfAck) lastAckedModeRef.current = null
+        setActive((prevActive) => {
+          const current = resolveCarType(prevActive)
+          const incoming = resolveCarType(reportedMode)
+          if (
+            !isSelfAck &&
+            incoming &&
+            (!current || incoming.deviceIndex !== current.deviceIndex)
+          ) {
+            return incoming.id
+          }
+          return prevActive
+        })
+      }
+    },
     onStatus: (kind, message) => {
-      if (kind === 'connected') setConnected(true)
+      if (kind === 'connected') {
+        setConnected(true)
+        // Ask the car to report its current state so we start in sync with it.
+        transportRef.current?.requestState().catch(() => {})
+      }
       if (kind === 'disconnected') setConnected(false)
       if (kind === 'error') setError(message ?? 'Connection failed')
     },
@@ -146,8 +183,23 @@ export default function RoboCarControl() {
 
   const selectMode = (m: RoboCarMode) => {
     setActive(m.id)
-    if (connected) void send(m.token)
+    if (connected) {
+      lastAckedModeRef.current = m.token
+      void send(m.token)
+      setStatus(`Switched to ${m.name} (${m.token})`)
+      // Ask the car to confirm - on STATE it will echo the mode back.
+      transportRef.current?.requestState().catch(() => {})
+    }
   }
+
+  // Behaves like the device's physical mode button: step to the next mode in
+  // the firmware's MODE_CMDS[] cycle order.
+  const cycleMode = () => {
+    const next = nextDeviceMode(mode)
+    selectMode(next)
+  }
+
+  const nextMode = nextDeviceMode(mode)
 
   return (
     <div className="mx-auto max-w-7xl px-5 py-10 lg:px-8 lg:py-12">
@@ -240,12 +292,40 @@ export default function RoboCarControl() {
 
       {/* Car-type tabs */}
       <section className="mt-8">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <h3 className="font-display text-lg font-bold text-ink">Choose a car mode</h3>
           {!connected && (
             <span className="text-xs font-bold text-muted">Connect a device to unlock controls</span>
           )}
         </div>
+
+        {/* Current mode + cycle button (behaves like the device's mode button) */}
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-white p-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <span className={`h-2.5 w-2.5 rounded-full ${connected ? 'bg-accent' : 'bg-border'}`} />
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wide text-muted">Current mode</p>
+              <p className="font-display text-lg font-bold text-ink">
+                {mode.name} <span className="font-mono text-xs text-muted">· {mode.token}</span>
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={cycleMode}
+            disabled={!connected}
+            aria-label={`Switch to next mode: ${nextMode.name}`}
+            title={`Switch to next mode: ${nextMode.name}`}
+            className="inline-flex h-10 items-center gap-2 rounded-full bg-navy px-4 text-xs font-black text-white transition hover:bg-navy-dark disabled:opacity-60"
+          >
+            <RefreshCw size={15} aria-hidden="true" />
+            Next mode
+            <span className="hidden rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-bold sm:inline">
+              {nextMode.name}
+            </span>
+          </button>
+        </div>
+
         <div className="mt-4 grid gap-3 md:grid-cols-3">
           {ROBOCAR_MODES.map((m) => {
             const selected = m.id === active
@@ -258,7 +338,7 @@ export default function RoboCarControl() {
                 aria-pressed={selected}
                 className={`relative flex flex-col rounded-2xl border p-4 text-left transition ${
                   selected ? 'border-navy bg-white shadow-md' : 'border-line bg-white hover:border-navy'
-                } ${unavailable ? 'opacity-70' : ''}`}
+                }`}
               >
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-bold text-ink">{m.name}</span>

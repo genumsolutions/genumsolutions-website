@@ -47,6 +47,12 @@ export interface RoboCarMode {
   name: string
   /** Command token sent to the car to select this mode. */
   token: string
+  /**
+   * Position in the device's MODE_CMDS[] array (0..8) as cycled by the
+   * physical mode button:
+   *   BT, ESP_SER, PATH, OBS_US, OBS_IR, MAN, AUTO, ESP_CLI, 2WD1M
+   */
+  deviceIndex: number
   car: string
   wheel: string
   steering: string
@@ -66,6 +72,7 @@ export const ROBOCAR_MODES: RoboCarMode[] = [
     id: '4wd4m',
     name: 'Bluetooth · 4WD (4M)',
     token: 'BT',
+    deviceIndex: 0,
     car: '4-wheel-drive',
     wheel: '4 × BO/brushed motors',
     steering: 'Skid-steer (differential)',
@@ -80,6 +87,7 @@ export const ROBOCAR_MODES: RoboCarMode[] = [
     id: '2wd1m',
     name: 'Bluetooth · 2WD + Servo (1M)',
     token: '2WD1M',
+    deviceIndex: 8,
     car: '2-wheel-drive',
     wheel: '1 × BO motor (rear)',
     steering: '1 × servo (0..180, center 90)',
@@ -94,6 +102,7 @@ export const ROBOCAR_MODES: RoboCarMode[] = [
     id: 'self-balancing',
     name: 'Self-Balancing',
     token: 'AUTO',
+    deviceIndex: 6,
     car: 'Self-balancing',
     wheel: '2 × BO motors',
     steering: 'Self-balance (PID)',
@@ -108,6 +117,7 @@ export const ROBOCAR_MODES: RoboCarMode[] = [
     id: 'obstacle-us',
     name: 'Obstacle Avoidance · Ultrasonic',
     token: 'OBS_US',
+    deviceIndex: 3,
     car: 'Obstacle avoider',
     wheel: '2/4 × BO motors',
     steering: 'Skid-steer',
@@ -122,6 +132,7 @@ export const ROBOCAR_MODES: RoboCarMode[] = [
     id: 'obstacle-ir',
     name: 'Obstacle Avoidance · IR',
     token: 'OBS_IR',
+    deviceIndex: 4,
     car: 'Obstacle avoider',
     wheel: '2/4 × BO motors',
     steering: 'Skid-steer',
@@ -136,6 +147,7 @@ export const ROBOCAR_MODES: RoboCarMode[] = [
     id: 'website-client',
     name: 'Website Controlled · Client',
     token: 'ESP_CLI',
+    deviceIndex: 7,
     car: 'Website car',
     wheel: '2/4 × BO motors',
     steering: 'Skid-steer',
@@ -150,6 +162,7 @@ export const ROBOCAR_MODES: RoboCarMode[] = [
     id: 'website-server',
     name: 'Website Controlled · Server',
     token: 'ESP_SER',
+    deviceIndex: 1,
     car: 'Website car',
     wheel: '2/4 × BO motors',
     steering: 'Skid-steer',
@@ -164,6 +177,7 @@ export const ROBOCAR_MODES: RoboCarMode[] = [
     id: 'path-follow',
     name: 'Path Following · IR',
     token: 'PATH',
+    deviceIndex: 2,
     car: 'Line follower',
     wheel: '2/4 × BO motors',
     steering: 'Skid-steer',
@@ -178,6 +192,7 @@ export const ROBOCAR_MODES: RoboCarMode[] = [
     id: 'rf-manual',
     name: 'Manual · RF',
     token: 'MAN',
+    deviceIndex: 5,
     car: 'RF car',
     wheel: '2/4 × BO motors',
     steering: 'Skid-steer',
@@ -205,3 +220,22 @@ export function resolveCarType(idOrToken: string): RoboCarMode | undefined {
     ROBOCAR_MODES.find((m) => m.token.toLowerCase() === idOrToken.toLowerCase())
   )
 }
+
+/**
+ * Canonical device mode order - mirrors the firmware's MODE_CMDS[] array, the
+ * order the physical mode button cycles through on the device:
+ *   BT, ESP_SER, PATH, OBS_US, OBS_IR, MAN, AUTO, ESP_CLI, 2WD1M
+ * The app's "Next mode" control steps through exactly this order, behaving
+ * like the device's own mode button.
+ */
+export const DEVICE_MODE_ORDER: RoboCarMode[] = [...ROBOCAR_MODES].sort(
+  (a, b) => a.deviceIndex - b.deviceIndex,
+)
+
+/** Return the mode after `from` in the device's cycle order (wrapping). */
+export function nextDeviceMode(from: RoboCarMode): RoboCarMode {
+  const idx = DEVICE_MODE_ORDER.findIndex((m) => m.id === from.id)
+  if (idx === -1) return DEVICE_MODE_ORDER[0]!
+  return DEVICE_MODE_ORDER[(idx + 1) % DEVICE_MODE_ORDER.length]!
+}
+
