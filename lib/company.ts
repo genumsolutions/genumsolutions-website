@@ -16,9 +16,9 @@ export const company = {
 // constants in sync with mobile/app.json, mobile/src/config/site.ts and
 // mobile/scripts/upload-release.mjs on every release.
 export const androidApp = {
-  version: '1.4.0',
-  versionCode: 7,
-  sizeLabel: '28 MB',
+  version: '1.4.1',
+  versionCode: 8,
+  sizeLabel: '29 MB',
   arch: 'Android · 64-bit',
   apkUrl:
     'https://bkylfnlybtsujwzropru.supabase.co/storage/v1/object/public/app-releases/genum-solutions-latest.apk',
