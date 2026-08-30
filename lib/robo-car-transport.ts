@@ -344,9 +344,16 @@ export class NativeTransport implements CarTransport {
   }
 
   private url?: string
+  transport: 'ws' | 'ble' = 'ws'
 
   setUrl(url: string) {
     this.url = url
+  }
+
+  /** Which native link the shell should open: a WS to a LAN car, or a BLE
+   *  scan + connect to the car's UART service. */
+  setTransport(transport: 'ws' | 'ble') {
+    this.transport = transport
   }
 
   constructor(options: TransportOptions = {}) {
@@ -388,9 +395,10 @@ export class NativeTransport implements CarTransport {
         }
       },
     }
-    // Ask the shell to (re)open its underlying connection (optionally to a
-    // specific car IP), then confirm via ingress('connected', ...).
-    this.emit('connect', this.url || null)
+    // Ask the shell to (re)open its underlying connection (a WS URL for a
+    // LAN car, or a BLE scan for the car's UART service), then confirm via
+    // ingress('connected', ...).
+    this.emit('connect', { transport: this.transport, url: this.url })
     // The shell will call ingress('connected') when the link is up.
     return Promise.resolve()
   }
@@ -419,9 +427,12 @@ export class NativeTransport implements CarTransport {
 }
 
 // Factory so the UI can request a concrete transport.
+export type NativeLink = 'ws' | 'ble'
+export type CarTransportOptions = TransportOptions & { url?: string; transport?: NativeLink }
+
 export function createCarTransport(
   kind: 'websocket' | 'ble' | 'native',
-  options: TransportOptions & { url?: string },
+  options: CarTransportOptions = {},
 ): CarTransport {
   switch (kind) {
     case 'websocket':
@@ -429,6 +440,7 @@ export function createCarTransport(
     case 'native': {
       const t = new NativeTransport(options)
       if (options.url) t.setUrl(options.url)
+      if (options.transport) t.setTransport(options.transport)
       return t
     }
     default:

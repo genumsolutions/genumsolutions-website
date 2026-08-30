@@ -144,7 +144,7 @@ export default function RoboCarControl() {
       // Bluetooth, which does not work in an embedded Android WebView.
       const inApp = NativeTransport.available()
       const t = inApp
-        ? createCarTransport('native', { ...options, url: wifiUrl })
+        ? createCarTransport('native', { ...options, url: wifiUrl, transport: 'ble' })
         : createCarTransport('ble', options)
       await t.connect()
       transportRef.current = t
