@@ -15,6 +15,7 @@ const nav = [
   { label: 'Products', href: '/products' },
   { label: 'Projects', href: '/projects' },
   { label: 'Tools', href: '/tools' },
+  { label: 'App', href: '/app' },
   { label: '3D Printing', href: '/3d-printing' },
   { label: 'Journal', href: '/journal' },
   { label: 'Contact', href: '/contact' },
