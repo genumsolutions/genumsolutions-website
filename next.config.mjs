@@ -16,6 +16,7 @@ const nextConfig = {
   async redirects() {
     return [
       { source: '/robot-cars', destination: '/projects', permanent: true },
+      { source: '/robocar', destination: '/iot-remote', permanent: true },
       { source: '/training', destination: '/services#training', permanent: true },
       { source: '/products/esp32-car', destination: '/products/esp32-bluetooth-robot-car', permanent: true },
     ]

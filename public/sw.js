@@ -25,6 +25,7 @@ const APP_SHELL = [
   '/services',
   '/about',
   '/projects',
+  '/iot-remote',
   '/3d-printing',
   '/journal',
   '/contact',

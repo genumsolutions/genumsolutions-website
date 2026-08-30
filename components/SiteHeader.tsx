@@ -14,6 +14,7 @@ const nav = [
   { label: 'Services', href: '/services' },
   { label: 'Products', href: '/products' },
   { label: 'Projects', href: '/projects' },
+  { label: 'IoT & Remote', href: '/iot-remote' },
   { label: 'Tools', href: '/tools' },
   { label: 'App', href: '/app' },
   { label: '3D Printing', href: '/3d-printing' },

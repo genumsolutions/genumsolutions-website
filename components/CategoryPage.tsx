@@ -1,3 +1,5 @@
+import Link from 'next/link'
+
 type Category = {
   slug: string
   eyebrow: string
@@ -106,10 +108,12 @@ export default function CategoryPage({ slug }: { slug: string }) {
             ))}
           </ul>
           <div className="mt-6 rounded-xl bg-sky px-4 py-3">
-            <p className="text-sm font-bold text-navy">Device controls</p>
+            <Link href="/iot-remote">
+              <p className="text-sm font-bold text-navy hover:underline">Test &amp; control this category &rarr;</p>
+            </Link>
             <p className="mt-1 text-xs leading-5 text-muted">
-              Live control panels for this category are being wired to the same
-              Bluetooth / WiFi transport used on the Robot Car page.
+              Live controls for this category live on the IoT &amp; Remote Controller page
+              and use the same Bluetooth / WiFi transport as the robot cars.
             </p>
           </div>
         </section>
