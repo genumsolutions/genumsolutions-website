@@ -4,9 +4,10 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Menu, Moon, ShoppingBag, Sun, X } from 'lucide-react'
+import { LogOut, Menu, Moon, ShoppingBag, Sun, User, X } from 'lucide-react'
 import HeaderSession from './HeaderSession'
 import { useCart } from './cart-provider'
+import { signOut } from '../lib/auth'
 
 const nav = [
   { label: 'About', href: '/about' },
@@ -24,13 +25,31 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`)
 }
 
+type SessionUser = { name: string; email: string; role: string }
+
 export default function SiteHeader() {
   const pathname = usePathname()
   const [dim, setDim] = useState(false)
   const [open, setOpen] = useState(false)
+  const [user, setUser] = useState<SessionUser | null>(null)
   const menuButtonRef = useRef<HTMLButtonElement>(null)
   const mobileNavRef = useRef<HTMLDivElement>(null)
-  const { count, hydrated } = useCart()
+  const { count, hydrated, clear } = useCart()
+
+  // Keep the mobile menu session-aware so "Sign in" only appears for guests
+  // and "My Account / Log out" appears for signed-in visitors, matching the
+  // desktop HeaderSession control.
+  useEffect(() => {
+    fetch('/api/auth/session')
+      .then((response) => response.json())
+      .then((data) => { if (data.user) setUser(data.user) })
+      .catch(() => undefined)
+  }, [pathname])
+
+  async function handleLogout() {
+    clear()
+    await signOut('/')
+  }
 
   useEffect(() => {
     const saved = window.localStorage.getItem('genum-theme') === 'dim'
@@ -146,10 +165,20 @@ export default function SiteHeader() {
                 )
               })}
               <li className="col-span-2 mt-1 border-t border-line pt-2">
-                <Link href="/account" onClick={() => setOpen(false)} className="flex h-12 items-center rounded-lg px-3 font-semibold text-navy hover:bg-navy-light">My Account</Link>
-              </li>
-              <li className="col-span-2">
-                <Link href="/login" onClick={() => setOpen(false)} className="flex h-12 items-center justify-center rounded-lg bg-navy px-3 font-bold text-white hover:bg-navy-dark">Sign in</Link>
+                {user ? (
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <Link href="/account" onClick={() => setOpen(false)} className="flex h-12 items-center justify-center rounded-lg border border-navy bg-white px-3 font-bold text-navy hover:bg-navy-light">
+                      <User size={14} aria-hidden="true" className="mr-2" />
+                      My Account
+                    </Link>
+                    <button onClick={handleLogout} className="flex h-12 items-center justify-center rounded-lg border border-red-200 bg-white px-3 font-bold text-red-600 hover:bg-red-50">
+                      <LogOut size={14} aria-hidden="true" className="mr-2" />
+                      Log out
+                    </button>
+                  </div>
+                ) : (
+                  <Link href="/login" onClick={() => setOpen(false)} className="flex h-12 items-center justify-center rounded-lg bg-navy px-3 font-bold text-white hover:bg-navy-dark">Sign in</Link>
+                )}
               </li>
             </ul>
           </nav>

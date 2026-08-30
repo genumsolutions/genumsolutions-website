@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient, supabaseConfigured } from '../../../../lib/supabase/server'
 import { checkRateLimit, clientIp } from '../../../../lib/rate-limit'
+import { enforceSingleSession } from '../../../../lib/single-session'
 
 // Creates a customer account with email + password (works for Gmail or any address).
 export async function POST(request: Request) {
@@ -37,6 +38,7 @@ export async function POST(request: Request) {
     // Email confirmation is disabled in this Supabase project, so a session is returned
     // immediately. If confirmation is ever enabled, tell the UI to show the notice.
     if (!data.session) return NextResponse.json({ ok: true, needsEmailConfirmation: true })
+    if (data.user?.id) await enforceSingleSession(data.user.id)
     return NextResponse.json({ ok: true })
   } catch {
     return NextResponse.json({ error: 'Accounts are temporarily unavailable. Try again.' }, { status: 503 })

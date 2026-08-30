@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient, supabaseConfigured } from '../../../../lib/supabase/server'
 import { checkRateLimit, clientIp } from '../../../../lib/rate-limit'
+import { enforceSingleSession } from '../../../../lib/single-session'
 
 // Native sign-in handoff for the mobile app.
 //
@@ -51,6 +52,9 @@ export async function POST(request: NextRequest) {
     if (sessionError) {
       return NextResponse.json({ error: 'Could not establish your session.' }, { status: 401 })
     }
+
+    // This native sign-in becomes the account's one active session.
+    await enforceSingleSession(user.id)
 
     let name = user.email.split('@')[0]
     let role: 'admin' | 'customer' = 'customer'
