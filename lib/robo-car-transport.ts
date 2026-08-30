@@ -70,7 +70,7 @@ export interface TransportOptions {
 }
 
 export interface CarTransport {
-  readonly kind: 'websocket' | 'ble' | 'none'
+  readonly kind: 'websocket' | 'ble' | 'native' | 'none'
   connect(): Promise<void>
   disconnect(): Promise<void>
   get connected(): boolean
@@ -308,12 +308,130 @@ export class BluetoothTransport implements CarTransport {
   async requestState() { await this.sendLine('REQ_STATE') }
 }
 
+// ---------------------------------------------------------------------
+// Native transport - used when the /robocar page runs inside the GENUM
+// mobile app (window.ReactNativeWebView). The browser page cannot perform
+// Classic-SPP pairing or reach some BLE cars, so it delegates the raw
+// GENUM command protocol to the native shell, which owns the actual
+// socket (BLE via react-native-ble-plx or WebSocket to a LAN WiFi car).
+// Native is the opposite direction from the other transports: command
+// lines flow OUT over postMessage (rhs -> lhs), and the shell pushes
+// telemetry/status back IN by calling the global callback registered here.
+// ---------------------------------------------------------------------
+
+declare global {
+  interface Window {
+    readonly ReactNativeWebView?: {
+      postMessage(message: string): void
+    }
+    readonly GENUM_APP?: boolean
+    __GENUM_ROBO__?: {
+      /** Registered by the page while it is mounted. The native shell
+       *  invokes this to stream telemetry / status back into the page. */
+      ingress: (kind: 'telemetry' | 'status' | 'connected' | 'disconnected' | 'error', payload: string) => void
+    }
+  }
+}
+
+export class NativeTransport implements CarTransport {
+  readonly kind = 'native' as const
+  private options: TransportOptions
+  private bridge: Window['ReactNativeWebView'] | null = null
+  private _connected = false
+
+  static available(): boolean {
+    return typeof window !== 'undefined' && !!window.ReactNativeWebView && !!(window as Window).GENUM_APP
+  }
+
+  private url?: string
+
+  setUrl(url: string) {
+    this.url = url
+  }
+
+  constructor(options: TransportOptions = {}) {
+    this.options = options
+  }
+
+  get connected() {
+    return this._connected
+  }
+
+  private emit(kind: string, payload: unknown) {
+    try {
+      this.bridge?.postMessage(
+        JSON.stringify({ type: 'genum:robo', action: kind, payload }),
+      )
+    } catch { /* ignore */ }
+  }
+
+  connect(): Promise<void> {
+    if (!NativeTransport.available()) {
+      this.options.onStatus?.('error', 'Native car control is only available in the GENUM app.')
+      return Promise.reject(new Error('Native transport not available'))
+    }
+    this.bridge = window.ReactNativeWebView
+    window.__GENUM_ROBO__ = {
+      ingress: (kind, payload) => {
+        if (kind === 'telemetry') {
+          const telemetry: CarTelemetry = {}
+          parseTelemetryLine(payload, telemetry)
+          if (Object.keys(telemetry).length) this.options.onTelemetry?.(telemetry)
+        } else if (kind === 'connected') {
+          this._connected = true
+          this.options.onStatus?.('connected', payload || 'Car connected')
+        } else if (kind === 'disconnected') {
+          this._connected = false
+          this.options.onStatus?.('disconnected', payload || undefined)
+        } else if (kind === 'error') {
+          this.options.onStatus?.('error', payload || 'Car connection failed')
+        }
+      },
+    }
+    // Ask the shell to (re)open its underlying connection (optionally to a
+    // specific car IP), then confirm via ingress('connected', ...).
+    this.emit('connect', this.url || null)
+    // The shell will call ingress('connected') when the link is up.
+    return Promise.resolve()
+  }
+
+  async disconnect(): Promise<void> {
+    this.emit('disconnect', null)
+    this._connected = false
+    delete window.__GENUM_ROBO__
+    this.bridge = null
+    this.options.onStatus?.('disconnected')
+  }
+
+  async sendLine(line: string): Promise<void> {
+    if (!this.bridge) throw new Error('Not connected')
+    this.emit('send', line)
+  }
+
+  async setMode(token: string) { await this.sendLine(token) }
+  async setDirection(d: 'F' | 'B' | 'L' | 'R' | 'S') { await this.sendLine(d) }
+  async setSpeed(value: number) { await this.sendLine(`SPD${Math.round(value)}`) }
+  async setServo(value: number) { await this.sendLine(`SERVO${Math.round(value)}`) }
+  async calibratePid(p: { kp: number; ki: number; kd: number; out: number; off: number }) {
+    await this.sendLine(buildCalibration(p))
+  }
+  async requestState() { await this.sendLine('REQ_STATE') }
+}
+
 // Factory so the UI can request a concrete transport.
 export function createCarTransport(
-  kind: 'websocket' | 'ble',
+  kind: 'websocket' | 'ble' | 'native',
   options: TransportOptions & { url?: string },
 ): CarTransport {
-  return kind === 'websocket'
-    ? new WebSocketTransport(options.url ?? 'ws://192.168.4.1:81', options)
-    : new BluetoothTransport(options)
+  switch (kind) {
+    case 'websocket':
+      return new WebSocketTransport(options.url ?? 'ws://192.168.4.1:81', options)
+    case 'native': {
+      const t = new NativeTransport(options)
+      if (options.url) t.setUrl(options.url)
+      return t
+    }
+    default:
+      return new BluetoothTransport(options)
+  }
 }

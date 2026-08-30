@@ -20,6 +20,7 @@ import {
 } from '../lib/robo-car-catalog'
 import {
   createCarTransport,
+  NativeTransport,
   type CarTransport,
   type CarTelemetry,
   type TransportOptions,
@@ -138,11 +139,17 @@ export default function RoboCarControl() {
     setBusy(true)
     setError(null)
     try {
-      const t = createCarTransport('ble', options)
+      // Inside the GENUM app, delegate to the native shell (BLE via
+      // react-native-ble-plx / WiFi via its own socket) instead of Web
+      // Bluetooth, which does not work in an embedded Android WebView.
+      const inApp = NativeTransport.available()
+      const t = inApp
+        ? createCarTransport('native', { ...options, url: wifiUrl })
+        : createCarTransport('ble', options)
       await t.connect()
       transportRef.current = t
       setConnected(true)
-      setStatus('Car connected over Bluetooth')
+      setStatus(NativeTransport.available() ? 'Car connected via app' : 'Car connected over Bluetooth')
       await t.requestState()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not connect over Bluetooth.')
@@ -267,10 +274,12 @@ export default function RoboCarControl() {
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           <div className="rounded-xl border border-line bg-surface p-4">
             <p className="flex items-center gap-2 text-sm font-bold text-ink">
-              <Bluetooth size={16} className="text-navy" /> Bluetooth (BLE)
+              <Bluetooth size={16} className="text-navy" /> {NativeTransport.available() ? 'Car (via app)' : 'Bluetooth (BLE)'}
             </p>
             <p className="mt-1 text-xs leading-5 text-muted">
-              Scan for a BLE-capable car. Works in Chrome on desktop or Android.
+              {NativeTransport.available()
+                ? 'Connect through the GENUM app for a wider range of cars, including those that pair like the hand-held remote.'
+                : 'Scan for a BLE-capable car. Works in Chrome on desktop or Android.'}
             </p>
             <button
               type="button"
@@ -279,7 +288,7 @@ export default function RoboCarControl() {
               className="mt-3 inline-flex h-10 items-center gap-2 rounded-full bg-navy px-5 text-xs font-black text-white transition hover:bg-navy-dark disabled:opacity-60"
             >
               {busy ? <Loader2 size={14} className="animate-spin" /> : <Bluetooth size={14} />}
-              {connected ? 'Connected' : 'Scan & connect'}
+              {connected ? 'Connected' : NativeTransport.available() ? 'Connect car' : 'Scan & connect'}
             </button>
           </div>
 
