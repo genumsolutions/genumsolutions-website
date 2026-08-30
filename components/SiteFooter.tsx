@@ -12,6 +12,7 @@ const shopLinks = [
 
 const supportLinks = [
   { href: '/contact', label: 'Contact' },
+  { href: '/app', label: 'Download app' },
   { href: '/account', label: 'My account' },
   { href: '/privacy', label: 'Privacy Policy' },
   { href: '/terms', label: 'Terms of Service' },
