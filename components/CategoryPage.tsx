@@ -107,12 +107,12 @@ export default function CategoryPage({ slug }: { slug: string }) {
               </li>
             ))}
           </ul>
-          <div className="mt-6 rounded-xl bg-sky px-4 py-3">
-            <Link href="/iot-remote">
-              <p className="text-sm font-bold text-navy hover:underline">Test &amp; control this category &rarr;</p>
+<div className="mt-6 rounded-xl bg-sky px-4 py-3">
+            <Link href="/tools">
+              <p className="text-sm font-bold text-navy hover:underline">Test & control this category &rarr;</p>
             </Link>
             <p className="mt-1 text-xs leading-5 text-muted">
-              Live controls for this category live on the IoT &amp; Remote Controller page
+              Live controls for this category live on the Tools page
               and use the same Bluetooth / WiFi transport as the robot cars.
             </p>
           </div>

@@ -7,7 +7,7 @@ const shopLinks = [
   { href: '/products', label: 'Shop' },
   { href: '/3d-printing', label: '3D Printing' },
   { href: '/tools', label: 'Tools' },
-  { href: '/iot-remote', label: 'IoT & Remote Controller' },
+  { href: '/tools', label: 'IoT & Remote Controller' },
   { href: '/projects', label: 'Projects' },
 ]
 
