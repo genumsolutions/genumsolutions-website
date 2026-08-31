@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { Moon } from 'lucide-react'
 import PageIntro from '../../components/PageIntro'
 import PageShell from '../../components/PageShell'
-import IotRemote from '../../app/iot-remote/page'
+import IotRemote from '../../components/IotRemote'
 import OpenTools from '../../components/OpenTools'
 
 export const metadata: Metadata = {
