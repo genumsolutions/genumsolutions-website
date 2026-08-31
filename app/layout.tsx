@@ -6,6 +6,7 @@ import { CartProvider } from '../components/cart-provider'
 import PageViewTracker from '../components/PageViewTracker'
 import ServiceWorkerRegister from '../components/ServiceWorkerRegister'
 import WebVitals from '../components/WebVitals'
+import AppBanner from '../components/AppBanner'
 import { company } from '../lib/company'
 import './globals.css'
 
@@ -61,6 +62,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <WebVitals />
         <ServiceWorkerRegister />
         <CartProvider>{children}</CartProvider>
+        <AppBanner />
       </body>
     </html>
   )
