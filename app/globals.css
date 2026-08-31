@@ -131,14 +131,6 @@ html[data-theme='dim'] .shadow-xl { box-shadow: 0 8px 24px rgba(0,0,0,.4) !impor
 @keyframes orbit { from { transform: rotate(0deg) translate(100px) rotate(0deg); } to { transform: rotate(360deg) translate(100px) rotate(360deg); } }
 @keyframes orbit-reverse { from { transform: rotate(0deg) translate(50px) rotate(0deg); } to { transform: rotate(360deg) translate(50px) rotate(-360deg); } }
 
-/* IoT / remote controller fullscreen frame. */
-.remote-frame { position: relative; margin-top: 1rem; }
-.remote-frame.is-fullscreen { padding: 1rem; overflow: auto; }
-.remote-frame.is-fullscreen .remote-deck { max-width: none; padding-left: 1rem; padding-right: 1rem; margin-top: .75rem; }
-.remote-frame.is-rotated { display: flex; align-items: center; justify-content: center; }
-.remote-frame.is-rotated .remote-deck { transform: rotate(90deg); margin-top: 0; }
-.remote-frame.is-locked .remote-deck { pointer-events: none; }
-
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.001ms !important;
