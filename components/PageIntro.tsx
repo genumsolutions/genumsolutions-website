@@ -1,14 +1,12 @@
-import Image from 'next/image'
-import BrandMotif from './BrandMotif'
+import HeroMark from './HeroMark'
 
 export default function PageIntro({ eyebrow, title, body }: { eyebrow: string; title: string; body: string }) {
   return (
     <section className="grid-paper border-b border-line">
       <div className="mx-auto max-w-7xl px-5 py-10 sm:py-16 lg:px-8 lg:py-24">
         <div className="flex max-w-3xl items-start gap-4 sm:gap-6">
-          <div className="hidden shrink-0 items-center gap-3 sm:flex">
-            <Image src="/logo.png" alt="GENUM stamp" width={72} height={72} className="h-14 w-14 object-contain lg:h-16 lg:w-16" />
-            <BrandMotif />
+          <div className="hidden shrink-0 items-center sm:flex">
+            <HeroMark />
           </div>
           <div>
             <p className="text-xs font-black uppercase tracking-[.24em] text-navy">{eyebrow}</p>

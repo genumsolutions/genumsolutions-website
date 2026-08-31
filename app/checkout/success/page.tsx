@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useState } from 'react'
@@ -64,10 +65,26 @@ function SuccessPanel() {
 
 export default function CheckoutSuccessPage() {
   return (
-    <main className="grid min-h-screen place-items-center bg-mist px-5">
-      <Suspense fallback={<div className="font-display text-xl font-bold text-slate-500">Loading...</div>}>
-        <SuccessPanel />
-      </Suspense>
+    <main className="min-h-screen bg-mist">
+      <header className="border-b border-line bg-white">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 lg:px-8">
+          <Link href="/" className="group flex shrink-0 items-center gap-3" aria-label="GENUM SOLUTIONS home">
+            <span className="relative block h-11 w-11 shrink-0 overflow-hidden rounded-full bg-white shadow-card ring-1 ring-line transition group-hover:ring-navy/40">
+              <Image src="/logo.png" alt="GENUM SOLUTIONS stamp" width={112} height={112} className="h-full w-full object-contain" priority />
+            </span>
+            <span className="leading-none">
+              <strong className="block font-display text-lg font-bold tracking-tight text-ink sm:text-[22px]">GENUM</strong>
+              <span className="mt-1 block text-[9px] font-bold uppercase tracking-[0.32em] text-navy sm:text-[10px]">Solutions Pvt.&thinsp;Ltd.</span>
+            </span>
+          </Link>
+          <Link href="/products" className="text-sm font-bold text-navy hover:underline">Continue shopping</Link>
+        </div>
+      </header>
+      <div className="grid min-h-[70vh] place-items-center px-5">
+        <Suspense fallback={<div className="font-display text-xl font-bold text-slate-500">Loading...</div>}>
+          <SuccessPanel />
+        </Suspense>
+      </div>
     </main>
   )
 }

@@ -104,9 +104,14 @@ export default function CheckoutPage() {
     <main className="min-h-screen bg-mist">
       <header className="border-b border-line bg-white">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-5 py-4 lg:px-8">
-          <Link href="/" className="flex shrink-0 items-center gap-3" aria-label="GENUM SOLUTIONS home">
-            <Image src="/logo.png" alt="GENUM SOLUTIONS stamp" width={48} height={48} className="h-11 w-11 object-contain" />
-            <span className="font-display text-lg font-bold">GENUM checkout</span>
+          <Link href="/" className="group flex shrink-0 items-center gap-3" aria-label="GENUM SOLUTIONS home">
+            <span className="relative block h-11 w-11 shrink-0 overflow-hidden rounded-full bg-white shadow-card ring-1 ring-line transition group-hover:ring-navy/40">
+              <Image src="/logo.png" alt="GENUM SOLUTIONS stamp" width={112} height={112} className="h-full w-full object-contain" priority />
+            </span>
+            <span className="leading-none">
+              <strong className="block font-display text-lg font-bold tracking-tight text-ink sm:text-[22px]">GENUM</strong>
+              <span className="mt-1 block text-[9px] font-bold uppercase tracking-[0.32em] text-navy sm:text-[10px]">Solutions Pvt.&thinsp;Ltd.</span>
+            </span>
           </Link>
           <div className="flex flex-wrap items-center gap-3 sm:gap-5">
             <Link href="/products" className="text-sm font-bold text-navy hover:underline">Continue shopping</Link>
@@ -148,25 +153,8 @@ export default function CheckoutPage() {
           </div>
         ) : (
           <div className="mt-8 grid gap-8 sm:mt-10 sm:gap-10 lg:grid-cols-[1.1fr_.9fr]">
-            <section aria-labelledby="delivery-heading" className="rounded-2xl border border-line bg-white p-6">
-              <h2 id="delivery-heading" className="font-display text-2xl font-bold">Delivery details</h2>
-              <form className="mt-6 grid gap-3 sm:grid-cols-2" onSubmit={(event) => event.preventDefault()}>
-                <label className={`${labelClass} sm:col-span-2`}>Full name
-                  <input value={customer.name} onChange={(event) => setCustomer({ ...customer, name: event.target.value })} autoComplete="name" required className={`mt-2 w-full ${inputClass}`} />
-                </label>
-                <label className={labelClass}>Email
-                  <input value={customer.email} onChange={(event) => setCustomer({ ...customer, email: event.target.value })} type="email" autoComplete="email" required className={`mt-2 w-full ${inputClass}`} />
-                </label>
-                <label className={labelClass}>Phone
-                  <input value={customer.phone} onChange={(event) => setCustomer({ ...customer, phone: event.target.value })} type="tel" autoComplete="tel" className={`mt-2 w-full ${inputClass}`} />
-                </label>
-                <label className={`${labelClass} sm:col-span-2`}>Delivery address in Nepal
-                  <textarea value={customer.address} onChange={(event) => setCustomer({ ...customer, address: event.target.value })} rows={3} autoComplete="street-address" required className={`mt-2 w-full ${inputClass}`} />
-                </label>
-              </form>
-              <p className="mt-4 text-xs leading-5 text-muted">Free Kathmandu delivery on orders above NPR 5,000. We confirm every order by email before dispatch.</p>
-            </section>
-            <section aria-label="Order summary and payment" className="space-y-4">
+            {/* Items + payment first — the info the customer needs most. */}
+            <section aria-label="Order summary and payment" className="space-y-4 lg:order-last">
               <div className="rounded-2xl border border-line bg-white p-6">
                 <h2 className="mb-2 font-display text-lg font-bold">Build list ({items.length})</h2>
                 {items.map(({ product, quantity }) => (
@@ -185,14 +173,49 @@ export default function CheckoutPage() {
                 ))}
               </div>
               <div className="rounded-2xl border-t-4 border-navy bg-white p-6 shadow-card">
-                <div className="flex items-center justify-between text-lg font-black"><span>Total</span><span>{formatNPR(total)}</span></div>
-                <div className="mt-5 grid gap-3">
+                <dl className="space-y-2 text-sm">
+                  <div className="flex items-center justify-between"><dt className="text-muted">Subtotal</dt><dd className="font-bold">{formatNPR(total)}</dd></div>
+                  <div className="flex items-center justify-between border-t border-line pt-3 text-lg font-black"><dt>Total</dt><dd>{formatNPR(total)}</dd></div>
+                </dl>
+                <div className="mt-5 hidden gap-3 lg:grid">
                   <button onClick={() => payNepal('esewa')} disabled={busy} className="rounded-lg bg-navy px-5 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-navy-dark disabled:cursor-not-allowed disabled:opacity-60">Pay with eSewa</button>
                   <button onClick={() => payNepal('khalti')} disabled={busy} className="rounded-lg bg-navy px-5 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-navy-dark disabled:cursor-not-allowed disabled:opacity-60">Pay with Khalti</button>
                   <button onClick={payCod} disabled={busy} className="rounded-lg border-2 border-dashed border-line px-5 py-3.5 text-sm font-bold text-muted transition hover:border-ink hover:text-ink disabled:cursor-not-allowed disabled:opacity-60">Reserve order · Pay on delivery</button>
                 </div>
                 <div role="status" aria-live="polite">{message && <p className="mt-4 text-sm font-bold text-gold">{message}</p>}</div>
               </div>
+              {/* Sticky pay bar — keeps Total + payment first and always reachable on mobile. */}
+              <div className="sticky bottom-4 z-30 rounded-2xl border border-line bg-white p-4 shadow-card lg:hidden">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-bold text-muted">Total</span>
+                  <span className="font-display text-xl font-black">{formatNPR(total)}</span>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <button onClick={() => payNepal('esewa')} disabled={busy} className="rounded-lg bg-navy px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-navy-dark disabled:cursor-not-allowed disabled:opacity-60">eSewa</button>
+                  <button onClick={() => payNepal('khalti')} disabled={busy} className="rounded-lg bg-navy px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-navy-dark disabled:cursor-not-allowed disabled:opacity-60">Khalti</button>
+                </div>
+                <button onClick={payCod} disabled={busy} className="mt-2 w-full rounded-lg border-2 border-dashed border-line px-4 py-2.5 text-sm font-bold text-muted transition hover:border-ink hover:text-ink disabled:cursor-not-allowed disabled:opacity-60">Pay on delivery</button>
+              </div>
+            </section>
+
+            {/* User / delivery details — least needed, so it comes below. */}
+            <section aria-labelledby="delivery-heading" className="rounded-2xl border border-line bg-white p-6 lg:order-first">
+              <h2 id="delivery-heading" className="font-display text-2xl font-bold">Delivery details</h2>
+              <form className="mt-6 grid gap-3 sm:grid-cols-2" onSubmit={(event) => event.preventDefault()}>
+                <label className={`${labelClass} sm:col-span-2`}>Full name
+                  <input value={customer.name} onChange={(event) => setCustomer({ ...customer, name: event.target.value })} autoComplete="name" required className={`mt-2 w-full ${inputClass}`} />
+                </label>
+                <label className={labelClass}>Email
+                  <input value={customer.email} onChange={(event) => setCustomer({ ...customer, email: event.target.value })} type="email" autoComplete="email" required className={`mt-2 w-full ${inputClass}`} />
+                </label>
+                <label className={labelClass}>Phone
+                  <input value={customer.phone} onChange={(event) => setCustomer({ ...customer, phone: event.target.value })} type="tel" autoComplete="tel" className={`mt-2 w-full ${inputClass}`} />
+                </label>
+                <label className={`${labelClass} sm:col-span-2`}>Delivery address in Nepal
+                  <textarea value={customer.address} onChange={(event) => setCustomer({ ...customer, address: event.target.value })} rows={3} autoComplete="street-address" required className={`mt-2 w-full ${inputClass}`} />
+                </label>
+              </form>
+              <p className="mt-4 text-xs leading-5 text-muted">We confirm every order by email before dispatch.</p>
             </section>
           </div>
         )}
