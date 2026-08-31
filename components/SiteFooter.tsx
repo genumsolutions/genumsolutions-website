@@ -7,13 +7,11 @@ const shopLinks = [
   { href: '/products', label: 'Shop' },
   { href: '/3d-printing', label: '3D Printing' },
   { href: '/tools', label: 'Tools' },
-  { href: '/tools', label: 'IoT & Remote Controller' },
   { href: '/projects', label: 'Projects' },
 ]
 
 const supportLinks = [
   { href: '/contact', label: 'Contact' },
-  { href: '/app', label: 'Download app' },
   { href: '/account', label: 'My account' },
   { href: '/privacy', label: 'Privacy Policy' },
   { href: '/terms', label: 'Terms of Service' },
