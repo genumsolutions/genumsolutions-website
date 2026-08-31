@@ -98,7 +98,7 @@ export default function ProductCatalog({
   }
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-10 sm:px-5 sm:py-12 lg:px-8 lg:py-16">
+    <section className="mx-auto max-w-7xl px-5 py-10 sm:py-12 lg:px-8 lg:py-16">
       <div className="border-b border-line pb-5 sm:pb-6">
         <label className="flex min-h-[52px] items-center gap-3 rounded-full border border-line bg-white px-5 text-muted shadow-sm focus-within:border-navy sm:w-full sm:max-w-md">
           <Search size={18} aria-hidden="true" />

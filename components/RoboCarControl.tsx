@@ -240,7 +240,7 @@ export default function RoboCarControl() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-5 py-10 lg:px-8 lg:py-12">
+    <div className="remote-deck mx-auto max-w-7xl px-5 py-10 lg:px-8 lg:py-12">
       <div className="max-w-2xl">
         <p className="text-[10px] font-black uppercase tracking-widest text-navy">Robo Car · Control</p>
         <h2 className="mt-2 font-display text-3xl font-bold text-ink lg:text-4xl">Drive like the handheld remote</h2>

@@ -28,7 +28,7 @@ export default function ProductDetailPro({ product }: { product: Product }) {
 
   return (
     <div className="min-h-screen bg-mist">
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-5 sm:py-8 lg:px-8">
+      <div className="mx-auto max-w-7xl px-5 py-6 sm:py-8 lg:px-8">
         <Link href="/products" className="inline-flex items-center gap-1.5 text-sm font-bold text-navy transition hover:text-navy-dark">
           <ArrowLeft size={15} aria-hidden="true" /> Back to the shop
         </Link>
