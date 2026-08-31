@@ -201,6 +201,12 @@ create policy "anon message insert" on public.customer_messages for insert to an
 drop policy if exists "admin read transactions" on public.transactions;
 create policy "admin read transactions" on public.transactions for select using (public.is_admin());
 
+-- robo_car_modes: public read, admin write
+drop policy if exists "public read robo_car_modes" on public.robo_car_modes;
+create policy "public read robo_car_modes" on public.robo_car_modes for select using (true);
+drop policy if exists "admin write robo_car_modes" on public.robo_car_modes;
+create policy "admin write robo_car_modes" on public.robo_car_modes for all using (public.is_admin());
+
 -- ===== STORAGE: product image bucket =====
 insert into storage.buckets (id, name, public)
 values ('product-images', 'product-images', true)
@@ -246,6 +252,39 @@ $$;
 revoke all on function public.set_admin(text) from public;
 revoke all on function public.set_admin(text) from anon;
 revoke all on function public.set_admin(text) from authenticated;
+
+-- ===== ROBO CAR MODES (manageable from admin) =====
+create table if not exists public.robo_car_modes (
+  id text primary key,
+  name text not null,
+  token text not null,
+  device_index integer not null,
+  car text not null,
+  wheel text not null,
+  steering text not null,
+  sensors text not null default '[]',
+  transport text not null default '[]',
+  remote_with text not null default '',
+  controls text not null default '[]',
+  requires_connection boolean not null default true,
+  blurb text not null default '',
+  sort_order integer not null default 1000,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+-- seed the 9 original modes from the ESP32 firmware
+insert into public.robo_car_modes (id, name, token, device_index, car, wheel, steering, sensors, transport, remote_with, controls, requires_connection, blurb, sort_order) values
+  ('4wd4m', 'Bluetooth · 4WD (4M)', 'BT', 0, '4-wheel-drive', '4 × BO/brushed motors', 'Skid-steer (differential)', '[]', '["ble","classic-bt"]', 'ESP REMOTE or app', '["drive-tank"]', true, 'A 4-motor drive car driven by direction (F/B/L/R) and speed.', 1),
+  ('2wd1m', 'Bluetooth · 2WD + Servo (1M)', '2WD1M', 8, '2-wheel-drive', '1 × BO motor (rear)', '1 × servo (0..180, center 90)', '[]', '["ble","classic-bt"]', 'ESP REMOTE two-joystick', '["drive-2wd1m"]', true, 'One drive motor plus a steering servo. Speed is signed SPD (fwd +ve).', 2),
+  ('self-balancing', 'Self-Balancing', 'AUTO', 6, 'Self-balancing', '2 × BO motors', 'Self-balance (PID)', '["MPU6050 IMU"]', '["ble","wifi","classic-bt"]', 'ESP REMOTE (PID tuning)', '["pid-auto"]', true, 'Balances itself in AUTO mode. The app/remote tune Kp/Ki/Kd OUT/OFF live.', 3),
+  ('obstacle-us', 'Obstacle Avoidance · Ultrasonic', 'OBS_US', 3, 'Obstacle avoider', '2/4 × BO motors', 'Skid-steer', '["HC-SR04 / ultrasonic"]', '["ble","wifi","classic-bt"]', 'ESP REMOTE', '["start-stop"]', true, 'Runs autonomous obstacle avoidance using an ultrasonic sensor.', 4),
+  ('obstacle-ir', 'Obstacle Avoidance · IR', 'OBS_IR', 4, 'Obstacle avoider', '2/4 × BO motors', 'Skid-steer', '["IR / photodiode pair"]', '["ble","wifi","classic-bt"]', 'ESP REMOTE', '["start-stop"]', true, 'Autonomous obstacle avoidance driven by IR sensors.', 5),
+  ('website-client', 'Website Controlled · Client', 'ESP_CLI', 7, 'Website car', '2/4 × BO motors', 'Skid-steer', '[]', '["wifi"]', 'Browser / app', '["weblink"]', false, 'The ESP32 is a WiFi client; the browser/app acts as the control server.', 6),
+  ('website-server', 'Website Controlled · Server', 'ESP_SER', 1, 'Website car', '2/4 × BO motors', 'Skid-steer', '[]', '["wifi"]', 'Browser / app', '["weblink"]', false, 'The ESP32 hosts its own web page; open its IP to drive it.', 7),
+  ('path-follow', 'Path Following · IR', 'PATH', 2, 'Line follower', '2/4 × BO motors', 'Skid-steer', '["IR line sensors"]', '["ble","wifi","classic-bt"]', 'ESP REMOTE', '["start-stop"]', true, 'Follows an IR-detected line or path autonomously.', 8),
+  ('rf-manual', 'Manual · RF', 'MAN', 5, 'RF car', '2/4 × BO motors', 'Skid-steer', '[]', '["rf"]', 'RF hand-held remote', '["drive-tank"]', false, 'Manual control over RF modules (not BT or WiFi) - drive with the RF handset.', 9)
+on conflict (id) do nothing;
 
 -- ===== SERVICES (manageable from admin) =====
 create table if not exists public.services (

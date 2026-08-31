@@ -1,4 +1,5 @@
 import { products as localProducts, type Product } from './catalog'
+import { roboModes as localRoBoModes, type RoboCarMode } from './robo-car-catalog'
 import { createServiceClient, supabaseConfigured } from './supabase/server'
 
 export type { Product } from './catalog'
@@ -134,4 +135,46 @@ export async function saveSiteContent(values: Pick<SiteContent, 'homeTitle' | 'h
     .from('site_content')
     .update({ home_title: values.homeTitle, home_body: values.homeBody, updated_at: new Date().toISOString() })
     .eq('id', 1)
+}
+
+export type { RoboCarMode }
+
+export const roboModes: RoboCarMode[] = localRoBoModes
+
+export async function getManagedRoBoModes(): Promise<RoboCarMode[]> {
+  if (!supabaseConfigured()) return localRoBoModes
+  try {
+    const db = createServiceClient()
+    const { data, error } = await db.from('robo_car_modes').select('*').order('sort_order', { ascending: true }).order('name', { ascending: true })
+    if (error) throw error
+    if (!data || data.length === 0) return localRoBoModes
+    return data as RoboCarMode[]
+  } catch (error) {
+    console.error('Supabase robo mode read failed; using local catalog.', error)
+    return localRoBoModes
+  }
+}
+
+export async function saveRoBoMode(mode: RoboCarMode) {
+  await createServiceClient().from('robo_car_modes').upsert({
+    id: mode.id,
+    name: mode.name,
+    token: mode.token,
+    device_index: mode.deviceIndex,
+    car: mode.car,
+    wheel: mode.wheel,
+    steering: mode.steering,
+    sensors: mode.sensors,
+    transport: mode.transport,
+    remote_with: mode.remoteWith,
+    controls: mode.controls,
+    requires_connection: mode.requiresConnection,
+    blurb: mode.blurb,
+    sort_order: mode.sort_order ?? 1000,
+    updated_at: new Date().toISOString(),
+  })
+}
+
+export async function deleteRoBoMode(id: string) {
+  await createServiceClient().from('robo_car_modes').delete().eq('id', id)
 }
