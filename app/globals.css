@@ -41,6 +41,7 @@ input, textarea, select { font-size: 16px; }
 /* ─── Dim (dark) theme ─── */
 html[data-theme='dim'] body { background: #0f172a; color: #f1f5f9; }
 html[data-theme='dim'] .bg-white { background-color: #1e293b !important; }
+html[data-theme='dim'] .bg-white\/95, html[data-theme='dim'] .bg-white\/80, html[data-theme='dim'] .bg-white\/75 { background-color: #1e293b !important; }
 html[data-theme='dim'] .bg-mist { background-color: #0f172a !important; }
 html[data-theme='dim'] .bg-sky { background-color: #1e2f55 !important; }
 html[data-theme='dim'] .bg-ink { background-color: #131f38 !important; }

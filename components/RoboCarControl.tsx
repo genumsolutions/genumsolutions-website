@@ -431,7 +431,7 @@ export default function RoboCarControl() {
               />
             </div>
             <p className="mt-2 text-center text-[11px] text-muted">
-              Back = disconnect · Select = next mode
+              Back disconnects · Select switches mode
             </p>
           </div>
 
@@ -483,7 +483,7 @@ export default function RoboCarControl() {
                   <p className="mt-1 font-display text-3xl font-bold text-navy">
                     {telemetry.angle != null ? `${telemetry.angle.toFixed(1)}°` : '—'}
                   </p>
-                  <p className="mt-1 text-xs text-muted">Telemetry (TEL;ANGLE)</p>
+                  <p className="mt-1 text-xs text-muted">Read from the onboard sensor.</p>
                 </div>
               </div>
             )}

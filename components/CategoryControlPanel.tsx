@@ -2,7 +2,7 @@
 
 // =====================================================================
 // CategoryControlPanel - the generic control panel for a selected project
-// category on the /iot-remote hub.
+// category on the /tools page.
 //
 // Robo Car reuses the full RoboCarControl deck. The other categories
 // (home-automation, smart-farm, smart-city, drones) render this generic
@@ -235,7 +235,7 @@ function GenericPanel({ category }: { category: ProjectCategory }) {
               </div>
             </dl>
             <p className="mt-3 text-[11px] text-muted">
-              Telemetry streams in as TEL;/STATE; lines from the device.
+              Sensor readings from the connected device.
             </p>
           </div>
         )}
@@ -255,7 +255,7 @@ function GenericPanel({ category }: { category: ProjectCategory }) {
               className="mt-3 w-full accent-navy"
             />
             <p className="mt-2 text-xs text-muted">
-              Adjusts the device output level (SPD command). Connect to enable.
+              Adjust the output level. Connect to enable.
             </p>
           </div>
         )}

@@ -22,7 +22,15 @@ export default function OpenTools() {
 
   return (
     <section className="mx-auto max-w-7xl px-5 py-12 lg:px-8 lg:py-16">
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Filter tools by category">
+      <p className="text-[10px] font-black uppercase tracking-widest text-navy">Open tools</p>
+      <h2 className="mt-2 max-w-2xl font-display text-3xl font-bold text-ink lg:text-4xl">
+        Free tools we rely on.
+      </h2>
+      <p className="mt-4 max-w-2xl text-base leading-7 text-muted lg:text-lg">
+        A small directory of open-source software for CAD, printing, electronics,
+        and simulation.
+      </p>
+      <div className="mt-8 flex flex-wrap gap-2" role="group" aria-label="Filter tools by category">
         {groups.map((group) => (
           <button key={group} onClick={() => setFilter(group)} aria-pressed={filter === group} className={`rounded-full px-4 py-2 text-xs font-bold transition ${filter === group ? 'bg-navy text-white' : 'border border-line bg-white text-muted hover:border-navy hover:text-navy'}`}>
             {group}

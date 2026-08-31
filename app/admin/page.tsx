@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import dynamicImport from 'next/dynamic'
@@ -19,8 +20,16 @@ export default async function AdminPage() {
       <header className="border-b border-line bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-5 lg:px-8">
           <div>
-            <Link href="/" className="text-sm font-black text-navy">GENUM SOLUTIONS</Link>
-            <h1 className="mt-2 font-display text-3xl font-bold text-ink">Admin Dashboard</h1>
+            <Link href="/" className="group flex items-center gap-3" aria-label="GENUM SOLUTIONS home">
+              <span className="relative block h-11 w-11 shrink-0 overflow-hidden rounded-full bg-white shadow-card ring-1 ring-line transition group-hover:ring-navy/40">
+                <Image src="/logo.png" alt="GENUM SOLUTIONS stamp" width={112} height={112} className="h-full w-full object-contain" priority />
+              </span>
+              <span className="leading-none">
+                <strong className="block font-display text-lg font-bold tracking-tight text-ink sm:text-[22px]">GENUM</strong>
+                <span className="mt-1 block text-[9px] font-bold uppercase tracking-[0.32em] text-navy sm:text-[10px]">Solutions Pvt.&thinsp;Ltd.</span>
+              </span>
+            </Link>
+            <h1 className="mt-3 font-display text-3xl font-bold text-ink">Admin Dashboard</h1>
           </div>
           <div className="flex items-center gap-3">
             <span className="hidden max-w-[14rem] truncate rounded-full bg-navy-light px-4 py-2 text-xs font-bold text-navy sm:block" title={admin.email}>{admin.email}</span>

@@ -89,7 +89,7 @@ export default function SiteHeader() {
   }
 
   return (
-    <header className="border-b border-line bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
+    <header className="relative border-b border-line bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-5 sm:gap-4 sm:py-3.5 lg:px-8">
         <Link href="/" className="group flex shrink-0 items-center gap-3" aria-label="GENUM SOLUTIONS home">
           <span className="relative block h-11 w-11 shrink-0 overflow-hidden rounded-full bg-white shadow-card ring-1 ring-line transition group-hover:ring-navy/40 sm:h-14 sm:w-14">
@@ -145,9 +145,13 @@ export default function SiteHeader() {
         </div>
       </div>
 
-      <div id="mobile-navigation" ref={mobileNavRef}>
+      <div
+        id="mobile-navigation"
+        ref={mobileNavRef}
+        className="absolute inset-x-0 top-full z-50 lg:hidden"
+      >
         {open && (
-          <nav aria-label="Mobile" className="border-t border-line bg-white px-4 py-4 sm:px-5 lg:hidden animate-fade-in-up">
+          <nav aria-label="Mobile" className="border-t border-line bg-white px-4 py-4 shadow-xl sm:px-5 animate-fade-in-up">
             <ul className="grid grid-cols-2 gap-1.5 text-sm">
               {nav.map((item) => {
                 const active = isActive(pathname ?? '', item.href)

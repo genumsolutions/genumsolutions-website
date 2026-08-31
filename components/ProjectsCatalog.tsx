@@ -123,10 +123,10 @@ export default function ProjectsCatalog({ products = [] }: { products?: Product[
       )}
 
       {tab === 'packages' && (
-        <p className="mt-4 text-sm leading-6 text-slate-500">Named teaching and automation projects organized by scope. Each listing keeps its purpose, operating modes, components, sensors, and indicative NPR estimate together.</p>
+        <p className="mt-4 text-sm leading-6 text-slate-500">Named teaching and automation projects organized by scope.</p>
       )}
       {tab === 'robot-cars' && (
-        <p className="mt-4 text-sm leading-6 text-slate-500">Assembled robot-car projects separated from components and materials. Each car has a different control or teaching purpose.</p>
+        <p className="mt-4 text-sm leading-6 text-slate-500">Assembled robot-car projects separated from components and materials.</p>
       )}
 
       <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">

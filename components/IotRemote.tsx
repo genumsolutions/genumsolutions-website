@@ -17,16 +17,16 @@ export default function IotRemote() {
   const category = PROJECT_CATEGORIES.find((c) => c.slug === slug) ?? PROJECT_CATEGORIES[0]!
 
   return (
-    <div className="mx-auto max-w-7xl px-5 py-10 lg:px-8 lg:py-12">
+    <section className="mx-auto max-w-7xl px-5 py-10 lg:px-8 lg:py-12">
       <p className="text-[10px] font-black uppercase tracking-widest text-navy">
         IoT &amp; Remote Controller
       </p>
-      <h1 className="mt-2 max-w-2xl font-display text-3xl font-bold text-ink lg:text-5xl">
+      <h2 className="mt-2 max-w-2xl font-display text-3xl font-bold text-ink lg:text-4xl">
         Test &amp; control your projects.
-      </h1>
+      </h2>
       <p className="mt-4 max-w-2xl text-base leading-7 text-muted lg:text-lg">
         Pick a project category, connect a Bluetooth or WiFi device, and drive or
-        operate it live. All categories share the same GENUM command protocol.
+        operate it live.
       </p>
 
       {/* Category selector */}
@@ -66,6 +66,6 @@ export default function IotRemote() {
 
       {/* Control panel for the selected category */}
       <CategoryControlPanel key={category.slug} category={category} />
-    </div>
+    </section>
   )
 }
