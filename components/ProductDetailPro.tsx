@@ -13,6 +13,10 @@ export default function ProductDetailPro({ product }: { product: Product }) {
   const [added, setAdded] = useState(false)
   const { add } = useCart()
   const isQuote = product.productType === 'Project package' || product.stock === 0
+  const projectSections = [
+    ['Objectives', product.objectives], ['Materials required', product.materialsRequired], ['Learning outcomes', product.learningOutcomes],
+    ['Build steps', product.buildSteps], ['Control methods', product.controlMethods], ['Prerequisites', product.prerequisites], ['Deliverables', product.deliverables],
+  ] as const
 
   useEffect(() => {
     if (!added) return
@@ -113,6 +117,26 @@ export default function ProductDetailPro({ product }: { product: Product }) {
             </p>
           </div>
         </div>
+        {product.productType === 'Project package' && (
+          <div className="mt-10 border-t-2 border-line py-6">
+            <p className="text-xs font-black uppercase tracking-widest text-navy">Project information</p>
+            {product.projectOverview ? <p className="mt-3 max-w-3xl text-sm leading-7 text-muted">{product.projectOverview}</p> : null}
+            {product.estimatedDuration ? <p className="mt-3 text-sm font-bold text-ink">Estimated duration: <span className="font-normal text-muted">{product.estimatedDuration}</span></p> : null}
+            <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {projectSections.filter(([, items]) => items?.length).map(([title, items]) => (
+                <div key={title}>
+                  <h2 className="text-sm font-bold text-ink">{title}</h2>
+                  <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-muted">{items?.map((item) => <li key={item}>{item}</li>)}</ul>
+                </div>
+              ))}
+            </div>
+            {product.maintenanceNotes ? <p className="mt-6 text-sm leading-6 text-muted"><strong className="text-ink">Maintenance and safety:</strong> {product.maintenanceNotes}</p> : null}
+            <div className="mt-4 flex flex-wrap gap-4 text-sm font-bold text-navy">
+              {product.documentationUrl ? <a href={product.documentationUrl} target="_blank" rel="noreferrer">Documentation ↗</a> : null}
+              {product.videoUrl ? <a href={product.videoUrl} target="_blank" rel="noreferrer">Project video ↗</a> : null}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

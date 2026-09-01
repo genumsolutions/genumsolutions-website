@@ -111,6 +111,32 @@ function ProjectEditor({ product, onChange, onSave, onReset, busy }: {
           <label className="sm:col-span-2 text-sm font-bold">Full project description
             <textarea value={product.description} onChange={(event) => setField('description', event.target.value)} rows={6} className={`mt-2 w-full ${inputClass}`} />
           </label>
+          <label className="sm:col-span-2 text-sm font-bold">Project overview
+            <textarea value={product.projectOverview || ''} onChange={(event) => setField('projectOverview', event.target.value)} rows={4} className={`mt-2 w-full ${inputClass}`} />
+          </label>
+          {([
+            ['objectives', 'Objectives'], ['materialsRequired', 'Materials required'], ['learningOutcomes', 'Learning outcomes'],
+            ['buildSteps', 'Build steps'], ['controlMethods', 'Control methods'], ['prerequisites', 'Prerequisites'], ['deliverables', 'Deliverables'],
+          ] as const).map(([key, label]) => (
+            <label key={key} className="text-sm font-bold">{label} (one per line)
+              <textarea value={(product[key] || []).join('\n')} onChange={(event) => setField(key, event.target.value.split('\n').filter(Boolean))} rows={4} className={`mt-2 w-full ${inputClass}`} />
+            </label>
+          ))}
+          <label className="text-sm font-bold">Estimated duration
+            <input value={product.estimatedDuration || ''} onChange={(event) => setField('estimatedDuration', event.target.value)} placeholder="e.g. 2 weeks" className={`mt-2 w-full ${inputClass}`} />
+          </label>
+          <label className="text-sm font-bold">Source folder / reference
+            <input value={product.sourceFolder || ''} onChange={(event) => setField('sourceFolder', event.target.value)} className={`mt-2 w-full ${inputClass}`} />
+          </label>
+          <label className="text-sm font-bold">Documentation URL
+            <input value={product.documentationUrl || ''} onChange={(event) => setField('documentationUrl', event.target.value)} className={`mt-2 w-full ${inputClass}`} />
+          </label>
+          <label className="text-sm font-bold">Video URL
+            <input value={product.videoUrl || ''} onChange={(event) => setField('videoUrl', event.target.value)} className={`mt-2 w-full ${inputClass}`} />
+          </label>
+          <label className="sm:col-span-2 text-sm font-bold">Maintenance and safety notes
+            <textarea value={product.maintenanceNotes || ''} onChange={(event) => setField('maintenanceNotes', event.target.value)} rows={4} className={`mt-2 w-full ${inputClass}`} />
+          </label>
           <label className="sm:col-span-2 text-sm font-bold">Components, technologies, and deliverables (one per line)
             <textarea value={product.specs.join('\n')} onChange={(event) => setField('specs', event.target.value.split('\n').filter(Boolean))} rows={6} className={`mt-2 w-full ${inputClass}`} />
           </label>
@@ -451,30 +477,18 @@ export default function AdminPanel({ initialProducts }: Props) {
             <p className="text-sm text-slate-500">No products found.</p>
           ) : (
             <>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="mt-4 divide-y divide-line border-t border-line">
                 {products
                   .filter((p) => p.productType === 'Project package' && (projectCategory === 'All' || p.category === projectCategory) && (!query.trim() || `${p.name} ${p.sku} ${p.id} ${p.description}`.toLowerCase().includes(query.trim().toLowerCase())))
                   .map((product) => {
-                  const { id, name, category, priceLabel, note, description, image } = product
+                  const { id, name, category, priceLabel } = product
                   return (
-                    <article
-                      key={id}
-                      className="overflow-hidden rounded-2xl border border-line bg-white shadow-sm"
-                    >
-                      <div className="relative bg-ink">
-                        {image && <Image src={image} alt={name} width={400} height={250} className="object-cover" />}
-                        {!image && (
-                          <div className="absolute inset-0 bg-navy/30 flex items-center justify-center text-white text-xs font-bold">Project Package</div>
-                        )}
-                        <span className="absolute top-3 left-3 text-xs font-black uppercase tracking-widest text-white">{category === 'Robot Cars' ? 'Robot Car Project' : 'Project Package'}</span>
+                    <div key={id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                      <div className="min-w-0">
+                        <span className="block break-words text-sm"><strong>{name}</strong> <span className="text-slate-400">{category}</span></span>
+                        <span className="text-[10px] font-black uppercase tracking-wide text-gold">{product.inventoryType || 'Catalog'} inventory · {priceLabel}</span>
                       </div>
-                      <div className="p-5">
-                        <p className="text-xs font-black uppercase tracking-widest text-navy">{category}</p>
-                        <h2 className="mt-2 font-display text-xl font-bold leading-snug">{name}</h2>
-                        <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-gold">{product.inventoryType || 'Catalog'} inventory</p>
-                        <p className="mt-2 min-h-20 text-sm leading-6 text-muted">{note || description || ''}</p>
-                        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                          <strong className="font-display text-lg">{priceLabel}</strong>
+                      <div className="flex shrink-0 flex-wrap gap-2">
                           <button
                             onClick={() => {
                               setProduct(product)
@@ -484,8 +498,8 @@ export default function AdminPanel({ initialProducts }: Props) {
                           >
                             Edit
                           </button>
-                          <button onClick={() => setPreviewProduct(product)} className="rounded-full border border-navy px-4 py-2 text-xs font-black text-navy transition hover:bg-navy-light">Preview</button>
-                          <button onClick={() => void toggleProductVisibility(product)} className="rounded-full border border-line px-4 py-2 text-xs font-bold text-ink">{product.active === false ? 'Show' : 'Hide'}</button>
+                          <button onClick={() => setPreviewProduct(product)} className="text-xs font-bold text-navy underline">Preview</button>
+                          <button onClick={() => void toggleProductVisibility(product)} className="text-xs font-bold text-ink underline">{product.active === false ? 'Show' : 'Hide'}</button>
                           <button
                             onClick={() => {
                               if (window.confirm(`Delete project package ${name}?`)) {
@@ -496,9 +510,8 @@ export default function AdminPanel({ initialProducts }: Props) {
                           >
                             Delete
                           </button>
-                        </div>
                       </div>
-                    </article>
+                    </div>
                   )
                   })}
               </div>

@@ -10,6 +10,19 @@ export type Product = {
   productType: 'Retail kit' | 'Project package' | 'Material' | 'Service package'
   inventoryType?: 'Inhouse' | 'Catalog' | 'Supplier'
   active?: boolean
+  projectOverview?: string
+  objectives?: string[]
+  materialsRequired?: string[]
+  learningOutcomes?: string[]
+  buildSteps?: string[]
+  controlMethods?: string[]
+  prerequisites?: string[]
+  deliverables?: string[]
+  estimatedDuration?: string
+  sourceFolder?: string
+  documentationUrl?: string
+  videoUrl?: string
+  maintenanceNotes?: string
   note: string
   description: string
   specs: string[]

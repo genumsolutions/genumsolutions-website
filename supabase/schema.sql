@@ -57,6 +57,19 @@ create table if not exists public.products (
   product_type text not null default 'Retail kit',
   inventory_type text not null default 'Catalog',
   active boolean not null default true,
+  project_overview text not null default '',
+  objectives jsonb not null default '[]',
+  materials_required jsonb not null default '[]',
+  learning_outcomes jsonb not null default '[]',
+  build_steps jsonb not null default '[]',
+  control_methods jsonb not null default '[]',
+  prerequisites jsonb not null default '[]',
+  deliverables jsonb not null default '[]',
+  estimated_duration text not null default '',
+  source_folder text not null default '',
+  documentation_url text not null default '',
+  video_url text not null default '',
+  maintenance_notes text not null default '',
   note text not null default '',
   description text not null default '',
   specs jsonb not null default '[]',
@@ -75,6 +88,19 @@ create table if not exists public.products (
 );
 alter table public.products add column if not exists inventory_type text not null default 'Catalog';
 alter table public.products add column if not exists active boolean not null default true;
+alter table public.products add column if not exists project_overview text not null default '';
+alter table public.products add column if not exists objectives jsonb not null default '[]';
+alter table public.products add column if not exists materials_required jsonb not null default '[]';
+alter table public.products add column if not exists learning_outcomes jsonb not null default '[]';
+alter table public.products add column if not exists build_steps jsonb not null default '[]';
+alter table public.products add column if not exists control_methods jsonb not null default '[]';
+alter table public.products add column if not exists prerequisites jsonb not null default '[]';
+alter table public.products add column if not exists deliverables jsonb not null default '[]';
+alter table public.products add column if not exists estimated_duration text not null default '';
+alter table public.products add column if not exists source_folder text not null default '';
+alter table public.products add column if not exists documentation_url text not null default '';
+alter table public.products add column if not exists video_url text not null default '';
+alter table public.products add column if not exists maintenance_notes text not null default '';
 create index if not exists products_category_idx on public.products(category);
 
 -- ===== SITE CONTENT (single row) =====
