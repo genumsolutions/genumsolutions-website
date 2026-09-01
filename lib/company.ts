@@ -16,7 +16,7 @@ export const company = {
 // constants in sync with mobile/app.json, mobile/src/config/site.ts and
 // mobile/scripts/upload-release.mjs on every release.
 export const androidApp = {
-  version: '1.4.1',
+  version: '1.5.0',
   versionCode: 8,
   sizeLabel: '29 MB',
   arch: 'Android · 64-bit',

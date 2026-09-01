@@ -1,5 +1,5 @@
 import { products as localProducts, type Product } from './catalog'
-import { roboModes as localRoBoModes, type RoboCarMode } from './robo-car-catalog'
+import { ROBOCAR_MODES as localRoBoModes, type RoboCarMode } from './robo-car-catalog'
 import { createServiceClient, supabaseConfigured } from './supabase/server'
 
 export type { Product } from './catalog'
@@ -170,7 +170,7 @@ export async function saveRoBoMode(mode: RoboCarMode) {
     controls: mode.controls,
     requires_connection: mode.requiresConnection,
     blurb: mode.blurb,
-    sort_order: mode.sort_order ?? 1000,
+    sort_order: mode.sortOrder ?? 1000,
     updated_at: new Date().toISOString(),
   })
 }

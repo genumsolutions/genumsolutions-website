@@ -65,6 +65,8 @@ export interface RoboCarMode {
   /** Whether the car needs a device connected before controls unlock. */
   requiresConnection: boolean
   blurb: string
+  /** Display order when listing modes (optional; defaults to 1000). */
+  sortOrder?: number
 }
 
 export const ROBOCAR_MODES: RoboCarMode[] = [
