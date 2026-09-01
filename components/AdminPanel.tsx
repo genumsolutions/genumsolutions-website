@@ -24,7 +24,7 @@ type PageViewStat = { path: string; count: number; uniqueUsers: number }
 
 const STATUSES = ['pending', 'paid', 'fulfilled', 'cancelled']
 // Operations-first order: a shop manager needs orders over dashboarding.
-const TABS = ['Orders', 'Products', 'Messages', 'Services', 'Finance', 'Users', 'Dashboard', 'Activity'] as const
+const TABS = ['Orders', 'Products', 'Messages', 'Services', 'Finance', 'Users', 'Dashboard', 'Activity', 'ProjectPackages', 'RobotCarProjects'] as const
 
 const TAB_ICONS = {
   Dashboard: LayoutDashboard,
@@ -35,6 +35,8 @@ const TAB_ICONS = {
   Users: Users,
   Messages: MessageSquare,
   Activity: Activity,
+  ProjectPackages: Package,
+  RobotCarProjects: Wrench,
 } as const
 type Tab = typeof TABS[number]
 const PAGE_SIZE = 10
@@ -375,6 +377,143 @@ export default function AdminPanel({ initialProducts }: Props) {
                 </div>
               )}
             </>
+          )}
+        </section>
+      )}
+
+      {/* ═══════ PROJECT PACKAGES ═══════ */}
+      {tab === 'ProjectPackages' && (
+        <section role="tabpanel" aria-labelledby="tab-project-packages" aria-label="Project packages overview" className="mt-8 space-y-8">
+          <h2 className="font-display text-2xl font-bold text-ink">Project Packages</h2>
+          {products.length === 0 ? (
+            <p className="text-sm text-slate-500">No products found.</p>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {products
+                .filter((p) => p.productType === 'Project package')
+                .sort((a, b) => (b.sort_order ?? 0) - (a.sort_order ?? 0))
+                .map((product) => {
+                  const { id, name, category, price, priceLabel, sku, note, description, specs, audience, difficulty, warranty, stock, delivery, image, badge, supplier } = product
+                  return (
+                    <article
+                      key={id}
+                      className="overflow-hidden rounded-2xl border border-line bg-white shadow-sm"
+                    >
+                      <div className="relative bg-ink">
+                        {image && <Image src={image} alt={name} width={400} height={250} className="object-cover" />}
+                        {!image && (
+                          <div className="absolute inset-0 bg-navy/30 flex items-center justify-center text-white text-xs font-bold">Project Package</div>
+                        )}
+                        <span className="absolute top-3 left-3 text-xs font-black uppercase tracking-widest text-white">Project Package</span>
+                      </div>
+                      <div className="p-5">
+                        <p className="text-xs font-black uppercase tracking-widest text-navy">{category}</p>
+                        <h2 className="mt-2 font-display text-xl font-bold leading-snug">{name}</h2>
+                        <p className="mt-2 min-h-20 text-sm leading-6 text-muted">{note || description || ''}</p>
+                        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                          <strong className="font-display text-lg">{priceLabel}</strong>
+                          {stock > 0 ? (
+                            <button
+                              onClick={() => {
+                                setProduct(product)
+                                window.scrollTo({ top: 0, behavior: 'smooth' })
+                              }}
+                              className="rounded-full bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark"
+                            >
+                              Edit
+                            </button>
+                          ) : (
+                            <span className="text-[10px] font-black uppercase text-slate-400">Quote only</span>
+                          )}
+                          <button
+                            onClick={() => {
+                              if (window.confirm(`Delete project package ${name}?`)) {
+                                removeProduct(id)
+                              }
+                            }}
+                            className="rounded-full bg-red-100 px-4 py-2 text-xs font-bold text-red-600 transition hover:bg-red-200"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  )
+                })}
+            </div>
+            {filteredProducts.length === 0 && (
+              <p className="mt-8 text-center text-sm text-slate-500">No project packages match your criteria.</p>
+            )}
+          )}
+        </section>
+      )}
+
+      {/* ═══════ ROBOT CAR PROJECTS ═══════ */}
+      {tab === 'RobotCarProjects' && (
+        <section role="tabpanel" aria-labelledby="tab-robot-car-projects" aria-label="Robot car projects overview" className="mt-8 space-y-8">
+          <h2 className="font-display text-2xl font-bold text-ink">Robot Car Projects</h2>
+          {products.length === 0 ? (
+            <p className="text-sm text-slate-500">No products found.</p>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {products
+                .filter((p) => p.category === 'Robot Cars')
+                .sort((a, b) => (b.sort_order ?? 0) - (a.sort_order ?? 0))
+                .map((product) => {
+                  const { id, name, category, price, priceLabel, sku, note, description, specs, audience, difficulty, warranty, stock, delivery, image, badge, supplier } = product
+                  return (
+                    <article
+                      key={id}
+                      className="overflow-hidden rounded-2xl border border-line bg-white shadow-sm"
+                    >
+                      <div className="relative bg-ink">
+                        {image && <Image src={image} alt={name} width={400} height={250} className="object-cover" />}
+                        {!image && (
+                          <div className="absolute inset-0 bg-navy/30 flex items-center justify-center text-white text-xs font-bold">Robot Car</div>
+                        )}
+                        <span className="absolute top-3 left-3 text-xs font-black uppercase tracking-widest text-white">Robot Car</span>
+                      </div>
+                      <div className="p-5">
+                        <p className="text-xs font-black uppercase tracking-widest text-navy">{category}</p>
+                        <h2 className="mt-2 font-display text-xl font-bold leading-snug">{name}</h2>
+                        <p className="mt-2 min-h-20 text-sm leading-6 text-muted">{note || description || ''}</p>
+                        {specs && specs.length > 0 && (
+                          <p className="mt-3 text-[10px] text-slate-400 font-mono">{specs.join(', ')}</p>
+                        )}
+                        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                          <strong className="font-display text-lg">{priceLabel}</strong>
+                          {stock > 0 ? (
+                            <button
+                              onClick={() => {
+                                setProduct(product)
+                                window.scrollTo({ top: 0, behavior: 'smooth' })
+                              }}
+                              className="rounded-full bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark"
+                            >
+                              Edit
+                            </button>
+                          ) : (
+                            <span className="text-[10px] font-black uppercase text-slate-400">Quote only</span>
+                          )}
+                          <button
+                            onClick={() => {
+                              if (window.confirm(`Delete robot car project ${name}?`)) {
+                                removeProduct(id)
+                              }
+                            }}
+                            className="rounded-full bg-red-100 px-4 py-2 text-xs font-bold text-red-600 transition hover:bg-red-200"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  )
+                })}
+            </div>
+            {filteredProducts.length === 0 && (
+              <p className="mt-8 text-center text-sm text-slate-500">No robot car projects match your criteria.</p>
+            )}
           )}
         </section>
       )}
