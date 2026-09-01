@@ -43,6 +43,10 @@ function writeJSON(key: string, value: unknown) {
   }
 }
 
+function getIsMobile(): boolean {
+  return typeof navigator !== 'undefined' && /Mobi|Android|iPhone|iPad/.test(navigator.userAgent)
+}
+
 function initState(): BannerState {
   try {
     // The native app's WebView runs its own update flow, so hide the prompt.
@@ -83,6 +87,16 @@ export default function AppBanner() {
       return () => window.clearTimeout(timer)
     }
   }, [state])
+
+  // On mobile, delay banner appearance slightly to allow page content to load first
+  useEffect(() => {
+    if (isMobile()) {
+      const timer = window.setTimeout(() => setState(initState()), 500)
+      return () => window.clearTimeout(timer)
+    } else {
+      setState(initState())
+    }
+  }, [])
 
   if (!state || state.kind === 'hidden') return null
 
@@ -131,16 +145,16 @@ export default function AppBanner() {
         <div className="flex shrink-0 items-center gap-2">
           <Link
             href={androidApp.appsPagePath}
-            className="hidden items-center gap-1.5 rounded-full border border-line px-3 py-2 text-xs font-bold text-ink transition hover:border-navy hover:text-navy md:inline-flex"
+            className={`flex items-center gap-2 rounded-full border border-line px-4 py-2 text-xs font-bold text-ink transition hover:border-navy hover:text-navy ${isMobile() ? 'min-h-[44px] px-5' : 'px-3 py-2'} ${isMobile() ? 'gap-3' : 'gap-1.5'}`}
           >
             <HelpCircle size={14} aria-hidden="true" />
             How to install
           </Link>
-          <a
+<a
             href={androidApp.apkUrl}
             download
             onClick={recordDownload}
-            className="inline-flex h-10 items-center gap-2 rounded-full bg-navy px-4 text-xs font-black text-white shadow-sm transition hover:bg-navy-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy sm:h-11 sm:px-5"
+            className={`inline-flex h-12 items-center gap-3 rounded-full bg-navy px-5 text-xs font-black text-white shadow-sm transition hover:bg-navy-dark ${isMobile() ? 'min-h-[44px] px-6' : 'h-10'} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy`}
           >
             <Download size={15} aria-hidden="true" />
             {previouslyDownloaded ? `Reinstall v${androidApp.version}` : `Download v${androidApp.version}`}
