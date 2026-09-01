@@ -70,6 +70,8 @@ export async function getPageViewStats(options: { days?: number } = {}): Promise
 
 export async function getDashboardStats(): Promise<{
   totalUsers: number
+  totalCartItems: number
+  activeCarts: number
   newUsersToday: number
   totalOrders: number
   pendingOrders: number
@@ -95,6 +97,7 @@ export async function getDashboardStats(): Promise<{
     productsResult,
     messagesResult,
     transactionsResult,
+    cartsResult,
   ] = await Promise.all([
     supabase.from('profiles').select('*', { count: 'exact', head: true }),
     supabase.from('profiles').select('*', { count: 'exact', head: true }).gte('created_at', todayISO),
@@ -102,6 +105,7 @@ export async function getDashboardStats(): Promise<{
     supabase.from('products').select('stock'),
     supabase.from('customer_messages').select('status'),
     supabase.from('transactions').select('status'),
+    supabase.from('carts').select('lines'),
   ])
 
   const profilesCount = profilesResult.count ?? 0
@@ -110,6 +114,8 @@ export async function getDashboardStats(): Promise<{
   const productsAll = (productsResult.data ?? []) as { stock: number }[]
   const messagesAll = (messagesResult.data ?? []) as { status: string }[]
   const transactionsAll = (transactionsResult.data ?? []) as { status: string }[]
+  const cartsAll = (cartsResult.data ?? []) as { lines: unknown }[]
+  const cartItemCounts = cartsAll.map((cart) => Array.isArray(cart.lines) ? cart.lines.reduce((sum, line) => sum + (Number((line as { quantity?: number }).quantity) || 0), 0) : 0)
 
   const totalOrders = ordersAll.length
   const pendingOrders = ordersAll.filter((o) => o.status === 'pending').length
@@ -119,6 +125,8 @@ export async function getDashboardStats(): Promise<{
 
   return {
     totalUsers: profilesCount,
+    totalCartItems: cartItemCounts.reduce((sum, count) => sum + count, 0),
+    activeCarts: cartItemCounts.filter((count) => count > 0).length,
     newUsersToday,
     totalOrders,
     pendingOrders,

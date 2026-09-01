@@ -207,6 +207,29 @@ returns boolean language sql stable security definer set search_path = public as
   select exists (select 1 from public.profiles where id = auth.uid() and role = 'admin');
 $$;
 
+-- Admin-only aggregate so native clients can read cart totals without
+-- broad access to every customer's cart row.
+create or replace function public.get_admin_cart_stats()
+returns table (total_cart_items bigint, active_carts bigint)
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.is_admin() then
+    raise exception 'Only administrators can view cart statistics.';
+  end if;
+  return query
+    select
+      coalesce((select sum((line->>'quantity')::bigint)
+        from public.carts as cart
+        cross join lateral jsonb_array_elements(cart.lines) as line), 0)::bigint,
+      (select count(*) from public.carts where jsonb_array_length(lines) > 0)::bigint;
+end;
+$$;
+revoke all on function public.get_admin_cart_stats() from public;
+grant execute on function public.get_admin_cart_stats() to authenticated;
+
 -- profiles: see/edit your own; admins see all
 drop policy if exists "own profile select" on public.profiles;
 create policy "own profile select" on public.profiles for select using (id = auth.uid() or public.is_admin());

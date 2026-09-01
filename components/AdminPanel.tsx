@@ -16,7 +16,7 @@ type OrderPage = { orders: Order[]; total: number; page: number; totalPages: num
 type ManagedUser = { id: string; email: string; name: string; phone: string; address: string; role: string; createdAt: string; lastSignInAt: string | null }
 type UserPage = { users: ManagedUser[]; page: number; hasMore: boolean }
 
-type DashboardStats = { totalUsers: number; newUsersToday: number; totalOrders: number; pendingOrders: number; revenue: number; revenueToday: number; totalProducts: number; lowStockProducts: number; totalMessages: number; unreadMessages: number; totalTransactions: number; succeededTransactions: number }
+type DashboardStats = { totalUsers: number; newUsersToday: number; totalCartItems: number; activeCarts: number; totalOrders: number; pendingOrders: number; revenue: number; revenueToday: number; totalProducts: number; lowStockProducts: number; totalMessages: number; unreadMessages: number; totalTransactions: number; succeededTransactions: number }
 type Service = { id: string; name: string; category: string; priceLabel: string; description: string; tag: string; sortOrder: number; active: boolean }
 type ActivityEntry = { id: string; userId: string | null; action: string; entityType: string; entityId: string | null; details: Record<string, unknown>; createdAt: string }
 type Message = { id: string; name: string; email: string; message: string; status: string; created_at: string }
@@ -67,6 +67,14 @@ function formatTimestamp(ts: string) {
   try { return new Date(ts).toLocaleString() } catch { return ts }
 }
 
+function focusEditor(id: string) {
+  window.requestAnimationFrame(() => {
+    const editor = document.getElementById(id)
+    editor?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    editor?.querySelector<HTMLInputElement>('input, textarea, select')?.focus()
+  })
+}
+
 function ProjectEditor({ product, onChange, onSave, onReset, busy }: {
   product: Product
   onChange: (product: Product) => void
@@ -92,7 +100,7 @@ function ProjectEditor({ product, onChange, onSave, onReset, busy }: {
   ]
 
   return (
-    <section aria-label="Project package editor" className="min-w-0 border-t-2 border-ink bg-white p-6">
+    <section id="project-package-editor" aria-label="Project package editor" className="min-w-0 border-t-2 border-ink bg-white p-6">
       <form onSubmit={onSave}>
         <h2 className="font-display text-2xl font-bold">{product.id ? `Edit ${product.name}` : 'Add a project package'}</h2>
         <p className="mt-1 text-sm text-muted">These fields are stored in the shared products table and appear on the public project page and native app.</p>
@@ -420,6 +428,7 @@ export default function AdminPanel({ initialProducts }: Props) {
                 <Stat label="Revenue" value={formatNPR(stats.revenue)} sub={`Today: ${formatNPR(stats.revenueToday)}`} />
                 <Stat label="Orders" value={stats.totalOrders} sub={`${stats.pendingOrders} pending`} />
                 <Stat label="Users" value={stats.totalUsers} sub={`${stats.newUsersToday} new today`} />
+                <Stat label="Cart items" value={stats.totalCartItems} sub={`${stats.activeCarts} active carts`} />
                 <Stat label="Products" value={stats.totalProducts} sub={stats.lowStockProducts > 0 ? `${stats.lowStockProducts} low stock` : 'Stock OK'} />
               </div>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -492,7 +501,7 @@ export default function AdminPanel({ initialProducts }: Props) {
                           <button
                             onClick={() => {
                               setProduct(product)
-                              window.scrollTo({ top: 0, behavior: 'smooth' })
+                              focusEditor('project-package-editor')
                             }}
                             className="rounded-full bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark"
                           >
@@ -523,14 +532,20 @@ export default function AdminPanel({ initialProducts }: Props) {
           <ProjectEditor product={product} onChange={setProduct} onSave={saveProduct} onReset={() => setProduct({ ...emptyProduct, productType: 'Project package', category: 'Project Packages' })} busy={busy === 'product'} />
           {previewProduct && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 p-5" role="dialog" aria-modal="true" aria-label="Project package preview" onClick={() => setPreviewProduct(null)}>
-              <article className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
-                {previewProduct.image ? <Image src={previewProduct.image} alt={previewProduct.name} width={800} height={420} className="h-56 w-full object-cover" /> : null}
-                <div className="p-6">
-                  <p className="text-xs font-black uppercase tracking-widest text-navy">{previewProduct.category} · {previewProduct.inventoryType || 'Catalog'}</p>
-                  <h2 className="mt-2 font-display text-2xl font-bold text-ink">{previewProduct.name}</h2>
-                  <p className="mt-3 text-sm leading-6 text-muted">{previewProduct.description || previewProduct.note}</p>
-                  {previewProduct.specs.length > 0 ? <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-slate-600">{previewProduct.specs.map((spec) => <li key={spec}>{spec}</li>)}</ul> : null}
-                  <button onClick={() => setPreviewProduct(null)} className="mt-6 bg-navy px-5 py-2.5 text-sm font-black text-white">Close preview</button>
+              <article className="max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-2xl border border-line bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
+                <div className="relative h-48 overflow-hidden rounded-t-2xl bg-ink">
+                  {previewProduct.image ? <Image src={previewProduct.image} alt={previewProduct.name} fill className="object-cover" /> : null}
+                  <div className="absolute inset-0 bg-gradient-to-t from-ink/70 to-transparent" />
+                  <span className="absolute bottom-3 left-4 text-xs font-black uppercase tracking-widest text-white">{previewProduct.category}</span>
+                </div>
+                <div className="p-5">
+                  <p className="text-xs font-black uppercase tracking-widest text-navy">Project Package</p>
+                  <h2 className="mt-2 font-display text-xl font-bold leading-snug text-ink">{previewProduct.name}</h2>
+                  <p className="mt-2 min-h-12 text-sm leading-6 text-muted">{previewProduct.note || previewProduct.description}</p>
+                  <div className="mt-5 flex items-center justify-between gap-3">
+                    <strong className="font-display text-lg text-ink">{previewProduct.priceLabel}</strong>
+                    <button onClick={() => setPreviewProduct(null)} className="rounded-full bg-navy px-4 py-2 text-xs font-black text-white">View details</button>
+                  </div>
                 </div>
               </article>
             </div>
@@ -575,7 +590,7 @@ export default function AdminPanel({ initialProducts }: Props) {
                           <button
                             onClick={() => {
                               setProduct(product)
-                              window.scrollTo({ top: 0, behavior: 'smooth' })
+                              focusEditor('product-editor')
                             }}
                             className="rounded-full bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark"
                           >
@@ -619,7 +634,7 @@ export default function AdminPanel({ initialProducts }: Props) {
                       <span className="block break-words text-sm"><strong>{item.name}</strong> <span className="text-slate-400">{item.sku}</span></span>
                     </div>
                     <span className="flex shrink-0 gap-2">
-                      <button onClick={() => { setProduct(item); window.scrollTo({ top: 0, behavior: 'smooth' }) }} className="text-xs font-bold text-navy underline">Edit</button>
+                      <button onClick={() => { setProduct(item); focusEditor('product-editor') }} className="text-xs font-bold text-navy underline">Edit</button>
                       <button onClick={() => removeProduct(item.id)} className="text-xs font-bold text-red-600 underline">Delete</button>
                     </span>
                   </div>
@@ -629,7 +644,7 @@ export default function AdminPanel({ initialProducts }: Props) {
               <Pager page={productPage} totalPages={productTotalPages} onPage={setProductPage} />
             </div>
           </section>
-          <section aria-label="Product editor" className="min-w-0">
+          <section id="product-editor" aria-label="Product editor" className="min-w-0">
             <form onSubmit={saveProduct} className="min-w-0 overflow-hidden border-t-2 border-ink bg-white p-6">
               <h2 className="font-display text-2xl font-bold">{products.some((item) => item.id === product.id) ? `Edit ${product.id}` : 'Add a new product'}</h2>
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
@@ -669,7 +684,7 @@ export default function AdminPanel({ initialProducts }: Props) {
                         {!s.active && <span className="ml-2 text-[10px] font-black uppercase text-red-500">inactive</span>}
                       </div>
                       <span className="flex shrink-0 gap-2">
-                        <button onClick={() => { setService(s); window.scrollTo({ top: 0, behavior: 'smooth' }) }} className="text-xs font-bold text-navy underline">Edit</button>
+                        <button onClick={() => { setService(s); focusEditor('service-editor') }} className="text-xs font-bold text-navy underline">Edit</button>
                         <button onClick={() => removeService(s.id)} className="text-xs font-bold text-red-600 underline">Delete</button>
                       </span>
                     </div>
@@ -678,7 +693,7 @@ export default function AdminPanel({ initialProducts }: Props) {
               )}
             </div>
           </section>
-          <section aria-label="Service editor" className="min-w-0">
+          <section id="service-editor" aria-label="Service editor" className="min-w-0">
             <form onSubmit={saveServiceItem} className="min-w-0 overflow-hidden border-t-2 border-ink bg-white p-6">
               <h2 className="font-display text-2xl font-bold">{services.some((s) => s.id === service.id) ? `Edit ${service.id}` : 'Add a new service'}</h2>
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
