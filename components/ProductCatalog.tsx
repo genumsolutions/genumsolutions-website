@@ -36,7 +36,7 @@ export default function ProductCatalog({
     return () => window.clearTimeout(timer)
   }, [addedId])
 
-  const scopedProducts = useMemo(() => applyScope(products, scope), [products, scope])
+  const scopedProducts = useMemo(() => applyScope(products, scope).filter((product) => product.active !== false), [products, scope])
 
   const categories = useMemo(() => {
     const present: string[] = []

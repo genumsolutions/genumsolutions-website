@@ -117,6 +117,7 @@ function ProjectEditor({ product, onChange, onSave, onReset, busy }: {
           <label className="sm:col-span-2 text-sm font-bold">Image URL
             <input value={product.image || ''} onChange={(event) => setField('image', event.target.value)} placeholder="Supabase Storage or public image URL" className={`mt-2 w-full ${inputClass}`} />
           </label>
+          <label className="flex items-center gap-2 text-sm font-bold sm:col-span-2"><input type="checkbox" checked={product.active !== false} onChange={(event) => setField('active', event.target.checked)} /> Visible to customers</label>
         </div>
         <div className="mt-5 flex flex-wrap gap-3">
           <button type="submit" disabled={busy} className="bg-gold px-5 py-3 text-sm font-black text-ink disabled:opacity-60">{busy ? 'Saving...' : 'Save project package'}</button>
@@ -131,6 +132,7 @@ export default function AdminPanel({ initialProducts }: Props) {
   const [tab, setTab] = useState<Tab>('Orders')
   const [products, setProducts] = useState(initialProducts)
   const [product, setProduct] = useState<Product>(emptyProduct)
+  const [previewProduct, setPreviewProduct] = useState<Product | null>(null)
   const [projectCategory, setProjectCategory] = useState('All')
   const [message, setMessage] = useState('')
   const [query, setQuery] = useState('')
@@ -279,6 +281,12 @@ export default function AdminPanel({ initialProducts }: Props) {
     if (!window.confirm(`Delete ${id}?`)) return
     const response = await fetch(`/api/admin/products?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
     if (response.ok) { setProducts((current) => current.filter((item) => item.id !== id)); setMessage('Product deleted.') }
+  }
+
+  async function toggleProductVisibility(item: Product) {
+    const payload = { ...item, active: item.active === false }
+    const response = await fetch('/api/admin/products', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+    if (response.ok) setProducts((current) => current.map((product) => product.id === item.id ? payload : product))
   }
 
   async function uploadImage(file: File) {
@@ -463,6 +471,7 @@ export default function AdminPanel({ initialProducts }: Props) {
                       <div className="p-5">
                         <p className="text-xs font-black uppercase tracking-widest text-navy">{category}</p>
                         <h2 className="mt-2 font-display text-xl font-bold leading-snug">{name}</h2>
+                        <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-gold">{product.inventoryType || 'Catalog'} inventory</p>
                         <p className="mt-2 min-h-20 text-sm leading-6 text-muted">{note || description || ''}</p>
                         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                           <strong className="font-display text-lg">{priceLabel}</strong>
@@ -475,6 +484,8 @@ export default function AdminPanel({ initialProducts }: Props) {
                           >
                             Edit
                           </button>
+                          <button onClick={() => setPreviewProduct(product)} className="rounded-full border border-navy px-4 py-2 text-xs font-black text-navy transition hover:bg-navy-light">Preview</button>
+                          <button onClick={() => void toggleProductVisibility(product)} className="rounded-full border border-line px-4 py-2 text-xs font-bold text-ink">{product.active === false ? 'Show' : 'Hide'}</button>
                           <button
                             onClick={() => {
                               if (window.confirm(`Delete project package ${name}?`)) {
@@ -497,6 +508,20 @@ export default function AdminPanel({ initialProducts }: Props) {
             </>
           )}
           <ProjectEditor product={product} onChange={setProduct} onSave={saveProduct} onReset={() => setProduct({ ...emptyProduct, productType: 'Project package', category: 'Project Packages' })} busy={busy === 'product'} />
+          {previewProduct && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 p-5" role="dialog" aria-modal="true" aria-label="Project package preview" onClick={() => setPreviewProduct(null)}>
+              <article className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
+                {previewProduct.image ? <Image src={previewProduct.image} alt={previewProduct.name} width={800} height={420} className="h-56 w-full object-cover" /> : null}
+                <div className="p-6">
+                  <p className="text-xs font-black uppercase tracking-widest text-navy">{previewProduct.category} · {previewProduct.inventoryType || 'Catalog'}</p>
+                  <h2 className="mt-2 font-display text-2xl font-bold text-ink">{previewProduct.name}</h2>
+                  <p className="mt-3 text-sm leading-6 text-muted">{previewProduct.description || previewProduct.note}</p>
+                  {previewProduct.specs.length > 0 ? <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-slate-600">{previewProduct.specs.map((spec) => <li key={spec}>{spec}</li>)}</ul> : null}
+                  <button onClick={() => setPreviewProduct(null)} className="mt-6 bg-navy px-5 py-2.5 text-sm font-black text-white">Close preview</button>
+                </div>
+              </article>
+            </div>
+          )}
         </section>
       )}
 

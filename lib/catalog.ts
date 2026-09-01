@@ -8,6 +8,8 @@ export type Product = {
   priceLabel: string
   sku: string
   productType: 'Retail kit' | 'Project package' | 'Material' | 'Service package'
+  inventoryType?: 'Inhouse' | 'Catalog' | 'Supplier'
+  active?: boolean
   note: string
   description: string
   specs: string[]
@@ -111,6 +113,27 @@ const robotCarProducts: Product[] = [
   { ...standard, id: 'path-follow-basic', name: 'Path-Following Robot Car', category: 'Robot Cars', price: 0, priceLabel: 'Request quote', sku: 'GEN-CAR-0011', productType: 'Retail kit', note: 'Line/path following capability', description: 'Robot car with path following using sensors and ESP32 navigation control.', specs: ['ESP32', 'Infrared sensors', 'L298N motor driver', '2 BO motors'], stock: 0, delivery: 'Kit contents and lead time confirmed with quotation', color: 'from-[#dff4ec] to-[#79c7a8]', badge: 'path-follow', image: 'https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?auto=format&fit=crop&w=600&q=80' },
   { ...standard, id: 'rf-manual-basic', name: 'RF Manual Robot Car', category: 'Robot Cars', price: 0, priceLabel: 'Request quote', sku: 'GEN-CAR-0012', productType: 'Retail kit', note: 'RF remote control mode', description: 'Robot car with RF remote manual control using 433MHz RF module and UNO-compatible controller.', specs: ['UNO or ESP32', '433MHz RF module', 'L298N motor driver', '2 BO motors'], stock: 0, delivery: 'Kit contents and lead time confirmed with quotation', color: 'from-[#dce8ff] to-[#7e9ff2]', badge: 'rf-manual', image: 'https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?auto=format&fit=crop&w=600&q=80' },
 ]
+
+const inhouseRobotCarProjects: Record<string, string> = {
+  '4wd4m-basic': '4WD4M Drive Control Project',
+  '2wd1m-basic': '2WD1M Steering Control Project',
+  'self-balancing-basic': 'Self-Balancing Control Project',
+  'obstacle-us-basic': 'Ultrasonic Obstacle Avoidance Project',
+  'obstacle-ir-basic': 'IR Obstacle Avoidance Project',
+  'website-client-basic': 'Wi-Fi Client Control Project',
+  'website-server-basic': 'Wi-Fi Server Control Project',
+  'path-follow-basic': 'IR Path Following Project',
+  'rf-manual-basic': 'RF Manual Control Project',
+}
+
+for (const project of robotCarProducts) {
+  const projectName = inhouseRobotCarProjects[project.id]
+  if (projectName) {
+    project.name = projectName
+    project.productType = 'Project package'
+    project.inventoryType = 'Inhouse'
+  }
+}
 
 type ExcelProject = [string, string, string, string, string, string, string, string]
 const excelProjects: ExcelProject[] = [

@@ -38,6 +38,8 @@ const rows = products.map((product, index) => ({
   price_label: product.priceLabel,
   sku: product.sku,
   product_type: product.productType,
+  inventory_type: product.inventoryType ?? 'Catalog',
+  active: product.active !== false,
   note: product.note,
   description: product.description,
   specs: product.specs,

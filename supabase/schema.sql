@@ -55,6 +55,8 @@ create table if not exists public.products (
   price_label text not null default 'Request quote',
   sku text not null default '',
   product_type text not null default 'Retail kit',
+  inventory_type text not null default 'Catalog',
+  active boolean not null default true,
   note text not null default '',
   description text not null default '',
   specs jsonb not null default '[]',
@@ -71,6 +73,8 @@ create table if not exists public.products (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+alter table public.products add column if not exists inventory_type text not null default 'Catalog';
+alter table public.products add column if not exists active boolean not null default true;
 create index if not exists products_category_idx on public.products(category);
 
 -- ===== SITE CONTENT (single row) =====

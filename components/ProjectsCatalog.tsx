@@ -27,11 +27,11 @@ export default function ProjectsCatalog({ products = [] }: { products?: Product[
   }, [addedId])
 
   const packageProducts = useMemo(() => {
-    return products.filter((p) => p.productType === 'Project package')
+    return products.filter((p) => p.productType === 'Project package' && p.active !== false)
   }, [products])
 
   const robotCarProducts = useMemo(() => {
-    return products.filter((p) => p.category === 'Robot Cars')
+    return products.filter((p) => p.category === 'Robot Cars' && p.active !== false)
   }, [products])
 
   const activeProducts = tab === 'packages' ? packageProducts : robotCarProducts

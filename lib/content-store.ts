@@ -24,6 +24,8 @@ type ProductRow = {
   price_label: string | null
   sku: string | null
   product_type: string | null
+  inventory_type: string | null
+  active: boolean | null
   note: string | null
   description: string | null
   specs: unknown
@@ -47,6 +49,8 @@ function rowToProduct(row: ProductRow): Product {
     priceLabel: row.price_label || (row.price ? `NPR ${row.price.toLocaleString('en-IN')}` : 'Request quote'),
     sku: row.sku || '',
     productType: (row.product_type as Product['productType']) || 'Retail kit',
+    inventoryType: (row.inventory_type as Product['inventoryType']) || 'Catalog',
+    active: row.active !== false,
     note: row.note || '',
     description: row.description || '',
     specs: Array.isArray(row.specs) ? (row.specs as string[]) : [],
@@ -71,6 +75,8 @@ export function productToRow(product: Product) {
     price_label: product.priceLabel,
     sku: product.sku,
     product_type: product.productType,
+    inventory_type: product.inventoryType || 'Catalog',
+    active: product.active !== false,
     note: product.note,
     description: product.description,
     specs: product.specs,
