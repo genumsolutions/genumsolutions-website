@@ -129,7 +129,7 @@ export default function ProjectsCatalog({ products = [] }: { products?: Product[
         <p className="mt-4 text-sm leading-6 text-slate-500">Assembled robot-car projects separated from components and materials.</p>
       )}
 
-      <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-5 grid gap-5 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {items.map((product) => {
           const media = product.image
             ? { src: product.image, alt: product.name }
