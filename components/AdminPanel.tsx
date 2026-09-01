@@ -24,7 +24,7 @@ type PageViewStat = { path: string; count: number; uniqueUsers: number }
 
 const STATUSES = ['pending', 'paid', 'fulfilled', 'cancelled']
 // Operations-first order: a shop manager needs orders over dashboarding.
-const TABS = ['Orders', 'Products', 'Messages', 'Services', 'Finance', 'Users', 'Dashboard', 'Activity', 'ProjectPackages', 'RobotCarProjects'] as const
+const TABS = ['Orders', 'Products', 'Messages', 'Services', 'Finance', 'Users', 'Dashboard', 'Activity', 'ProjectPackages'] as const
 
 const TAB_ICONS = {
   Dashboard: LayoutDashboard,
@@ -36,7 +36,6 @@ const TAB_ICONS = {
   Messages: MessageSquare,
   Activity: Activity,
   ProjectPackages: Package,
-  RobotCarProjects: Wrench,
 } as const
 type Tab = typeof TABS[number]
 const PAGE_SIZE = 10
@@ -68,10 +67,71 @@ function formatTimestamp(ts: string) {
   try { return new Date(ts).toLocaleString() } catch { return ts }
 }
 
+function ProjectEditor({ product, onChange, onSave, onReset, busy }: {
+  product: Product
+  onChange: (product: Product) => void
+  onSave: (event?: FormEvent) => void
+  onReset: () => void
+  busy: boolean
+}) {
+  function setField<K extends keyof Product>(key: K, value: Product[K]) {
+    onChange({ ...product, [key]: value })
+  }
+
+  const textFields: { key: keyof Product; label: string }[] = [
+    { key: 'id', label: 'Project ID' },
+    { key: 'name', label: 'Project name' },
+    { key: 'category', label: 'Category' },
+    { key: 'sku', label: 'SKU / package code' },
+    { key: 'priceLabel', label: 'Price label' },
+    { key: 'note', label: 'Short summary' },
+    { key: 'audience', label: 'Ideal audience' },
+    { key: 'difficulty', label: 'Difficulty' },
+    { key: 'warranty', label: 'Warranty / support' },
+    { key: 'delivery', label: 'Delivery / lead time' },
+  ]
+
+  return (
+    <section aria-label="Project package editor" className="min-w-0 border-t-2 border-ink bg-white p-6">
+      <form onSubmit={onSave}>
+        <h2 className="font-display text-2xl font-bold">{product.id ? `Edit ${product.name}` : 'Add a project package'}</h2>
+        <p className="mt-1 text-sm text-muted">These fields are stored in the shared products table and appear on the public project page and native app.</p>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          {textFields.map(({ key, label }) => (
+            <label key={key} className="min-w-0 text-sm font-bold">{label}
+              <input value={String(product[key] ?? '')} onChange={(event) => setField(key, event.target.value as Product[typeof key])} className={`mt-2 w-full ${inputClass}`} />
+            </label>
+          ))}
+          <label className="text-sm font-bold">Price (NPR)
+            <input type="number" min="0" value={product.price} onChange={(event) => setField('price', Number(event.target.value))} className={`mt-2 w-full ${inputClass}`} />
+          </label>
+          <label className="text-sm font-bold">Stock / available units
+            <input type="number" min="0" value={product.stock} onChange={(event) => setField('stock', Number(event.target.value))} className={`mt-2 w-full ${inputClass}`} />
+          </label>
+          <label className="sm:col-span-2 text-sm font-bold">Full project description
+            <textarea value={product.description} onChange={(event) => setField('description', event.target.value)} rows={6} className={`mt-2 w-full ${inputClass}`} />
+          </label>
+          <label className="sm:col-span-2 text-sm font-bold">Components, technologies, and deliverables (one per line)
+            <textarea value={product.specs.join('\n')} onChange={(event) => setField('specs', event.target.value.split('\n').filter(Boolean))} rows={6} className={`mt-2 w-full ${inputClass}`} />
+          </label>
+          <label className="sm:col-span-2 text-sm font-bold">Image URL
+            <input value={product.image || ''} onChange={(event) => setField('image', event.target.value)} placeholder="Supabase Storage or public image URL" className={`mt-2 w-full ${inputClass}`} />
+          </label>
+        </div>
+        <div className="mt-5 flex flex-wrap gap-3">
+          <button type="submit" disabled={busy} className="bg-gold px-5 py-3 text-sm font-black text-ink disabled:opacity-60">{busy ? 'Saving...' : 'Save project package'}</button>
+          <button type="button" onClick={onReset} className="border border-line px-5 py-3 text-sm font-black text-ink">New project</button>
+        </div>
+      </form>
+    </section>
+  )
+}
+
 export default function AdminPanel({ initialProducts }: Props) {
   const [tab, setTab] = useState<Tab>('Orders')
   const [products, setProducts] = useState(initialProducts)
   const [product, setProduct] = useState<Product>(emptyProduct)
+  const [projectCategory, setProjectCategory] = useState('All')
   const [message, setMessage] = useState('')
   const [query, setQuery] = useState('')
   const [productPage, setProductPage] = useState(1)
@@ -79,38 +139,25 @@ export default function AdminPanel({ initialProducts }: Props) {
   const [uploading, setUploading] = useState(false)
   const fileInput = useRef<HTMLInputElement>(null)
 
-  // Orders
   const [orderData, setOrderData] = useState<OrderPage>({ orders: [], total: 0, page: 1, totalPages: 1 })
   const [ordersLoaded, setOrdersLoaded] = useState(false)
   const [orderQuery, setOrderQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
-
-  // Users
   const [userData, setUserData] = useState<UserPage>({ users: [], page: 1, hasMore: false })
   const [usersLoaded, setUsersLoaded] = useState(false)
   const [userQuery, setUserQuery] = useState('')
-
-  // Dashboard
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [analytics, setAnalytics] = useState<{ totalViews: number; todayViews: number; topPaths: PageViewStat[]; viewsByDay: { date: string; count: number }[] } | null>(null)
-
-  // Services
   const [services, setServices] = useState<Service[]>([])
   const [servicesLoaded, setServicesLoaded] = useState(false)
   const [service, setService] = useState<Service>(emptyService)
-
-  // Finance
   const [financeLoaded, setFinanceLoaded] = useState(false)
-
-  // Messages
   const [messages, setMessages] = useState<Message[]>([])
   const [messagesLoaded, setMessagesLoaded] = useState(false)
   const [messagesPage, setMessagesPage] = useState(1)
   const [messagesTotal, setMessagesTotal] = useState(0)
   const [messagesTotalPages, setMessagesTotalPages] = useState(1)
   const [messageFilter, setMessageFilter] = useState('')
-
-  // Activity
   const [activities, setActivities] = useState<ActivityEntry[]>([])
   const [activityLoaded, setActivityLoaded] = useState(false)
   const [activityPage, setActivityPage] = useState(1)
@@ -118,18 +165,14 @@ export default function AdminPanel({ initialProducts }: Props) {
   const [activityTotalPages, setActivityTotalPages] = useState(1)
 
   useEffect(() => { setProductPage(1) }, [query])
-
-  // Orders is the default tab - fetch its first page on mount.
-  // loadOrders is recreated each render, so exclude it (mount-only intent).
+  // Orders are loaded on first render; other sections load when opened.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { void loadOrders(1) }, [])
 
-  // ─── Data loaders ───
-
   async function loadDashboard() {
     const [statsRes, analyticsRes] = await Promise.all([
-      fetch('/api/admin/stats').then((r) => r.json()).catch(() => null),
-      fetch('/api/admin/analytics?days=30').then((r) => r.json()).catch(() => null),
+      fetch('/api/admin/stats').then((response) => response.json()).catch(() => null),
+      fetch('/api/admin/analytics?days=30').then((response) => response.json()).catch(() => null),
     ])
     if (statsRes) setStats(statsRes)
     if (analyticsRes) setAnalytics(analyticsRes)
@@ -166,9 +209,7 @@ export default function AdminPanel({ initialProducts }: Props) {
 
   async function loadFinance() {
     setFinanceLoaded(false)
-    try {
-      if (!stats) await loadDashboard()
-    } finally { setFinanceLoaded(true) }
+    try { if (!stats) await loadDashboard() } finally { setFinanceLoaded(true) }
   }
 
   async function loadMessages(page: number) {
@@ -298,6 +339,13 @@ export default function AdminPanel({ initialProducts }: Props) {
 
   // ─── Derived state ───
 
+  const projectProducts = products.filter((item) => item.productType === 'Project package')
+  const projectCategories = Array.from(new Set(projectProducts.map((item) => item.category)))
+  const filteredProjects = projectProducts.filter((item) => {
+    const matchesCategory = projectCategory === 'All' || item.category === projectCategory
+    const needle = query.trim().toLowerCase()
+    return matchesCategory && (!needle || `${item.name} ${item.sku} ${item.id} ${item.description}`.toLowerCase().includes(needle))
+  })
   const filteredProducts = products.filter((item) => `${item.name} ${item.sku} ${item.id}`.toLowerCase().includes(query.toLowerCase()))
   const productTotalPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE))
   const shownProducts = filteredProducts.slice((productPage - 1) * PAGE_SIZE, productPage * PAGE_SIZE)
@@ -306,7 +354,7 @@ export default function AdminPanel({ initialProducts }: Props) {
 
   return (
     <div className="mx-auto max-w-7xl px-5 py-10 lg:px-8">
-      <div role="tablist" aria-label="Admin sections" className="-mx-5 flex items-center gap-x-6 overflow-x-auto border-b border-line px-5 lg:mx-0 lg:px-0">
+      <div role="tablist" aria-label="Admin sections" className="-mx-5 flex flex-wrap items-center gap-x-6 gap-y-1 border-b border-line px-5 pb-1 lg:mx-0 lg:px-0">
         {TABS.map((name) => {
           const Icon = TAB_ICONS[name]
           return (
@@ -317,7 +365,7 @@ export default function AdminPanel({ initialProducts }: Props) {
               aria-selected={tab === name}
               aria-controls={`panel-${name.toLowerCase()}`}
               onClick={() => openTab(name)}
-              className={`${tabBase} shrink-0 text-[13px] ${tab === name ? tabActive : tabInactive}`}
+              className={`${tabBase} text-[13px] ${tab === name ? tabActive : tabInactive}`}
             >
               <Icon size={15} aria-hidden="true" />
               {name}
@@ -384,14 +432,20 @@ export default function AdminPanel({ initialProducts }: Props) {
       {/* ═══════ PROJECT PACKAGES ═══════ */}
       {tab === 'ProjectPackages' && (
         <section role="tabpanel" aria-labelledby="tab-project-packages" aria-label="Project packages overview" className="mt-8 space-y-8">
-          <h2 className="font-display text-2xl font-bold text-ink">Project Packages</h2>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="font-display text-2xl font-bold text-ink">Project Packages ({projectProducts.length})</h2>
+            <select value={projectCategory} onChange={(e) => setProjectCategory(e.target.value)} className={inputClass} aria-label="Project category">
+              <option value="All">All categories</option>
+              {projectCategories.map((category) => <option key={category} value={category}>{category}</option>)}
+            </select>
+          </div>
           {products.length === 0 ? (
             <p className="text-sm text-slate-500">No products found.</p>
           ) : (
             <>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {products
-                  .filter((p) => p.productType === 'Project package')
+                  .filter((p) => p.productType === 'Project package' && (projectCategory === 'All' || p.category === projectCategory) && (!query.trim() || `${p.name} ${p.sku} ${p.id} ${p.description}`.toLowerCase().includes(query.trim().toLowerCase())))
                   .map((product) => {
                   const { id, name, category, priceLabel, note, description, image } = product
                   return (
@@ -404,7 +458,7 @@ export default function AdminPanel({ initialProducts }: Props) {
                         {!image && (
                           <div className="absolute inset-0 bg-navy/30 flex items-center justify-center text-white text-xs font-bold">Project Package</div>
                         )}
-                        <span className="absolute top-3 left-3 text-xs font-black uppercase tracking-widest text-white">Project Package</span>
+                        <span className="absolute top-3 left-3 text-xs font-black uppercase tracking-widest text-white">{category === 'Robot Cars' ? 'Robot Car Project' : 'Project Package'}</span>
                       </div>
                       <div className="p-5">
                         <p className="text-xs font-black uppercase tracking-widest text-navy">{category}</p>
@@ -437,16 +491,17 @@ export default function AdminPanel({ initialProducts }: Props) {
                   )
                   })}
               </div>
-              {products.filter((p) => p.productType === 'Project package').length === 0 && (
+              {filteredProjects.length === 0 && (
                 <p className="mt-8 text-center text-sm text-slate-500">No project packages found.</p>
               )}
             </>
           )}
+          <ProjectEditor product={product} onChange={setProduct} onSave={saveProduct} onReset={() => setProduct({ ...emptyProduct, productType: 'Project package', category: 'Project Packages' })} busy={busy === 'product'} />
         </section>
       )}
 
       {/* ═══════ ROBOT CAR PROJECTS ═══════ */}
-      {tab === 'RobotCarProjects' && (
+      {false && (
         <section role="tabpanel" aria-labelledby="tab-robot-car-projects" aria-label="Robot car projects overview" className="mt-8 space-y-8">
           <h2 className="font-display text-2xl font-bold text-ink">Robot Car Projects</h2>
           {products.length === 0 ? (
@@ -516,7 +571,7 @@ export default function AdminPanel({ initialProducts }: Props) {
       {tab === 'Products' && (
         <div role="tabpanel" id="panel-products" aria-labelledby="tab-products" className="mt-8 grid min-w-0 gap-8 xl:grid-cols-[1fr_1.3fr]">
           <section aria-label="Product list" className="min-w-0 space-y-6">
-            <div className="min-w-0 overflow-x-auto border-t-2 border-ink bg-white p-6">
+            <div className="min-w-0 border-t-2 border-ink bg-white p-6">
               <h2 className="font-display text-xl font-bold">Products ({filteredProducts.length})</h2>
               <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by name, SKU, or id" aria-label="Search products" className={`mt-3 w-full ${inputClass}`} />
               <div className="mt-3 divide-y divide-line">
@@ -565,7 +620,7 @@ export default function AdminPanel({ initialProducts }: Props) {
       {tab === 'Services' && (
         <div role="tabpanel" id="panel-services" aria-labelledby="tab-services" className="mt-8 grid min-w-0 gap-8 xl:grid-cols-[1fr_1.3fr]">
           <section aria-label="Service list" className="min-w-0 space-y-6">
-            <div className="min-w-0 overflow-x-auto border-t-2 border-ink bg-white p-6">
+            <div className="min-w-0 border-t-2 border-ink bg-white p-6">
               <h2 className="font-display text-xl font-bold">Services ({services.length})</h2>
               {!servicesLoaded ? <p className="text-sm text-slate-500" role="status">Loading…</p> : (
                 <div className="mt-3 divide-y divide-line">

@@ -5,6 +5,7 @@ import { company } from '../lib/company'
 const exploreLinks = [
   { href: '/products', label: 'Shop & Kits' },
   { href: '/projects', label: 'Projects' },
+  { href: '/app', label: 'Download the app' },
   { href: '/tools', label: 'Tools' },
   { href: '/3d-printing', label: '3D Printing' },
   { href: '/services', label: 'Services & Training' },
