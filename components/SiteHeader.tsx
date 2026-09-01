@@ -151,7 +151,7 @@ export default function SiteHeader() {
         className="absolute inset-x-0 top-full z-50 lg:hidden"
       >
         {open && (
-          <nav aria-label="Mobile" className="max-h-[70vh] overflow-y-auto border-t border-line bg-white/85 px-4 py-4 shadow-xl backdrop-blur-xl sm:px-5 animate-fade-in-up">
+          <nav aria-label="Mobile" className="max-h-[70vh] overflow-y-auto border-t border-line bg-white px-4 py-4 shadow-xl sm:px-5 animate-fade-in-up">
             <p className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-[.28em] text-navy">
               <span className="inline-block h-2 w-2 rounded-full bg-gold" aria-hidden="true" /> Navigate
             </p>

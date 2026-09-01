@@ -101,7 +101,7 @@ serve(async (req) => {
       const names = signedNames.split(',')
       const message = names.map((name) => `${name}=${fields[name] ?? ''}`).join(',')
       const expected = Deno.run({
-        cmd: ['bash', -c`, `echo -n "${message}" | openssl dgst -sha256 -hmac "${esewaSecretKey}" | awk '{print $NF}'`],
+        cmd: ['bash', '-c', `echo -n "${message}" | openssl dgst -sha256 -hmac "${esewaSecretKey}" | awk '{print $NF}'`],
       }).outputSync()
       const valid = new TextDecoder().decode(expected).trim() === signature
 

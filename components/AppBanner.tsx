@@ -43,7 +43,7 @@ function writeJSON(key: string, value: unknown) {
   }
 }
 
-function getIsMobile(): boolean {
+function isMobile(): boolean {
   return typeof navigator !== 'undefined' && /Mobi|Android|iPhone|iPad/.test(navigator.userAgent)
 }
 
@@ -79,6 +79,13 @@ export default function AppBanner() {
     setState(initState())
   }, [])
 
+  // On mobile, delay banner appearance slightly to keep it from covering the
+  // first interaction while the page loads.
+  useEffect(() => {
+    const timer = window.setTimeout(() => setState(initState()), isMobile() ? 500 : 0)
+    return () => window.clearTimeout(timer)
+  }, [])
+
   // Auto-hide returning visitors' banner after a while; it stays reachable from
   // the footer / /app page at any time.
   useEffect(() => {
@@ -87,16 +94,6 @@ export default function AppBanner() {
       return () => window.clearTimeout(timer)
     }
   }, [state])
-
-  // On mobile, delay banner appearance slightly to allow page content to load first
-  useEffect(() => {
-    if (isMobile()) {
-      const timer = window.setTimeout(() => setState(initState()), 500)
-      return () => window.clearTimeout(timer)
-    } else {
-      setState(initState())
-    }
-  }, [])
 
   if (!state || state.kind === 'hidden') return null
 

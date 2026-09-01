@@ -388,12 +388,12 @@ export default function AdminPanel({ initialProducts }: Props) {
           {products.length === 0 ? (
             <p className="text-sm text-slate-500">No products found.</p>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {products
-                .filter((p) => p.productType === 'Project package')
-                .sort((a, b) => (b.sort_order ?? 0) - (a.sort_order ?? 0))
-                .map((product) => {
-                  const { id, name, category, price, priceLabel, sku, note, description, specs, audience, difficulty, warranty, stock, delivery, image, badge, supplier } = product
+            <>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {products
+                  .filter((p) => p.productType === 'Project package')
+                  .map((product) => {
+                  const { id, name, category, priceLabel, note, description, image } = product
                   return (
                     <article
                       key={id}
@@ -412,19 +412,15 @@ export default function AdminPanel({ initialProducts }: Props) {
                         <p className="mt-2 min-h-20 text-sm leading-6 text-muted">{note || description || ''}</p>
                         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                           <strong className="font-display text-lg">{priceLabel}</strong>
-                          {stock > 0 ? (
-                            <button
-                              onClick={() => {
-                                setProduct(product)
-                                window.scrollTo({ top: 0, behavior: 'smooth' })
-                              }}
-                              className="rounded-full bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark"
-                            >
-                              Edit
-                            </button>
-                          ) : (
-                            <span className="text-[10px] font-black uppercase text-slate-400">Quote only</span>
-                          )}
+                          <button
+                            onClick={() => {
+                              setProduct(product)
+                              window.scrollTo({ top: 0, behavior: 'smooth' })
+                            }}
+                            className="rounded-full bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark"
+                          >
+                            Edit
+                          </button>
                           <button
                             onClick={() => {
                               if (window.confirm(`Delete project package ${name}?`)) {
@@ -439,11 +435,12 @@ export default function AdminPanel({ initialProducts }: Props) {
                       </div>
                     </article>
                   )
-                })}
-            </div>
-            {filteredProducts.length === 0 && (
-              <p className="mt-8 text-center text-sm text-slate-500">No project packages match your criteria.</p>
-            )}
+                  })}
+              </div>
+              {products.filter((p) => p.productType === 'Project package').length === 0 && (
+                <p className="mt-8 text-center text-sm text-slate-500">No project packages found.</p>
+              )}
+            </>
           )}
         </section>
       )}
@@ -455,12 +452,12 @@ export default function AdminPanel({ initialProducts }: Props) {
           {products.length === 0 ? (
             <p className="text-sm text-slate-500">No products found.</p>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {products
-                .filter((p) => p.category === 'Robot Cars')
-                .sort((a, b) => (b.sort_order ?? 0) - (a.sort_order ?? 0))
-                .map((product) => {
-                  const { id, name, category, price, priceLabel, sku, note, description, specs, audience, difficulty, warranty, stock, delivery, image, badge, supplier } = product
+            <>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {products
+                  .filter((p) => p.category === 'Robot Cars')
+                  .map((product) => {
+                  const { id, name, category, priceLabel, note, description, specs, image } = product
                   return (
                     <article
                       key={id}
@@ -482,19 +479,15 @@ export default function AdminPanel({ initialProducts }: Props) {
                         )}
                         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                           <strong className="font-display text-lg">{priceLabel}</strong>
-                          {stock > 0 ? (
-                            <button
-                              onClick={() => {
-                                setProduct(product)
-                                window.scrollTo({ top: 0, behavior: 'smooth' })
-                              }}
-                              className="rounded-full bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark"
-                            >
-                              Edit
-                            </button>
-                          ) : (
-                            <span className="text-[10px] font-black uppercase text-slate-400">Quote only</span>
-                          )}
+                          <button
+                            onClick={() => {
+                              setProduct(product)
+                              window.scrollTo({ top: 0, behavior: 'smooth' })
+                            }}
+                            className="rounded-full bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark"
+                          >
+                            Edit
+                          </button>
                           <button
                             onClick={() => {
                               if (window.confirm(`Delete robot car project ${name}?`)) {
@@ -509,11 +502,12 @@ export default function AdminPanel({ initialProducts }: Props) {
                       </div>
                     </article>
                   )
-                })}
-            </div>
-            {filteredProducts.length === 0 && (
-              <p className="mt-8 text-center text-sm text-slate-500">No robot car projects match your criteria.</p>
-            )}
+                  })}
+              </div>
+              {products.filter((p) => p.category === 'Robot Cars').length === 0 && (
+                <p className="mt-8 text-center text-sm text-slate-500">No robot car projects found.</p>
+              )}
+            </>
           )}
         </section>
       )}

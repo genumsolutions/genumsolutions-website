@@ -142,6 +142,27 @@ create table if not exists public.transactions (
 create index if not exists transactions_order_idx on public.transactions(order_id);
 create index if not exists transactions_provider_ref_idx on public.transactions(provider_ref);
 
+-- ===== ROBO CAR MODES (manageable from admin) =====
+-- Create this table before its RLS policies below.
+create table if not exists public.robo_car_modes (
+  id text primary key,
+  name text not null,
+  token text not null,
+  device_index integer not null,
+  car text not null,
+  wheel text not null,
+  steering text not null,
+  sensors text not null default '[]',
+  transport text not null default '[]',
+  remote_with text not null default '',
+  controls text not null default '[]',
+  requires_connection boolean not null default true,
+  blurb text not null default '',
+  sort_order integer not null default 1000,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 -- ===== ROW LEVEL SECURITY =====
 alter table public.profiles enable row level security;
 alter table public.products enable row level security;
@@ -252,26 +273,6 @@ $$;
 revoke all on function public.set_admin(text) from public;
 revoke all on function public.set_admin(text) from anon;
 revoke all on function public.set_admin(text) from authenticated;
-
--- ===== ROBO CAR MODES (manageable from admin) =====
-create table if not exists public.robo_car_modes (
-  id text primary key,
-  name text not null,
-  token text not null,
-  device_index integer not null,
-  car text not null,
-  wheel text not null,
-  steering text not null,
-  sensors text not null default '[]',
-  transport text not null default '[]',
-  remote_with text not null default '',
-  controls text not null default '[]',
-  requires_connection boolean not null default true,
-  blurb text not null default '',
-  sort_order integer not null default 1000,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
 
 -- seed the 9 original modes from the ESP32 firmware
 insert into public.robo_car_modes (id, name, token, device_index, car, wheel, steering, sensors, transport, remote_with, controls, requires_connection, blurb, sort_order) values
