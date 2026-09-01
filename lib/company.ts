@@ -18,7 +18,7 @@ export const company = {
 export const androidApp = {
   version: '1.5.0',
   versionCode: 8,
-  sizeLabel: '29 MB',
+  sizeLabel: '32.5 MB',
   arch: 'Android · 64-bit',
   apkUrl:
     'https://bkylfnlybtsujwzropru.supabase.co/storage/v1/object/public/app-releases/genum-solutions-latest.apk',
