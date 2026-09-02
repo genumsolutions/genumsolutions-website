@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { createClient } from '@supabase/supabase-js'
-import { products } from '../lib/catalog'
+import { localProducts as products } from '../lib/catalog-data'
 
 // Minimal .env.local loader so `npm run seed` works without extra dependencies.
 function loadEnvFile() {

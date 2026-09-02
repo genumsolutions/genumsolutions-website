@@ -1,4 +1,5 @@
-import { products as localProducts, type Product } from './catalog'
+import { localProducts } from './catalog-data'
+import type { Product } from './catalog'
 import { ROBOCAR_MODES as localRoBoModes, type RoboCarMode } from './robo-car-catalog'
 import { createServiceClient, supabaseConfigured } from './supabase/server'
 import { unstable_noStore } from 'next/cache'
