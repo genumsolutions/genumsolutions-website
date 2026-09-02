@@ -154,17 +154,23 @@ export default function AdminProjectPackages({ products, onProductsChange, setMe
       </div>
       {previewProduct && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 p-5" role="dialog" aria-modal="true" aria-label="Project package preview" onClick={() => setPreviewProduct(null)}>
-          <article className="max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-2xl border border-line bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
-            <div className="h-48 overflow-hidden rounded-t-2xl bg-ink">
+          <article className="relative max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-2xl border border-line bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
+            <button onClick={() => setPreviewProduct(null)} className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-ink shadow-sm transition hover:bg-white" aria-label="Close preview">✕</button>
+            <div className="relative h-48 overflow-hidden rounded-t-2xl bg-ink">
               {previewProduct.image ? <Image src={previewProduct.image} alt={previewProduct.name} fill className="object-cover" /> : null}
+              <div className="absolute inset-0 bg-gradient-to-t from-ink/70 to-transparent" />
+              <span className="absolute bottom-3 left-4 max-w-[calc(100%-2rem)] truncate text-xs font-black uppercase tracking-widest text-white">{previewProduct.category}</span>
             </div>
             <div className="flex flex-1 flex-col p-5">
-              <p className="truncate text-xs font-black uppercase tracking-widest text-navy">Project Package</p>
+              <p className="truncate text-xs font-black uppercase tracking-widest text-navy">{previewProduct.badge || 'Project Package'}</p>
               <h2 className="mt-2 line-clamp-2 font-display text-xl font-bold leading-snug text-ink">{previewProduct.name}</h2>
               <p className="mt-2 line-clamp-2 flex-1 text-sm leading-6 text-muted">{previewProduct.note || previewProduct.description}</p>
               <div className="mt-5 flex items-center justify-between gap-3">
                 <strong className="font-display text-lg text-ink">{previewProduct.priceLabel}</strong>
-                <button onClick={() => setPreviewProduct(null)} className="rounded-full bg-navy px-4 py-2 text-xs font-black text-white">View details</button>
+                <span className="flex gap-2">
+                  <a href={`/products/${previewProduct.id}`} target="_blank" rel="noopener noreferrer" className="rounded-full bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark">View page</a>
+                  <button onClick={() => setPreviewProduct(null)} className="rounded-full border border-line px-4 py-2 text-xs font-black text-ink transition hover:border-navy">Close</button>
+                </span>
               </div>
             </div>
           </article>

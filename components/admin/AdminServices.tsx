@@ -97,14 +97,15 @@ export default function AdminServices({ setMessage }: Props) {
     </div>
     {previewService && (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 p-5" role="dialog" aria-modal="true" aria-label="Service preview" onClick={() => setPreviewService(null)}>
-        <article className="max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-2xl border border-line bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <article className="relative max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-2xl border border-line bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <button onClick={() => setPreviewService(null)} className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-ink shadow-sm transition hover:bg-white" aria-label="Close preview">✕</button>
           <div className="p-6">
             <p className="truncate text-xs font-black uppercase tracking-widest text-navy">{previewService.tag || previewService.category}</p>
             <h2 className="mt-2 line-clamp-2 font-display text-xl font-bold leading-snug text-ink">{previewService.name}</h2>
             <p className="mt-2 flex-1 text-sm leading-6 text-muted">{previewService.description}</p>
             <div className="mt-5 flex items-center justify-between gap-3">
               <strong className="font-display text-lg text-ink">{previewService.priceLabel}</strong>
-              <button onClick={() => setPreviewService(null)} className="rounded-full bg-navy px-4 py-2 text-xs font-black text-white">Close</button>
+              <button onClick={() => setPreviewService(null)} className="rounded-full border border-line px-4 py-2 text-xs font-black text-ink transition hover:border-navy">Close</button>
             </div>
           </div>
         </article>

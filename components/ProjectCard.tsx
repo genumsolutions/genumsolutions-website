@@ -23,7 +23,7 @@ export function ProjectCard({ product, onDetail }: ProjectCardProps) {
       <Link
         href={`/products/${product.id}`}
         aria-label={`View ${product.name}`}
-        className="block h-48 overflow-hidden bg-ink"
+        className="relative block h-48 overflow-hidden bg-ink"
       >
         <Image
           src={product.image || '/placeholder-robo-car.jpg'}
@@ -32,6 +32,8 @@ export function ProjectCard({ product, onDetail }: ProjectCardProps) {
           height={250}
           className="w-full h-full object-cover transition duration-500 hover:scale-105"
         />
+        <div className="absolute inset-0 bg-gradient-to-t from-ink/70 to-transparent" />
+        <span className="absolute bottom-3 left-4 text-xs font-black uppercase tracking-widest text-white">{product.category}</span>
       </Link>
 
       <div className="p-5 flex flex-col h-full">
