@@ -37,7 +37,7 @@ export default function ProductDetailPro({ product }: { product: Product }) {
           <ArrowLeft size={15} aria-hidden="true" /> Back to the shop
         </Link>
         <div className="mt-6 grid gap-8 sm:mt-8 sm:gap-10 lg:grid-cols-[.9fr_1.1fr] lg:items-start">
-          <div className="relative aspect-square overflow-hidden rounded-2xl bg-ink sm:rounded-3xl">
+          <div className="relative z-0 aspect-square overflow-hidden rounded-2xl bg-ink sm:rounded-3xl">
             <Image
               src={product.image || '/placeholder.jpg'}
               alt={product.name}

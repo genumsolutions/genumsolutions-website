@@ -85,7 +85,7 @@ export default async function HomePage() {
                 ))}
               </dl>
             </div>
-            <div className="relative aspect-[4/3] overflow-hidden rounded-3xl bg-ink shadow-2xl sm:aspect-square lg:aspect-[4/3]">
+            <div className="relative z-0 aspect-[4/3] overflow-hidden rounded-3xl bg-ink shadow-2xl sm:aspect-square lg:aspect-[4/3]">
               <Image
                 src={heroMedia.src}
                 alt={heroMedia.alt}
