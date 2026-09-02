@@ -33,10 +33,13 @@ export default function SiteFooter() {
         {/* Brand */}
         <div className="col-span-2 lg:col-span-1">
           <Link href="/" className="flex items-center gap-3" aria-label="GENUM SOLUTIONS home">
-            <Image src="/logo.png" alt="GENUM SOLUTIONS stamp" width={88} height={88} className="h-11 w-11 shrink-0 rounded-full object-contain ring-1 ring-white/20" />
+            <span className="relative block h-11 w-11 shrink-0 overflow-hidden rounded-full bg-white ring-1 ring-white/20 sm:h-14 sm:w-14">
+              <Image src="/logo.png" alt="GENUM SOLUTIONS stamp" width={112} height={112} className="h-full w-full object-contain" priority />
+            </span>
+            <span aria-hidden="true" className="hidden h-10 w-px bg-white/20 sm:block" />
             <span className="leading-none">
-              <strong className="block font-display text-xl font-bold tracking-tight text-white">{company.shortName}</strong>
-              <span className="mt-1.5 block text-[10px] font-bold uppercase tracking-[0.3em] text-white/60">Solutions Pvt.&thinsp;Ltd.</span>
+              <strong className="block font-display text-lg font-bold tracking-tight text-white sm:text-[22px]">GENUM</strong>
+              <span className="mt-1 block text-[9px] font-bold uppercase tracking-[0.32em] text-white/60 sm:text-[10px]">Solutions Pvt.&thinsp;Ltd.</span>
             </span>
           </Link>
           <p className="mt-3 max-w-sm text-sm leading-5 text-white/60 sm:mt-4 sm:text-base sm:leading-6">

@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { FormEvent, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -116,7 +117,15 @@ export default function AuthPanel({ initialMode = 'signin' }: { initialMode?: Mo
 
         <section className="w-full justify-self-center">
           <div className="stamp-ring border-t-4 border-navy bg-white p-7 sm:p-9">
-            <Link href="/" className="text-sm font-bold text-navy lg:hidden">GENUM SOLUTIONS</Link>
+            <Link href="/" className="flex items-center gap-2.5 lg:hidden" aria-label="GENUM SOLUTIONS home">
+              <span className="relative block h-9 w-9 shrink-0 overflow-hidden rounded-full bg-white shadow-card ring-1 ring-line">
+                <Image src="/logo.png" alt="GENUM SOLUTIONS stamp" width={112} height={112} className="h-full w-full object-contain" />
+              </span>
+              <span className="leading-none">
+                <strong className="block font-display text-base font-bold tracking-tight text-ink">GENUM</strong>
+                <span className="mt-0.5 block text-[8px] font-bold uppercase tracking-[0.3em] text-navy">Solutions Pvt.&thinsp;Ltd.</span>
+              </span>
+            </Link>
             <h1 className="mt-8 font-display text-3xl font-bold text-ink sm:text-4xl lg:mt-0">{copy[mode].title}</h1>
             <p className="mt-3 text-sm leading-6 text-muted">{copy[mode].body}</p>
 

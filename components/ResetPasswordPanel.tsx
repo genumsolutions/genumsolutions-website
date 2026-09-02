@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { FormEvent, useEffect, useState } from 'react'
 import { inputClass } from '../lib/styles'
@@ -54,7 +55,15 @@ export default function ResetPasswordPanel() {
   return (
     <main className="grid-paper flex min-h-[70vh] items-center justify-center px-5 py-14">
       <form onSubmit={submit} className="w-full max-w-md border-t-4 border-navy bg-white p-8 shadow-xl">
-        <Link href="/" className="text-sm font-bold text-navy">GENUM SOLUTIONS</Link>
+        <Link href="/" className="flex items-center gap-2.5" aria-label="GENUM SOLUTIONS home">
+          <span className="relative block h-9 w-9 shrink-0 overflow-hidden rounded-full bg-white shadow-card ring-1 ring-line">
+            <Image src="/logo.png" alt="GENUM SOLUTIONS stamp" width={112} height={112} className="h-full w-full object-contain" />
+          </span>
+          <span className="leading-none">
+            <strong className="block font-display text-base font-bold tracking-tight text-ink">GENUM</strong>
+            <span className="mt-0.5 block text-[8px] font-bold uppercase tracking-[0.3em] text-navy">Solutions Pvt.&thinsp;Ltd.</span>
+          </span>
+        </Link>
         <h1 className="mt-10 font-display text-4xl font-bold text-ink">Set a new password</h1>
         <p className="mt-3 text-sm leading-6 text-slate-600">Choose a password you have not used elsewhere. At least 6 characters.</p>
         <label className="mt-8 block text-sm font-bold text-ink">New password<input name="password" type="password" required autoComplete="new-password" className={`mt-2 w-full ${inputClass}`} /></label>
