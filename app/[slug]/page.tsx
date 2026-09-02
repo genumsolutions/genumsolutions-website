@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   const category = getProjectCategory(params.slug)
   if (!category) return {}
   return {
-    title: `${category.name} | GENUM Solutions`,
+    title: category.name,
     description: category.description,
   }
 }

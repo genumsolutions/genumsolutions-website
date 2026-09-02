@@ -16,7 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
     description: content.homeBody,
     alternates: { canonical: '/' },
     openGraph: {
-      title: `${content.homeTitle} | GENUM SOLUTIONS`,
+      title: content.homeTitle,
       description: content.homeBody,
       url: '/',
       type: 'website',
