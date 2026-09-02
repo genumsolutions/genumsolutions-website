@@ -12,6 +12,7 @@ export default function AdminServices({ setMessage }: Props) {
   const [services, setServices] = useState<Service[]>([])
   const [loaded, setLoaded] = useState(false)
   const [service, setService] = useState<Service>(emptyService)
+  const [previewService, setPreviewService] = useState<Service | null>(null)
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
@@ -42,21 +43,30 @@ export default function AdminServices({ setMessage }: Props) {
     if (response.ok) { setServices((current) => current.filter((s) => s.id !== id)); setMessage('Service deleted.') }
   }
 
+  async function toggleServiceVisibility(item: Service) {
+    const payload = { ...item, active: !item.active }
+    const response = await fetch('/api/admin/services', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+    if (response.ok) { setServices((current) => current.map((s) => s.id === item.id ? payload : s)); setMessage(item.active ? 'Service hidden.' : 'Service shown.') }
+  }
+
   return (
-    <div role="tabpanel" id="panel-services" aria-labelledby="tab-services" className="mt-8 grid min-w-0 gap-8 xl:grid-cols-[1fr_1.3fr]">
+    <>
+      <div role="tabpanel" id="panel-services" aria-labelledby="tab-services" className="mt-8 grid min-w-0 gap-8 xl:grid-cols-[1fr_1.3fr]">
       <section aria-label="Service list" className="min-w-0 space-y-6">
         <div className="min-w-0 border-t-2 border-ink bg-white p-6">
           <h2 className="font-display text-xl font-bold">Services ({services.length})</h2>
           {!loaded ? <p className="text-sm text-slate-500" role="status">Loading…</p> : (
             <div className="mt-3 divide-y divide-line">
               {services.map((s) => (
-                <div key={s.id} className="flex items-center justify-between gap-2 py-2">
-                  <div className="min-w-0">
+                <div key={s.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                  <div className="min-w-0 flex-1">
                     <span className="block line-clamp-2 text-sm"><strong>{s.name}</strong> <span className="text-slate-400">{s.priceLabel}</span></span>
                     {!s.active && <span className="ml-2 text-[10px] font-black uppercase text-red-500">inactive</span>}
                   </div>
-                  <span className="flex shrink-0 gap-2">
+                  <span className="flex shrink-0 flex-wrap gap-2">
                     <button onClick={() => { setService(s); focusEditor('service-editor') }} className="text-xs font-bold text-navy underline">Edit</button>
+                    <button onClick={() => setPreviewService(s)} className="text-xs font-bold text-slate-500 underline">Preview</button>
+                    <button onClick={() => void toggleServiceVisibility(s)} className="text-xs font-bold text-ink underline">{s.active ? 'Hide' : 'Show'}</button>
                     <button onClick={() => removeService(s.id)} className="text-xs font-bold text-red-600 underline">Delete</button>
                   </span>
                 </div>
@@ -85,5 +95,21 @@ export default function AdminServices({ setMessage }: Props) {
         </form>
       </section>
     </div>
+    {previewService && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 p-5" role="dialog" aria-modal="true" aria-label="Service preview" onClick={() => setPreviewService(null)}>
+        <article className="max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-2xl border border-line bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="p-6">
+            <p className="truncate text-xs font-black uppercase tracking-widest text-navy">{previewService.tag || previewService.category}</p>
+            <h2 className="mt-2 line-clamp-2 font-display text-xl font-bold leading-snug text-ink">{previewService.name}</h2>
+            <p className="mt-2 flex-1 text-sm leading-6 text-muted">{previewService.description}</p>
+            <div className="mt-5 flex items-center justify-between gap-3">
+              <strong className="font-display text-lg text-ink">{previewService.priceLabel}</strong>
+              <button onClick={() => setPreviewService(null)} className="rounded-full bg-navy px-4 py-2 text-xs font-black text-white">Close</button>
+            </div>
+          </div>
+        </article>
+      </div>
+    )}
+  </>
   )
 }

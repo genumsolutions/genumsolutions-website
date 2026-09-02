@@ -130,12 +130,12 @@ export default function AdminProjectPackages({ products, onProductsChange, setMe
             <input value={projectQuery} onChange={(e) => { setProjectQuery(e.target.value); setProjectPage(1) }} placeholder="Search by name, SKU, or id" aria-label="Search project packages" className={`mt-3 w-full ${inputClass}`} />
             <div className="mt-3 divide-y divide-line">
               {shownProjects.map((item) => (
-                <div key={item.id} className="flex items-center justify-between gap-2 py-2">
-                  <div className="min-w-0">
+                <div key={item.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                  <div className="min-w-0 flex-1">
                     <span className="block line-clamp-2 text-sm"><strong>{item.name}</strong> <span className="text-slate-400">{item.sku}</span></span>
                     <span className="text-[10px] font-black uppercase tracking-wide text-gold">{item.inventoryType || 'Catalog'} · {item.priceLabel}</span>
                   </div>
-                  <span className="flex shrink-0 gap-2">
+                  <span className="flex shrink-0 flex-wrap gap-2">
                     <button onClick={() => { setProduct(item); focusEditor('project-package-editor') }} className="text-xs font-bold text-navy underline">Edit</button>
                     <button onClick={() => setPreviewProduct(item)} className="text-xs font-bold text-slate-500 underline">Preview</button>
                     <button onClick={() => void toggleProductVisibility(item)} className="text-xs font-bold text-ink underline">{item.active === false ? 'Show' : 'Hide'}</button>

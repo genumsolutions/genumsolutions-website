@@ -15,6 +15,7 @@ type Props = {
 
 export default function AdminProducts({ products, onProductsChange, setMessage }: Props) {
   const [product, setProduct] = useState<Product>(emptyProduct)
+  const [previewProduct, setPreviewProduct] = useState<Product | null>(null)
   const [query, setQuery] = useState('')
   const [productPage, setProductPage] = useState(1)
   const [busy, setBusy] = useState(false)
@@ -51,6 +52,12 @@ export default function AdminProducts({ products, onProductsChange, setMessage }
     if (response.ok) { onProductsChange((current) => current.filter((item) => item.id !== id)); setMessage('Product deleted.') }
   }
 
+  async function toggleProductVisibility(item: Product) {
+    const payload = { ...item, active: item.active === false }
+    const response = await fetch('/api/admin/products', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+    if (response.ok) { onProductsChange((current) => current.map((p) => p.id === item.id ? payload : p)); setMessage(item.active === false ? 'Product shown.' : 'Product hidden.') }
+  }
+
   async function uploadImage(file: File) {
     setUploading(true); setMessage('')
     const form = new FormData(); form.append('file', file)
@@ -62,19 +69,22 @@ export default function AdminProducts({ products, onProductsChange, setMessage }
   }
 
   return (
-    <div role="tabpanel" id="panel-products" aria-labelledby="tab-products" className="mt-8 grid min-w-0 gap-8 xl:grid-cols-[1fr_1.3fr]">
+    <>
+      <div role="tabpanel" id="panel-products" aria-labelledby="tab-products" className="mt-8 grid min-w-0 gap-8 xl:grid-cols-[1fr_1.3fr]">
       <section aria-label="Product list" className="min-w-0 space-y-6">
         <div className="min-w-0 border-t-2 border-ink bg-white p-6">
           <h2 className="font-display text-xl font-bold">Products ({filteredProducts.length})</h2>
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by name, SKU, or id" aria-label="Search products" className={`mt-3 w-full ${inputClass}`} />
           <div className="mt-3 divide-y divide-line">
             {shownProducts.map((item) => (
-              <div key={item.id} className="flex items-center justify-between gap-2 py-2">
-                <div className="min-w-0">
+              <div key={item.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                <div className="min-w-0 flex-1">
                   <span className="block line-clamp-2 text-sm"><strong>{item.name}</strong> <span className="text-slate-400">{item.sku}</span></span>
                 </div>
-                <span className="flex shrink-0 gap-2">
+                <span className="flex shrink-0 flex-wrap gap-2">
                   <button onClick={() => { setProduct(item); document.getElementById('product-editor')?.scrollIntoView({ behavior: 'smooth' }) }} className="text-xs font-bold text-navy underline">Edit</button>
+                  <button onClick={() => setPreviewProduct(item)} className="text-xs font-bold text-slate-500 underline">Preview</button>
+                  <button onClick={() => void toggleProductVisibility(item)} className="text-xs font-bold text-ink underline">{item.active === false ? 'Show' : 'Hide'}</button>
                   <button onClick={() => removeProduct(item.id)} className="text-xs font-bold text-red-600 underline">Delete</button>
                 </span>
               </div>
@@ -107,5 +117,24 @@ export default function AdminProducts({ products, onProductsChange, setMessage }
         </form>
       </section>
     </div>
+    {previewProduct && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 p-5" role="dialog" aria-modal="true" aria-label="Product preview" onClick={() => setPreviewProduct(null)}>
+        <article className="max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-2xl border border-line bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="h-48 overflow-hidden rounded-t-2xl bg-ink">
+            {previewProduct.image ? <Image src={previewProduct.image} alt={previewProduct.name} fill className="object-cover" /> : null}
+          </div>
+          <div className="flex flex-1 flex-col p-5">
+            <p className="truncate text-xs font-black uppercase tracking-widest text-navy">{previewProduct.badge || previewProduct.productType}</p>
+            <h2 className="mt-2 line-clamp-2 font-display text-xl font-bold leading-snug text-ink">{previewProduct.name}</h2>
+            <p className="mt-2 line-clamp-2 flex-1 text-sm leading-6 text-muted">{previewProduct.note || previewProduct.description}</p>
+            <div className="mt-5 flex items-center justify-between gap-3">
+              <strong className="font-display text-lg text-ink">{previewProduct.priceLabel}</strong>
+              <button onClick={() => setPreviewProduct(null)} className="rounded-full bg-navy px-4 py-2 text-xs font-black text-white">Close</button>
+            </div>
+          </div>
+        </article>
+      </div>
+    )}
+  </>
   )
 }

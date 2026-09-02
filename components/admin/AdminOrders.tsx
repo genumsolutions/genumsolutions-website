@@ -34,7 +34,7 @@ export default function AdminOrders() {
 
   return (
     <section role="tabpanel" id="panel-orders" aria-labelledby="tab-orders" aria-label="Customer orders" className="mt-8 space-y-4">
-      <div className="flex flex-wrap items-end gap-3 border-t-2 border-ink bg-white p-6">
+      <div className="flex flex-col gap-3 border-t-2 border-ink bg-white p-6 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
         <h2 className="font-display text-xl font-bold">Customer orders</h2>
         <label className="ml-auto text-sm font-bold text-slate-500">Search buyer
           <input value={orderQuery} onChange={(e) => setOrderQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && void loadOrders(1)} placeholder="email or name" aria-label="Search orders" className={`mt-1 w-full sm:ml-2 sm:mt-0 sm:w-48 ${inputClass}`} />

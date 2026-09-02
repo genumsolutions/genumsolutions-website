@@ -38,7 +38,7 @@ export default function AdminUsers({ setMessage }: Props) {
 
   return (
     <section role="tabpanel" id="panel-users" aria-labelledby="tab-users" aria-label="User management" className="mt-8 space-y-4">
-      <div className="flex flex-wrap items-end gap-3 border-t-2 border-ink bg-white p-6">
+      <div className="flex flex-col gap-3 border-t-2 border-ink bg-white p-6 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
         <h2 className="font-display text-xl font-bold">Users</h2>
         <label className="ml-auto text-sm font-bold text-slate-500">Search
           <input value={userQuery} onChange={(e) => setUserQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && void loadUsers(1)} placeholder="email or name" aria-label="Search users" className={`mt-1 w-full sm:ml-2 sm:mt-0 sm:w-56 ${inputClass}`} />
