@@ -15,11 +15,11 @@ export default function AppDownloadPage() {
 
   useEffect(() => {
     refreshAndroidAppInfo().then((info) => {
-      setAppInfo({
-        version: info.version,
-        sizeLabel: info.sizeLabel,
-        arch: info.arch,
-      })
+      setAppInfo((prev) => ({
+        version: info.version || prev.version,
+        sizeLabel: info.sizeLabel || prev.sizeLabel,
+        arch: info.arch || prev.arch,
+      }))
     })
   }, [])
 

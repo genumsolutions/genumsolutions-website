@@ -95,18 +95,20 @@ export async function refreshAndroidAppInfo(): Promise<{
     const manifest = await res.json()
 
     // Update androidApp with new manifest values.
+    // Only overwrite fields that are actually present in the manifest so the
+    // defaults (hardcoded above) are never wiped to empty/zero.
+    if (manifest.version) androidApp.version = manifest.version
+    if (manifest.version_code) androidApp.versionCode = manifest.version_code
     // Handle both old manifest format ({ size: "32.5 MB" }) and
     // new format ({ size_mb: 32.5 }).
-    androidApp.version = manifest.version || androidApp.version
-    androidApp.versionCode = manifest.version_code || androidApp.versionCode
-    if (manifest.size_mb !== undefined) {
+    if (manifest.size_mb !== undefined && manifest.size_mb > 0) {
       androidApp.sizeLabel = `${Number(manifest.size_mb).toFixed(1)} MB`
-    } else if (manifest.size) {
+    } else if (manifest.size && manifest.size !== '0') {
       androidApp.sizeLabel = manifest.size
     }
-    androidApp.apkUrl = manifest.apkUrl || androidApp.apkUrl
-    androidApp.releaseUrl = manifest.releaseUrl || androidApp.releaseUrl
-    androidApp.appsPagePath = manifest.appsPagePath || androidApp.appsPagePath
+    if (manifest.apkUrl) androidApp.apkUrl = manifest.apkUrl
+    if (manifest.releaseUrl) androidApp.releaseUrl = manifest.releaseUrl
+    if (manifest.appsPagePath) androidApp.appsPagePath = manifest.appsPagePath
 
     return androidApp
   } catch {
