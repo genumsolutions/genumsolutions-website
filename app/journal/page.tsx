@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import ArticleCard from '../../components/ArticleCard'
 import PageIntro from '../../components/PageIntro'
 import PageShell from '../../components/PageShell'
 
@@ -24,12 +25,7 @@ export default function JournalPage() {
       <section className="mx-auto max-w-7xl px-5 py-10 sm:py-14 lg:px-8">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {posts.map((post) => (
-            <article key={post.title} className="border-t-2 border-ink bg-white p-5 sm:p-6">
-              <p className="text-xs font-black uppercase tracking-widest text-navy">{post.tag}</p>
-              <h2 className="mt-8 font-display text-xl font-bold sm:mt-10 sm:text-2xl">{post.title}</h2>
-              <p className="mt-3 leading-7 text-muted">{post.text}</p>
-              <a className="mt-6 inline-block text-sm font-black text-navy underline decoration-gold decoration-2 underline-offset-4 transition hover:text-navy-dark sm:mt-7" href="/contact">Get in touch about this ↗</a>
-            </article>
+            <ArticleCard key={post.title} tag={post.tag} title={post.title} description={post.text} href="/contact" cta="Get in touch about this" />
           ))}
         </div>
 

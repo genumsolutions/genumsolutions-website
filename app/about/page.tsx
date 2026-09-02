@@ -1,6 +1,5 @@
-import Link from 'next/link'
 import type { Metadata } from 'next'
-import { ArrowRight } from 'lucide-react'
+import ArticleCard from '../../components/ArticleCard'
 import PageIntro from '../../components/PageIntro'
 import PageShell from '../../components/PageShell'
 
@@ -81,13 +80,7 @@ export default function AboutPage() {
           <h2 className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl">Our work in practice.</h2>
           <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {whatWeDo.map((item) => (
-              <article key={item.title} className="flex flex-col rounded-2xl border border-line bg-white p-6 transition hover:-translate-y-0.5 hover:border-navy hover:shadow-lg">
-                <h3 className="font-display text-lg font-bold leading-snug">{item.title}</h3>
-                <p className="mt-2 flex-1 text-sm leading-6 text-slate-600">{item.body}</p>
-                <Link href={item.href} className="mt-4 inline-flex items-center gap-1.5 text-sm font-black text-navy transition hover:gap-2.5">
-                  {item.cta} <ArrowRight size={14} aria-hidden="true" />
-                </Link>
-              </article>
+              <ArticleCard key={item.title} variant="rounded" title={item.title} description={item.body} href={item.href} cta={item.cta} />
             ))}
           </div>
         </div>

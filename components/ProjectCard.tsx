@@ -19,11 +19,7 @@ interface ProjectCardProps {
 
 export function ProjectCard({ product, onDetail }: ProjectCardProps) {
   return (
-    <div
-      className="group rounded-2xl overflow-hidden border border-line bg-white shadow-sm transition-shadow hover:shadow-md"
-      onMouseEnter={() => {}}
-      onMouseLeave={() => {}}
-    >
+    <div className="group rounded-2xl overflow-hidden border border-line bg-white shadow-sm transition-shadow hover:shadow-md">
       <Link
         href={`/products/${product.id}`}
         aria-label={`View ${product.name}`}
@@ -49,11 +45,11 @@ export function ProjectCard({ product, onDetail }: ProjectCardProps) {
             {product.badge}
           </span>
         )}
-        <p className="text-sm text-muted-foreground line-clamp-3">{product.note || product.description?.split('. ')[0] || ''}</p>
+        <p className="text-sm text-muted line-clamp-3">{product.note || product.description?.split('. ')[0] || ''}</p>
         {onDetail && (
           <button
             onClick={() => onDetail(product.id)}
-            className="mt-3 text-sm text-primary underline hover:underline"
+            className="mt-3 text-sm font-bold text-navy underline hover:underline"
           >
             View Details
           </button>

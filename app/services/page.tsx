@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import ArticleCard from '../../components/ArticleCard'
 import PageIntro from '../../components/PageIntro'
 import PageShell from '../../components/PageShell'
 import { listServices } from '../../lib/services'
@@ -29,21 +30,16 @@ export default async function ServicesPage() {
 
       {/* ─── Services ─── */}
       <section id="services" className="mx-auto max-w-7xl px-5 py-10 sm:py-14 lg:px-8">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="text-xs font-black uppercase tracking-[.24em] text-navy">What we offer</p>
-            <h2 className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl">Our Services</h2>
-          </div>
-        </div>
+        <p className="text-xs font-black uppercase tracking-[.24em] text-navy">What we offer</p>
+        <h2 className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl">Our Services</h2>
         <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {services.map((s) => (
-            <article key={s.id} className="border-t-2 border-ink bg-white p-6">
-              <p className="text-xs font-black uppercase tracking-widest text-navy">{s.tag || s.category}</p>
-              <h3 className="mt-10 font-display text-2xl font-bold">{s.name}</h3>
-              <p className="mt-3 text-lg font-bold text-ink">{s.priceLabel}</p>
-              <p className="mt-3 leading-7 text-slate-600">{s.description}</p>
-              <a className="mt-8 inline-block text-sm font-black text-navy underline decoration-gold decoration-2 underline-offset-4" href="/contact">Request a quote ↗</a>
-            </article>
+            <ArticleCard key={s.id} tag={s.tag || s.category} title={s.name} description={s.description}>
+              <p className="mt-2 text-lg font-bold text-ink">{s.priceLabel}</p>
+              <Link href="/contact" className="mt-4 inline-block text-sm font-black text-navy underline decoration-gold decoration-2 underline-offset-4">
+                Request a quote
+              </Link>
+            </ArticleCard>
           ))}
           {services.length === 0 && (
             <p className="col-span-full py-8 text-sm text-slate-500">Services are being set up. Contact us for details.</p>
@@ -70,27 +66,21 @@ export default async function ServicesPage() {
       {/* ─── Training Programs ─── */}
       <section id="training" className="border-y border-line bg-mist">
         <div className="mx-auto max-w-7xl px-5 py-10 sm:py-14 lg:px-8">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[.24em] text-navy">Training programs</p>
-              <h2 className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl">Programs that Build Careers</h2>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
-                GENUM&apos;s source curriculum combines 100+ age-banded STEM projects with
-                modular robotics, teacher enablement, and measurable pilot support.
-              </p>
-            </div>
-          </div>
+          <p className="text-xs font-black uppercase tracking-[.24em] text-navy">Training programs</p>
+          <h2 className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl">Programs that Build Careers</h2>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
+            GENUM&apos;s source curriculum combines 100+ age-banded STEM projects with
+            modular robotics, teacher enablement, and measurable pilot support.
+          </p>
           <div className="mt-8 grid gap-4 md:grid-cols-2">
             {trainingPrograms.map((program) => (
-              <article key={program.title} className="rounded-2xl border border-line bg-white p-6">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h3 className="font-display text-lg font-bold">{program.title}</h3>
+              <ArticleCard key={program.title} variant="rounded" title={program.title} description={program.description}>
+                <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs font-bold uppercase tracking-wide text-gold">{program.audience}</p>
                   <span className="rounded-full bg-sky px-3 py-1 text-xs font-bold text-navy">{program.duration}</span>
                 </div>
-                <p className="mt-1 text-xs font-bold uppercase tracking-wide text-gold">{program.audience}</p>
-                <p className="mt-3 text-sm leading-6 text-slate-600">{program.description}</p>
                 <p className="mt-3 text-xs leading-5 text-slate-500"><strong className="text-ink">Outcome:</strong> {program.outcome}</p>
-              </article>
+              </ArticleCard>
             ))}
           </div>
         </div>
@@ -109,24 +99,24 @@ export default async function ServicesPage() {
             <p className="mt-5 font-display text-2xl font-bold text-navy sm:text-3xl">NPR 8,40,000 <span className="font-sans text-sm font-normal text-slate-500">illustrative total</span></p>
             <div className="mt-8 overflow-x-auto">
               <table className="w-full min-w-[320px] sm:min-w-[400px] text-left text-sm">
-              <caption className="sr-only">Illustrative three-classroom pilot cost breakdown in NPR</caption>
-              <thead>
-                <tr className="border-b border-line text-xs uppercase tracking-wider text-slate-400">
-                  <th scope="col" className="py-2 pr-4 font-bold">Line item</th>
-                  <th scope="col" className="py-2 font-bold">Cost</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pilotCosts.map(([item, cost, note]) => (
-                  <tr key={item} className="border-b border-line last:border-b-0">
-                    <th scope="row" className="py-3 pr-4 align-top font-semibold text-ink">
-                      {item}
-                      <span className="block text-xs font-normal leading-5 text-slate-500">{note}</span>
-                    </th>
-                    <td className="py-3 align-top font-display font-bold">{cost}</td>
+                <caption className="sr-only">Illustrative three-classroom pilot cost breakdown in NPR</caption>
+                <thead>
+                  <tr className="border-b border-line text-xs uppercase tracking-wider text-slate-400">
+                    <th scope="col" className="py-2 pr-4 font-bold">Line item</th>
+                    <th scope="col" className="py-2 font-bold">Cost</th>
                   </tr>
-                ))}
-              </tbody>
+                </thead>
+                <tbody>
+                  {pilotCosts.map(([item, cost, note]) => (
+                    <tr key={item} className="border-b border-line last:border-b-0">
+                      <th scope="row" className="py-3 pr-4 align-top font-semibold text-ink">
+                        {item}
+                        <span className="block text-xs font-normal leading-5 text-slate-500">{note}</span>
+                      </th>
+                      <td className="py-3 align-top font-display font-bold">{cost}</td>
+                    </tr>
+                  ))}
+                </tbody>
               </table>
             </div>
           </div>

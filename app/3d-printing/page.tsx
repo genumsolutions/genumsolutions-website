@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { ArrowUpRight } from 'lucide-react'
+import ArticleCard from '../../components/ArticleCard'
 import PageIntro from '../../components/PageIntro'
 import PageShell from '../../components/PageShell'
 import ModelBrowser from '../../components/ModelBrowser'
@@ -28,12 +29,7 @@ export default function PrintingPage() {
       <section className="mx-auto max-w-7xl px-5 py-10 sm:py-14 lg:px-8">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {offers.map((offer) => (
-            <article key={offer.title} className="border-t-2 border-ink bg-white p-5 sm:p-6">
-              <p className="text-xs font-black uppercase tracking-widest text-navy">{offer.meta}</p>
-              <h2 className="mt-8 font-display text-xl font-bold sm:mt-12 sm:text-2xl">{offer.title}</h2>
-              <p className="mt-3 leading-7 text-muted">{offer.text}</p>
-              <Link href="/contact" className="mt-6 inline-flex h-12 items-center gap-1.5 rounded-full bg-navy px-5 text-sm font-black text-white transition hover:bg-navy-dark sm:mt-7">Request a quote <ArrowUpRight size={14} aria-hidden="true" /></Link>
-            </article>
+            <ArticleCard key={offer.title} tag={offer.meta} title={offer.title} description={offer.text} href="/contact" cta="Request a quote" />
           ))}
         </div>
 

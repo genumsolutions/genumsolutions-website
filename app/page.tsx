@@ -4,7 +4,7 @@ import type { Metadata } from 'next'
 import { ArrowRight } from 'lucide-react'
 import PageShell from '../components/PageShell'
 import { getProductMedia } from '../lib/product-media'
-import { trainingPrograms, pilotCosts, stemProjectHighlights } from '../lib/programs'
+import { trainingPrograms } from '../lib/programs'
 import { getSiteContent } from '../lib/content-store'
 
 export const revalidate = 300
@@ -128,86 +128,38 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <section aria-labelledby="curriculum-heading" className="border-y border-line bg-mist py-12 lg:py-20">
+        <section aria-labelledby="training-heading" className="border-y border-line bg-mist py-12 lg:py-20">
           <div className="mx-auto max-w-7xl px-5 lg:px-8">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
                 <p className="text-xs font-black uppercase tracking-[.24em] text-navy">100+ project curriculum</p>
-                <h2 id="curriculum-heading" className="mt-2 max-w-2xl font-display text-2xl font-bold tracking-tight sm:text-3xl lg:text-4xl">Ages, materials, and outcomes stay visible.</h2>
+                <h2 id="training-heading" className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl">Training programs that build careers.</h2>
+                <p className="mt-3 max-w-xl text-sm leading-6 text-slate-600">
+                  From a single robotics lab to a three-classroom pilot with kits, curriculum, teacher training, coaching, and reporting.
+                </p>
               </div>
-              <Link href="/contact" className="inline-flex items-center gap-1.5 text-sm font-bold text-navy underline decoration-gold decoration-2 underline-offset-4 transition hover:text-navy-dark">
-                Request the full catalog <ArrowRight size={15} aria-hidden="true" />
+              <Link href="/services#training" className="inline-flex items-center gap-1.5 text-sm font-bold text-navy underline decoration-gold decoration-2 underline-offset-4 transition hover:text-navy-dark">
+                View all programs <ArrowRight size={15} aria-hidden="true" />
               </Link>
             </div>
-            <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {stemProjectHighlights.map(([ages, ...projects]) => (
-                <li key={ages} className="rounded-2xl border border-line bg-white p-5 sm:p-6">
-                  <p className="text-xs font-black uppercase tracking-widest text-gold">{ages}</p>
-                  <ul className="mt-4 space-y-2 text-sm leading-6 text-slate-600">
-                    {projects.map((project) => <li key={project}>{project}</li>)}
-                  </ul>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
-
-        <section aria-labelledby="training-heading" className="mx-auto max-w-7xl px-5 py-12 lg:grid lg:grid-cols-[.9fr_1.1fr] lg:gap-10 lg:px-8 lg:py-20">
-          <div className="min-w-0">
-            <p className="text-xs font-black uppercase tracking-[.24em] text-navy">Illustrative pilot costing</p>
-            <h2 id="training-heading" className="mt-3 font-display text-2xl font-bold tracking-tight sm:text-3xl">A transparent starting point for a school proposal.</h2>
-            <p className="mt-4 leading-7 text-slate-600">
-              The source proposal models a three-classroom pilot with 30 kits. These figures are illustrative, shown
-              in NPR for planning, and confirmed after scope, taxes, delivery, and local procurement review.
-            </p>
-            <p className="mt-5 font-display text-2xl font-bold text-navy sm:text-3xl">NPR 8,40,000 <span className="font-sans text-sm font-normal text-slate-500">illustrative total</span></p>
-            <div className="mt-8 overflow-x-auto">
-              <table className="w-full min-w-[320px] sm:min-w-[400px] text-left text-sm">
-                <caption className="sr-only">Illustrative three-classroom pilot cost breakdown in NPR</caption>
-                <thead>
-                  <tr className="border-b border-line text-xs uppercase tracking-wider text-slate-400">
-                    <th scope="col" className="py-2 pr-4 font-bold">Line item</th>
-                    <th scope="col" className="py-2 font-bold">Cost</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pilotCosts.map(([item, cost, note]) => (
-                    <tr key={item} className="border-b border-line last:border-b-0">
-                      <th scope="row" className="py-3 pr-4 align-top font-semibold text-ink">
-                        {item}
-                        <span className="block text-xs font-normal leading-5 text-slate-500">{note}</span>
-                      </th>
-                      <td className="py-3 align-top font-display font-bold">{cost}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-          <div className="mt-10 min-w-0 lg:mt-0">
-            <h3 className="font-display text-xl font-bold tracking-tight sm:text-2xl">Our training programs</h3>
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              From a single robotics lab to a three-classroom pilot with kits, curriculum, teacher training,
-              coaching, and reporting.
-            </p>
-            <ul className="mt-6 space-y-4">
+            <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {trainingPrograms.map((program) => (
-                <li key={program.title} className="rounded-2xl border border-line bg-white p-5 sm:p-6">
+                <li key={program.title} className="flex flex-col rounded-2xl border border-line bg-white p-5 sm:p-6">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <h4 className="font-display text-lg font-bold">{program.title}</h4>
-                    <span className="shrink-0 whitespace-nowrap rounded-full bg-sky px-3 py-1 text-xs font-bold text-navy">{program.duration}</span>
+                    <h3 className="font-display text-base font-bold leading-snug">{program.title}</h3>
+                    <span className="shrink-0 whitespace-nowrap rounded-full bg-sky px-3 py-1 text-[10px] font-bold text-navy">{program.duration}</span>
                   </div>
-                  <p className="mt-1 text-xs font-bold uppercase tracking-wide text-gold">{program.audience}</p>
-                  <p className="mt-3 text-sm leading-6 text-slate-600">{program.description}</p>
-                  <p className="mt-3 text-xs leading-5 text-slate-500"><strong className="text-ink">Outcome:</strong> {program.outcome}</p>
+                  <p className="mt-2 text-[10px] font-bold uppercase tracking-wide text-gold">{program.audience}</p>
+                  <p className="mt-3 flex-1 text-xs leading-5 text-slate-600">{program.description}</p>
+                  <p className="mt-3 text-[10px] leading-4 text-slate-500"><strong className="text-ink">Outcome:</strong> {program.outcome}</p>
                 </li>
               ))}
             </ul>
             <Link
-              href="/services#training"
+              href="/services"
               className="mt-7 inline-flex h-12 items-center gap-2 rounded-full bg-gold px-6 text-sm font-black text-ink transition hover:bg-gold-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
             >
-              See training programs <ArrowRight size={15} aria-hidden="true" />
+              See all services & training <ArrowRight size={15} aria-hidden="true" />
             </Link>
           </div>
         </section>
