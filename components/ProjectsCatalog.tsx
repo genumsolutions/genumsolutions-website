@@ -68,7 +68,7 @@ export default function ProjectsCatalog({ products = [] }: { products?: Product[
 
   return (
     <section className="mx-auto max-w-7xl px-5 py-10 sm:py-12 lg:px-8 lg:py-16">
-      <div role="tablist" aria-label="Project sections" className="flex gap-x-5 overflow-x-auto border-b border-line sm:gap-x-7">
+      <div role="tablist" aria-label="Project sections" className="flex gap-x-5 border-b border-line sm:gap-x-7">
         {([
           { key: 'packages' as const, label: 'Project Packages', count: packageProducts.length },
           { key: 'robot-cars' as const, label: 'Robot Car Projects', count: robotCarProducts.length },
