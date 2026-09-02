@@ -147,7 +147,7 @@ export default function ProjectsCatalog({ products = [] }: { products?: Product[
                   alt={media.alt}
                   fill
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                  className="object-cover transition duration-500 hover:scale-105"
+                  className="object-cover"
                 />
               </Link>
               <div className="flex flex-1 flex-col p-5">

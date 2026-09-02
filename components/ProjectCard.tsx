@@ -30,7 +30,7 @@ export function ProjectCard({ product, onDetail }: ProjectCardProps) {
           alt={product.name}
           width={400}
           height={250}
-          className="w-full h-full object-cover transition duration-500 hover:scale-105"
+          className="w-full h-full object-cover"
         />
       </Link>
 
