@@ -5,27 +5,41 @@ import { Check, Copy, Download, MonitorSmartphone, Settings2, ShieldCheck, Smart
 import PageShell from '../../components/PageShell'
 import { androidApp, company, refreshAndroidAppInfo } from '../../lib/company'
 
-const steps = [
-  {
-    title: 'Download the APK',
-    icon: Download,
-    body: `Tap "Download" to grab v${androidApp.version} (${androidApp.sizeLabel}, ${androidApp.arch}) — signed by ${company.name}, no app store needed.`,
-  },
-  {
-    title: 'Allow unknown sources',
-    icon: Settings2,
-    body: 'When your phone asks, allow installation from your browser or from "Unknown sources". You can turn this off again after installing.',
-  },
-  {
-    title: 'Install & open',
-    icon: Smartphone,
-    body: 'Open the downloaded file, confirm the install, and sign in once. The app remembers your session across tools on the same device.',
-  },
-]
-
 export default function AppDownloadPage() {
   const [copied, setCopied] = useState(false)
-  useEffect(() => { refreshAndroidAppInfo() }, [])
+  const [appInfo, setAppInfo] = useState({
+    version: androidApp.version,
+    sizeLabel: androidApp.sizeLabel,
+    arch: androidApp.arch,
+  })
+
+  useEffect(() => {
+    refreshAndroidAppInfo().then((info) => {
+      setAppInfo({
+        version: info.version,
+        sizeLabel: info.sizeLabel,
+        arch: info.arch,
+      })
+    })
+  }, [])
+
+  const steps = [
+    {
+      title: 'Download the APK',
+      icon: Download,
+      body: `Tap "Download" to grab v${appInfo.version} (${appInfo.sizeLabel}, ${appInfo.arch}) — signed by ${company.name}, no app store needed.`,
+    },
+    {
+      title: 'Allow unknown sources',
+      icon: Settings2,
+      body: 'When your phone asks, allow installation from your browser or from "Unknown sources". You can turn this off again after installing.',
+    },
+    {
+      title: 'Install & open',
+      icon: Smartphone,
+      body: 'Open the downloaded file, confirm the install, and sign in once. The app remembers your session across tools on the same device.',
+    },
+  ]
 
   async function copyLink() {
     try {
@@ -47,7 +61,7 @@ export default function AppDownloadPage() {
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
             Browsing, orders, tools, and device controls — including Robo Car — in one native app for Android.
-            v{androidApp.version} · {androidApp.sizeLabel} · {androidApp.arch}.
+            v{appInfo.version} · {appInfo.sizeLabel} · {appInfo.arch}.
           </p>
         </div>
       </section>
@@ -82,7 +96,7 @@ export default function AppDownloadPage() {
                     className="inline-flex h-12 items-center gap-2 rounded-full bg-navy px-6 text-sm font-black text-white shadow-sm transition hover:bg-navy-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
                   >
                     <Download size={16} aria-hidden="true" />
-                    Download v{androidApp.version}
+                    Download v{appInfo.version}
                   </a>
                   <button
                     type="button"

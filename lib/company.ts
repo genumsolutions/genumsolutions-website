@@ -76,10 +76,13 @@ export async function refreshAndroidAppInfo(): Promise<{
   try {
     const releaseUrl =
       'https://bkylfnlybtsujwzropru.supabase.co/storage/v1/object/public/app-releases/release.json'
-    const res = await fetch(releaseUrl, {
-      // No auth needed - bucket is public, but we include headers for safety
+    // Cache-bust: CDN / browser may cache this file. Append a timestamp
+    // so every mount gets the freshest manifest.
+    const bust = `?_t=${Date.now()}`
+    const res = await fetch(releaseUrl + bust, {
       headers: {
         Accept: 'application/json',
+        'Cache-Control': 'no-cache',
       },
     })
 
@@ -91,13 +94,16 @@ export async function refreshAndroidAppInfo(): Promise<{
 
     const manifest = await res.json()
 
-    // Update androidApp with new manifest values
+    // Update androidApp with new manifest values.
+    // Handle both old manifest format ({ size: "32.5 MB" }) and
+    // new format ({ size_mb: 32.5 }).
     androidApp.version = manifest.version || androidApp.version
     androidApp.versionCode = manifest.version_code || androidApp.versionCode
-    androidApp.sizeLabel =
-      manifest.size_mb !== undefined
-        ? `${(manifest.size_mb).toFixed(1)} MB`
-        : androidApp.sizeLabel
+    if (manifest.size_mb !== undefined) {
+      androidApp.sizeLabel = `${Number(manifest.size_mb).toFixed(1)} MB`
+    } else if (manifest.size) {
+      androidApp.sizeLabel = manifest.size
+    }
     androidApp.apkUrl = manifest.apkUrl || androidApp.apkUrl
     androidApp.releaseUrl = manifest.releaseUrl || androidApp.releaseUrl
     androidApp.appsPagePath = manifest.appsPagePath || androidApp.appsPagePath

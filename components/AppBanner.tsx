@@ -74,12 +74,26 @@ function initState(): BannerState {
 // instructions and direct links.
 export default function AppBanner() {
   const [state, setState] = useState<BannerState | null>(null)
+  // Keep fetched app info in React state so the banner re-renders with the
+  // latest version after the Supabase fetch completes.
+  const [live, setLive] = useState({
+    version: androidApp.version,
+    sizeLabel: androidApp.sizeLabel,
+    arch: androidApp.arch,
+    apkUrl: androidApp.apkUrl,
+    appsPagePath: androidApp.appsPagePath,
+  })
 
   useEffect(() => {
     // Fetch latest version from Supabase release.json on mount
-    refreshAndroidAppInfo().then(() => {
-      // Re-render with updated androidApp values
-      setState((prev) => (prev ? { ...prev } : null))
+    refreshAndroidAppInfo().then((info) => {
+      setLive({
+        version: info.version,
+        sizeLabel: info.sizeLabel,
+        arch: info.arch,
+        apkUrl: info.apkUrl,
+        appsPagePath: info.appsPagePath,
+      })
     })
     setState(initState())
   }, [])
@@ -103,10 +117,10 @@ export default function AppBanner() {
   if (!state || state.kind === 'hidden') return null
 
   const previouslyDownloaded = state.kind === 'downloaded'
-  const outdated = previouslyDownloaded && isNewer(androidApp.version, state.version)
+  const outdated = previouslyDownloaded && isNewer(live.version, state.version)
 
   function recordDownload() {
-    writeJSON(SEEN_KEY, { version: androidApp.version, at: Date.now() })
+    writeJSON(SEEN_KEY, { version: live.version, at: Date.now() })
   }
 
   function dismiss() {
@@ -133,8 +147,8 @@ export default function AppBanner() {
             {outdated ? 'Update available' : 'Get the GENUM app'}
           </p>
           <p className="mt-0.5 text-xs leading-5 text-muted">
-            Browsing, orders, tools &amp; device controls · v{androidApp.version} · {androidApp.sizeLabel} ·{' '}
-            {androidApp.arch}
+            Browsing, orders, tools &amp; device controls · v{live.version} · {live.sizeLabel} ·{' '}
+            {live.arch}
           </p>
           {previouslyDownloaded && !outdated && (
             <p className="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-emerald-700">
@@ -146,20 +160,20 @@ export default function AppBanner() {
 
         <div className="flex shrink-0 items-center gap-2">
           <Link
-            href={androidApp.appsPagePath}
+            href={live.appsPagePath}
             className={`flex items-center gap-2 rounded-full border border-line px-4 py-2 text-xs font-bold text-ink transition hover:border-navy hover:text-navy ${isMobile() ? 'min-h-[44px] px-5' : 'px-3 py-2'} ${isMobile() ? 'gap-3' : 'gap-1.5'}`}
           >
             <HelpCircle size={14} aria-hidden="true" />
             How to install
           </Link>
 <a
-            href={androidApp.apkUrl}
+            href={live.apkUrl}
             download
             onClick={recordDownload}
             className={`inline-flex h-12 items-center gap-3 rounded-full bg-navy px-5 text-xs font-black text-white shadow-sm transition hover:bg-navy-dark ${isMobile() ? 'min-h-[44px] px-6' : 'h-10'} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy`}
           >
             <Download size={15} aria-hidden="true" />
-            {previouslyDownloaded ? `Reinstall v${androidApp.version}` : `Download v${androidApp.version}`}
+            {previouslyDownloaded ? `Reinstall v${live.version}` : `Download v${live.version}`}
           </a>
           <button
             onClick={dismiss}
@@ -171,7 +185,7 @@ export default function AppBanner() {
         </div>
       </div>
       <p className="sr-only">
-        {androidApp.sizeLabel} · signed by {company.name} · no app store needed
+        {live.sizeLabel} · signed by {company.name} · no app store needed
       </p>
     </aside>
   )
