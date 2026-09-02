@@ -35,7 +35,7 @@ export const company = {
 //   2. Run: node scripts/upload-release.mjs --apk releases/...
 //   3. Call: import { refreshAndroidAppInfo } from '../lib/company'
 //          await refreshAndroidAppInfo()
-//   4. The website will instantly show the new version on /app and in AppBanner.
+//   4. The website will instantly show the new version on /app.
 export const androidApp: {
   version: string
   versionCode: number
