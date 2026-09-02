@@ -141,7 +141,7 @@ export default function ProjectsCatalog({ products = [] }: { products?: Product[
               key={product.id}
               className="flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-sm"
             >
-              <Link href={`/products/${product.id}`} aria-label={`View ${product.name}`} className="relative block h-48 overflow-hidden bg-ink">
+              <Link href={`/products/${product.id}`} aria-label={`View ${product.name}`} className="block h-48 overflow-hidden bg-ink">
                 <Image
                   src={media.src}
                   alt={media.alt}
@@ -149,8 +149,6 @@ export default function ProjectsCatalog({ products = [] }: { products?: Product[
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                   className="object-cover transition duration-500 hover:scale-105"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-ink/70 to-transparent" />
-                <span className="absolute bottom-3 left-4 max-w-[calc(100%-2rem)] truncate text-xs font-black uppercase tracking-widest text-white">{product.category}</span>
               </Link>
               <div className="flex flex-1 flex-col p-5">
                 <p className="truncate text-xs font-black uppercase tracking-widest text-navy">{tab === 'robot-cars' ? 'Robot Car' : product.productType}</p>

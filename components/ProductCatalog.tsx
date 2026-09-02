@@ -166,7 +166,7 @@ export default function ProductCatalog({
               <Link
                 href={`/products/${product.id}`}
                 aria-label={`View ${product.name}`}
-                className="relative block h-48 overflow-hidden bg-ink"
+                className="block h-48 overflow-hidden bg-ink"
               >
                 <Image
                   src={media.src}
@@ -175,8 +175,6 @@ export default function ProductCatalog({
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                   className="object-cover transition duration-500 hover:scale-105"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-ink/70 to-transparent" />
-                <span className="absolute bottom-3 left-4 max-w-[calc(100%-2rem)] truncate text-xs font-black uppercase tracking-widest text-white">{product.category}</span>
               </Link>
               <div className="flex flex-1 flex-col p-5">
                 <p className="truncate text-xs font-black uppercase tracking-widest text-navy">{product.badge || product.productType}</p>
