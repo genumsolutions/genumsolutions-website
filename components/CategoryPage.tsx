@@ -50,7 +50,7 @@ export default function CategoryPage({ slug }: { slug: string }) {
           <h2 className="font-display text-lg font-bold text-ink">Typical hardware</h2>
           <ul className="mt-4 flex flex-wrap gap-2">
             {cat.hardware.map((item) => (
-              <li key={item} className="rounded-full bg-mist px-3 py-1.5 text-xs font-bold text-navy">
+              <li key={item} className="whitespace-nowrap rounded-full bg-mist px-3 py-1.5 text-xs font-bold text-navy">
                 {item}
               </li>
             ))}

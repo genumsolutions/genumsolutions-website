@@ -195,7 +195,7 @@ export default async function HomePage() {
                 <li key={program.title} className="rounded-2xl border border-line bg-white p-5 sm:p-6">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <h4 className="font-display text-lg font-bold">{program.title}</h4>
-                    <span className="rounded-full bg-sky px-3 py-1 text-xs font-bold text-navy">{program.duration}</span>
+                    <span className="shrink-0 whitespace-nowrap rounded-full bg-sky px-3 py-1 text-xs font-bold text-navy">{program.duration}</span>
                   </div>
                   <p className="mt-1 text-xs font-bold uppercase tracking-wide text-gold">{program.audience}</p>
                   <p className="mt-3 text-sm leading-6 text-slate-600">{program.description}</p>

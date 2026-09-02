@@ -57,7 +57,7 @@ function Stat({ label, value, sub }: { label: string; value: string | number; su
   return (
     <div className="border-t-2 border-ink bg-white p-5">
       <p className="text-xs font-black uppercase tracking-widest text-slate-400">{label}</p>
-      <p className="mt-2 font-display text-3xl font-bold text-ink">{value}</p>
+      <p className="mt-2 break-words font-display text-3xl font-bold text-ink">{value}</p>
       {sub && <p className="mt-1 text-xs text-slate-500">{sub}</p>}
     </div>
   )
@@ -494,7 +494,7 @@ export default function AdminPanel({ initialProducts }: Props) {
                   return (
                     <div key={id} className="flex flex-wrap items-center justify-between gap-3 py-3">
                       <div className="min-w-0">
-                        <span className="block break-words text-sm"><strong>{name}</strong> <span className="text-slate-400">{category}</span></span>
+                        <span className="block line-clamp-2 text-sm"><strong>{name}</strong> <span className="text-slate-400">{category}</span></span>
                         <span className="text-[10px] font-black uppercase tracking-wide text-gold">{product.inventoryType || 'Catalog'} inventory · {priceLabel}</span>
                       </div>
                       <div className="flex shrink-0 flex-wrap gap-2">
@@ -536,12 +536,12 @@ export default function AdminPanel({ initialProducts }: Props) {
                 <div className="relative h-48 overflow-hidden rounded-t-2xl bg-ink">
                   {previewProduct.image ? <Image src={previewProduct.image} alt={previewProduct.name} fill className="object-cover" /> : null}
                   <div className="absolute inset-0 bg-gradient-to-t from-ink/70 to-transparent" />
-                  <span className="absolute bottom-3 left-4 text-xs font-black uppercase tracking-widest text-white">{previewProduct.category}</span>
+                  <span className="absolute bottom-3 left-4 max-w-[calc(100%-2rem)] truncate text-xs font-black uppercase tracking-widest text-white">{previewProduct.category}</span>
                 </div>
-                <div className="p-5">
-                  <p className="text-xs font-black uppercase tracking-widest text-navy">Project Package</p>
-                  <h2 className="mt-2 font-display text-xl font-bold leading-snug text-ink">{previewProduct.name}</h2>
-                  <p className="mt-2 min-h-12 text-sm leading-6 text-muted">{previewProduct.note || previewProduct.description}</p>
+                <div className="flex flex-1 flex-col p-5">
+                  <p className="truncate text-xs font-black uppercase tracking-widest text-navy">Project Package</p>
+                  <h2 className="mt-2 line-clamp-2 font-display text-xl font-bold leading-snug text-ink">{previewProduct.name}</h2>
+                  <p className="mt-2 line-clamp-2 flex-1 text-sm leading-6 text-muted">{previewProduct.note || previewProduct.description}</p>
                   <div className="mt-5 flex items-center justify-between gap-3">
                     <strong className="font-display text-lg text-ink">{previewProduct.priceLabel}</strong>
                     <button onClick={() => setPreviewProduct(null)} className="rounded-full bg-navy px-4 py-2 text-xs font-black text-white">View details</button>
@@ -579,9 +579,9 @@ export default function AdminPanel({ initialProducts }: Props) {
                         <span className="absolute top-3 left-3 text-xs font-black uppercase tracking-widest text-white">Robot Car</span>
                       </div>
                       <div className="p-5">
-                        <p className="text-xs font-black uppercase tracking-widest text-navy">{category}</p>
-                        <h2 className="mt-2 font-display text-xl font-bold leading-snug">{name}</h2>
-                        <p className="mt-2 min-h-20 text-sm leading-6 text-muted">{note || description || ''}</p>
+                        <p className="truncate text-xs font-black uppercase tracking-widest text-navy">{category}</p>
+                        <h2 className="mt-2 line-clamp-2 font-display text-xl font-bold leading-snug">{name}</h2>
+                        <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted">{note || description || ''}</p>
                         {specs && specs.length > 0 && (
                           <p className="mt-3 text-[10px] text-slate-400 font-mono">{specs.join(', ')}</p>
                         )}
@@ -631,7 +631,7 @@ export default function AdminPanel({ initialProducts }: Props) {
                 {shownProducts.map((item) => (
                   <div key={item.id} className="flex items-center justify-between gap-2 py-2">
                     <div className="min-w-0">
-                      <span className="block break-words text-sm"><strong>{item.name}</strong> <span className="text-slate-400">{item.sku}</span></span>
+                      <span className="block line-clamp-2 text-sm"><strong>{item.name}</strong> <span className="text-slate-400">{item.sku}</span></span>
                     </div>
                     <span className="flex shrink-0 gap-2">
                       <button onClick={() => { setProduct(item); focusEditor('product-editor') }} className="text-xs font-bold text-navy underline">Edit</button>
@@ -680,7 +680,7 @@ export default function AdminPanel({ initialProducts }: Props) {
                   {services.map((s) => (
                     <div key={s.id} className="flex items-center justify-between gap-2 py-2">
                       <div className="min-w-0">
-                        <span className="block break-words text-sm"><strong>{s.name}</strong> <span className="text-slate-400">{s.priceLabel}</span></span>
+                        <span className="block line-clamp-2 text-sm"><strong>{s.name}</strong> <span className="text-slate-400">{s.priceLabel}</span></span>
                         {!s.active && <span className="ml-2 text-[10px] font-black uppercase text-red-500">inactive</span>}
                       </div>
                       <span className="flex shrink-0 gap-2">
@@ -745,7 +745,7 @@ export default function AdminPanel({ initialProducts }: Props) {
                       </div>
                       <select value={order.status} onChange={(e) => setOrderStatus(order.id, e.target.value)} aria-label={`Status for ${order.id.slice(0, 8)}`} className="border border-line px-2 py-1 text-xs font-bold">{STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}</select>
                     </div>
-                    <ul className="mt-2 text-xs leading-5 text-slate-600">{order.items.map((item) => <li key={`${order.id}-${item.name}`} className="truncate">{item.quantity} × {item.name} ({formatNPR(item.price * item.quantity)})</li>)}</ul>
+                    <ul className="mt-2 space-y-1 text-xs leading-5 text-slate-600">{order.items.map((item) => <li key={`${order.id}-${item.name}`} className="truncate">{item.quantity} × {item.name} ({formatNPR(item.price * item.quantity)})</li>)}</ul>
                   </li>
                 ))}
               </ul>
@@ -765,11 +765,11 @@ export default function AdminPanel({ initialProducts }: Props) {
               <div className="mt-4 grid gap-4 sm:grid-cols-3">
                 <div className="rounded border border-line p-4">
                   <p className="text-xs font-black uppercase tracking-widest text-slate-400">Total Revenue</p>
-                  <p className="mt-1 font-display text-2xl font-bold">{formatNPR(stats.revenue)}</p>
+                  <p className="mt-1 break-words font-display text-2xl font-bold">{formatNPR(stats.revenue)}</p>
                 </div>
                 <div className="rounded border border-line p-4">
                   <p className="text-xs font-black uppercase tracking-widest text-slate-400">Revenue Today</p>
-                  <p className="mt-1 font-display text-2xl font-bold">{formatNPR(stats.revenueToday)}</p>
+                  <p className="mt-1 break-words font-display text-2xl font-bold">{formatNPR(stats.revenueToday)}</p>
                 </div>
                 <div className="rounded border border-line p-4">
                   <p className="text-xs font-black uppercase tracking-widest text-slate-400">Transactions</p>
@@ -817,7 +817,7 @@ export default function AdminPanel({ initialProducts }: Props) {
                     <div className="min-w-0">
                       <p className="truncate text-sm font-bold">{user.name || '—'} <span className="font-normal text-slate-500">· {user.email}</span></p>
                       {user.phone && <p className="text-xs text-slate-400">{user.phone}</p>}
-                      {user.address && <p className="text-xs text-slate-400">{user.address}</p>}
+                      {user.address && <p className="break-words text-xs text-slate-400">{user.address}</p>}
                       <p className="text-xs text-slate-400">Joined {new Date(user.createdAt).toLocaleDateString()}{user.lastSignInAt ? ` · Last seen ${new Date(user.lastSignInAt).toLocaleDateString()}` : ''}</p>
                       <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${user.role === 'admin' ? 'bg-gold text-ink' : 'bg-sky text-navy'}`}>{user.role}</span>
                     </div>

@@ -122,14 +122,14 @@ export default function AccountPanel() {
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <p className="font-bold text-ink">#{order.id.slice(0, 8).toUpperCase()}</p>
-                      <p className="text-xs text-slate-500">{new Date(order.createdAt).toLocaleDateString()} · {order.provider === 'cod' ? 'Pay on delivery' : order.provider === 'esewa' ? 'eSewa' : order.provider === 'khalti' ? 'Khalti' : order.provider}</p>
+                      <p className="truncate text-xs text-slate-500">{new Date(order.createdAt).toLocaleDateString()} · {order.provider === 'cod' ? 'Pay on delivery' : order.provider === 'esewa' ? 'eSewa' : order.provider === 'khalti' ? 'Khalti' : order.provider}</p>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className={`rounded-full px-2.5 py-1 text-[11px] font-black uppercase tracking-wide ${statusStyles[order.status] || 'bg-slate-100 text-slate-700'}`}>{order.status}</span>
                       <span className="font-black text-ink">{formatNPR(order.totalNpr)}</span>
                     </div>
                   </div>
-                  <ul className="mt-2 text-xs leading-5 text-slate-600">{order.items.map((item) => <li key={`${order.id}-${item.name}`}>{item.quantity} × {item.name}</li>)}</ul>
+                  <ul className="mt-2 space-y-1 text-xs leading-5 text-slate-600">{order.items.map((item) => <li key={`${order.id}-${item.name}`} className="truncate">{item.quantity} × {item.name}</li>)}</ul>
                 </div>
               ))}
             </div>

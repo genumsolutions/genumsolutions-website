@@ -101,7 +101,7 @@ export default function ProjectsCatalog({ products = [] }: { products?: Product[
           <button
             onClick={() => { setCategory('All'); setPage(1) }}
             aria-pressed={category === 'All'}
-            className={`min-h-[44px] rounded-full px-4 py-2 text-xs font-bold transition ${category === 'All' ? 'bg-navy text-white shadow-sm' : 'border border-line bg-white text-muted hover:border-navy hover:text-navy'}`}
+            className={`min-h-[44px] whitespace-nowrap rounded-full px-4 py-2 text-xs font-bold transition ${category === 'All' ? 'bg-navy text-white shadow-sm' : 'border border-line bg-white text-muted hover:border-navy hover:text-navy'}`}
           >
             All <span className="opacity-70">({filtered.length})</span>
           </button>
@@ -113,7 +113,7 @@ export default function ProjectsCatalog({ products = [] }: { products?: Product[
                 key={item}
                 onClick={() => { setCategory(item); setPage(1) }}
                 aria-pressed={active}
-                className={`min-h-[44px] rounded-full px-4 py-2 text-xs font-bold transition ${active ? 'bg-navy text-white shadow-sm' : 'border border-line bg-white text-muted hover:border-navy hover:text-navy'}`}
+                className={`min-h-[44px] whitespace-nowrap rounded-full px-4 py-2 text-xs font-bold transition ${active ? 'bg-navy text-white shadow-sm' : 'border border-line bg-white text-muted hover:border-navy hover:text-navy'}`}
               >
                 {item} <span className="opacity-70">({count})</span>
               </button>
@@ -139,7 +139,7 @@ export default function ProjectsCatalog({ products = [] }: { products?: Product[
           return (
             <article
               key={product.id}
-              className="overflow-hidden rounded-2xl border border-line bg-white shadow-sm"
+              className="flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-sm"
             >
               <Link href={`/products/${product.id}`} aria-label={`View ${product.name}`} className="relative block h-48 overflow-hidden bg-ink">
                 <Image
@@ -150,12 +150,12 @@ export default function ProjectsCatalog({ products = [] }: { products?: Product[
                   className="object-cover transition duration-500 hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-ink/70 to-transparent" />
-                <span className="absolute bottom-3 left-4 text-xs font-black uppercase tracking-widest text-white">{product.category}</span>
+                <span className="absolute bottom-3 left-4 max-w-[calc(100%-2rem)] truncate text-xs font-black uppercase tracking-widest text-white">{product.category}</span>
               </Link>
-              <div className="p-5">
-                <p className="text-xs font-black uppercase tracking-widest text-navy">{tab === 'robot-cars' ? 'Robot Car' : product.productType}</p>
-                <h2 className="mt-2 font-display text-xl font-bold leading-snug">{product.name}</h2>
-                <p className="mt-2 min-h-12 text-sm leading-6 text-muted">{product.note || product.description?.split('. ')[0]}</p>
+              <div className="flex flex-1 flex-col p-5">
+                <p className="truncate text-xs font-black uppercase tracking-widest text-navy">{tab === 'robot-cars' ? 'Robot Car' : product.productType}</p>
+                <h2 className="mt-2 line-clamp-2 font-display text-xl font-bold leading-snug">{product.name}</h2>
+                <p className="mt-2 line-clamp-2 flex-1 text-sm leading-6 text-muted">{product.note || product.description?.split('. ')[0]}</p>
                 <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
                   <strong className="font-display text-lg">{product.priceLabel}</strong>
                   {quoteOnly ? (

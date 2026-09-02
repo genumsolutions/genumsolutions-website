@@ -159,11 +159,11 @@ export default function CheckoutPage() {
                 <h2 className="mb-2 font-display text-lg font-bold">Build list ({items.length})</h2>
                 {items.map(({ product, quantity }) => (
                   <div key={product.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-line py-3 last:border-b-0 last:pb-0 first:pt-0">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-bold">{product.name}</p>
-                      <p className="text-xs text-muted">{formatNPR(product.price)} each · {product.stock} in stock</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="line-clamp-2 text-sm font-bold">{product.name}</p>
+                      <p className="truncate text-xs text-muted">{formatNPR(product.price)} each · {product.stock} in stock</p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex shrink-0 items-center gap-2 whitespace-nowrap">
                       <button onClick={() => changeQuantity(product.id, quantity - 1)} className="h-8 w-8 rounded-lg border border-line font-bold transition hover:border-navy hover:text-navy disabled:opacity-40" disabled={quantity <= 1} aria-label={`Reduce ${product.name} quantity`}>−</button>
                       <span className="w-6 text-center text-sm font-bold" aria-live="polite">{quantity}</span>
                       <button onClick={() => changeQuantity(product.id, Math.min(quantity + 1, product.stock))} disabled={quantity >= product.stock} className="h-8 w-8 rounded-lg border border-line font-bold transition hover:border-navy hover:text-navy disabled:opacity-40" aria-label={`Add another ${product.name}`}>+</button>
