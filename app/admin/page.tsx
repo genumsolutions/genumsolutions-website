@@ -10,7 +10,7 @@ import LogoutButton from '../../components/LogoutButton'
 const AdminPanel = dynamicImport(() => import('../../components/AdminPanel'), { ssr: false, loading: () => <div className="mx-auto max-w-7xl px-5 py-12 text-sm text-muted">Loading admin…</div> })
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Admin · GENUM SOLUTIONS' }
+export const metadata: Metadata = { title: 'Admin' }
 
 export default async function AdminPage() {
   const [admin, products] = await Promise.all([getCurrentAdmin(), getManagedProducts()])

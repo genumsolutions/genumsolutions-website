@@ -110,6 +110,19 @@ export async function refreshAndroidAppInfo(): Promise<{
     if (manifest.releaseUrl) androidApp.releaseUrl = manifest.releaseUrl
     if (manifest.appsPagePath) androidApp.appsPagePath = manifest.appsPagePath
 
+    // Dynamically compute the APK file size from the actual download URL
+    // so the size is always accurate, even if the manifest doesn't include it.
+    try {
+      const head = await fetch(androidApp.apkUrl, { method: 'HEAD' })
+      const length = head.headers.get('content-length')
+      if (length) {
+        const mb = Number(length) / (1024 * 1024)
+        androidApp.sizeLabel = `${mb.toFixed(1)} MB`
+      }
+    } catch {
+      // Size fetch failed — keep whatever we already have.
+    }
+
     return androidApp
   } catch {
     // On failure (e.g., offline dev, release.json not yet uploaded) keep

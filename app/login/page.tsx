@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import PageShell from '../../components/PageShell'
 import AuthPanel from '../../components/AuthPanel'
 
-export const metadata: Metadata = { title: 'Sign in · GENUM SOLUTIONS' }
+export const metadata: Metadata = { title: 'Sign in' }
 
 const modes = ['signin', 'signup', 'forgot'] as const
 
