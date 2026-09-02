@@ -168,6 +168,8 @@ export default function AdminPanel({ initialProducts }: Props) {
   const [product, setProduct] = useState<Product>(emptyProduct)
   const [previewProduct, setPreviewProduct] = useState<Product | null>(null)
   const [projectCategory, setProjectCategory] = useState('All')
+  const [projectQuery, setProjectQuery] = useState('')
+  const [projectPage, setProjectPage] = useState(1)
   const [message, setMessage] = useState('')
   const [query, setQuery] = useState('')
   const [productPage, setProductPage] = useState(1)
@@ -201,6 +203,7 @@ export default function AdminPanel({ initialProducts }: Props) {
   const [activityTotalPages, setActivityTotalPages] = useState(1)
 
   useEffect(() => { setProductPage(1) }, [query])
+  useEffect(() => { setProjectPage(1) }, [projectQuery, projectCategory])
   // Orders are loaded on first render; other sections load when opened.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { void loadOrders(1) }, [])
@@ -385,9 +388,11 @@ export default function AdminPanel({ initialProducts }: Props) {
   const projectCategories = Array.from(new Set(projectProducts.map((item) => item.category)))
   const filteredProjects = projectProducts.filter((item) => {
     const matchesCategory = projectCategory === 'All' || item.category === projectCategory
-    const needle = query.trim().toLowerCase()
+    const needle = projectQuery.trim().toLowerCase()
     return matchesCategory && (!needle || `${item.name} ${item.sku} ${item.id} ${item.description}`.toLowerCase().includes(needle))
   })
+  const projectTotalPages = Math.max(1, Math.ceil(filteredProjects.length / PAGE_SIZE))
+  const shownProjects = filteredProjects.slice((projectPage - 1) * PAGE_SIZE, projectPage * PAGE_SIZE)
   const filteredProducts = products.filter((item) => `${item.name} ${item.sku} ${item.id}`.toLowerCase().includes(query.toLowerCase()))
   const productTotalPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE))
   const shownProducts = filteredProducts.slice((productPage - 1) * PAGE_SIZE, productPage * PAGE_SIZE)
@@ -474,83 +479,61 @@ export default function AdminPanel({ initialProducts }: Props) {
 
       {/* ═══════ PROJECT PACKAGES ═══════ */}
       {tab === 'ProjectPackages' && (
-        <section role="tabpanel" aria-labelledby="tab-project-packages" aria-label="Project packages overview" className="mt-8 space-y-8">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="font-display text-2xl font-bold text-ink">Project Packages ({projectProducts.length})</h2>
-            <select value={projectCategory} onChange={(e) => setProjectCategory(e.target.value)} className={inputClass} aria-label="Project category">
-              <option value="All">All categories</option>
-              {projectCategories.map((category) => <option key={category} value={category}>{category}</option>)}
-            </select>
-          </div>
-          {products.length === 0 ? (
-            <p className="text-sm text-slate-500">No products found.</p>
-          ) : (
-            <>
-              <div className="mt-4 divide-y divide-line border-t border-line">
-                {products
-                  .filter((p) => p.productType === 'Project package' && (projectCategory === 'All' || p.category === projectCategory) && (!query.trim() || `${p.name} ${p.sku} ${p.id} ${p.description}`.toLowerCase().includes(query.trim().toLowerCase())))
-                  .map((product) => {
-                  const { id, name, category, priceLabel } = product
-                  return (
-                    <div key={id} className="flex flex-wrap items-center justify-between gap-3 py-3">
-                      <div className="min-w-0">
-                        <span className="block line-clamp-2 text-sm"><strong>{name}</strong> <span className="text-slate-400">{category}</span></span>
-                        <span className="text-[10px] font-black uppercase tracking-wide text-gold">{product.inventoryType || 'Catalog'} inventory · {priceLabel}</span>
-                      </div>
-                      <div className="flex shrink-0 flex-wrap gap-2">
-                          <button
-                            onClick={() => {
-                              setProduct(product)
-                              focusEditor('project-package-editor')
-                            }}
-                            className="rounded-full bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark"
-                          >
-                            Edit
-                          </button>
-                          <button onClick={() => setPreviewProduct(product)} className="text-xs font-bold text-navy underline">Preview</button>
-                          <button onClick={() => void toggleProductVisibility(product)} className="text-xs font-bold text-ink underline">{product.active === false ? 'Show' : 'Hide'}</button>
-                          <button
-                            onClick={() => {
-                              if (window.confirm(`Delete project package ${name}?`)) {
-                                removeProduct(id)
-                              }
-                            }}
-                            className="rounded-full bg-red-100 px-4 py-2 text-xs font-bold text-red-600 transition hover:bg-red-200"
-                          >
-                            Delete
-                          </button>
-                      </div>
-                    </div>
-                  )
-                  })}
+        <div role="tabpanel" id="panel-project-packages" aria-labelledby="tab-project-packages" className="mt-8 grid min-w-0 gap-8 xl:grid-cols-[1fr_1.3fr]">
+          <section aria-label="Project package list" className="min-w-0 space-y-6">
+            <div className="min-w-0 border-t-2 border-ink bg-white p-6">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="font-display text-xl font-bold">Project Packages ({filteredProjects.length})</h2>
+                <select value={projectCategory} onChange={(e) => setProjectCategory(e.target.value)} className={inputClass} aria-label="Project category">
+                  <option value="All">All categories</option>
+                  {projectCategories.map((category) => <option key={category} value={category}>{category}</option>)}
+                </select>
               </div>
-              {filteredProjects.length === 0 && (
-                <p className="mt-8 text-center text-sm text-slate-500">No project packages found.</p>
-              )}
-            </>
-          )}
-          <ProjectEditor product={product} onChange={setProduct} onSave={saveProduct} onReset={() => setProduct({ ...emptyProduct, productType: 'Project package', category: 'Project Packages' })} busy={busy === 'product'} />
-          {previewProduct && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 p-5" role="dialog" aria-modal="true" aria-label="Project package preview" onClick={() => setPreviewProduct(null)}>
-              <article className="max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-2xl border border-line bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
-                <div className="relative h-48 overflow-hidden rounded-t-2xl bg-ink">
-                  {previewProduct.image ? <Image src={previewProduct.image} alt={previewProduct.name} fill className="object-cover" /> : null}
-                  <div className="absolute inset-0 bg-gradient-to-t from-ink/70 to-transparent" />
-                  <span className="absolute bottom-3 left-4 max-w-[calc(100%-2rem)] truncate text-xs font-black uppercase tracking-widest text-white">{previewProduct.category}</span>
-                </div>
-                <div className="flex flex-1 flex-col p-5">
-                  <p className="truncate text-xs font-black uppercase tracking-widest text-navy">Project Package</p>
-                  <h2 className="mt-2 line-clamp-2 font-display text-xl font-bold leading-snug text-ink">{previewProduct.name}</h2>
-                  <p className="mt-2 line-clamp-2 flex-1 text-sm leading-6 text-muted">{previewProduct.note || previewProduct.description}</p>
-                  <div className="mt-5 flex items-center justify-between gap-3">
-                    <strong className="font-display text-lg text-ink">{previewProduct.priceLabel}</strong>
-                    <button onClick={() => setPreviewProduct(null)} className="rounded-full bg-navy px-4 py-2 text-xs font-black text-white">View details</button>
+              <input value={projectQuery} onChange={(e) => setProjectQuery(e.target.value)} placeholder="Search by name, SKU, or id" aria-label="Search project packages" className={`mt-3 w-full ${inputClass}`} />
+              <div className="mt-3 divide-y divide-line">
+                {shownProjects.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between gap-2 py-2">
+                    <div className="min-w-0">
+                      <span className="block line-clamp-2 text-sm"><strong>{item.name}</strong> <span className="text-slate-400">{item.sku}</span></span>
+                      <span className="text-[10px] font-black uppercase tracking-wide text-gold">{item.inventoryType || 'Catalog'} · {item.priceLabel}</span>
+                    </div>
+                    <span className="flex shrink-0 gap-2">
+                      <button onClick={() => { setProduct(item); focusEditor('project-package-editor') }} className="text-xs font-bold text-navy underline">Edit</button>
+                      <button onClick={() => setPreviewProduct(item)} className="text-xs font-bold text-slate-500 underline">Preview</button>
+                      <button onClick={() => void toggleProductVisibility(item)} className="text-xs font-bold text-ink underline">{item.active === false ? 'Show' : 'Hide'}</button>
+                      <button onClick={() => removeProduct(item.id)} className="text-xs font-bold text-red-600 underline">Delete</button>
+                    </span>
                   </div>
-                </div>
-              </article>
+                ))}
+                {shownProjects.length === 0 && <p className="py-3 text-sm text-slate-500">No project packages match &ldquo;{projectQuery}&rdquo;.</p>}
+              </div>
+              <Pager page={projectPage} totalPages={projectTotalPages} onPage={setProjectPage} />
             </div>
-          )}
-        </section>
+          </section>
+          <section id="project-package-editor" aria-label="Project package editor" className="min-w-0">
+            <ProjectEditor product={product} onChange={setProduct} onSave={saveProduct} onReset={() => setProduct({ ...emptyProduct, productType: 'Project package', category: 'Project Packages' })} busy={busy === 'product'} />
+          </section>
+        </div>
+      )}
+      {tab === 'ProjectPackages' && previewProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 p-5" role="dialog" aria-modal="true" aria-label="Project package preview" onClick={() => setPreviewProduct(null)}>
+          <article className="max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-2xl border border-line bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
+            <div className="relative h-48 overflow-hidden rounded-t-2xl bg-ink">
+              {previewProduct.image ? <Image src={previewProduct.image} alt={previewProduct.name} fill className="object-cover" /> : null}
+              <div className="absolute inset-0 bg-gradient-to-t from-ink/70 to-transparent" />
+              <span className="absolute bottom-3 left-4 max-w-[calc(100%-2rem)] truncate text-xs font-black uppercase tracking-widest text-white">{previewProduct.category}</span>
+            </div>
+            <div className="flex flex-1 flex-col p-5">
+              <p className="truncate text-xs font-black uppercase tracking-widest text-navy">Project Package</p>
+              <h2 className="mt-2 line-clamp-2 font-display text-xl font-bold leading-snug text-ink">{previewProduct.name}</h2>
+              <p className="mt-2 line-clamp-2 flex-1 text-sm leading-6 text-muted">{previewProduct.note || previewProduct.description}</p>
+              <div className="mt-5 flex items-center justify-between gap-3">
+                <strong className="font-display text-lg text-ink">{previewProduct.priceLabel}</strong>
+                <button onClick={() => setPreviewProduct(null)} className="rounded-full bg-navy px-4 py-2 text-xs font-black text-white">View details</button>
+              </div>
+            </div>
+          </article>
+        </div>
       )}
 
       {/* ═══════ ROBOT CAR PROJECTS ═══════ */}
