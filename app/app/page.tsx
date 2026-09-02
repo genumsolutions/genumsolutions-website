@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Check, Copy, Download, MonitorSmartphone, Settings2, ShieldCheck, Smartphone } from 'lucide-react'
 import PageShell from '../../components/PageShell'
-import { androidApp, company } from '../../lib/company'
+import { androidApp, company, refreshAndroidAppInfo } from '../../lib/company'
 
 const steps = [
   {
@@ -25,6 +25,7 @@ const steps = [
 
 export default function AppDownloadPage() {
   const [copied, setCopied] = useState(false)
+  useEffect(() => { refreshAndroidAppInfo() }, [])
 
   async function copyLink() {
     try {

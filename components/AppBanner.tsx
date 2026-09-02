@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { CheckCircle2, Download, HelpCircle, Smartphone, X } from 'lucide-react'
-import { androidApp, company } from '../lib/company'
+import { androidApp, company, refreshAndroidAppInfo } from '../lib/company'
 
 const DISMISS_KEY = 'genum-app-banner-dismissed'
 const SEEN_KEY = 'genum-app-version'
@@ -76,6 +76,11 @@ export default function AppBanner() {
   const [state, setState] = useState<BannerState | null>(null)
 
   useEffect(() => {
+    // Fetch latest version from Supabase release.json on mount
+    refreshAndroidAppInfo().then(() => {
+      // Re-render with updated androidApp values
+      setState((prev) => (prev ? { ...prev } : null))
+    })
     setState(initState())
   }, [])
 
