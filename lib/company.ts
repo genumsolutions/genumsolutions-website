@@ -42,6 +42,7 @@ export const androidApp: {
   sizeLabel: string
   arch: string
   apkUrl: string
+  latestApkUrl: string
   releaseUrl: string
   appsPagePath: string
 } = {
@@ -52,6 +53,8 @@ export const androidApp: {
   sizeLabel: '32.5 MB',
   arch: 'Android · 64-bit',
   apkUrl:
+    'https://bkylfnlybtsujwzropru.supabase.co/storage/v1/object/public/app-releases/genum-solutions-1.5.4.apk',
+  latestApkUrl:
     'https://bkylfnlybtsujwzropru.supabase.co/storage/v1/object/public/app-releases/genum-solutions-latest.apk',
   releaseUrl:
     'https://bkylfnlybtsujwzropru.supabase.co/storage/v1/object/public/app-releases/release.json',
@@ -107,6 +110,7 @@ export async function refreshAndroidAppInfo(): Promise<{
       androidApp.sizeLabel = manifest.size
     }
     if (manifest.apkUrl) androidApp.apkUrl = manifest.apkUrl
+    if (manifest.latestApkUrl) androidApp.latestApkUrl = manifest.latestApkUrl
     if (manifest.releaseUrl) androidApp.releaseUrl = manifest.releaseUrl
     if (manifest.appsPagePath) androidApp.appsPagePath = manifest.appsPagePath
 
