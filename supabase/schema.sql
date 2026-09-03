@@ -403,8 +403,12 @@ create policy "admin write services" on public.services for all using (public.is
 drop policy if exists "admin read activity" on public.activity_log;
 create policy "admin read activity" on public.activity_log for select using (public.is_admin());
 
--- page_views: admin read only; anon insert allowed for tracking
+-- page_views: admin read only; anon + authenticated insert allowed for tracking
+-- (the app records views from signed-in users, so an authenticated insert
+-- policy is required in addition to the website's anon one)
 drop policy if exists "anon insert page views" on public.page_views;
 create policy "anon insert page views" on public.page_views for insert to anon with check (true);
+drop policy if exists "authenticated insert page views" on public.page_views;
+create policy "authenticated insert page views" on public.page_views for insert to authenticated with check (true);
 drop policy if exists "admin read page views" on public.page_views;
 create policy "admin read page views" on public.page_views for select using (public.is_admin());
