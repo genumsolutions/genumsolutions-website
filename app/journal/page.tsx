@@ -2,19 +2,20 @@ import type { Metadata } from 'next'
 import ArticleCard from '../../components/ArticleCard'
 import PageIntro from '../../components/PageIntro'
 import PageShell from '../../components/PageShell'
+import { getJournalPosts } from '../../lib/journal-store'
 
 export const metadata: Metadata = {
   title: 'Journal',
   description: 'Tutorials, field notes, and industry observations for people building a more useful future.',
 }
 
-const posts = [
-  { tag: 'Tutorial · Robotics', title: 'Your first ESP32 project: a calmer way to begin', text: 'A practical starting point for wiring, flashing, and debugging without the mystery.' },
-  { tag: 'Field note · AI', title: 'Edge AI is useful when the decision needs to stay close', text: 'A grounded look at local inference, latency, privacy, and why not every sensor needs a cloud dashboard.' },
-  { tag: 'Learning · Nepal', title: 'How to teach automation without making promises it cannot keep', text: 'A human-centered workshop format built around critical thinking, testing, and responsible use.' },
-]
+// Journal content lives in the `journal_posts` table (DB-first, admin-editable)
+// with the bundled posts as fallback - both the website and the app render the
+// same latest posts.
+export const dynamic = 'force-dynamic'
 
-export default function JournalPage() {
+export default async function JournalPage() {
+  const posts = await getJournalPosts()
   return (
     <PageShell>
       <PageIntro
@@ -25,7 +26,7 @@ export default function JournalPage() {
       <section className="mx-auto max-w-7xl px-5 py-10 sm:py-14 lg:px-8">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {posts.map((post) => (
-            <ArticleCard key={post.title} tag={post.tag} title={post.title} description={post.text} href="/contact" cta="Get in touch about this" />
+            <ArticleCard key={post.id} tag={post.tag} title={post.title} description={post.text} href="/contact" cta="Get in touch about this" />
           ))}
         </div>
 

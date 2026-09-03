@@ -12,7 +12,8 @@
     "test": "vitest",
     "test:ci": "vitest run",
     "icons": "node scripts/generate-icons.mjs",
-    "seed": "tsx scripts/seed-products.ts"
+    "seed": "tsx scripts/seed-products.ts",
+    "seed:journal": "tsx scripts/seed-journal.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",

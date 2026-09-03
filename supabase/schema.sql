@@ -439,3 +439,27 @@ drop policy if exists "own push tokens update" on public.push_tokens;
 create policy "own push tokens update" on public.push_tokens for update using (user_id = auth.uid());
 drop policy if exists "own push tokens delete" on public.push_tokens;
 create policy "own push tokens delete" on public.push_tokens for delete using (user_id = auth.uid());
+
+-- ===== JOURNAL POSTS =====
+-- Public blog/journal content shown identically on the website and the
+-- native app. The bundled lib/journal-data.ts is only a fallback + seed.
+create table if not exists public.journal_posts (
+  id text primary key,
+  tag text not null default '',
+  title text not null,
+  text text not null,
+  active boolean not null default true,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.journal_posts enable row level security;
+
+drop policy if exists "public read journal posts" on public.journal_posts;
+create policy "public read journal posts" on public.journal_posts
+  for select using (active = true or public.is_admin());
+
+drop policy if exists "admin write journal posts" on public.journal_posts;
+create policy "admin write journal posts" on public.journal_posts
+  for all using (public.is_admin());
