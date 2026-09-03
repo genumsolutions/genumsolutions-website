@@ -4,7 +4,11 @@ import ArticleCard from '../../components/ArticleCard'
 import PageIntro from '../../components/PageIntro'
 import PageShell from '../../components/PageShell'
 import { listServices } from '../../lib/services'
-import { trainingPrograms, pilotCosts, stemProjectHighlights } from '../../lib/programs'
+import {
+  getCurriculumHighlights,
+  getPilotCosts,
+  getTrainingPrograms,
+} from '../../lib/programs-store'
 
 export const metadata: Metadata = {
   title: 'Services & Training',
@@ -18,8 +22,17 @@ const processSteps = [
   ['04', 'Deliver and hand over', 'We test, document, train, and leave you with a practical next step.'],
 ]
 
+export const dynamic = 'force-dynamic'
+
 export default async function ServicesPage() {
   const services = await listServices()
+  // Training / pilot-cost / curriculum content comes from the DB (shared
+  // tables, same source the native app reads) with bundled fallback.
+  const [trainingPrograms, pilotCosts, stemProjectHighlights] = await Promise.all([
+    getTrainingPrograms(),
+    getPilotCosts(),
+    getCurriculumHighlights(),
+  ])
   return (
     <PageShell>
       <PageIntro
@@ -107,7 +120,7 @@ export default async function ServicesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {pilotCosts.map(([item, cost, note]) => (
+                  {pilotCosts.map(({ item, cost, note }) => (
                     <tr key={item} className="border-b border-line last:border-b-0">
                       <th scope="row" className="py-3 pr-4 align-top font-semibold text-ink">
                         {item}
@@ -124,11 +137,11 @@ export default async function ServicesPage() {
             <h3 className="font-display text-2xl font-bold tracking-tight">STEM Project Highlights</h3>
             <p className="mt-3 text-sm leading-6 text-slate-600">Age-banded project examples from our 100+ project curriculum catalog.</p>
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {stemProjectHighlights.map(([ages, ...projects]) => (
-                <div key={ages} className="rounded-2xl border border-line bg-white p-5">
-                  <p className="text-xs font-black uppercase tracking-widest text-gold">{ages}</p>
+              {stemProjectHighlights.map(({ ageBand, items }) => (
+                <div key={ageBand} className="rounded-2xl border border-line bg-white p-5">
+                  <p className="text-xs font-black uppercase tracking-widest text-gold">{ageBand}</p>
                   <ul className="mt-3 space-y-1.5 text-sm leading-6 text-slate-600">
-                    {projects.map((project) => <li key={project}>{project}</li>)}
+                    {items.map((project) => <li key={project}>{project}</li>)}
                   </ul>
                 </div>
               ))}

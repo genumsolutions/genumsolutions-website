@@ -463,3 +463,70 @@ create policy "public read journal posts" on public.journal_posts
 drop policy if exists "admin write journal posts" on public.journal_posts;
 create policy "admin write journal posts" on public.journal_posts
   for all using (public.is_admin());
+
+-- ===== TRAINING PROGRAMS / PILOT COSTS / CURRICULUM HIGHLIGHTS =====
+-- Public content shown identically on the website and the native app.
+-- Bundled lib/programs-data.ts is only a fallback + seed source.
+create table if not exists public.training_programs (
+  id text primary key,
+  title text not null,
+  audience text not null default '',
+  description text not null default '',
+  duration text not null default '',
+  outcome text not null default '',
+  active boolean not null default true,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.training_programs enable row level security;
+
+drop policy if exists "public read training programs" on public.training_programs;
+create policy "public read training programs" on public.training_programs
+  for select using (active = true or public.is_admin());
+
+drop policy if exists "admin write training programs" on public.training_programs;
+create policy "admin write training programs" on public.training_programs
+  for all using (public.is_admin());
+
+create table if not exists public.pilot_cost_lines (
+  id text primary key,
+  item text not null,
+  cost text not null default '',
+  note text not null default '',
+  active boolean not null default true,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.pilot_cost_lines enable row level security;
+
+drop policy if exists "public read pilot cost lines" on public.pilot_cost_lines;
+create policy "public read pilot cost lines" on public.pilot_cost_lines
+  for select using (active = true or public.is_admin());
+
+drop policy if exists "admin write pilot cost lines" on public.pilot_cost_lines;
+create policy "admin write pilot cost lines" on public.pilot_cost_lines
+  for all using (public.is_admin());
+
+create table if not exists public.curriculum_highlights (
+  id text primary key,
+  age_band text not null,
+  items jsonb not null default '[]',
+  active boolean not null default true,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.curriculum_highlights enable row level security;
+
+drop policy if exists "public read curriculum highlights" on public.curriculum_highlights;
+create policy "public read curriculum highlights" on public.curriculum_highlights
+  for select using (active = true or public.is_admin());
+
+drop policy if exists "admin write curriculum highlights" on public.curriculum_highlights;
+create policy "admin write curriculum highlights" on public.curriculum_highlights
+  for all using (public.is_admin());

@@ -4,10 +4,10 @@ import type { Metadata } from 'next'
 import { ArrowRight } from 'lucide-react'
 import PageShell from '../components/PageShell'
 import { getProductMedia } from '../lib/product-media'
-import { trainingPrograms } from '../lib/programs'
+import { getTrainingPrograms } from '../lib/programs-store'
 import { getSiteContent } from '../lib/content-store'
 
-export const revalidate = 300
+export const dynamic = 'force-dynamic'
 
 export async function generateMetadata(): Promise<Metadata> {
   const content = await getSiteContent()
@@ -44,6 +44,9 @@ const stats = [
 
 export default async function HomePage() {
   const heroMedia = getProductMedia('Robotics')
+  // Training programs render from the shared DB table (same source the app
+  // reads) with the bundled list as fallback.
+  const trainingPrograms = await getTrainingPrograms()
 
   return (
     <PageShell>
