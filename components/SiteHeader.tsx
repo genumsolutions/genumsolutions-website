@@ -91,14 +91,17 @@ export default function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-5 sm:gap-4 sm:py-3.5 lg:px-8">
-        <Link href="/" className="group flex shrink-0 items-center gap-3" aria-label="GENUM SOLUTIONS home">
+        <Link href="/" className="group flex min-w-0 items-center gap-3" aria-label="GENUM SOLUTIONS home">
           <span className="relative block h-11 w-11 shrink-0 overflow-hidden rounded-full bg-white shadow-card ring-1 ring-line transition group-hover:ring-navy/40 sm:h-14 sm:w-14">
             <Image src="/logo.png" alt="GENUM SOLUTIONS stamp" width={112} height={112} className="h-full w-full object-contain" priority />
           </span>
+          {/* Wordmark is hidden on the very narrowest screens (and the wide
+              tracked tagline below sm) so the fixed-width action buttons on
+              the right never overflow off the viewport on small phones. */}
           <span aria-hidden="true" className="hidden h-10 w-px bg-line sm:block" />
-          <span className="leading-none">
-            <strong className="block font-display text-lg font-bold tracking-tight text-ink sm:text-[22px]">GENUM</strong>
-            <span className="mt-1 block text-[9px] font-bold uppercase tracking-[0.32em] text-navy sm:text-[10px]">Solutions Pvt.&thinsp;Ltd.</span>
+          <span className="hidden min-w-0 leading-none min-[340px]:block">
+            <strong className="block truncate font-display text-lg font-bold tracking-tight text-ink sm:text-[22px]">GENUM</strong>
+            <span className="mt-1 hidden text-[9px] font-bold uppercase tracking-[0.32em] text-navy sm:block sm:text-[10px]">Solutions Pvt.&thinsp;Ltd.</span>
           </span>
         </Link>
 
@@ -110,7 +113,7 @@ export default function SiteHeader() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-2 sm:gap-2.5">
+        <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
           <HeaderSession />
           <button
             onClick={toggleTheme}
