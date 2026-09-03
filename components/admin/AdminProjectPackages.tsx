@@ -13,12 +13,13 @@ type Props = {
   setMessage: (msg: string) => void
 }
 
-function ProjectEditor({ product, onChange, onSave, onReset, busy }: {
+function ProjectEditor({ product, onChange, onSave, onReset, busy, categories }: {
   product: Product
   onChange: (product: Product) => void
   onSave: (event?: FormEvent) => void
   onReset: () => void
   busy: boolean
+  categories: string[]
 }) {
   function setField<K extends keyof Product>(key: K, value: Product[K]) {
     onChange({ ...product, [key]: value })
@@ -26,7 +27,7 @@ function ProjectEditor({ product, onChange, onSave, onReset, busy }: {
 
   const textFields: { key: keyof Product; label: string }[] = [
     { key: 'id', label: 'Project ID' }, { key: 'name', label: 'Project name' },
-    { key: 'category', label: 'Category' }, { key: 'sku', label: 'SKU / package code' },
+    { key: 'sku', label: 'SKU / package code' },
     { key: 'priceLabel', label: 'Price label' }, { key: 'note', label: 'Short summary' },
     { key: 'audience', label: 'Ideal audience' }, { key: 'difficulty', label: 'Difficulty' },
     { key: 'warranty', label: 'Warranty / support' }, { key: 'delivery', label: 'Delivery / lead time' },
@@ -43,6 +44,11 @@ function ProjectEditor({ product, onChange, onSave, onReset, busy }: {
               <input value={String(product[key] ?? '')} onChange={(event) => setField(key, event.target.value as Product[typeof key])} className={`mt-2 w-full ${inputClass}`} />
             </label>
           ))}
+          <label className="min-w-0 text-sm font-bold">Category
+            <select value={product.category || ''} onChange={(event) => setField('category', event.target.value)} className={`mt-2 w-full ${inputClass}`}>
+              {categories.map((category) => <option key={category} value={category}>{category}</option>)}
+            </select>
+          </label>
           <label className="text-sm font-bold">Price (NPR)<input type="number" min="0" value={product.price} onChange={(event) => setField('price', Number(event.target.value))} className={`mt-2 w-full ${inputClass}`} /></label>
           <label className="text-sm font-bold">Stock / available units<input type="number" min="0" value={product.stock} onChange={(event) => setField('stock', Number(event.target.value))} className={`mt-2 w-full ${inputClass}`} /></label>
           <label className="sm:col-span-2 text-sm font-bold">Full project description<textarea value={product.description} onChange={(event) => setField('description', event.target.value)} rows={6} className={`mt-2 w-full ${inputClass}`} /></label>
@@ -79,7 +85,8 @@ export default function AdminProjectPackages({ products, onProductsChange, setMe
   const [projectPage, setProjectPage] = useState(1)
   const [busy, setBusy] = useState(false)
 
-  const projectProducts = products.filter((item) => item.productType === 'Project package')
+  const projectProducts = products.filter((item) =>
+    item.productType === 'Project package' || item.category === 'Robot Cars' || item.category === 'Pre-packaged Kits')
   const projectCategories = Array.from(new Set(projectProducts.map((item) => item.category)))
   const filteredProjects = projectProducts.filter((item) => {
     const matchesCategory = projectCategory === 'All' || item.category === projectCategory
@@ -149,7 +156,7 @@ export default function AdminProjectPackages({ products, onProductsChange, setMe
           </div>
         </section>
         <section id="project-package-editor" aria-label="Project package editor" className="min-w-0">
-          <ProjectEditor product={product} onChange={setProduct} onSave={saveProduct} onReset={() => setProduct({ ...emptyProduct, productType: 'Project package', category: 'Project Packages' })} busy={busy} />
+          <ProjectEditor product={product} onChange={setProduct} onSave={saveProduct} onReset={() => setProduct({ ...emptyProduct, productType: 'Project package', category: 'Project Packages' })} busy={busy} categories={projectCategories.length ? projectCategories : ['Project Packages', 'Robot Cars']} />
         </section>
       </div>
       {previewProduct && (

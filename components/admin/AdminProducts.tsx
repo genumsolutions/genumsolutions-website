@@ -17,14 +17,18 @@ export default function AdminProducts({ products, onProductsChange, setMessage }
   const [product, setProduct] = useState<Product>(emptyProduct)
   const [previewProduct, setPreviewProduct] = useState<Product | null>(null)
   const [query, setQuery] = useState('')
+  const [category, setCategory] = useState('All')
   const [productPage, setProductPage] = useState(1)
   const [busy, setBusy] = useState(false)
   const [uploading, setUploading] = useState(false)
   const fileInput = useRef<HTMLInputElement>(null)
 
-  useEffect(() => { setProductPage(1) }, [query])
+  useEffect(() => { setProductPage(1) }, [query, category])
 
-  const filteredProducts = products.filter((item) => `${item.name} ${item.sku} ${item.id}`.toLowerCase().includes(query.toLowerCase()))
+  const categories = Array.from(new Set(products.map((item) => item.category).filter(Boolean)))
+  const filteredProducts = products.filter((item) =>
+    (category === 'All' || item.category === category) &&
+    `${item.name} ${item.sku} ${item.id} ${item.category}`.toLowerCase().includes(query.toLowerCase()))
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE))
   const shownProducts = filteredProducts.slice((productPage - 1) * PAGE_SIZE, productPage * PAGE_SIZE)
 
@@ -74,7 +78,13 @@ export default function AdminProducts({ products, onProductsChange, setMessage }
       <section aria-label="Product list" className="min-w-0 space-y-6">
         <div className="min-w-0 border-t-2 border-ink bg-white p-6">
           <h2 className="font-display text-xl font-bold">Products ({filteredProducts.length})</h2>
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by name, SKU, or id" aria-label="Search products" className={`mt-3 w-full ${inputClass}`} />
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by name, SKU, or id" aria-label="Search products" className={`w-full ${inputClass}`} />
+            <select value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Category filter" className={`w-full sm:w-48 ${inputClass}`}>
+              <option value="All">All categories</option>
+              {categories.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
+            </select>
+          </div>
           <div className="mt-3 divide-y divide-line">
             {shownProducts.map((item) => (
               <div key={item.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
@@ -98,7 +108,9 @@ export default function AdminProducts({ products, onProductsChange, setMessage }
         <form onSubmit={saveProduct} className="min-w-0 overflow-hidden border-t-2 border-ink bg-white p-6">
           <h2 className="font-display text-2xl font-bold">{products.some((item) => item.id === product.id) ? `Edit ${product.id}` : 'Add a new product'}</h2>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            {fields.map((key) => <label key={key} className="min-w-0 text-sm font-bold capitalize">{key}<input value={String(product[key] ?? '')} onChange={(e) => updateProduct(key, ['price', 'stock'].includes(key) ? Number(e.target.value) : e.target.value)} className={`mt-2 w-full ${inputClass}`} /></label>)}
+            {fields.filter((key) => key !== 'category').map((key) => <label key={key} className="min-w-0 text-sm font-bold capitalize">{key}<input value={String(product[key] ?? '')} onChange={(e) => updateProduct(key, ['price', 'stock'].includes(key) ? Number(e.target.value) : e.target.value)} className={`mt-2 w-full ${inputClass}`} /></label>)}
+            <label className="min-w-0 text-sm font-bold capitalize">category<select value={product.category} onChange={(e) => updateProduct('category', e.target.value)} className={`mt-2 w-full ${inputClass}`}><option value="Controllers & Boards">Controllers &amp; Boards</option>{categories.map((cat) => <option key={cat} value={cat}>{cat}</option>)}</select></label>
+            <label className="min-w-0 text-sm font-bold capitalize">product type<select value={product.productType} onChange={(e) => updateProduct('productType', e.target.value)} className={`mt-2 w-full ${inputClass}`}>{['Retail kit', 'Project package', 'Material', 'Service package'].map((t) => <option key={t} value={t}>{t}</option>)}</select></label>
             <label className="min-w-0 text-sm font-bold sm:col-span-2">Specs, one per line<textarea value={Array.isArray(product.specs) ? product.specs.join('\n') : String(product.specs)} onChange={(e) => updateProduct('specs', e.target.value.split('\n'))} rows={4} className={`mt-2 w-full ${inputClass}`} /></label>
             <div className="min-w-0 sm:col-span-2">
               <p className="text-sm font-bold">Product image</p>

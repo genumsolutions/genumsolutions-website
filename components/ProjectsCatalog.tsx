@@ -97,28 +97,21 @@ export default function ProjectsCatalog({ products = [] }: { products?: Product[
       </div>
 
       {categories.length > 1 && (
-        <div role="list" aria-label="Project categories" className="mt-4 flex flex-wrap gap-2">
-          <button
-            onClick={() => { setCategory('All'); setPage(1) }}
-            aria-pressed={category === 'All'}
-            className={`min-h-[44px] whitespace-nowrap rounded-full px-4 py-2 text-xs font-bold transition ${category === 'All' ? 'bg-navy text-white shadow-sm' : 'border border-line bg-white text-muted hover:border-navy hover:text-navy'}`}
-          >
-            All <span className="opacity-70">({filtered.length})</span>
-          </button>
-          {categories.map((item) => {
-            const count = filterProducts(activeProducts, item, query).length
-            const active = category === item
-            return (
-              <button
-                key={item}
-                onClick={() => { setCategory(item); setPage(1) }}
-                aria-pressed={active}
-                className={`min-h-[44px] whitespace-nowrap rounded-full px-4 py-2 text-xs font-bold transition ${active ? 'bg-navy text-white shadow-sm' : 'border border-line bg-white text-muted hover:border-navy hover:text-navy'}`}
-              >
-                {item} <span className="opacity-70">({count})</span>
-              </button>
-            )
-          })}
+        <div className="mt-4">
+          <label className="flex min-h-[44px] w-full items-center gap-2 rounded-full border border-line bg-white px-4 text-sm font-bold text-muted shadow-sm sm:w-64">
+            <span className="sr-only">Filter by category</span>
+            <select
+              value={category}
+              onChange={(e) => { setCategory(e.target.value); setPage(1) }}
+              aria-label="Filter projects by category"
+              className="w-full bg-transparent py-2 text-sm font-bold outline-none"
+            >
+              <option value="All">All categories ({filtered.length})</option>
+              {categories.map((item) => (
+                <option key={item} value={item}>{item} ({filterProducts(activeProducts, item, query).length})</option>
+              ))}
+            </select>
+          </label>
         </div>
       )}
 

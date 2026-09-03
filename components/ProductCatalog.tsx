@@ -116,25 +116,22 @@ export default function ProductCatalog({
           )}
         </label>
 
-        <div role="list" aria-label="Product categories" className="mt-4 flex flex-wrap gap-2">
-          {categories.map((item) => {
-            const count = filterProducts(scopedProducts, item, query).length
-            const active = category === item
-            return (
-              <button
-                key={item}
-                onClick={() => chooseCategory(item)}
-                aria-pressed={active}
-                className={`min-h-[44px] whitespace-nowrap rounded-full px-4 py-2 text-xs font-bold transition ${
-                  active
-                    ? 'bg-navy text-white shadow-sm'
-                    : 'border border-line bg-white text-muted hover:border-navy hover:text-navy'
-                }`}
-              >
-                {item} <span className={`opacity-70 ${active ? 'text-white' : ''}`}>({count})</span>
-              </button>
-            )
-          })}
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <label className="flex min-h-[44px] items-center gap-2 rounded-full border border-line bg-white px-4 text-sm font-bold text-muted shadow-sm sm:w-auto">
+            <span className="sr-only">Filter by category</span>
+            <select
+              value={category}
+              onChange={(event) => chooseCategory(event.target.value)}
+              aria-label="Filter products by category"
+              className="w-full bg-transparent py-2 text-sm font-bold outline-none sm:w-56"
+            >
+              <option value="All">All categories</option>
+              {categories.map((item) => (
+                <option key={item} value={item}>{item} ({filterProducts(scopedProducts, item, query).length})</option>
+              ))}
+            </select>
+          </label>
+          <span className="text-xs text-muted">{filtered.length} total</span>
         </div>
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm text-muted">

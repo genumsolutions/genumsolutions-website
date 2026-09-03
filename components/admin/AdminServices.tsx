@@ -13,11 +13,15 @@ export default function AdminServices({ setMessage }: Props) {
   const [loaded, setLoaded] = useState(false)
   const [service, setService] = useState<Service>(emptyService)
   const [previewService, setPreviewService] = useState<Service | null>(null)
+  const [category, setCategory] = useState('All')
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
     void fetch('/api/admin/services').then((r) => r.json()).then((d) => setServices(d.services ?? [])).catch(() => undefined).finally(() => setLoaded(true))
   }, [])
+
+  const categories = Array.from(new Set(services.map((s) => s.category).filter(Boolean)))
+  const filteredServices = services.filter((s) => category === 'All' || s.category === category)
 
   function updateService(key: keyof Service, value: string | number | boolean) {
     setService((current) => ({ ...current, [key]: value }))
@@ -54,10 +58,17 @@ export default function AdminServices({ setMessage }: Props) {
       <div role="tabpanel" id="panel-services" aria-labelledby="tab-services" className="mt-8 grid min-w-0 gap-8 xl:grid-cols-[1fr_1.3fr]">
       <section aria-label="Service list" className="min-w-0 space-y-6">
         <div className="min-w-0 border-t-2 border-ink bg-white p-6">
-          <h2 className="font-display text-xl font-bold">Services ({services.length})</h2>
+          <h2 className="font-display text-xl font-bold">Services ({filteredServices.length})</h2>
           {!loaded ? <p className="text-sm text-slate-500" role="status">Loading…</p> : (
-            <div className="mt-3 divide-y divide-line">
-              {services.map((s) => (
+            <>
+              {categories.length > 0 && (
+                <select value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Category filter" className={`mt-3 w-full sm:w-48 ${inputClass}`}>
+                  <option value="All">All categories</option>
+                  {categories.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
+                </select>
+              )}
+              <div className="mt-3 divide-y divide-line">
+                {filteredServices.map((s) => (
                 <div key={s.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
                   <div className="min-w-0 flex-1">
                     <span className="block line-clamp-2 text-sm"><strong>{s.name}</strong> <span className="text-slate-400">{s.priceLabel}</span></span>
@@ -71,7 +82,8 @@ export default function AdminServices({ setMessage }: Props) {
                   </span>
                 </div>
               ))}
-            </div>
+              </div>
+            </>
           )}
         </div>
       </section>
@@ -81,7 +93,7 @@ export default function AdminServices({ setMessage }: Props) {
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             <label className="min-w-0 text-sm font-bold">Id<input value={service.id} onChange={(e) => updateService('id', e.target.value)} className={`mt-2 w-full ${inputClass}`} placeholder="e.g. website-design" /></label>
             <label className="min-w-0 text-sm font-bold">Name<input value={service.name} onChange={(e) => updateService('name', e.target.value)} className={`mt-2 w-full ${inputClass}`} /></label>
-            <label className="min-w-0 text-sm font-bold">Category<input value={service.category} onChange={(e) => updateService('category', e.target.value)} className={`mt-2 w-full ${inputClass}`} /></label>
+            <label className="min-w-0 text-sm font-bold">Category<select value={service.category} onChange={(e) => updateService('category', e.target.value)} className={`mt-2 w-full ${inputClass}`}>{Array.from(new Set([service.category, ...categories])).map((cat) => <option key={cat} value={cat}>{cat}</option>)}</select></label>
             <label className="min-w-0 text-sm font-bold">Price Label<input value={service.priceLabel} onChange={(e) => updateService('priceLabel', e.target.value)} className={`mt-2 w-full ${inputClass}`} placeholder="from NPR 35,000" /></label>
             <label className="min-w-0 text-sm font-bold">Tag / Badge<input value={service.tag} onChange={(e) => updateService('tag', e.target.value)} className={`mt-2 w-full ${inputClass}`} placeholder="Website, Fabrication, etc." /></label>
             <label className="min-w-0 text-sm font-bold">Sort Order<input type="number" value={service.sortOrder} onChange={(e) => updateService('sortOrder', Number(e.target.value))} className={`mt-2 w-full ${inputClass}`} /></label>

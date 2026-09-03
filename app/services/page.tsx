@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import ArticleCard from '../../components/ArticleCard'
 import PageIntro from '../../components/PageIntro'
 import PageShell from '../../components/PageShell'
+import ServicesGrid from '../../components/ServicesGrid'
 import { listServices } from '../../lib/services'
 import {
   getCurriculumHighlights,
@@ -45,19 +46,7 @@ export default async function ServicesPage() {
       <section id="services" className="mx-auto max-w-7xl px-5 py-10 sm:py-14 lg:px-8">
         <p className="text-xs font-black uppercase tracking-[.24em] text-navy">What we offer</p>
         <h2 className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl">Our Services</h2>
-        <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {services.map((s) => (
-            <ArticleCard key={s.id} tag={s.tag || s.category} title={s.name} description={s.description}>
-              <p className="mt-2 text-lg font-bold text-ink">{s.priceLabel}</p>
-              <Link href="/contact" className="mt-4 inline-block text-sm font-black text-navy underline decoration-gold decoration-2 underline-offset-4">
-                Request a quote
-              </Link>
-            </ArticleCard>
-          ))}
-          {services.length === 0 && (
-            <p className="col-span-full py-8 text-sm text-slate-500">Services are being set up. Contact us for details.</p>
-          )}
-        </div>
+        <ServicesGrid services={services} />
 
         <div className="mt-12 grid gap-8 border-y border-line py-8 sm:py-10 lg:grid-cols-[.8fr_1.2fr]">
           <div>
