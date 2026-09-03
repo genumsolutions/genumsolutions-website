@@ -1,6 +1,6 @@
-import { company } from '../lib/company'
+import { company as defaultCompany, type Company } from '../lib/company'
 
-export default function OrganizationJsonLd() {
+export default function OrganizationJsonLd({ company = defaultCompany }: { company?: Company }) {
   const structuredData = {
     '@context': 'https://schema.org',
     '@type': 'Organization',

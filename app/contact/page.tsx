@@ -2,14 +2,16 @@ import type { Metadata } from 'next'
 import PageIntro from '../../components/PageIntro'
 import PageShell from '../../components/PageShell'
 import ContactForm from '../../components/ContactForm'
-import { company } from '../../lib/company'
+import { getCompany } from '../../lib/company-store'
 
 export const metadata: Metadata = {
   title: 'Contact',
   description: 'Get in touch for projects, quotes, training, and support from GENUM Solutions in Kathmandu, Nepal.',
 }
 
-export default function ContactPage() {
+export default async function ContactPage() {
+  // Contact details come from the shared company_info table (cached fallback bundled).
+  const company = await getCompany()
   return (
     <PageShell>
       <PageIntro

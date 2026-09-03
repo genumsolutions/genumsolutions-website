@@ -1,8 +1,27 @@
 // =====================================================================
 // Company & app info - GENUM SOLUTIONS
+//
+// `company` is the bundled DEFAULT / fallback identity (and the seed
+// source for the `company_info` table). The DB-first read lives in
+// lib/company-store.ts (getCompany) - surfaces that show business contact
+// details should read through it so edits made in the DB show everywhere.
 // =====================================================================
 
-export const company = {
+export type Company = {
+  name: string
+  shortName: string
+  url: string
+  address: string
+  city: string
+  country: string
+  email: string
+  phone: string
+  pan: string
+  vatLabel: string
+  description: string
+}
+
+export const company: Company = {
   name: 'GENUM SOLUTIONS PVT. LTD.',
   shortName: 'GENUM SOLUTIONS',
   url: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',

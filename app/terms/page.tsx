@@ -1,14 +1,18 @@
 import type { Metadata } from 'next'
 import PageShell from '../../components/PageShell'
-import { company } from '../../lib/company'
+import type { Company } from '../../lib/company'
+import { getCompany } from '../../lib/company-store'
 
-export const metadata: Metadata = {
-  title: 'Terms of Service',
-  description: `Terms for buying kits, project packages, and training from ${company.shortName}, including payments, delivery, warranty, and returns.`,
-  alternates: { canonical: '/terms' },
+export async function generateMetadata(): Promise<Metadata> {
+  const company = await getCompany()
+  return {
+    title: 'Terms of Service',
+    description: `Terms for buying kits, project packages, and training from ${company.shortName}, including payments, delivery, warranty, and returns.`,
+    alternates: { canonical: '/terms' },
+  }
 }
 
-function Agreement() {
+function Agreement({ company }: { company: Company }) {
   return <p>By ordering from this website you agree to these terms with {company.name} ({company.address}, PAN {company.pan}).</p>
 }
 
@@ -69,19 +73,20 @@ function ChangesAndLaw() {
   return <p>We may update these terms; the version in force is the one published when you order. These terms are governed by the laws of Nepal, courts of Kathmandu.</p>
 }
 
-const sections = [
-  { title: 'Agreement', Body: Agreement },
-  { title: 'Orders and pricing', Body: OrdersAndPricing },
-  { title: 'Payments', Body: Payments },
-  { title: 'Delivery', Body: Delivery },
-  { title: 'Warranty and returns', Body: WarrantyAndReturns },
-  { title: 'Training programs', Body: TrainingPrograms },
-  { title: 'Acceptable use', Body: AcceptableUse },
-  { title: 'Liability', Body: Liability },
-  { title: 'Changes and governing law', Body: ChangesAndLaw },
-]
+export default async function TermsPage() {
+  const company = await getCompany()
 
-export default function TermsPage() {
+  const sections = [
+    { title: 'Agreement', Body: () => <Agreement company={company} /> },
+    { title: 'Orders and pricing', Body: OrdersAndPricing },
+    { title: 'Payments', Body: Payments },
+    { title: 'Delivery', Body: Delivery },
+    { title: 'Warranty and returns', Body: WarrantyAndReturns },
+    { title: 'Training programs', Body: TrainingPrograms },
+    { title: 'Acceptable use', Body: AcceptableUse },
+    { title: 'Liability', Body: Liability },
+    { title: 'Changes and governing law', Body: ChangesAndLaw },
+  ]
   return (
     <PageShell>
       <main className="mx-auto max-w-3xl px-5 py-10 sm:py-16 lg:px-8">

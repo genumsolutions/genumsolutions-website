@@ -1,14 +1,18 @@
 import type { Metadata } from 'next'
 import PageShell from '../../components/PageShell'
-import { company } from '../../lib/company'
+import type { Company } from '../../lib/company'
+import { getCompany } from '../../lib/company-store'
 
-export const metadata: Metadata = {
-  title: 'Privacy Policy',
-  description: `How ${company.shortName} collects, uses, and protects your personal data for orders, accounts, and inquiries.`,
-  alternates: { canonical: '/privacy' },
+export async function generateMetadata(): Promise<Metadata> {
+  const company = await getCompany()
+  return {
+    title: 'Privacy Policy',
+    description: `How ${company.shortName} collects, uses, and protects your personal data for orders, accounts, and inquiries.`,
+    alternates: { canonical: '/privacy' },
+  }
 }
 
-function WhoWeAre() {
+function WhoWeAre({ company }: { company: Company }) {
   return (
     <p>
       {company.name} ({company.address}, PAN {company.pan}) operates this website and is the controller of the personal
@@ -61,18 +65,19 @@ function Cookies() {
   return <p>We use a session cookie for sign-in, a cart cookie/localStorage entry, and an optional theme preference stored locally. No advertising trackers.</p>
 }
 
-const sections = [
-  { title: 'Who we are', Body: WhoWeAre },
-  { title: 'Data we collect', Body: DataWeCollect },
-  { title: 'How we use it', Body: HowWeUseIt },
-  { title: 'Payment processors', Body: PaymentProcessors },
-  { title: 'Sharing', Body: Sharing },
-  { title: 'Retention', Body: Retention },
-  { title: 'Your rights', Body: YourRights },
-  { title: 'Cookies', Body: Cookies },
-]
+export default async function PrivacyPage() {
+  const company = await getCompany()
 
-export default function PrivacyPage() {
+  const sections = [
+    { title: 'Who we are', Body: () => <WhoWeAre company={company} /> },
+    { title: 'Data we collect', Body: DataWeCollect },
+    { title: 'How we use it', Body: HowWeUseIt },
+    { title: 'Payment processors', Body: PaymentProcessors },
+    { title: 'Sharing', Body: Sharing },
+    { title: 'Retention', Body: Retention },
+    { title: 'Your rights', Body: YourRights },
+    { title: 'Cookies', Body: Cookies },
+  ]
   return (
     <PageShell>
       <main className="mx-auto max-w-3xl px-5 py-10 sm:py-16 lg:px-8">

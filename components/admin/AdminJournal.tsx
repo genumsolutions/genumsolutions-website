@@ -71,7 +71,7 @@ export default function AdminJournal({ setMessage }: Props) {
           <div className="min-w-0 border-t-2 border-ink bg-white p-6">
             <h2 className="font-display text-xl font-bold">Journal posts ({posts.length})</h2>
             <p className="mt-1 text-xs text-slate-500">
-              Published posts appear on /journal and in the native app's Journal screen. Editing here updates the DB - both clients render the latest copy.
+              Published posts appear on /journal and in the native app&apos;s Journal screen. Editing here updates the DB - both clients render the latest copy.
             </p>
             {!loaded ? <p className="mt-3 text-sm text-slate-500" role="status">Loading…</p> : (
               <div className="mt-3 divide-y divide-line">

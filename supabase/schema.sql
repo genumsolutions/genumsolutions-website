@@ -530,3 +530,33 @@ create policy "public read curriculum highlights" on public.curriculum_highlight
 drop policy if exists "admin write curriculum highlights" on public.curriculum_highlights;
 create policy "admin write curriculum highlights" on public.curriculum_highlights
   for all using (public.is_admin());
+
+-- ===== COMPANY INFO =====
+-- Single public row with the business contact/brand details shown on the
+-- website and the native app. Bundled lib/company.ts is only a fallback +
+-- seed source. url stays env-derived (NEXT_PUBLIC_SITE_URL) and is not stored.
+create table if not exists public.company_info (
+  id integer primary key default 1 check (id = 1),
+  name text not null default '',
+  short_name text not null default '',
+  address text not null default '',
+  city text not null default '',
+  country text not null default '',
+  email text not null default '',
+  phone text not null default '',
+  pan text not null default '',
+  vat_label text not null default '',
+  description text not null default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.company_info enable row level security;
+
+drop policy if exists "public read company info" on public.company_info;
+create policy "public read company info" on public.company_info
+  for select using (true);
+
+drop policy if exists "admin write company info" on public.company_info;
+create policy "admin write company info" on public.company_info
+  for all using (public.is_admin());

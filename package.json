@@ -14,7 +14,8 @@
     "icons": "node scripts/generate-icons.mjs",
     "seed": "tsx scripts/seed-products.ts",
     "seed:journal": "tsx scripts/seed-journal.ts",
-    "seed:programs": "tsx scripts/seed-programs.ts"
+    "seed:programs": "tsx scripts/seed-programs.ts",
+    "seed:company": "tsx scripts/seed-company.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
