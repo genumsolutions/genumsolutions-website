@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Activity, LayoutDashboard, MessageSquare, Package, ShoppingBag, Users, Wallet, Wrench } from 'lucide-react'
+import { Activity, BookOpen, LayoutDashboard, MessageSquare, Package, ShoppingBag, Users, Wallet, Wrench } from 'lucide-react'
 import { tabActive, tabBase, tabInactive } from '../lib/styles'
 import type { Product } from '../lib/content-store'
 import { TABS } from './admin/admin-types'
@@ -10,6 +10,7 @@ import AdminDashboard from './admin/AdminDashboard'
 import AdminOrders from './admin/AdminOrders'
 import AdminProducts from './admin/AdminProducts'
 import AdminServices from './admin/AdminServices'
+import AdminJournal from './admin/AdminJournal'
 import AdminMessages from './admin/AdminMessages'
 import AdminFinance from './admin/AdminFinance'
 import AdminUsers from './admin/AdminUsers'
@@ -22,6 +23,7 @@ const TAB_ICONS = {
   Dashboard: LayoutDashboard,
   Products: Package,
   Services: Wrench,
+  Journal: BookOpen,
   Orders: ShoppingBag,
   Finance: Wallet,
   Users: Users,
@@ -63,6 +65,7 @@ export default function AdminPanel({ initialProducts }: Props) {
       {tab === 'Orders' && <AdminOrders />}
       {tab === 'Products' && <AdminProducts products={products} onProductsChange={setProducts} setMessage={setMessage} />}
       {tab === 'Services' && <AdminServices setMessage={setMessage} />}
+      {tab === 'Journal' && <AdminJournal setMessage={setMessage} />}
       {tab === 'Messages' && <AdminMessages setMessage={setMessage} />}
       {tab === 'Finance' && <AdminFinance />}
       {tab === 'Users' && <AdminUsers setMessage={setMessage} />}

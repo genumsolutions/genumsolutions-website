@@ -6,7 +6,7 @@ export const PAGE_SIZE = 10
 
 export const STATUSES = ['pending', 'paid', 'fulfilled', 'cancelled'] as const
 
-export const TABS = ['Orders', 'Products', 'Messages', 'Services', 'Finance', 'Users', 'Dashboard', 'Activity', 'ProjectPackages'] as const
+export const TABS = ['Orders', 'Products', 'Messages', 'Services', 'Journal', 'Finance', 'Users', 'Dashboard', 'Activity', 'ProjectPackages'] as const
 export type Tab = typeof TABS[number]
 
 export type Order = {
@@ -106,6 +106,19 @@ export const emptyProduct: Product = {
 export const emptyService: Service = {
   id: '', name: '', category: 'General', priceLabel: 'Request quote',
   description: '', tag: '', sortOrder: 1000, active: true,
+}
+
+export type JournalItem = {
+  id: string
+  tag: string
+  title: string
+  text: string
+  active: boolean
+  sortOrder: number
+}
+
+export const emptyJournal: JournalItem = {
+  id: '', tag: '', title: '', text: '', active: true, sortOrder: 0,
 }
 
 export const fields = ['id', 'name', 'category', 'sku', 'price', 'priceLabel', 'stock', 'note', 'description'] as const
