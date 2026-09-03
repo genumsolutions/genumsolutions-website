@@ -43,6 +43,9 @@ export type DashboardStats = {
   activeCarts: number
   totalOrders: number
   pendingOrders: number
+  paidOrders: number
+  fulfilledOrders: number
+  cancelledOrders: number
   revenue: number
   revenueToday: number
   totalProducts: number

@@ -75,6 +75,9 @@ export async function getDashboardStats(): Promise<{
   newUsersToday: number
   totalOrders: number
   pendingOrders: number
+  paidOrders: number
+  fulfilledOrders: number
+  cancelledOrders: number
   revenue: number
   revenueToday: number
   totalProducts: number
@@ -119,6 +122,9 @@ export async function getDashboardStats(): Promise<{
 
   const totalOrders = ordersAll.length
   const pendingOrders = ordersAll.filter((o) => o.status === 'pending').length
+  const paidOrdersCount = ordersAll.filter((o) => o.status === 'paid').length
+  const fulfilledOrdersCount = ordersAll.filter((o) => o.status === 'fulfilled').length
+  const cancelledOrdersCount = ordersAll.filter((o) => o.status === 'cancelled').length
   const paidOrders = ordersAll.filter((o) => o.status === 'paid' || o.status === 'fulfilled')
   const revenue = paidOrders.reduce((sum, o) => sum + (o.total_npr ?? 0), 0)
   const revenueToday = paidOrders.filter((o) => o.created_at >= todayISO).reduce((sum, o) => sum + (o.total_npr ?? 0), 0)
@@ -130,6 +136,9 @@ export async function getDashboardStats(): Promise<{
     newUsersToday,
     totalOrders,
     pendingOrders,
+    paidOrders: paidOrdersCount,
+    fulfilledOrders: fulfilledOrdersCount,
+    cancelledOrders: cancelledOrdersCount,
     revenue,
     revenueToday,
     totalProducts: productsAll.length,

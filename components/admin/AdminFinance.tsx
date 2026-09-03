@@ -37,12 +37,15 @@ export default function AdminFinance() {
         <div className="border-t-2 border-ink bg-white p-6">
           <h3 className="font-display text-lg font-bold">Order Status Breakdown</h3>
           <div className="mt-3 flex flex-wrap gap-3">
-            {['pending', 'paid', 'fulfilled', 'cancelled'].map((s) => {
-              const isPending = s === 'pending'
-              const count = isPending ? stats.pendingOrders : s === 'paid' || s === 'fulfilled' ? Math.floor(stats.succeededTransactions * (s === 'paid' ? 0.6 : 0.4)) : stats.totalOrders - stats.pendingOrders - stats.succeededTransactions
+            {[
+              { key: 'pending', label: 'Pending', count: stats.pendingOrders },
+              { key: 'paid', label: 'Paid', count: stats.paidOrders },
+              { key: 'fulfilled', label: 'Fulfilled', count: stats.fulfilledOrders },
+              { key: 'cancelled', label: 'Cancelled', count: stats.cancelledOrders },
+            ].map(({ key, label, count }) => {
               return (
-                <div key={s} className="rounded border border-line px-4 py-3 text-center">
-                  <p className="text-xs font-black uppercase tracking-widest text-slate-400">{s}</p>
+                <div key={key} className="rounded border border-line px-4 py-3 text-center">
+                  <p className="text-xs font-black uppercase tracking-widest text-slate-400">{label}</p>
                   <p className="mt-1 text-xl font-bold">{Math.max(0, count)}</p>
                 </div>
               )
