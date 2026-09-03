@@ -20,18 +20,55 @@ const CartContext = createContext<CartContextValue | null>(null)
 
 // One source of truth for the cart across header badge, catalog, product page,
 // and checkout. Guests persist to localStorage; signed-in users also sync a
-// REPLACE payload to /api/cart. `hydrated` gates rendering so the cart never
-// flashes empty while the initial state loads.
+// REPLACE payload to /api/cart (the DB-backed carts table is the source of
+// truth). `hydrated` gates rendering so the cart never flashes empty while
+// the initial state loads.
 export function CartProvider({ children }: { children: ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>([])
   const [hydrated, setHydrated] = useState(false)
   const [authenticated, setAuthenticated] = useState<boolean | null>(null)
   const linesRef = useRef<CartLine[]>([])
+  // Server writes are serialized through a promise queue so the LAST user
+  // action always lands last on the DB even if requests race.
+  const writeQueueRef = useRef<Promise<void>>(Promise.resolve())
+  const pendingWritesRef = useRef(0)
+  const lastSyncedAtRef = useRef(0)
 
   const commit = useCallback((next: CartLine[]) => {
     linesRef.current = next
     setLines(next)
     writeLocalCart(next)
+  }, [])
+
+  // Queue a REPLACE write to /api/cart. Pending writes are tracked so a
+  // focus-triggered reconcile never overwrites an action that has not landed.
+  const sendReplace = useCallback((next: CartLine[]) => {
+    pendingWritesRef.current += 1
+    writeQueueRef.current = writeQueueRef.current
+      .then(async () => {
+        await fetch('/api/cart', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cart: next }),
+        }).catch(() => undefined)
+      })
+      .finally(() => {
+        pendingWritesRef.current = Math.max(0, pendingWritesRef.current - 1)
+        lastSyncedAtRef.current = Date.now()
+      })
+  }, [])
+
+  const fetchServerCart = useCallback(async () => {
+    try {
+      const response = await fetch('/api/cart')
+      const data = await response.json()
+      return {
+        authenticated: Boolean(data.authenticated),
+        cart: Array.isArray(data.cart) ? (data.cart as CartLine[]) : [],
+      }
+    } catch {
+      return null
+    }
   }, [])
 
   useEffect(() => {
@@ -43,25 +80,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     async function reconcile() {
       try {
-        const response = await fetch('/api/cart')
-        const data = await response.json()
-        if (cancelled) return
-        setAuthenticated(Boolean(data.authenticated))
+        const data = await fetchServerCart()
+        if (cancelled || !data) return
+        setAuthenticated(data.authenticated)
         if (!data.authenticated) return
-        const serverCart: CartLine[] = Array.isArray(data.cart) ? data.cart : []
+        const serverCart = data.cart
         // Signed in: the server cart is always the source of truth.
         // Only push local-only items the server doesn't already have (guest
         // additions made before the session cookie was ready).
         const serverIds = new Set(serverCart.map((l) => l.productId))
         const localOnly = local.filter((l) => !serverIds.has(l.productId) && l.quantity > 0)
         const merged = localOnly.length ? [...serverCart, ...localOnly] : serverCart
-        if (localOnly.length) {
-          await fetch('/api/cart', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ cart: merged }),
-          }).catch(() => undefined)
-        }
+        if (localOnly.length) sendReplace(merged)
         if (!cancelled) {
           linesRef.current = merged
           setLines(merged)
@@ -75,21 +105,44 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
     void reconcile()
     return () => { cancelled = true }
-  }, [])
+  }, [fetchServerCart, sendReplace])
+
+  // Signed-in visitors can make changes in another tab / device (or log in
+  // without a full reload). When this tab regains focus, pull the DB cart so
+  // both surfaces stay in sync — unless a local write is still in flight, in
+  // which case adopting the server state would clobber it.
+  useEffect(() => {
+    let visible = true
+    async function onVisible() {
+      if (!visible) return
+      if (document.visibilityState !== 'visible') return
+      if (pendingWritesRef.current > 0) return
+      // Throttle: only re-sync if we have not synced in the last few seconds.
+      if (Date.now() - lastSyncedAtRef.current < 3000) return
+      const data = await fetchServerCart()
+      if (!data || !data.authenticated) return
+      lastSyncedAtRef.current = Date.now()
+      if (pendingWritesRef.current > 0) return
+      commit(data.cart)
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', onVisible)
+    return () => {
+      visible = false
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', onVisible)
+    }
+  }, [commit, fetchServerCart])
 
   const persist = useCallback((next: CartLine[]) => {
     commit(next)
     if (linesRef.current.length === 0) {
-      void fetch('/api/cart', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cart: [] }) }).catch(() => undefined)
+      sendReplace([])
       return
     }
     if (authenticated === false) return
-    void fetch('/api/cart', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cart: next }),
-    }).catch(() => undefined)
-  }, [authenticated, commit])
+    sendReplace(next)
+  }, [authenticated, commit, sendReplace])
 
   const add = useCallback((productId: string, quantity = 1) => {
     const current = linesRef.current
@@ -116,8 +169,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const clear = useCallback(() => {
     commit([])
     clearLocalCart()
-    void fetch('/api/cart', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cart: [] }) }).catch(() => undefined)
-  }, [commit])
+    sendReplace([])
+  }, [commit, sendReplace])
 
   const value = useMemo<CartContextValue>(() => ({
     lines,
