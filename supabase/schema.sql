@@ -412,3 +412,30 @@ drop policy if exists "authenticated insert page views" on public.page_views;
 create policy "authenticated insert page views" on public.page_views for insert to authenticated with check (true);
 drop policy if exists "admin read page views" on public.page_views;
 create policy "admin read page views" on public.page_views for select using (public.is_admin());
+
+-- ===== PUSH TOKENS (in-app order status notifications) =====
+-- One row per device: the app registers its Expo push token here on
+-- sign-in and deletes it on sign-out. The push-order-status edge function
+-- (supabase/functions/push-order-status) reads these with the service role
+-- when an order status changes (see order-status-push-trigger.sql).
+create table if not exists public.push_tokens (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  token text not null,
+  platform text not null default 'android',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (user_id, token)
+);
+create index if not exists push_tokens_user_idx on public.push_tokens(user_id);
+alter table public.push_tokens enable row level security;
+
+-- users manage only their own device tokens (edge function uses service role)
+drop policy if exists "own push tokens select" on public.push_tokens;
+create policy "own push tokens select" on public.push_tokens for select using (user_id = auth.uid());
+drop policy if exists "own push tokens insert" on public.push_tokens;
+create policy "own push tokens insert" on public.push_tokens for insert with check (user_id = auth.uid());
+drop policy if exists "own push tokens update" on public.push_tokens;
+create policy "own push tokens update" on public.push_tokens for update using (user_id = auth.uid());
+drop policy if exists "own push tokens delete" on public.push_tokens;
+create policy "own push tokens delete" on public.push_tokens for delete using (user_id = auth.uid());
