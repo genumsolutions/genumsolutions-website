@@ -28,7 +28,20 @@ if (!url || !serviceKey) {
   process.exit(1)
 }
 
+const storageBase = url.replace(/\/+$/, '')
 const db = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } })
+
+// Legacy seed rows used site-relative image paths (/media/products/*.jpg),
+// which only the Next.js app can serve. The native app must never depend on
+// the website, so re-seeding writes the absolute Supabase Storage URL instead
+// (photos live in the public "product-images" bucket, same file name).
+function storageImageUrl(image: string | null, bucketBase: string): string | null {
+  if (!image) return null
+  if (!image.startsWith('/')) return image
+  const name = image.split('/').pop()
+  if (!name) return null
+  return `${bucketBase}/storage/v1/object/public/product-images/${name}`
+}
 
 const rows = products.map((product, index) => ({
   id: product.id,
@@ -64,7 +77,7 @@ const rows = products.map((product, index) => ({
   color: product.color,
   badge: product.badge ?? null,
   supplier: product.supplier ?? null,
-  image_url: product.image ?? null,
+  image_url: storageImageUrl(product.image ?? null, storageBase),
   sort_order: index,
 }))
 
