@@ -1,31 +1,12 @@
 import Link from 'next/link'
-import { getProjectCategory } from '../lib/project-catalog'
-
-const CAPABILITY_NOTES: Record<string, string> = {
-  directional: 'Drive forward, back, left, and right with adjustable speed',
-  servo: 'Steer with a servo and tune the endpoint angles',
-  pid: 'Tune the PID and read the live angle/heading',
-  'start-stop': 'Run and stop autonomous behaviour with a toggle',
-  relay: 'Flip relay / switch outputs (AC and DC loads)',
-  sensor: 'Read live sensor values from the device',
-  weblink: 'Link a client/server ESP connection over WiFi',
-  slider: 'Adjust an arbitrary 0..n value (speed, threshold, brightness)',
-}
-
-function buildPoints(category: ReturnType<typeof getProjectCategory>): string[] {
-  if (!category) return []
-  const capPoints = (category.capabilities ?? []).map(
-    (cap) => CAPABILITY_NOTES[cap] ?? `Control via ${cap}`,
-  )
-  return [category.tagline, ...capPoints].filter(Boolean)
-}
+import { categoryBullets, getProjectCategory } from '../lib/project-catalog'
 
 export default function CategoryPage({ slug }: { slug: string }) {
   const cat = getProjectCategory(slug)
 
   if (!cat) return null
 
-  const points = buildPoints(cat)
+  const points = categoryBullets(cat)
 
   return (
     <div className="mx-auto max-w-7xl px-5 py-10 lg:px-8 lg:py-12">

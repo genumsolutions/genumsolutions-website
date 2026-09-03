@@ -85,3 +85,23 @@ export const PROJECT_CATEGORIES: ProjectCategory[] = [
 export function getProjectCategory(slug: string): ProjectCategory | undefined {
   return PROJECT_CATEGORIES.find((c) => c.slug === slug)
 }
+
+/** Human-readable note per control capability, used to describe a category. */
+export const CAPABILITY_NOTES: Record<ControlCapability, string> = {
+  directional: 'Drive forward, back, left, and right with adjustable speed',
+  servo: 'Steer with a servo and tune the endpoint angles',
+  pid: 'Tune the PID and read the live angle/heading',
+  'start-stop': 'Run and stop autonomous behaviour with a toggle',
+  relay: 'Flip relay / switch outputs (AC and DC loads)',
+  sensor: 'Read live sensor values from the device',
+  weblink: 'Link a client/server ESP connection over WiFi',
+  slider: 'Adjust an arbitrary 0..n value (speed, threshold, brightness)',
+}
+
+/** Bullet list describing what you can build for a category (tagline first). */
+export function categoryBullets(category: ProjectCategory): string[] {
+  const capPoints = category.capabilities.map(
+    (cap) => CAPABILITY_NOTES[cap] ?? `Control via ${cap}`,
+  )
+  return [category.tagline, ...capPoints].filter(Boolean)
+}

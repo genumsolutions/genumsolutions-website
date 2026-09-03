@@ -10,6 +10,7 @@
 
 import { useState } from 'react'
 import CategoryControlPanel from './CategoryControlPanel'
+import CategoryOverviewCard from './CategoryOverviewCard'
 import { PROJECT_CATEGORIES } from '../lib/project-catalog'
 
 export default function IotRemote() {
@@ -51,6 +52,9 @@ export default function IotRemote() {
       </div>
 
       <CategoryControlPanel key={category.slug} category={category} />
+
+      {/* Category overview below the whole remote window — stays on page */}
+      <CategoryOverviewCard key={`overview-${category.slug}`} category={category} />
     </section>
   )
 }
