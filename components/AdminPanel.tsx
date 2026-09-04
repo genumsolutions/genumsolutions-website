@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Activity, BookOpen, FileText, LayoutDashboard, MessageSquare, Package, ShoppingBag, Users, Wallet, Wrench } from 'lucide-react'
+import { Activity, BookOpen, FileText, LayoutDashboard, MessageSquare, Package, Settings as SettingsIcon, ShoppingBag, Users, Wallet, Wrench } from 'lucide-react'
 import { tabActive, tabBase, tabInactive } from '../lib/styles'
 import type { Product } from '../lib/content-store'
 import { TABS } from './admin/admin-types'
@@ -17,6 +17,7 @@ import AdminUsers from './admin/AdminUsers'
 import AdminActivity from './admin/AdminActivity'
 import AdminProjectPackages from './admin/AdminProjectPackages'
 import AdminContent from './admin/AdminContent'
+import AdminSettings from './admin/AdminSettings'
 
 type Props = { initialProducts: Product[] }
 
@@ -32,6 +33,7 @@ const TAB_ICONS = {
   Activity: Activity,
   ProjectPackages: Package,
   Content: FileText,
+  Settings: SettingsIcon,
 } as const
 
 export default function AdminPanel({ initialProducts }: Props) {
@@ -68,6 +70,7 @@ export default function AdminPanel({ initialProducts }: Props) {
       case 'Activity': return <AdminActivity />
       case 'ProjectPackages': return <AdminProjectPackages products={products} onProductsChange={setProducts} setMessage={setMessage} />
       case 'Content': return <AdminContent setMessage={setMessage} />
+      case 'Settings': return <AdminSettings setMessage={setMessage} />
     }
   }
 
