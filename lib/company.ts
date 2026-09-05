@@ -69,7 +69,7 @@ export const androidApp: {
   // once the release.json manifest is uploaded to the public Supabase bucket).
   version: '1.5.14',
   versionCode: 22,
-  sizeLabel: '34.3 MB',
+  sizeLabel: '34.5 MB',
   arch: 'Android · 64-bit',
   apkUrl:
     'https://bkylfnlybtsujwzropru.supabase.co/storage/v1/object/public/app-releases/genum-solutions-1.5.14.apk',
