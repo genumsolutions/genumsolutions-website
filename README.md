@@ -31,7 +31,7 @@ Live: https://genumsolutions-website.vercel.app · PAN 623676190
 - Optional: Vercel CLI
 
 ### Hardware (products documented in this repo)
-The GENUM robot-car line covers 10 modes (see `INVENTORY/ADMIN/robo car/Multimode_Robotic_Car_Complete_Documentation.docx`). Common bill of materials:
+The GENUM robot-car line covers 10 modes (the full catalogue lives in the `robo_car_modes` Supabase table). Common bill of materials:
 
 - **Chassis:** 2WD chassis + 2 DC gear motors (+ caster wheel), or omni-directional chassis ×4 motors
 - **Controllers:** Arduino UNO (classic modes) or ESP32 / ESP32-CAM (WiFi/Camera modes)
