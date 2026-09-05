@@ -86,6 +86,15 @@ export const androidApp: {
 // Call this after uploading a new APK via upload-release.mjs. The website will
 // immediately reflect the new version on next page render.
 // The Supabase app-releases bucket is public, so we can fetch release.json directly.
+//
+// RULE: "newest downloadable version wins". The bundled fallback above is
+// updated by bump-version.mjs on every version bump, so right after a bump the
+// bundled version is NEWER than the live manifest (whose APK hasn't been
+// released yet). A stale manifest must never downgrade the download section —
+// but we also must not advertise a version whose APK doesn't exist yet, so a
+// newer bundled version is only kept when its versioned APK actually responds
+// to a HEAD request. When the manifest is at least as new as the bundled
+// fallback, the manifest is authoritative (it was published with a real upload).
 export async function refreshAndroidAppInfo(): Promise<{
   version: string
   versionCode: number
@@ -116,6 +125,14 @@ export async function refreshAndroidAppInfo(): Promise<{
 
     const manifest = await res.json()
 
+    // If the bundled fallback is NEWER than the manifest (version bumped but
+    // not released yet), keep the bundled values — but only when its versioned
+    // APK actually exists, otherwise fall through to the older-but-real
+    // manifest release so the download link never 404s.
+    if (bundledIsNewer(manifest) && (await headExists(androidApp.apkUrl))) {
+      return androidApp
+    }
+
     // Update androidApp with new manifest values.
     // Only overwrite fields that are actually present in the manifest so the
     // defaults (hardcoded above) are never wiped to empty/zero.
@@ -136,8 +153,9 @@ export async function refreshAndroidAppInfo(): Promise<{
     // Dynamically compute the APK file size from the actual download URL
     // so the size is always accurate, even if the manifest doesn't include it.
     try {
-      const head = await fetch(androidApp.apkUrl, { method: 'HEAD' })
-      const length = head.headers.get('content-length')
+      const length = (await fetch(androidApp.apkUrl, { method: 'HEAD' })).headers.get(
+        'content-length',
+      )
       if (length) {
         const mb = Number(length) / (1024 * 1024)
         androidApp.sizeLabel = `${mb.toFixed(1)} MB`
@@ -151,5 +169,55 @@ export async function refreshAndroidAppInfo(): Promise<{
     // On failure (e.g., offline dev, release.json not yet uploaded) keep
     // the current androidApp values - no-op.
     return androidApp
+  }
+}
+
+/**
+ * True when the bundled fallback version is NEWER than the live manifest's.
+ * Version codes are compared first (authoritative, monotonic), then semver
+ * (covers manifests without a version_code, e.g. the old size-only format).
+ */
+export function isBundledNewer(
+  bundledVersion: string,
+  bundledCode: number,
+  manifestVersion?: string,
+  manifestCode?: number,
+): boolean {
+  if (
+    Number.isFinite(bundledCode) &&
+    manifestCode !== undefined &&
+    Number.isFinite(manifestCode) &&
+    manifestCode !== bundledCode
+  ) {
+    return bundledCode > manifestCode
+  }
+  return compareSemver(bundledVersion, manifestVersion ?? '') > 0
+}
+
+function bundledIsNewer(manifest: Record<string, unknown>): boolean {
+  return isBundledNewer(
+    String(androidApp.version),
+    Number(androidApp.versionCode),
+    manifest.version !== undefined ? String(manifest.version) : undefined,
+    manifest.version_code !== undefined ? Number(manifest.version_code) : undefined,
+  )
+}
+
+function compareSemver(a: string, b: string): number {
+  const pa = a.split('.').map((n) => parseInt(n, 10) || 0)
+  const pb = b.split('.').map((n) => parseInt(n, 10) || 0)
+  while (pa.length < 3) pa.push(0)
+  while (pb.length < 3) pb.push(0)
+  for (let i = 0; i < 3; i++) {
+    if (pa[i] !== pb[i]) return (pa[i] ?? 0) > (pb[i] ?? 0) ? 1 : -1
+  }
+  return 0
+}
+
+async function headExists(url: string): Promise<boolean> {
+  try {
+    return (await fetch(url, { method: 'HEAD' })).ok
+  } catch {
+    return false
   }
 }
