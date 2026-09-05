@@ -67,12 +67,12 @@ export const androidApp: {
 } = {
   // Default / fallback values (will be overwritten by refreshAndroidAppInfo()
   // once the release.json manifest is uploaded to the public Supabase bucket).
-  version: '1.5.14',
-  versionCode: 22,
+  version: '1.5.15',
+  versionCode: 23,
   sizeLabel: '34.5 MB',
   arch: 'Android · 64-bit',
   apkUrl:
-    'https://bkylfnlybtsujwzropru.supabase.co/storage/v1/object/public/app-releases/genum-solutions-1.5.14.apk',
+    'https://bkylfnlybtsujwzropru.supabase.co/storage/v1/object/public/app-releases/genum-solutions-1.5.15.apk',
   latestApkUrl:
     'https://bkylfnlybtsujwzropru.supabase.co/storage/v1/object/public/app-releases/genum-solutions-latest.apk',
   releaseUrl:
