@@ -1,7 +1,11 @@
 -- GENUM SOLUTIONS - Supabase schema
--- Run once in the Supabase SQL Editor. Safe to re-run section by section.
+-- Can be applied automatically: `npm run db:apply` (or `db:apply:seed`)
+-- from the website repo, which needs SUPABASE_DB_URL in .env.local.
+-- Also safe to run section by section in the Supabase SQL Editor.
 -- If you already ran an earlier version, just run the PROFILES section's
 -- "protect_role_column" trigger block at the end.
+-- The file is idempotent: create table/function/index/policy ... if
+-- not exists + drop ... if exists, so re-running is safe.
 
 -- ===== PROFILES (extends Supabase Auth users) =====
 create table if not exists public.profiles (

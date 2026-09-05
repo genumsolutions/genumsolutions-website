@@ -15,7 +15,9 @@
     "seed": "tsx scripts/seed-products.ts",
     "seed:journal": "tsx scripts/seed-journal.ts",
     "seed:programs": "tsx scripts/seed-programs.ts",
-    "seed:company": "tsx scripts/seed-company.ts"
+    "seed:company": "tsx scripts/seed-company.ts",
+    "db:apply": "tsx scripts/apply-schema.ts",
+    "db:apply:seed": "tsx scripts/apply-schema.ts --seed"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
@@ -28,14 +30,16 @@
   },
   "devDependencies": {
     "@types/node": "^22.7.4",
+    "@types/pg": "^8.23.1",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "autoprefixer": "^10.4.20",
     "eslint": "^8.57.1",
     "eslint-config-next": "^14.2.15",
     "eslint-config-prettier": "^9.1.0",
-    "prettier": "^3.3.3",
+    "pg": "^8.23.0",
     "postcss": "^8.4.47",
+    "prettier": "^3.3.3",
     "sharp": "^0.35.3",
     "tailwindcss": "^3.4.13",
     "tsx": "^4.23.12",
