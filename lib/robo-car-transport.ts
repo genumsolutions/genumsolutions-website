@@ -62,6 +62,10 @@ export interface CarTelemetry {
   out?: number
   off?: number
   angle?: number
+  // WiFi wireless-car JSON status (Genum_WIRELESS_CAR WebServerComm)
+  ip?: string
+  rssi?: number
+  connected?: boolean
 }
 
 export interface TransportOptions {
@@ -143,6 +147,28 @@ export function parseTelemetryLine(line: string, into: CarTelemetry): void {
     const num = Number(l.replace(/^SPD[:]?/i, '')) || 0
     if (num > 0) into.speed = num
   }
+
+  // JSON status from the wireless-car WebServerComm (broadcast WITHOUT a
+  // trailing newline): {"status":"OK","mode":"ESP_SER","connected":true,
+  // "ip":"192.168.4.1","rssi":-45,"speed":170,...}.
+  if (l.startsWith('{') && l.endsWith('}')) {
+    try {
+      const j = JSON.parse(l) as Record<string, unknown>
+      if (typeof j.status === 'string') into.status = j.status
+      if (typeof j.mode === 'string') into.mode = j.mode
+      if (typeof j.speed === 'number') into.speed = j.speed
+      if (typeof j.ip === 'string') into.ip = j.ip
+      if (typeof j.rssi === 'number') into.rssi = j.rssi
+      if (typeof j.connected === 'boolean') into.connected = j.connected
+    } catch { /* not JSON — ignore */ }
+  }
+}
+
+/** True when the buffered WebSocket text is a complete JSON object (the
+ *  wireless-car status broadcasts have no trailing newline). */
+export function isCompleteJsonObject(text: string): boolean {
+  const t = text.trim()
+  return t.startsWith('{') && t.endsWith('}')
 }
 
 export function buildCalibration(p: { kp: number; ki: number; kd: number; out: number; off: number }): string {
@@ -193,6 +219,14 @@ export class WebSocketTransport implements CarTransport {
         for (const line of lines) {
           parseTelemetryLine(line, telemetry)
           if (Object.keys(telemetry).length) this.options.onTelemetry?.({ ...telemetry })
+        }
+        // Wireless-car JSON status arrives WITHOUT a trailing newline — flush
+        // a complete object immediately instead of waiting forever.
+        if (isCompleteJsonObject(this.lineBuffer)) {
+          const jt: CarTelemetry = {}
+          parseTelemetryLine(this.lineBuffer, jt)
+          if (Object.keys(jt).length) this.options.onTelemetry?.({ ...jt })
+          this.lineBuffer = ''
         }
       }
     })
@@ -278,6 +312,12 @@ export class BluetoothTransport implements CarTransport {
           for (const line of lines) {
             parseTelemetryLine(line, telemetry)
             if (Object.keys(telemetry).length) this.options.onTelemetry?.({ ...telemetry })
+          }
+          if (isCompleteJsonObject(this.lineBuffer)) {
+            const jt: CarTelemetry = {}
+            parseTelemetryLine(this.lineBuffer, jt)
+            if (Object.keys(jt).length) this.options.onTelemetry?.({ ...jt })
+            this.lineBuffer = ''
           }
         })
         this.options.onStatus?.('connected', device.name || 'Car connected')

@@ -493,14 +493,14 @@ export default function RoboCarControl() {
               <div className="mt-6 flex flex-wrap items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => { void send('F'); setDriveStatus(`${mode.name} running`) }}
+                  onClick={() => { void send(mode.token); setDriveStatus(`${mode.name} running`) }}
                   className="rounded-full bg-navy px-6 py-3 text-sm font-black text-white transition hover:bg-navy-dark"
                 >
                   Run
                 </button>
                 <button
                   type="button"
-                  onClick={() => { void send('S'); setDriveStatus(`${mode.name} stopped`) }}
+                  onClick={() => { void send('BT'); setDriveStatus(`${mode.name} stopped`) }}
                   className="rounded-full border border-line bg-white px-6 py-3 text-sm font-black text-ink transition hover:border-navy hover:text-navy"
                 >
                   Stop
@@ -508,7 +508,7 @@ export default function RoboCarControl() {
                 <p className="text-xs text-muted">
                   {mode.controls.includes('tuning')
                     ? 'Threshold tuning arrives with sensor configuration.'
-                    : 'The car runs its sensor routine until you press Stop.'}
+                    : 'Run switches the car into its mode — the routine runs until Stop (Stop returns to BT/manual, which halts the motors).'}
                 </p>
               </div>
             )}
