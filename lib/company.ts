@@ -67,8 +67,8 @@ export const androidApp: {
 } = {
   // Default / fallback values (will be overwritten by refreshAndroidAppInfo()
   // once the release.json manifest is uploaded to the public Supabase bucket).
-  version: '1.5.15',
-  versionCode: 23,
+  version: '1.5.14',
+  versionCode: 22,
   sizeLabel: '34.5 MB',
   arch: 'Android · 64-bit',
   apkUrl:
