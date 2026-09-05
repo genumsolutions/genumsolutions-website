@@ -52,7 +52,9 @@ async function main() {
     process.exit(1)
   }
   console.log(`Seeded company_info row (${row.name}).`)
-  process.exit(0)
+  // Do NOT process.exit(0) here: Node on Windows can crash with
+  // "Assertion failed: !(handle->flags & UV_HANDLE_CLOSING)" when exit() cuts
+  // off an open socket right after the write. End naturally instead.
 }
 
 main()

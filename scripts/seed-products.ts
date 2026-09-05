@@ -106,7 +106,9 @@ async function main() {
     process.exit(1)
   }
   console.log('Done. Products and homepage content are in Supabase.')
-  process.exit(0)
+  // Do NOT process.exit(0) here: Node on Windows can crash with
+  // "Assertion failed: !(handle->flags & UV_HANDLE_CLOSING)" when exit() cuts
+  // off an open socket right after the last write. End naturally instead.
 }
 
 main()

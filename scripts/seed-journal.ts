@@ -47,7 +47,10 @@ async function main() {
     process.exit(1)
   }
   console.log(`Seeded ${rows.length} journal post(s) into journal_posts.`)
-  process.exit(0)
+  // Do NOT process.exit(0) here: Node on Windows can crash with
+  // "Assertion failed: !(handle->flags & UV_HANDLE_CLOSING)" when exit() cuts
+  // off the open undici/socket handle right after the write. Let the script
+  // end naturally instead.
 }
 
 main()

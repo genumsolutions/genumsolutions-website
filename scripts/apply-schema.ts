@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { spawnSync } from 'node:child_process'
+import { spawn } from 'node:child_process'
 import { Client } from 'pg'
 
 // Minimal .env.local loader so `npm run db:apply` works without extra
@@ -41,18 +41,29 @@ if (!sql.trim()) {
 
 const seed = process.argv.slice(2).includes('--seed')
 
-function runSeeds() {
-  const scripts = ['seed-products.ts', 'seed-journal.ts', 'seed-programs.ts', 'seed-company.ts']
-  for (const script of scripts) {
-    console.log(`Seeding via ${script} ...`)
-    const result = spawnSync(`npx`, [`tsx`, `scripts/${script}`], {
+function runSeed(script: string, tsxCli: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [tsxCli, `scripts/${script}`], {
       cwd: process.cwd(),
       stdio: 'inherit',
-      shell: process.platform === 'win32',
     })
-    if (result.status !== 0) {
-      throw new Error(`${script} failed (exit ${result.status ?? '?'}); aborting the seed pass.`)
-    }
+    child.on('error', (err) => reject(new Error(`failed to start ${script}: ${err.message}`)))
+    child.on('close', (code) => {
+      if (code === 0) resolve()
+      else reject(new Error(`${script} failed (exit ${code ?? '?'}); aborting the seed pass.`))
+    })
+  })
+}
+
+async function runSeeds() {
+  const scripts = ['seed-products.ts', 'seed-journal.ts', 'seed-programs.ts', 'seed-company.ts']
+  // Spawn tsx through plain `node` (node_modules/tsx/dist/cli.mjs) using
+  // ASYNC spawn: Windows libuv has a known crash with spawnSync
+  // ("Assertion failed: !(handle->flags & UV_HANDLE_CLOSING)" in async.c).
+  const tsxCli = join(process.cwd(), 'node_modules', 'tsx', 'dist', 'cli.mjs')
+  for (const script of scripts) {
+    console.log(`Seeding via ${script} ...`)
+    await runSeed(script, tsxCli)
   }
 }
 
@@ -71,7 +82,7 @@ async function main() {
     await client.query(sql)
     console.log('Schema applied successfully.')
     if (seed) {
-      runSeeds()
+      await runSeeds()
       console.log('Seeds complete: products, journal, programs, company.')
     } else {
       console.log('Hint: run `npm run db:apply:seed` to also re-seed products/journal/programs/company.')
