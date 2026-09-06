@@ -7,7 +7,7 @@ import OpenTools from '../../components/OpenTools'
 export const metadata: Metadata = {
   title: 'Tools',
   description:
-    'Free and open-source tools for designing, simulating, programming, and documenting robotics and fabrication work. Includes IoT & Remote Controller.',
+    'Free and open-source tools for designing, simulating, programming, and documenting robotics and fabrication work. Includes the Control Panel.',
 }
 
 export default function ToolsPage() {

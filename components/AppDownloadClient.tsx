@@ -6,10 +6,16 @@ import { androidApp, refreshAndroidAppInfo, type Company } from '../lib/company'
 
 export default function AppDownloadClient({ company }: { company: Company }) {
   const [copied, setCopied] = useState(false)
+  // Every rendered value (version, size, arch, download/release URLs) comes
+  // from this state — initialized with the bundled fallback and refreshed from
+  // the live Supabase release.json manifest on mount. Nothing reads the
+  // module-level object directly, so the page is fully dynamic.
   const [appInfo, setAppInfo] = useState({
     version: androidApp.version,
     sizeLabel: androidApp.sizeLabel,
     arch: androidApp.arch,
+    apkUrl: androidApp.apkUrl,
+    releaseUrl: androidApp.releaseUrl,
   })
 
   useEffect(() => {
@@ -18,6 +24,8 @@ export default function AppDownloadClient({ company }: { company: Company }) {
         version: info.version,
         sizeLabel: info.sizeLabel,
         arch: info.arch,
+        apkUrl: info.apkUrl,
+        releaseUrl: info.releaseUrl,
       })
     })
   }, [])
@@ -42,7 +50,7 @@ export default function AppDownloadClient({ company }: { company: Company }) {
 
   async function copyLink() {
     try {
-      await navigator.clipboard.writeText(androidApp.apkUrl)
+      await navigator.clipboard.writeText(appInfo.apkUrl)
       setCopied(true)
       window.setTimeout(() => setCopied(false), 2000)
     } catch {
@@ -80,8 +88,8 @@ export default function AppDownloadClient({ company }: { company: Company }) {
                     <ShieldCheck size={16} className="shrink-0 text-navy" aria-hidden="true" /> Signed by {company.name}
                   </li>
                   <li className="flex items-center gap-2">
-                    <MonitorSmartphone size={16} className="shrink-0 text-navy" aria-hidden="true" /> Android 64-bit ·{' '}
-                    {androidApp.sizeLabel} download
+                    <MonitorSmartphone size={16} className="shrink-0 text-navy" aria-hidden="true" /> {appInfo.arch} ·{' '}
+                    {appInfo.sizeLabel} download
                   </li>
                   <li className="flex items-center gap-2">
                     <Check size={16} className="shrink-0 text-navy" aria-hidden="true" /> Install over an older version to
@@ -90,7 +98,7 @@ export default function AppDownloadClient({ company }: { company: Company }) {
                 </ul>
                 <div className="mt-6 flex flex-wrap items-center gap-3">
                   <a
-                    href={androidApp.apkUrl}
+                    href={appInfo.apkUrl}
                     download
                     className="inline-flex h-12 items-center gap-2 rounded-full bg-navy px-6 text-sm font-black text-white shadow-sm transition hover:bg-navy-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
                   >
@@ -144,7 +152,7 @@ export default function AppDownloadClient({ company }: { company: Company }) {
               {company.phone}
             </a>
             . Release notes and version history are in the{' '}
-            <a href={androidApp.releaseUrl} className="font-bold text-navy hover:underline">
+            <a href={appInfo.releaseUrl} className="font-bold text-navy hover:underline">
               release manifest
             </a>
             .

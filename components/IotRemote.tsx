@@ -21,7 +21,7 @@ export default function IotRemote() {
   return (
     <section className="mx-auto max-w-7xl px-5 py-10 lg:px-8 lg:py-12">
       <p className="text-[10px] font-black uppercase tracking-widest text-navy">
-        IoT &amp; Remote Controller
+        Control Panel
       </p>
       <h2 className="mt-2 max-w-2xl font-display text-3xl font-bold text-ink lg:text-4xl">
         Test &amp; control your projects.

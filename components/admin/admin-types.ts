@@ -6,7 +6,7 @@ export const PAGE_SIZE = 10
 
 export const STATUSES = ['pending', 'paid', 'fulfilled', 'cancelled'] as const
 
-export const TABS = ['Orders', 'Products', 'Messages', 'Services', 'Journal', 'Finance', 'Users', 'Dashboard', 'Activity', 'ProjectPackages', 'Content', 'Settings'] as const
+export const TABS = ['Orders', 'Products', 'Messages', 'Services', 'Journal', 'Finance', 'Users', 'Dashboard', 'Activity', 'Projects', 'Content', 'Settings'] as const
 export type Tab = typeof TABS[number]
 
 export type Order = {

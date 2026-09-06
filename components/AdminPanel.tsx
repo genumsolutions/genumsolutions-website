@@ -31,7 +31,7 @@ const TAB_ICONS = {
   Users: Users,
   Messages: MessageSquare,
   Activity: Activity,
-  ProjectPackages: Package,
+  Projects: Package,
   Content: FileText,
   Settings: SettingsIcon,
 } as const
@@ -68,7 +68,7 @@ export default function AdminPanel({ initialProducts }: Props) {
       case 'Finance': return <AdminFinance />
       case 'Users': return <AdminUsers setMessage={setMessage} />
       case 'Activity': return <AdminActivity />
-      case 'ProjectPackages': return <AdminProjectPackages products={products} onProductsChange={setProducts} setMessage={setMessage} />
+      case 'Projects': return <AdminProjectPackages products={products} onProductsChange={setProducts} setMessage={setMessage} />
       case 'Content': return <AdminContent setMessage={setMessage} />
       case 'Settings': return <AdminSettings setMessage={setMessage} />
     }
