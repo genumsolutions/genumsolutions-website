@@ -67,12 +67,12 @@ export const androidApp: {
 } = {
   // Default / fallback values (will be overwritten by refreshAndroidAppInfo()
   // once the release.json manifest is uploaded to the public Supabase bucket).
-  version: '1.6.0',
-  versionCode: 29,
+  version: '1.6.1',
+  versionCode: 30,
   sizeLabel: '34.5 MB',
   arch: 'Android · 64-bit',
   apkUrl:
-    'https://bkylfnlybtsujwzropru.supabase.co/storage/v1/object/public/app-releases/genum-solutions-1.6.0.apk',
+    'https://bkylfnlybtsujwzropru.supabase.co/storage/v1/object/public/app-releases/genum-solutions-1.6.1.apk',
   latestApkUrl:
     'https://bkylfnlybtsujwzropru.supabase.co/storage/v1/object/public/app-releases/genum-solutions-latest.apk',
   releaseUrl:
@@ -140,8 +140,17 @@ export async function refreshAndroidAppInfo(): Promise<{
     if (manifest.version_code) androidApp.versionCode = manifest.version_code
     // Handle both old manifest format ({ size: "32.5 MB" }) and
     // new format ({ size_mb: 32.5 }).
+    // Size: the manifest's size_mb / sizeLabel is written by
+    // upload-release.mjs from the EXACT uploaded bytes, so it is the single
+    // source of truth. Do NOT override it with a HEAD request here — HEAD to
+    // the Supabase/CDN object can return a redirect body length or hit the
+    // "latest" object, which is exactly what used to make the website's size
+    // disagree with the real APK. (HEAD is only used as a fallback when the
+    // manifest carries no size at all.)
     if (manifest.size_mb !== undefined && manifest.size_mb > 0) {
       androidApp.sizeLabel = `${Number(manifest.size_mb).toFixed(1)} MB`
+    } else if (manifest.sizeLabel && manifest.sizeLabel !== '0') {
+      androidApp.sizeLabel = String(manifest.sizeLabel)
     } else if (manifest.size && manifest.size !== '0') {
       androidApp.sizeLabel = manifest.size
     }
@@ -150,15 +159,21 @@ export async function refreshAndroidAppInfo(): Promise<{
     if (manifest.releaseUrl) androidApp.releaseUrl = manifest.releaseUrl
     if (manifest.appsPagePath) androidApp.appsPagePath = manifest.appsPagePath
 
-    // Dynamically compute the APK file size from the actual download URL
-    // so the size is always accurate, even if the manifest doesn't include it.
+    // Last resort only: if the manifest had NO size fields at all, measure
+    // the versioned APK so the download section still shows a real size.
     try {
-      const length = (await fetch(androidApp.apkUrl, { method: 'HEAD' })).headers.get(
-        'content-length',
-      )
-      if (length) {
-        const mb = Number(length) / (1024 * 1024)
-        androidApp.sizeLabel = `${mb.toFixed(1)} MB`
+      const hasManifestSize =
+        (manifest.size_mb !== undefined && manifest.size_mb > 0) ||
+        (manifest.sizeLabel && manifest.sizeLabel !== '0') ||
+        (manifest.size && manifest.size !== '0')
+      if (!hasManifestSize) {
+        const length = (await fetch(androidApp.apkUrl, { method: 'HEAD' })).headers.get(
+          'content-length',
+        )
+        if (length) {
+          const mb = Number(length) / (1024 * 1024)
+          androidApp.sizeLabel = `${mb.toFixed(1)} MB`
+        }
       }
     } catch {
       // Size fetch failed — keep whatever we already have.
