@@ -188,7 +188,7 @@ Safe pattern everywhere: the order is saved `pending` server-side, prices are **
 
 The storefront follows a defense-in-depth posture suitable for a client deployment:
 
-- **Authentication & RBAC** — Supabase Auth (email/password + Google OAuth, PKCE). Admin access is restricted to users whose `profiles.role = 'admin'`. Page-level guards (`getCurrentAdmin`) and per-route `isAdminRequest()` checks run on every admin API; an **edge middleware guard** additionally bounces unauthenticated visitors away from `/admin` (except `/admin/login`) before any page renders.
+- **Authentication & RBAC** — Supabase Auth (email/password + Google OAuth, PKCE). Admin access is restricted to users whose `profiles.role = 'admin'`. Page-level guards (`getCurrentAdmin`) and per-route `isAdminRequest()` checks run on every admin API; an **edge middleware guard** additionally bounces unauthenticated visitors away from `/admin` before any page renders.
 - **Row Level Security** — all tables ship with RLS policies in `supabase/schema.sql`. The service-role client (used only in server code) bypasses RLS and is **never** exposed to the browser (`SUPABASE_SERVICE_ROLE_KEY` is server-only, never `NEXT_PUBLIC_`).
 - **Secrets** — all credentials live in environment variables (Vercel + `.env.local`, gitignored). `.env.example` documents every key; nothing secret is committed to the repo.
 - **HTTPS & headers** — Vercel terminates TLS; `next.config.mjs` sets strict transport (`Strict-Transport-Security`), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, a restrictive `Referrer-Policy`, and a locked-down `Permissions-Policy`.

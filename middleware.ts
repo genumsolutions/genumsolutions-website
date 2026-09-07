@@ -72,8 +72,7 @@ export async function middleware(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser()
     // Edge guard for the admin UI: bounce unauthenticated users to login.
-    // /admin/login is the sign-in page itself, so it stays reachable.
-    if (pathname.startsWith('/admin') && pathname !== '/admin/login' && !user) {
+    if (pathname.startsWith('/admin') && !user) {
       const loginUrl = request.nextUrl.clone()
       loginUrl.pathname = '/login'
       loginUrl.search = `?next=${encodeURIComponent(pathname)}`
