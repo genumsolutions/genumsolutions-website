@@ -2,32 +2,46 @@
 
 import { useEffect, useState } from 'react'
 import { Check, Copy, Download, MonitorSmartphone, Settings2, ShieldCheck, Smartphone } from 'lucide-react'
-import { androidApp, refreshAndroidAppInfo, type Company } from '../lib/company'
+import { androidApp, refreshAndroidAppInfo, type AppInfo, type Company } from '../lib/company'
 
-export default function AppDownloadClient({ company }: { company: Company }) {
+export default function AppDownloadClient({
+  company,
+  initial,
+}: {
+  company: Company
+  initial?: AppInfo
+}) {
   const [copied, setCopied] = useState(false)
   // Every rendered value (version, size, arch, download/release URLs) comes
-  // from this state — initialized with the bundled fallback and refreshed from
-  // the live Supabase release.json manifest on mount. Nothing reads the
-  // module-level object directly, so the page is fully dynamic.
-  const [appInfo, setAppInfo] = useState({
-    version: androidApp.version,
-    sizeLabel: androidApp.sizeLabel,
-    arch: androidApp.arch,
-    apkUrl: androidApp.apkUrl,
-    releaseUrl: androidApp.releaseUrl,
-  })
+  // from this state. `initial` is the SSR-fetched live manifest (from the /app
+  // server component) so the first paint is already the real released build.
+  // When absent (legacy callers, offline), seed from the bundled fallback and
+  // refresh from release.json on mount. Nothing reads the module-level object
+  // directly, so the page is fully dynamic.
+  const [appInfo, setAppInfo] = useState(() => ({
+    version: (initial?.version ?? androidApp.version) || '',
+    sizeLabel: initial?.sizeLabel ?? androidApp.sizeLabel,
+    arch: initial?.arch ?? androidApp.arch,
+    apkUrl: initial?.apkUrl ?? androidApp.apkUrl,
+    releaseUrl: initial?.releaseUrl ?? androidApp.releaseUrl,
+  }))
 
   useEffect(() => {
+    let active = true
     refreshAndroidAppInfo().then((info) => {
-      setAppInfo({
-        version: info.version,
-        sizeLabel: info.sizeLabel,
-        arch: info.arch,
-        apkUrl: info.apkUrl,
-        releaseUrl: info.releaseUrl,
-      })
+      if (active) {
+        setAppInfo({
+          version: info.version,
+          sizeLabel: info.sizeLabel,
+          arch: info.arch,
+          apkUrl: info.apkUrl,
+          releaseUrl: info.releaseUrl,
+        })
+      }
     })
+    return () => {
+      active = false
+    }
   }, [])
 
   const steps = [

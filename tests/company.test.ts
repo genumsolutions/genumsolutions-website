@@ -1,36 +1,58 @@
 import { describe, expect, it } from 'vitest'
-import { isBundledNewer } from '../lib/company'
+import { appInfoFromManifest, sizeLabelFromManifest } from '../lib/company'
 
-// The /app download section must always show the newest version that is
-// actually downloadable. A stale release.json manifest (e.g. still v1.5.13
-// after a v1.5.14 bump) must never downgrade the bundled fallback.
-describe('isBundledNewer', () => {
-  it('treats a higher version code as newer', () => {
-    expect(isBundledNewer('1.5.14', 22, '1.5.13', 21)).toBe(true)
+// The /app download section must show exactly what is actually downloadable.
+// The live release.json manifest is the single source of truth — it is only
+// written after a real APK upload — so the site never advertises a version
+// whose build isn't ready yet.
+describe('sizeLabelFromManifest', () => {
+  it('uses the exact sizeLabel written by the uploader', () => {
+    expect(sizeLabelFromManifest({ sizeLabel: '36 MB', size_mb: 36.0112 })).toBe('36 MB')
   })
 
-  it('treats a lower version code as older', () => {
-    expect(isBundledNewer('1.5.12', 20, '1.5.14', 22)).toBe(false)
+  it('formats size_mb to one decimal when there is no sizeLabel', () => {
+    expect(sizeLabelFromManifest({ size_mb: 36 })).toBe('36.0 MB')
   })
 
-  it('falls back to semver when codes are equal', () => {
-    // Same code, newer semver — bundled wins
-    expect(isBundledNewer('1.5.14', 22, '1.5.13', 22)).toBe(true)
-    // Same code, older semver — manifest wins
-    expect(isBundledNewer('1.5.12', 22, '1.5.13', 22)).toBe(false)
+  it('uses the legacy plain size string as a last resort', () => {
+    expect(sizeLabelFromManifest({ size: '35.1 MB' })).toBe('35.1 MB')
   })
 
-  it('uses semver when the manifest has no version_code (old format)', () => {
-    expect(isBundledNewer('1.5.14', 22, '1.5.13', undefined)).toBe(true)
-    expect(isBundledNewer('1.5.12', 22, '1.5.13', undefined)).toBe(false)
+  it('ignores zero / empty sizes', () => {
+    expect(sizeLabelFromManifest({ sizeLabel: '0' })).toBeUndefined()
+    expect(sizeLabelFromManifest({ size_mb: 0 })).toBeUndefined()
+    expect(sizeLabelFromManifest({ size: '' })).toBeUndefined()
+    expect(sizeLabelFromManifest({})).toBeUndefined()
+  })
+})
+
+describe('appInfoFromManifest', () => {
+  it('maps the manifest fields onto AppInfo', () => {
+    const info = appInfoFromManifest({
+      version: '1.6.2',
+      version_code: 31,
+      size_mb: 36,
+      apkUrl: 'https://bucket/genum-solutions-1.6.2.apk',
+      latestApkUrl: 'https://bucket/genum-solutions-latest.apk',
+      releaseUrl: 'https://bucket/release.json',
+      appsPagePath: '/app',
+    })
+    expect(info).toEqual({
+      version: '1.6.2',
+      versionCode: 31,
+      sizeLabel: '36.0 MB',
+      apkUrl: 'https://bucket/genum-solutions-1.6.2.apk',
+      latestApkUrl: 'https://bucket/genum-solutions-latest.apk',
+      releaseUrl: 'https://bucket/release.json',
+      appsPagePath: '/app',
+    })
   })
 
-  it('returns false for equal versions', () => {
-    expect(isBundledNewer('1.5.14', 22, '1.5.14', 22)).toBe(false)
+  it('omits fields that are missing from the manifest', () => {
+    expect(appInfoFromManifest({ version: '1.6.2' })).toEqual({ version: '1.6.2' })
   })
 
-  it('handles an empty/missing manifest version without throwing', () => {
-    expect(isBundledNewer('1.5.14', 22, '', undefined)).toBe(true)
-    expect(isBundledNewer('1.5.14', 22, undefined, undefined)).toBe(true)
+  it('ignores empty / non-numeric fields', () => {
+    expect(appInfoFromManifest({ version: '', version_code: NaN, apkUrl: '' })).toEqual({})
   })
 })

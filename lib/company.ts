@@ -36,26 +36,13 @@ export const company: Company = {
 }
 
 // ---------------------------------------------------------------------------
-// Dynamic app info - fetched from Supabase release.json manifest.
+// Dynamic app info - the live Supabase release.json manifest is the SINGLE
+// source of truth for what /app shows. The manifest is only written when a
+// release actually uploads (upload-release.mjs in the app repo), so the site
+// never advertises a version whose APK isn't ready yet.
 // ---------------------------------------------------------------------------
-//
-// The upload-release.mjs script (in the app repo) pushes a release.json to the
-// Supabase "app-releases" public bucket on every new APK upload. This manifest
-// contains: version, version_code, size_mb, file_name, and release notes.
-//
-// The bucket is configured as public (see website/supabase/schema.sql),
-// so the website can read release.json directly via HTTP fetch.
-// The androidApp object is synchronous - components read its properties
-// directly. After uploading a new APK, call refreshAndroidAppInfo() to update
-// the website without any code changes or redeployment.
-//
-// To make this work:
-//   1. Build and release the new app APK (from mobile/ or C:\bs)
-//   2. Run: node scripts/upload-release.mjs --apk releases/...
-//   3. Call: import { refreshAndroidAppInfo } from '../lib/company'
-//          await refreshAndroidAppInfo()
-//   4. The website will instantly show the new version on /app.
-export const androidApp: {
+
+export type AppInfo = {
   version: string
   versionCode: number
   sizeLabel: string
@@ -64,12 +51,17 @@ export const androidApp: {
   latestApkUrl: string
   releaseUrl: string
   appsPagePath: string
-} = {
-  // Default / fallback values (will be overwritten by refreshAndroidAppInfo()
-  // once the release.json manifest is uploaded to the public Supabase bucket).
+}
+
+// Bundled fallback used ONLY when the manifest is unreachable (offline dev,
+// first deploy, bucket outage). It reflects the LAST RELEASED build — it is
+// never bumped in advance of a release. Keep it in sync after an upload with:
+//   node scripts/sync-app-fallback.mjs
+// (in this repo). bump-version.mjs in the app repo no longer touches this file.
+export const androidApp: AppInfo = {
   version: '1.6.2',
   versionCode: 31,
-  sizeLabel: '34.5 MB',
+  sizeLabel: '36 MB',
   arch: 'Android · 64-bit',
   apkUrl:
     'https://bkylfnlybtsujwzropru.supabase.co/storage/v1/object/public/app-releases/genum-solutions-1.6.2.apk',
@@ -80,159 +72,97 @@ export const androidApp: {
   appsPagePath: '/app',
 }
 
-// ---------------------------------------------------------------------------
-// Refresh app info from Supabase release.json manifest.
-// ---------------------------------------------------------------------------
-// Call this after uploading a new APK via upload-release.mjs. The website will
-// immediately reflect the new version on next page render.
-// The Supabase app-releases bucket is public, so we can fetch release.json directly.
-//
-// RULE: "newest downloadable version wins". The bundled fallback above is
-// updated by bump-version.mjs on every version bump, so right after a bump the
-// bundled version is NEWER than the live manifest (whose APK hasn't been
-// released yet). A stale manifest must never downgrade the download section —
-// but we also must not advertise a version whose APK doesn't exist yet, so a
-// newer bundled version is only kept when its versioned APK actually responds
-// to a HEAD request. When the manifest is at least as new as the bundled
-// fallback, the manifest is authoritative (it was published with a real upload).
-export async function refreshAndroidAppInfo(): Promise<{
-  version: string
-  versionCode: number
-  sizeLabel: string
-  arch: string
-  apkUrl: string
-  releaseUrl: string
-  appsPagePath: string
-}> {
+const RELEASE_URL =
+  'https://bkylfnlybtsujwzropru.supabase.co/storage/v1/object/public/app-releases/release.json'
+
+async function fetchReleaseManifest(): Promise<Record<string, unknown> | null> {
   try {
-    const releaseUrl =
-      'https://bkylfnlybtsujwzropru.supabase.co/storage/v1/object/public/app-releases/release.json'
-    // Cache-bust: CDN / browser may cache this file. Append a timestamp
-    // so every mount gets the freshest manifest.
+    // Cache-bust: CDN / browser may cache this file. Append a timestamp +
+    // no-store so every call gets the freshest manifest.
     const bust = `?_t=${Date.now()}`
-    const res = await fetch(releaseUrl + bust, {
+    const res = await fetch(RELEASE_URL + bust, {
+      cache: 'no-store',
       headers: {
         Accept: 'application/json',
         'Cache-Control': 'no-cache',
       },
     })
-
-    if (!res.ok) {
-      // If release.json doesn't exist yet (e.g., first run or failed upload),
-      // keep current androidApp values.
-      throw new Error('release.json not found')
-    }
-
-    const manifest = await res.json()
-
-    // If the bundled fallback is NEWER than the manifest (version bumped but
-    // not released yet), keep the bundled values — but only when its versioned
-    // APK actually exists, otherwise fall through to the older-but-real
-    // manifest release so the download link never 404s.
-    if (bundledIsNewer(manifest) && (await headExists(androidApp.apkUrl))) {
-      return androidApp
-    }
-
-    // Update androidApp with new manifest values.
-    // Only overwrite fields that are actually present in the manifest so the
-    // defaults (hardcoded above) are never wiped to empty/zero.
-    if (manifest.version) androidApp.version = manifest.version
-    if (manifest.version_code) androidApp.versionCode = manifest.version_code
-    // Handle both old manifest format ({ size: "32.5 MB" }) and
-    // new format ({ size_mb: 32.5 }).
-    // Size: the manifest's size_mb / sizeLabel is written by
-    // upload-release.mjs from the EXACT uploaded bytes, so it is the single
-    // source of truth. Do NOT override it with a HEAD request here — HEAD to
-    // the Supabase/CDN object can return a redirect body length or hit the
-    // "latest" object, which is exactly what used to make the website's size
-    // disagree with the real APK. (HEAD is only used as a fallback when the
-    // manifest carries no size at all.)
-    if (manifest.size_mb !== undefined && manifest.size_mb > 0) {
-      androidApp.sizeLabel = `${Number(manifest.size_mb).toFixed(1)} MB`
-    } else if (manifest.sizeLabel && manifest.sizeLabel !== '0') {
-      androidApp.sizeLabel = String(manifest.sizeLabel)
-    } else if (manifest.size && manifest.size !== '0') {
-      androidApp.sizeLabel = manifest.size
-    }
-    if (manifest.apkUrl) androidApp.apkUrl = manifest.apkUrl
-    if (manifest.latestApkUrl) androidApp.latestApkUrl = manifest.latestApkUrl
-    if (manifest.releaseUrl) androidApp.releaseUrl = manifest.releaseUrl
-    if (manifest.appsPagePath) androidApp.appsPagePath = manifest.appsPagePath
-
-    // Last resort only: if the manifest had NO size fields at all, measure
-    // the versioned APK so the download section still shows a real size.
-    try {
-      const hasManifestSize =
-        (manifest.size_mb !== undefined && manifest.size_mb > 0) ||
-        (manifest.sizeLabel && manifest.sizeLabel !== '0') ||
-        (manifest.size && manifest.size !== '0')
-      if (!hasManifestSize) {
-        const length = (await fetch(androidApp.apkUrl, { method: 'HEAD' })).headers.get(
-          'content-length',
-        )
-        if (length) {
-          const mb = Number(length) / (1024 * 1024)
-          androidApp.sizeLabel = `${mb.toFixed(1)} MB`
-        }
-      }
-    } catch {
-      // Size fetch failed — keep whatever we already have.
-    }
-
-    return androidApp
+    if (!res.ok) return null
+    return (await res.json()) as Record<string, unknown>
   } catch {
-    // On failure (e.g., offline dev, release.json not yet uploaded) keep
-    // the current androidApp values - no-op.
-    return androidApp
+    return null
   }
 }
 
 /**
- * True when the bundled fallback version is NEWER than the live manifest's.
- * Version codes are compared first (authoritative, monotonic), then semver
- * (covers manifests without a version_code, e.g. the old size-only format).
+ * Derive the human-readable size label from a manifest. Order of preference:
+ * 1. sizeLabel (upload-release.mjs writes the EXACT label from uploaded bytes)
+ * 2. size_mb (formatted to one decimal, e.g. "36.0 MB")
+ * 3. size (legacy plain string)
+ * Zeros/empty strings are treated as "not present" — the manifest is written
+ * by the uploader from real bytes, so a real manifest always has a real size.
  */
-export function isBundledNewer(
-  bundledVersion: string,
-  bundledCode: number,
-  manifestVersion?: string,
-  manifestCode?: number,
-): boolean {
-  if (
-    Number.isFinite(bundledCode) &&
-    manifestCode !== undefined &&
-    Number.isFinite(manifestCode) &&
-    manifestCode !== bundledCode
-  ) {
-    return bundledCode > manifestCode
+export function sizeLabelFromManifest(manifest: Record<string, unknown>): string | undefined {
+  if (typeof manifest.sizeLabel === 'string' && manifest.sizeLabel !== '0') {
+    return manifest.sizeLabel
   }
-  return compareSemver(bundledVersion, manifestVersion ?? '') > 0
+  if (typeof manifest.size_mb === 'number' && manifest.size_mb > 0) {
+    return `${Number(manifest.size_mb).toFixed(1)} MB`
+  }
+  if (typeof manifest.size === 'string' && manifest.size && manifest.size !== '0') {
+    return manifest.size
+  }
+  return undefined
 }
 
-function bundledIsNewer(manifest: Record<string, unknown>): boolean {
-  return isBundledNewer(
-    String(androidApp.version),
-    Number(androidApp.versionCode),
-    manifest.version !== undefined ? String(manifest.version) : undefined,
-    manifest.version_code !== undefined ? Number(manifest.version_code) : undefined,
-  )
+/**
+ * Map a release.json manifest onto AppInfo fields. Only fields actually present
+ * in the manifest are set, so nothing is wiped to empty/zero.
+ */
+export function appInfoFromManifest(manifest: Record<string, unknown>): Partial<AppInfo> {
+  const info: Partial<AppInfo> = {}
+  if (typeof manifest.version === 'string' && manifest.version) info.version = manifest.version
+  if (typeof manifest.version_code === 'number' && Number.isFinite(manifest.version_code)) {
+    info.versionCode = manifest.version_code
+  }
+  const sizeLabel = sizeLabelFromManifest(manifest)
+  if (sizeLabel) info.sizeLabel = sizeLabel
+  if (typeof manifest.apkUrl === 'string' && manifest.apkUrl) info.apkUrl = manifest.apkUrl
+  if (typeof manifest.latestApkUrl === 'string' && manifest.latestApkUrl) {
+    info.latestApkUrl = manifest.latestApkUrl
+  }
+  if (typeof manifest.releaseUrl === 'string' && manifest.releaseUrl) {
+    info.releaseUrl = manifest.releaseUrl
+  }
+  if (typeof manifest.appsPagePath === 'string' && manifest.appsPagePath) {
+    info.appsPagePath = manifest.appsPagePath
+  }
+  return info
 }
 
-function compareSemver(a: string, b: string): number {
-  const pa = a.split('.').map((n) => parseInt(n, 10) || 0)
-  const pb = b.split('.').map((n) => parseInt(n, 10) || 0)
-  while (pa.length < 3) pa.push(0)
-  while (pb.length < 3) pb.push(0)
-  for (let i = 0; i < 3; i++) {
-    if (pa[i] !== pb[i]) return (pa[i] ?? 0) > (pb[i] ?? 0) ? 1 : -1
+/**
+ * The live app info: the release.json manifest merged over the bundled
+ * fallback. The manifest is authoritative — it only exists after a real
+ * upload — so the download section shows exactly what is downloadable.
+ * Falls back to the bundled last-released values when the manifest is
+ * unreachable. Non-mutating; safe to call from server components.
+ */
+export async function getLiveAppInfo(): Promise<AppInfo> {
+  const manifest = await fetchReleaseManifest()
+  if (!manifest) return { ...androidApp }
+  return {
+    ...androidApp,
+    ...appInfoFromManifest(manifest),
   }
-  return 0
 }
 
-async function headExists(url: string): Promise<boolean> {
-  try {
-    return (await fetch(url, { method: 'HEAD' })).ok
-  } catch {
-    return false
-  }
+/**
+ * Legacy refresh helper (kept for compatibility). Fetches the manifest and
+ * mutates the module-level `androidApp` so existing consumers pick up the
+ * live values. Fails silently to the bundled fallback when unreachable.
+ */
+export async function refreshAndroidAppInfo(): Promise<AppInfo> {
+  const live = await getLiveAppInfo()
+  Object.assign(androidApp, live)
+  return live
 }
