@@ -23,6 +23,12 @@ const RELEASE_URL =
 const BUCKET_BASE = 'https://bkylfnlybtsujwzropru.supabase.co/storage/v1/object/public/app-releases'
 
 function sizeLabelFromManifest(manifest) {
+  // size_bytes is the exact byte count; format it in decimal MB so the size
+  // shown matches what download managers / browsers / Android report (> any
+  // possibly-legacy sizeLabel string).
+  if (typeof manifest.size_bytes === 'number' && Number.isFinite(manifest.size_bytes) && manifest.size_bytes > 0) {
+    return `${(manifest.size_bytes / 1_000_000).toFixed(1)} MB`
+  }
   if (typeof manifest.sizeLabel === 'string' && manifest.sizeLabel !== '0') return manifest.sizeLabel
   if (typeof manifest.size_mb === 'number' && manifest.size_mb > 0) {
     return `${Number(manifest.size_mb).toFixed(1)} MB`

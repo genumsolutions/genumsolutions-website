@@ -61,7 +61,7 @@ export type AppInfo = {
 export const androidApp: AppInfo = {
   version: '1.6.3',
   versionCode: 32,
-  sizeLabel: '36 MB',
+  sizeLabel: '37.8 MB',
   arch: 'Android · 64-bit',
   apkUrl:
     'https://bkylfnlybtsujwzropru.supabase.co/storage/v1/object/public/app-releases/genum-solutions-1.6.3.apk',
@@ -96,13 +96,21 @@ async function fetchReleaseManifest(): Promise<Record<string, unknown> | null> {
 
 /**
  * Derive the human-readable size label from a manifest. Order of preference:
- * 1. sizeLabel (upload-release.mjs writes the EXACT label from uploaded bytes)
- * 2. size_mb (formatted to one decimal, e.g. "36.0 MB")
- * 3. size (legacy plain string)
- * Zeros/empty strings are treated as "not present" — the manifest is written
- * by the uploader from real bytes, so a real manifest always has a real size.
+ * 1. size_bytes (exact, authoritative) -> formatted in DECIMAL MB ("37.8 MB")
+ * 2. sizeLabel (uploader string, already decimal)
+ * 3. size_mb (formatted to one decimal)
+ * 4. size (legacy plain string)
+ *
+ * Decimal MB (39 MB = 39,000,000 bytes) matches what download managers, web
+ * browsers, Google Play and Android file explorers report, so the label shown
+ * on the site equals the size of the file after download. Zeros/empty strings
+ * are treated as "not present" — the manifest is written by the uploader from
+ * real bytes, so a real manifest always has a real size.
  */
 export function sizeLabelFromManifest(manifest: Record<string, unknown>): string | undefined {
+  if (typeof manifest.size_bytes === 'number' && Number.isFinite(manifest.size_bytes) && manifest.size_bytes > 0) {
+    return `${(manifest.size_bytes / 1_000_000).toFixed(1)} MB`
+  }
   if (typeof manifest.sizeLabel === 'string' && manifest.sizeLabel !== '0') {
     return manifest.sizeLabel
   }
