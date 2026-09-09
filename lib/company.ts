@@ -51,6 +51,10 @@ export type AppInfo = {
   latestApkUrl: string
   releaseUrl: string
   appsPagePath: string
+  /** What changed in the latest publish ("OTA · …" for short updates). */
+  notes?: string
+  /** Last-published ISO timestamp from release.json. */
+  updatedAt?: string
 }
 
 // Bundled fallback used ONLY when the manifest is unreachable (offline dev,
@@ -141,6 +145,12 @@ export function appInfoFromManifest(manifest: Record<string, unknown>): Partial<
   }
   if (typeof manifest.appsPagePath === 'string' && manifest.appsPagePath) {
     info.appsPagePath = manifest.appsPagePath
+  }
+  // Human-facing metadata (optional). Present on every real manifest; absent
+  // on the bundled fallback so nothing is wiped to empty in dev/offline.
+  if (typeof manifest.notes === 'string' && manifest.notes) info.notes = manifest.notes
+  if (typeof manifest.updated_at === 'string' && manifest.updated_at) {
+    info.updatedAt = manifest.updated_at
   }
   return info
 }

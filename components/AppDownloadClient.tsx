@@ -24,6 +24,8 @@ export default function AppDownloadClient({
     arch: initial?.arch ?? androidApp.arch,
     apkUrl: initial?.apkUrl ?? androidApp.apkUrl,
     releaseUrl: initial?.releaseUrl ?? androidApp.releaseUrl,
+    notes: initial?.notes ?? androidApp.notes,
+    updatedAt: initial?.updatedAt ?? androidApp.updatedAt,
   }))
 
   useEffect(() => {
@@ -36,6 +38,8 @@ export default function AppDownloadClient({
           arch: info.arch,
           apkUrl: info.apkUrl,
           releaseUrl: info.releaseUrl,
+          notes: info.notes,
+          updatedAt: info.updatedAt,
         })
       }
     })
@@ -128,6 +132,22 @@ export default function AppDownloadClient({
                     {copied ? 'Link copied' : 'Copy direct link'}
                   </button>
                 </div>
+
+                {appInfo.updatedAt && (
+                  <p className="mt-4 text-xs leading-5 text-slate-400">
+                    Last published:{' '}
+                    <time dateTime={appInfo.updatedAt} className="font-semibold text-slate-500">
+                      {new Date(appInfo.updatedAt).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </time>
+                    {appInfo.notes ? (
+                      <span className="text-slate-500"> · {appInfo.notes}</span>
+                    ) : null}
+                  </p>
+                )}
               </div>
 
               <div className="hidden justify-center lg:flex" aria-hidden="true">
