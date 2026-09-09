@@ -1,0 +1,60 @@
+# =====================================================================
+# Sync app fallback - keeps lib/company.ts -> androidApp truthful with the
+# LAST RELEASED build, automatically.
+#
+# The /app download page reads the LIVE release.json manifest (written by
+# upload-release.mjs only AFTER an APK upload), so it always shows the real
+# latest build. The bundled androidApp in lib/company.ts is a fallback copy
+# of the last release; this workflow re-syncs it whenever a new version goes
+# live, and commits the change back so Vercel deploys it.
+#
+# Triggered on every push to main (cheap; the script is a no-op when the
+# fallback already matches) plus a 6-hourly cron safety net in case a release
+# goes out with no accompanying website push. The auto-commit is idempotent:
+# a follow-up run finds no diff and makes no commit, so there is no loop.
+#
+# No secrets required - sync-app-fallback.mjs only reads release.json.
+# =====================================================================
+name: Sync app fallback
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: sync-app-fallback
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Sync lib/company.ts to the live release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      # The script needs no npm packages (node builtins + fetch only).
+      - name: Sync fallback to the live release.json
+        id: sync
+        run: node scripts/sync-app-fallback.mjs
+
+      - name: Commit + push when the fallback changed
+        if: steps.sync.outcome == 'success'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lib/company.ts
+          if git diff --cached --quiet; then
+            echo "Fallback already matches the live release - no commit needed."
+          else
+            git commit -m "chore: sync app fallback to released version"
+            git push
+          fi
