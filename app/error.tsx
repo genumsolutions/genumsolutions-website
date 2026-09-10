@@ -1,6 +1,14 @@
 'use client'
 
+import { useEffect } from 'react'
+
+import { reportError } from '../lib/error-reporting'
+
 export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  useEffect(() => {
+    reportError(error, { digest: error.digest, tags: { boundary: 'route' } })
+  }, [error])
+
   return (
     <main role="alert" className="grid min-h-[60vh] place-items-center px-5 text-center">
       <div>

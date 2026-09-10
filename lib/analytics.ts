@@ -92,40 +92,52 @@ export async function getDashboardStats(): Promise<{
   todayStart.setHours(0, 0, 0, 0)
   const todayISO = todayStart.toISOString()
 
-  // Reduced from 12 to 6 parallel queries by pairing related counts
+  // All countable metrics use `head: true` count queries — Postgres returns
+  // only the number, never rows, so the dashboard cost is O(1) payload
+  // regardless of how large the tables grow. Row selects are kept ONLY for
+  // values that need arithmetic over rows (revenue sums, cart-line JSON).
   const [
     profilesResult,
     newUsersResult,
-    ordersAllResult,
-    productsResult,
-    messagesResult,
-    transactionsResult,
+    ordersTotalResult,
+    ordersPendingResult,
+    ordersPaidResult,
+    ordersFulfilledResult,
+    ordersCancelledResult,
+    paidOrdersRowsResult,
+    productsTotalResult,
+    productsLowStockResult,
+    messagesTotalResult,
+    messagesUnreadResult,
+    transactionsTotalResult,
+    transactionsSucceededResult,
     cartsResult,
   ] = await Promise.all([
     supabase.from('profiles').select('*', { count: 'exact', head: true }),
     supabase.from('profiles').select('*', { count: 'exact', head: true }).gte('created_at', todayISO),
-    supabase.from('orders').select('total_npr, status, created_at'),
-    supabase.from('products').select('stock'),
-    supabase.from('customer_messages').select('status'),
-    supabase.from('transactions').select('status'),
+    supabase.from('orders').select('*', { count: 'exact', head: true }),
+    supabase.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+    supabase.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'paid'),
+    supabase.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'fulfilled'),
+    supabase.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'cancelled'),
+    // Revenue needs the actual amounts: one narrow column pair, paid only.
+    supabase.from('orders').select('total_npr, created_at').in('status', ['paid', 'fulfilled']),
+    supabase.from('products').select('*', { count: 'exact', head: true }),
+    supabase.from('products').select('*', { count: 'exact', head: true }).gt('stock', 0).lte('stock', 3),
+    supabase.from('customer_messages').select('*', { count: 'exact', head: true }),
+    supabase.from('customer_messages').select('*', { count: 'exact', head: true }).eq('status', 'new'),
+    supabase.from('transactions').select('*', { count: 'exact', head: true }),
+    supabase.from('transactions').select('*', { count: 'exact', head: true }).eq('status', 'succeeded'),
+    // Cart contents are JSON lines; quantities must be summed in JS.
     supabase.from('carts').select('lines'),
   ])
 
   const profilesCount = profilesResult.count ?? 0
   const newUsersToday = newUsersResult.count ?? 0
-  const ordersAll = (ordersAllResult.data ?? []) as { total_npr: number; status: string; created_at: string }[]
-  const productsAll = (productsResult.data ?? []) as { stock: number }[]
-  const messagesAll = (messagesResult.data ?? []) as { status: string }[]
-  const transactionsAll = (transactionsResult.data ?? []) as { status: string }[]
+  const paidOrders = (paidOrdersRowsResult.data ?? []) as { total_npr: number; created_at: string }[]
   const cartsAll = (cartsResult.data ?? []) as { lines: unknown }[]
   const cartItemCounts = cartsAll.map((cart) => Array.isArray(cart.lines) ? cart.lines.reduce((sum, line) => sum + (Number((line as { quantity?: number }).quantity) || 0), 0) : 0)
 
-  const totalOrders = ordersAll.length
-  const pendingOrders = ordersAll.filter((o) => o.status === 'pending').length
-  const paidOrdersCount = ordersAll.filter((o) => o.status === 'paid').length
-  const fulfilledOrdersCount = ordersAll.filter((o) => o.status === 'fulfilled').length
-  const cancelledOrdersCount = ordersAll.filter((o) => o.status === 'cancelled').length
-  const paidOrders = ordersAll.filter((o) => o.status === 'paid' || o.status === 'fulfilled')
   const revenue = paidOrders.reduce((sum, o) => sum + (o.total_npr ?? 0), 0)
   const revenueToday = paidOrders.filter((o) => o.created_at >= todayISO).reduce((sum, o) => sum + (o.total_npr ?? 0), 0)
 
@@ -134,18 +146,18 @@ export async function getDashboardStats(): Promise<{
     totalCartItems: cartItemCounts.reduce((sum, count) => sum + count, 0),
     activeCarts: cartItemCounts.filter((count) => count > 0).length,
     newUsersToday,
-    totalOrders,
-    pendingOrders,
-    paidOrders: paidOrdersCount,
-    fulfilledOrders: fulfilledOrdersCount,
-    cancelledOrders: cancelledOrdersCount,
+    totalOrders: ordersTotalResult.count ?? 0,
+    pendingOrders: ordersPendingResult.count ?? 0,
+    paidOrders: ordersPaidResult.count ?? 0,
+    fulfilledOrders: ordersFulfilledResult.count ?? 0,
+    cancelledOrders: ordersCancelledResult.count ?? 0,
     revenue,
     revenueToday,
-    totalProducts: productsAll.length,
-    lowStockProducts: productsAll.filter((p) => p.stock > 0 && p.stock <= 3).length,
-    totalMessages: messagesAll.length,
-    unreadMessages: messagesAll.filter((m) => m.status === 'new').length,
-    totalTransactions: transactionsAll.length,
-    succeededTransactions: transactionsAll.filter((t) => t.status === 'succeeded').length,
+    totalProducts: productsTotalResult.count ?? 0,
+    lowStockProducts: productsLowStockResult.count ?? 0,
+    totalMessages: messagesTotalResult.count ?? 0,
+    unreadMessages: messagesUnreadResult.count ?? 0,
+    totalTransactions: transactionsTotalResult.count ?? 0,
+    succeededTransactions: transactionsSucceededResult.count ?? 0,
   }
 }
