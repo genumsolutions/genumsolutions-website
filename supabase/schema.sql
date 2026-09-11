@@ -564,3 +564,123 @@ create policy "public read company info" on public.company_info
 drop policy if exists "admin write company info" on public.company_info;
 create policy "admin write company info" on public.company_info
   for all using (public.is_admin());
+
+-- ===== PROJECT CATEGORIES (controller types for the IoT hub) =====
+-- Migrates hardcoded project-catalog.ts categories to the database.
+-- App reads DB-first, falls back to bundled defaults if empty.
+create table if not exists public.project_categories (
+  id text primary key,                  -- 'robocar', 'home-automation', etc.
+  name text not null,                   -- 'Robo Car', 'Home Automation', etc.
+  icon text not null default 'cpu',     -- Feather icon name
+  car_type text,                        -- default carType for this category (e.g. '4wd4m')
+  hardware jsonb not null default '[]', -- [{ name, role }]
+  capabilities jsonb not null default '[]', -- ['directional', 'servo', etc.]
+  capability_labels jsonb not null default '{}', -- { "directional": "Directional drive" }
+  capability_notes jsonb not null default '{}',  -- { "directional": "Moves forward/backward..." }
+  car_mode_ids jsonb not null default '[]',      -- ['4wd4m', '2wd1m'] — linked car modes
+  sort_order integer not null default 1000,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.project_categories enable row level security;
+
+drop policy if exists "public read project_categories" on public.project_categories;
+create policy "public read project_categories" on public.project_categories
+  for select using (true);
+
+drop policy if exists "admin write project_categories" on public.project_categories;
+create policy "admin write project_categories" on public.project_categories
+  for all using (public.is_admin());
+
+-- Seed the 5 controller categories (idempotent)
+insert into public.project_categories (id, name, icon, car_type, hardware, capabilities, capability_labels, capability_notes, car_mode_ids, sort_order) values
+('robocar', 'Robo Car', 'cpu', '4wd4m',
+  '[{"name":"ESP32","role":"controller"},{"name":"L298N","role":"motor driver"},{"name":"BO motors","role":"drive"},{"name":"MPU6050","role":"IMU (self-balance)"}]',
+  '["directional","servo","pid","start-stop","weblink","slider"]',
+  '{"directional":"Directional drive","servo":"Servo steering","pid":"PID self-balance","start-stop":"Start/stop control","weblink":"Web link control","slider":"Speed slider"}',
+  '{"directional":"Move forward/backward/left/right with speed control","servo":"Control steering servo angle (0-180)","pid":"Self-balancing with Kp/Ki/Kd tuning","start-stop":"Start and stop motors remotely","weblink":"Control via web browser over WiFi","slider":"Adjust speed with slider control"}',
+  '["4wd4m","2wd1m","self-balancing","obstacle-us","obstacle-ir","path-follow","rf-manual","website-client","website-server"]',
+  1)
+on conflict (id) do update set
+  name = excluded.name, icon = excluded.icon, car_type = excluded.car_type,
+  hardware = excluded.hardware, capabilities = excluded.capabilities,
+  capability_labels = excluded.capability_labels, capability_notes = excluded.capability_notes,
+  car_mode_ids = excluded.car_mode_ids, sort_order = excluded.sort_order, updated_at = now();
+
+insert into public.project_categories (id, name, icon, car_type, hardware, capabilities, capability_labels, capability_notes, car_mode_ids, sort_order) values
+('home-automation', 'Home Automation', 'home', null,
+  '[{"name":"ESP32","role":"controller"},{"name":"Relay module","role":"switch"},{"name":"Sensors","role":"monitoring"}]',
+  '["relay","sensor","slider"]',
+  '{"relay":"Relay control","sensor":"Sensor monitoring","slider":"Dimmer slider"}',
+  '{"relay":"Switch devices on/off remotely","sensor":"Read temperature, humidity, light levels","slider":"Adjust brightness or fan speed"}',
+  '[]',
+  2)
+on conflict (id) do update set
+  name = excluded.name, icon = excluded.icon, car_type = excluded.car_type,
+  hardware = excluded.hardware, capabilities = excluded.capabilities,
+  capability_labels = excluded.capability_labels, capability_notes = excluded.capability_notes,
+  car_mode_ids = excluded.car_mode_ids, sort_order = excluded.sort_order, updated_at = now();
+
+insert into public.project_categories (id, name, icon, car_type, hardware, capabilities, capability_labels, capability_notes, car_mode_ids, sort_order) values
+('smart-farm', 'Smart Farm', 'leaf', null,
+  '[{"name":"ESP32","role":"controller"},{"name":"Soil moisture sensor","role":"monitoring"},{"name":"Water pump","role":"actuator"},{"name":"Relay","role":"switch"}]',
+  '["relay","sensor","slider"]',
+  '{"relay":"Pump control","sensor":"Soil monitoring","slider":"Threshold adjust"}',
+  '{"relay":"Turn water pump on/off","sensor":"Read soil moisture and temperature","slider":"Adjust irrigation thresholds"}',
+  '[]',
+  3)
+on conflict (id) do update set
+  name = excluded.name, icon = excluded.icon, car_type = excluded.car_type,
+  hardware = excluded.hardware, capabilities = excluded.capabilities,
+  capability_labels = excluded.capability_labels, capability_notes = excluded.capability_notes,
+  car_mode_ids = excluded.car_mode_ids, sort_order = excluded.sort_order, updated_at = now();
+
+insert into public.project_categories (id, name, icon, car_type, hardware, capabilities, capability_labels, capability_notes, car_mode_ids, sort_order) values
+('smart-city', 'Smart City', 'building', null,
+  '[{"name":"ESP32","role":"controller"},{"name":"Traffic lights","role":"display"},{"name":"Sensors","role":"monitoring"},{"name":"Relay","role":"switch"}]',
+  '["relay","sensor","slider"]',
+  '{"relay":"Light control","sensor":"Traffic monitoring","slider":"Timer adjust"}',
+  '{"relay":"Control street lights and signals","sensor":"Monitor traffic and air quality","slider":"Adjust timing and thresholds"}',
+  '[]',
+  4)
+on conflict (id) do update set
+  name = excluded.name, icon = excluded.icon, car_type = excluded.car_type,
+  hardware = excluded.hardware, capabilities = excluded.capabilities,
+  capability_labels = excluded.capability_labels, capability_notes = excluded.capability_notes,
+  car_mode_ids = excluded.car_mode_ids, sort_order = excluded.sort_order, updated_at = now();
+
+insert into public.project_categories (id, name, icon, car_type, hardware, capabilities, capability_labels, capability_notes, car_mode_ids, sort_order) values
+('drones', 'Drones & Aerial', 'wind', 'drone',
+  '[{"name":"ESP32","role":"controller"},{"name":"Brushless motors","role":"propulsion"},{"name":"ESC","role":"speed control"},{"name":"MPU6050","role":"IMU"},{"name":"GPS","role":"navigation"}]',
+  '["sensor","slider","gimbal","altitude"]',
+  '{"sensor":"Telemetry","slider":"Throttle","gimbal":"Camera gimbal","altitude":"Altitude hold"}',
+  '{"sensor":"Read flight telemetry (altitude, battery, GPS)","slider":"Adjust throttle and yaw","gimbal":"Pan and tilt camera","altitude":"Maintain altitude automatically"}',
+  '[]',
+  5)
+on conflict (id) do update set
+  name = excluded.name, icon = excluded.icon, car_type = excluded.car_type,
+  hardware = excluded.hardware, capabilities = excluded.capabilities,
+  capability_labels = excluded.capability_labels, capability_notes = excluded.capability_notes,
+  car_mode_ids = excluded.car_mode_ids, sort_order = excluded.sort_order, updated_at = now();
+
+-- ===== CAR MODE ID ON PRODUCTS =====
+-- Replaces fragile badge-based product-to-mode resolution with a DB foreign key.
+alter table public.products add column if not exists car_mode_id text references public.robo_car_modes(id);
+
+-- Seed car_mode_id for existing robot car products based on their badge
+update public.products set car_mode_id = '4wd4m' where id = '4wd4m-basic';
+update public.products set car_mode_id = '2wd1m' where id = '2wd1m-basic';
+update public.products set car_mode_id = 'self-balancing' where id = 'self-balancing-basic';
+update public.products set car_mode_id = 'obstacle-us' where id = 'obstacle-us-basic';
+update public.products set car_mode_id = 'obstacle-ir' where id = 'obstacle-ir-basic';
+update public.products set car_mode_id = 'website-client' where id = 'website-client-basic';
+update public.products set car_mode_id = 'website-server' where id = 'website-server-basic';
+update public.products set car_mode_id = 'path-follow' where id = 'path-follow-basic';
+update public.products set car_mode_id = 'rf-manual' where id = 'rf-manual-basic';
+
+-- Fix drone products: move from 'Pre-packaged Kits' to 'Drones & Aerial'
+-- so they map to the 'drones' controller category instead of 'robocar'.
+update public.products set category = 'Drones & Aerial'
+where category = 'Pre-packaged Kits'
+  and (name ilike '%drone%' or name ilike '%quadcopter%' or name ilike '%aerial%');
