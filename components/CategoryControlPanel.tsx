@@ -246,10 +246,10 @@ function GenericPanel({ category }: { category: ProjectCategory }) {
             <p className="text-xs font-bold uppercase tracking-wide text-border">Set level</p>
             <input
               type="range"
-              min={0}
+              min={100}
               max={255}
               step={5}
-              defaultValue={128}
+              defaultValue={170}
               disabled={!connected}
               onChange={(e) => void send(`SPD${Math.round(Number(e.target.value))}`)}
               className="mt-3 w-full accent-navy"

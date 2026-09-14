@@ -442,9 +442,11 @@ export default function RoboCarControl() {
                 <p className="text-xs font-bold uppercase tracking-wide text-border">Speed</p>
                 <span className="font-mono text-sm font-bold text-navy">{speed}</span>
               </div>
+              {/* Speed — fleet standard 100–255 step 5 (Config.h MIN/MAX_SPEED).
+                  W-6: was min=0, which let drivers command idle/thrash speeds. */}
               <input
                 type="range"
-                min={0}
+                min={100}
                 max={255}
                 step={5}
                 value={speed}
@@ -500,7 +502,7 @@ export default function RoboCarControl() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => { void send('BT'); setDriveStatus(`${mode.name} stopped`) }}
+                  onClick={() => { void send('4WD4M'); setDriveStatus(`${mode.name} stopped`) }}
                   className="rounded-full border border-line bg-white px-6 py-3 text-sm font-black text-ink transition hover:border-navy hover:text-navy"
                 >
                   Stop

@@ -91,7 +91,11 @@ export interface CarTransport {
 // Protocol helpers shared by every transport.
 // ---------------------------------------------------------------------
 export const MODE_TOKEN = {
-  BT: 'BT',
+  // X-8: the drive mode token is now 4WD4M on the wire (named by operation,
+  // not transport). "BT" is retired as a SENDER token but stays accepted as a
+  // legacy alias for pre-v1.5.0 receivers (see normalizeModeToken).
+  BT: '4WD4M',
+  BT_LEGACY: 'BT',
   TWO_WD_1M: '2WD1M',
   AUTO: 'AUTO',
   PATH: 'PATH',
@@ -101,6 +105,13 @@ export const MODE_TOKEN = {
   ESP_CLI: 'ESP_CLI',
   ESP_SER: 'ESP_SER',
 } as const
+
+/** X-8 legacy normalize: old cars still emit MODE=BT on STATE lines. Senders
+ *  emit 4WD4M; receivers MUST accept both forever, so normalize every inbound
+ *  mode token to the canonical 4WD4M for all downstream consumers. */
+export function normalizeModeToken(t: string): string {
+  return t.toUpperCase() === MODE_TOKEN.BT_LEGACY ? MODE_TOKEN.BT : t
+}
 
 export function parseTelemetryLine(line: string, into: CarTelemetry): void {
   const l = line.trim()
@@ -115,7 +126,7 @@ export function parseTelemetryLine(line: string, into: CarTelemetry): void {
       const key = body[i]?.toUpperCase()
       const val = body[i + 1]
       if (!key || val === undefined) { i += 1; continue }
-      if (key === 'MODE') into.mode = val
+      if (key === 'MODE') into.mode = normalizeModeToken(val)
       else if (key === 'SPD') into.speed = Number(val) || 0
       else if (key === 'TRIM') into.trim = Number(val) || 0
       else if (key === 'STATUS') into.status = val
@@ -155,7 +166,7 @@ export function parseTelemetryLine(line: string, into: CarTelemetry): void {
     try {
       const j = JSON.parse(l) as Record<string, unknown>
       if (typeof j.status === 'string') into.status = j.status
-      if (typeof j.mode === 'string') into.mode = j.mode
+      if (typeof j.mode === 'string') into.mode = normalizeModeToken(j.mode)
       if (typeof j.speed === 'number') into.speed = j.speed
       if (typeof j.ip === 'string') into.ip = j.ip
       if (typeof j.rssi === 'number') into.rssi = j.rssi
@@ -238,9 +249,13 @@ export class WebSocketTransport implements CarTransport {
     this.options.onStatus?.('disconnected')
   }
 
+  // W-6: WebSocket is NOT line-delimited framing the way a UART is — the car's
+  // WS handler already receives whole messages. Sending the bare line avoids
+  // double-framing (and matches the car handler's trimmed-token expectations).
+  // BLE below keeps '\n' because it emulates a serial UART transport.
   async sendLine(line: string): Promise<void> {
     if (!this.connected) throw new Error('Not connected')
-    this.ws?.send(line + '\n')
+    this.ws?.send(line)
   }
 
   async setMode(token: string) { await this.sendLine(token) }

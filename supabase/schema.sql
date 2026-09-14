@@ -333,7 +333,7 @@ revoke all on function public.set_admin(text) from authenticated;
 
 -- seed the 9 original modes from the ESP32 firmware
 insert into public.robo_car_modes (id, name, token, device_index, car, wheel, steering, sensors, transport, remote_with, controls, requires_connection, blurb, sort_order) values
-  ('4wd4m', 'Bluetooth · 4WD (4M)', 'BT', 0, '4-wheel-drive', '4 × BO/brushed motors', 'Skid-steer (differential)', '[]', '["ble","classic-bt"]', 'ESP REMOTE or app', '["drive-tank"]', true, 'A 4-motor drive car driven by direction (F/B/L/R) and speed.', 1),
+  ('4wd4m', '4WD4M', '4WD4M', 0, '4-wheel-drive', '4 × BO/brushed motors', 'Skid-steer (differential)', '[]', '["ble","classic-bt"]', 'ESP REMOTE or app', '["drive-tank"]', true, 'A 4-motor drive car driven by direction (F/B/L/R) and speed.', 1),
   ('2wd1m', 'Bluetooth · 2WD + Servo (1M)', '2WD1M', 8, '2-wheel-drive', '1 × BO motor (rear)', '1 × servo (0..180, center 90)', '[]', '["ble","classic-bt"]', 'ESP REMOTE two-joystick', '["drive-2wd1m"]', true, 'One drive motor plus a steering servo. Speed is signed SPD (fwd +ve).', 2),
   ('self-balancing', 'Self-Balancing', 'AUTO', 6, 'Self-balancing', '2 × BO motors', 'Self-balance (PID)', '["MPU6050 IMU"]', '["ble","wifi","classic-bt"]', 'ESP REMOTE (PID tuning)', '["pid-auto"]', true, 'Balances itself in AUTO mode. The app/remote tune Kp/Ki/Kd OUT/OFF live.', 3),
   ('obstacle-us', 'Obstacle Avoidance · Ultrasonic', 'OBS_US', 3, 'Obstacle avoider', '2/4 × BO motors', 'Skid-steer', '["HC-SR04 / ultrasonic"]', '["ble","wifi","classic-bt"]', 'ESP REMOTE', '["start-stop"]', true, 'Runs autonomous obstacle avoidance using an ultrasonic sensor.', 4),

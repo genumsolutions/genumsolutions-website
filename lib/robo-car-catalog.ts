@@ -10,7 +10,7 @@
 //     Direction  F | B | L | R | S            (non-2WD1M modes)
 //     Speed      SPD<n>   ±255 (2WD1M signed)
 //     Servo      SERVO<n> 0..180, center 90
-//     Mode select BT | 2WD1M | AUTO | PATH | OBS_US | OBS_IR | MAN | ESP_CLI | ESP_SER
+//     Mode select 4WD4M | 2WD1M | AUTO | PATH | OBS_US | OBS_IR | MAN | ESP_CLI | ESP_SER
 //     Calibrate  CFG;Kp:..;Ki:..;Kd:..;OUT:..;OFF:..
 //     Request    REQ_STATE
 //   Incoming (car -> app/site):
@@ -50,7 +50,7 @@ export interface RoboCarMode {
   /**
    * Position in the device's MODE_CMDS[] array (0..8) as cycled by the
    * physical mode button:
-   *   BT, ESP_SER, PATH, OBS_US, OBS_IR, MAN, AUTO, ESP_CLI, 2WD1M
+   *   4WD4M, ESP_SER, PATH, OBS_US, OBS_IR, MAN, AUTO, ESP_CLI, 2WD1M
    */
   deviceIndex: number
   car: string
@@ -72,8 +72,11 @@ export interface RoboCarMode {
 export const ROBOCAR_MODES: RoboCarMode[] = [
   {
     id: '4wd4m',
-    name: 'Bluetooth · 4WD (4M)',
-    token: 'BT',
+    // X-6/X-8: the mode is named by its OPERATION (4WD4M), not its transport.
+    // token matches the fleet wire token; legacy "BT" is normalized in
+    // robo-car-transport.ts (receivers accept both forever).
+    name: '4WD4M',
+    token: '4WD4M',
     deviceIndex: 0,
     car: '4-wheel-drive',
     wheel: '4 × BO/brushed motors',
@@ -226,7 +229,7 @@ export function resolveCarType(idOrToken: string): RoboCarMode | undefined {
 /**
  * Canonical device mode order - mirrors the firmware's MODE_CMDS[] array, the
  * order the physical mode button cycles through on the device:
- *   BT, ESP_SER, PATH, OBS_US, OBS_IR, MAN, AUTO, ESP_CLI, 2WD1M
+ *   4WD4M, ESP_SER, PATH, OBS_US, OBS_IR, MAN, AUTO, ESP_CLI, 2WD1M
  * The app's "Next mode" control steps through exactly this order, behaving
  * like the device's own mode button.
  */
