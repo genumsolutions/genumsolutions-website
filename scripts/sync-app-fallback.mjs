@@ -47,11 +47,16 @@ async function main() {
   // Read the current company.ts file
   let src = readFileSync(companyPath, 'utf8')
 
-  // Update the version, versionCode, and sizeLabel fields
-  // These patterns match the exact format in company.ts
-  const versionPattern = /version: '\d+\.\d+\.\d+'/
-  const versionCodePattern = /versionCode: \d+,/
-  const sizeLabelPattern = /sizeLabel: '[^']*/
+  // Update the version, versionCode, and sizeLabel fields.
+  // These patterns match the FULL statement INCLUDING the trailing comma(s) that
+  // follow the value. Historical bug: the old patterns stopped short of the
+  // closing quote/comma, so every run added one more `,` / `',` and the file
+  // got progressively corrupted (TS1136/TS1002). The `(?:,'?)*` tail matcher
+  // touches up any already-mangled extra `,'` runs, making the rewrite
+  // self-healing and idempotent (run twice = no diff).
+  const versionPattern = /version: '\d+\.\d+\.\d+'(?:,'?)*/
+  const versionCodePattern = /versionCode: \d+(?:,'?)*/
+  const sizeLabelPattern = /sizeLabel: '[^']*'(?:,'?)*/
 
   // Check if patterns exist before replacing
   if (!versionPattern.test(src)) {
@@ -63,9 +68,9 @@ async function main() {
     process.exit(1)
   }
   // sizeLabel pattern may or may not be present; handle gracefully
-  let sizeLabelExists = sizeLabelPattern.test(src)
+  const sizeLabelExists = sizeLabelPattern.test(src)
 
-  // Replace version
+  // Replace version (always exactly one comma after the value)
   src = src.replace(versionPattern, `version: '${version}',`)
 
   // Replace versionCode

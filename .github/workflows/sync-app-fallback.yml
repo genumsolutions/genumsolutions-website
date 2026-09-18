@@ -41,13 +41,34 @@ jobs:
         with:
           node-version: 22
 
-      # The script needs no npm packages (node builtins + fetch only).
+      # The sync script itself needs no npm packages (node builtins + fetch
+      # only). The validation step below installs deps so a real `tsc --noEmit`
+      # can guard the auto-commit.
       - name: Sync fallback to the live release.json
         id: sync
         run: node scripts/sync-app-fallback.mjs
 
-      - name: Commit + push when the fallback changed
+      # GATE: never auto-commit a fallback that breaks the build. The script was
+      # historically corrupting lib/company.ts (regexes added a comma/quote on
+      # every run), and the workflow used to commit the corruption straight to
+      # main. If typecheck fails, company.ts is restored and the job fails red.
+      - name: Validate lib/company.ts still typechecks
+        id: validate
         if: steps.sync.outcome == 'success'
+        run: |
+          npm ci --ignore-scripts
+          npm run typecheck
+        shell: bash
+
+      - name: Restore + fail when validation failed
+        if: steps.sync.outcome == 'success' && steps.validate.outcome == 'failure'
+        run: |
+          git checkout -- lib/company.ts
+          echo "lib/company.ts failed typecheck after sync - restored; nothing committed."
+          exit 1
+
+      - name: Commit + push when the fallback changed
+        if: steps.sync.outcome == 'success' && steps.validate.outcome == 'success'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
