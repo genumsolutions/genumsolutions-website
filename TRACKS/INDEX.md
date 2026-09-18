@@ -38,11 +38,13 @@ CI: `ci.yml` on `main` · `sync-app-fallback.yml` on `main` + 6h cron.
   website `lib/company.ts`; the code deliberately does NOT anymore (fallback syncs only via
   `sync-app-fallback.mjs` after a real upload). Corrected in `guide/GUIDE.md` this session.
 - Env behind the codebase: `.env.local` holds LIVE keys (gitignored). Do not print. Advise rotation.
-- **Open (Phase 5 / FIN-37, 2026-09-18):** `app-releases` download-data mismatch — fallback
-  claims 34.5 MB, `latest.apk` is actually 41,366,097 B (~41.4 MB), and versioned
-  `genum-solutions-3.2.0.apk` is MISSING (HTTP 400). Fix requires re-running
-  `upload-release.mjs` from `C:\bs` for 3.2.0 then `sync-app-fallback.mjs`. See
-  `guide/RELEASE-FINALIZATION-PLAN.md` finding C-6.
+- **RESOLVED (was Phase 5 / FIN-37 / C-6, 2026-09-18):** `app-releases` download-data
+  mismatch closed. The app repo's `release.yml` Android-SDK fix (app `1f136f0`) was
+  verified by workflow run `35337629173`, which rebuilt + re-uploaded the signed
+  3.2.0/53 APK — versioned `genum-solutions-3.2.0.apk` now serves (HTTP 200,
+  41,373,801 B), `release.json` has real `size_bytes`, and `sync-app-fallback.yml`
+  (workflow run `35339602463`, bot commit `7611bcc`) updated the fallback
+  `androidApp.sizeLabel` **34.5 MB → 41.4 MB**. Pulled to local `main` (`7611bcc`).
 - Refs: Supabase `bkylfnlybtsujwzropru`, bucket `app-releases`, Vercel prod
   `https://genumsolutions-website.vercel.app`.
 
