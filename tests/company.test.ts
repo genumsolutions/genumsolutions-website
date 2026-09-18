@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { appInfoFromManifest, sizeLabelFromManifest } from '../lib/company'
+import { androidApp, appInfoFromManifest, sizeLabelFromManifest } from '../lib/company'
 
 // The /app download section must show exactly what is actually downloadable.
 // The live release.json manifest is the single source of truth — it is only
@@ -64,5 +64,35 @@ describe('appInfoFromManifest', () => {
 
   it('ignores empty / non-numeric fields', () => {
     expect(appInfoFromManifest({ version: '', version_code: NaN, apkUrl: '' })).toEqual({})
+  })
+})
+
+describe('androidApp fallback shape (guard against sync-app-fallback corruption)', () => {
+  // A 2026-09-18 incident: sync-app-fallback.mjs regexes compounded a comma /
+  // quote on every run, corrupting this block ('3.2.0',, / '34.5 MB',','), which
+  // broke typecheck and CI until repaired. This guard makes any future malformed
+  // fallback fail the test suite loudly at the value level.
+  it('carries a well-formed semver version', () => {
+    expect(androidApp.version).toMatch(/^\d+\.\d+\.\d+$/)
+  })
+
+  it('carries a positive integer versionCode', () => {
+    expect(Number.isInteger(androidApp.versionCode)).toBe(true)
+    expect(androidApp.versionCode).toBeGreaterThan(0)
+  })
+
+  it('carries a size label ending in MB', () => {
+    expect(androidApp.sizeLabel).toMatch(/^[\d.]+ MB$/)
+  })
+
+  it('carries a non-empty arch', () => {
+    expect(androidApp.arch.length).toBeGreaterThan(0)
+  })
+
+  it('points all download URLs at the shared app-releases bucket', () => {
+    for (const url of [androidApp.apkUrl, androidApp.latestApkUrl, androidApp.releaseUrl]) {
+      expect(url.startsWith('https://')).toBe(true)
+      expect(url).toContain('/storage/v1/object/public/app-releases/')
+    }
   })
 })
