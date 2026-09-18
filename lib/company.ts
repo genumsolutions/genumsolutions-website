@@ -65,7 +65,7 @@ export type AppInfo = {
 export const androidApp: AppInfo = {
   version: '3.2.0',
   versionCode: 53,
-  sizeLabel: '34.5 MB',
+  sizeLabel: '41.4 MB',
   arch: 'Android · 64-bit',
   apkUrl: 'https://bkylfnlybtsujwzropru.supabase.co/storage/v1/object/public/app-releases/genum-solutions-latest.apk',
   latestApkUrl: 'https://bkylfnlybtsujwzropru.supabase.co/storage/v1/object/public/app-releases/genum-solutions-latest.apk',
