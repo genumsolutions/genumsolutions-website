@@ -10,17 +10,17 @@ CI: `ci.yml` on `main` · `sync-app-fallback.yml` on `main` + 6h cron.
 
 | ID | Change | Status |
 |---|---|---|
-| A1 | Fix `lib/company.ts` `androidApp` corruption | PENDING |
-| A2 | Fix `scripts/sync-app-fallback.mjs` regexes (idempotent) | PENDING |
-| A3 | `sync-app-fallback.yml`: typecheck gate before auto-commit | PENDING |
-| A4 | Git reconcile: `pull --ff-only`, commit A1–A3, push | PENDING |
-| A5 | `.env.example` / `.env.local` cleanup + drop empty `app/api/checkout/stripe/` | PENDING |
-| A6 | README font/token reconciliation | PENDING |
-| A7 | Sitemap phantom-route removal | PENDING |
-| A8 | Tidy empty scaffolds (`admin/(dashboard)/`, `portfolio/`, `lib/api/`, `LOGO/`, `INVENTORY/`) | PENDING |
-| A9 | `tests/company.test.ts` fallback-shape guard | PENDING |
-| C1 | README shared-contract section | PENDING |
-| C2 | Verify `typecheck`/`lint`/`test:ci` green | PENDING |
+| A1 | Fix `lib/company.ts` `androidApp` corruption | DONE |
+| A2 | Fix `scripts/sync-app-fallback.mjs` regexes (idempotent) | DONE |
+| A3 | `sync-app-fallback.yml`: typecheck gate before auto-commit | DONE |
+| A4 | Git reconcile: `pull --ff-only`, commit A1–A3, push | DONE |
+| A5 | `.env.example` / `.env.local` cleanup + drop empty `app/api/checkout/stripe/` | DONE |
+| A6 | README font/token reconciliation | DONE |
+| A7 | Sitemap phantom-route removal | DONE |
+| A8 | Tidy empty scaffolds (`admin/(dashboard)/`, `portfolio/`, `lib/api/`, `LOGO/`, `INVENTORY/`) | DONE |
+| A9 | `tests/company.test.ts` fallback-shape guard | DONE |
+| C1 | README shared-contract section | DONE |
+| C2 | Verify `typecheck`/`lint`/`test:ci` green | DONE |
 
 ## Notes
 
@@ -28,7 +28,12 @@ CI: `ci.yml` on `main` · `sync-app-fallback.yml` on `main` + 6h cron.
   `sizeLabel: '34.5 MB',',`, merged `arch`/`apkUrl` line). Typecheck = 5 errors.
   Cause: `scripts/sync-app-fallback.mjs` regex bugs compounded by `sync-app-fallback.yml`
   (push + 6h cron) auto-committing corruption via `github-actions[bot]`.
-  Origin HEAD `bd69e29` is the current corrupt bot commit; local `main` is 1 behind.
+  **Resolved:** bot commits `159e14d` + `bd69e29` merged in, corruption cleaned, regexes
+  made self-healing + a `validate` step now hard-fails the workflow before any commit if
+  `lib/company.ts` stops typechecking. Current HEAD `2766975`.
+- **Guard:** `tests/company.test.ts` now asserts the `androidApp` fallback shape (semver,
+  positive versionCode, `NN.N MB` size label, app-releases bucket URLs) so any future
+  malformed fallback fails the test suite loudly.
 - **Ledger-vs-reality:** workspace `GUIDE.md` VSC item 1 claims `bump-version.mjs` writes
   website `lib/company.ts`; the code deliberately does NOT anymore (fallback syncs only via
   `sync-app-fallback.mjs` after a real upload). Corrected in `guide/GUIDE.md` this session.
