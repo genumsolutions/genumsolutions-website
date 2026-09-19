@@ -55,6 +55,7 @@ export default function RoboCarControl() {
   // Remote-style state.
   const [speed, setSpeed] = useState(170)
   const [servo, setServo] = useState(90)
+  const [trim, setTrim] = useState(0)
   const [pid, setPid] = useState({ kp: 12.0, ki: 3.0, kd: 1.0, out: 0, off: 0 })
   const [driveStatus, setDriveStatus] = useState('Stop')
 
@@ -183,6 +184,11 @@ export default function RoboCarControl() {
     setServo(value)
     void send(`SERVO${Math.round(value)}`)
   }
+  const applyTrim = (value: number) => {
+    const v = Math.max(-90, Math.min(90, Math.round(value)))
+    setTrim(v)
+    void send(`TRIM${v}`)
+  }
 
   const applyPid = (key: 'kp' | 'ki' | 'kd' | 'out' | 'off', value: number) => {
     const next = { ...pid, [key]: value }
@@ -240,11 +246,11 @@ export default function RoboCarControl() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-5 py-10 lg:px-8 lg:py-12">
+    <div className="mx-auto max-w-7xl px-5 py-10 lg:px-8 lg:py-12 overflow-y-auto max-h-screen">
       <div className="max-w-2xl">
-        <p className="text-[10px] font-black uppercase tracking-widest text-navy">Robo Car · Control</p>
-        <h2 className="mt-2 font-display text-3xl font-bold text-ink lg:text-4xl">Drive like the handheld remote</h2>
-        <p className="mt-3 text-sm leading-6 text-muted lg:text-base">
+        <p className="text-[11px] font-bold uppercase tracking-widest text-navy">Robo Car · Control</p>
+        <h2 className="mt-2 font-display text-2xl font-bold text-ink lg:text-3xl">Drive like the handheld remote</h2>
+        <p className="mt-2 text-sm leading-6 text-muted lg:text-base">
           Choose a mode, connect a BLE or WiFi car, then drive with the two virtual
           joysticks and the Select / Back buttons — just like the physical remote
           and its OLED display.
@@ -331,7 +337,7 @@ export default function RoboCarControl() {
       </section>
 
       {/* Remote-style control deck */}
-      <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_320px]">
+      <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_320px] overflow-hidden max-h-[calc(100vh-200px)]">
         <div className="rounded-2xl border border-line bg-white p-5 shadow-card lg:p-6">
           {/* Mode chooser: dropdown + toggle button */}
           <div className="flex flex-wrap items-end justify-between gap-3">
@@ -387,7 +393,8 @@ export default function RoboCarControl() {
             mode={mode.name}
             token={mode.token}
             speed={speed}
-            servo={is2wd1m ? servo : undefined}
+            trim={is2wd1m ? trim : undefined}
+            is2wd1m={is2wd1m}
             status={driveStatus}
             connected={connected}
             angle={telemetry.angle}
@@ -467,6 +474,19 @@ export default function RoboCarControl() {
                   step={5}
                   value={servo}
                   onChange={(e) => applyServo(Number(e.target.value))}
+                  className="mt-2 w-full accent-navy"
+                />
+                <div className="mt-4 flex items-center justify-between">
+                  <p className="text-xs font-bold uppercase tracking-wide text-border">Trim</p>
+                  <span className="font-mono text-sm font-bold text-navy">{trim > 0 ? `+${trim}` : trim}°</span>
+                </div>
+                <input
+                  type="range"
+                  min={-90}
+                  max={90}
+                  step={1}
+                  value={trim}
+                  onChange={(e) => applyTrim(Number(e.target.value))}
                   className="mt-2 w-full accent-navy"
                 />
               </div>
@@ -579,7 +599,8 @@ function OledDisplay({
   mode,
   token,
   speed,
-  servo,
+  trim,
+  is2wd1m,
   status,
   connected,
   angle,
@@ -588,13 +609,15 @@ function OledDisplay({
   mode: string
   token: string
   speed: number
-  servo?: number
+  trim?: number
+  is2wd1m?: boolean
   status: string
   connected: boolean
   angle?: number
   telemetryMode?: string
 }) {
-  const line1 = `${mode}  ${servo != null ? `STEER ${servo}` : `SPD ${speed}`}`.slice(0, 20)
+  const topField = is2wd1m ? `TRIM ${trim}` : `SPD ${speed}`
+  const line1 = `${mode}  ${topField}`.slice(0, 20)
   const line2 = (connected ? status : 'NO LINK').slice(0, 20)
   const line3 = angle != null
     ? `ANGLE ${angle.toFixed(1)}  ${telemetryMode ? `M:${telemetryMode}` : ''}`.slice(0, 20)

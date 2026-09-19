@@ -168,6 +168,7 @@ export function parseTelemetryLine(line: string, into: CarTelemetry): void {
       if (typeof j.status === 'string') into.status = j.status
       if (typeof j.mode === 'string') into.mode = normalizeModeToken(j.mode)
       if (typeof j.speed === 'number') into.speed = j.speed
+      if (typeof j.trim === 'number') into.trim = j.trim
       if (typeof j.ip === 'string') into.ip = j.ip
       if (typeof j.rssi === 'number') into.rssi = j.rssi
       if (typeof j.connected === 'boolean') into.connected = j.connected
