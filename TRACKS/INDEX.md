@@ -13,8 +13,9 @@ CI: `ci.yml` on `main` · `sync-app-fallback.yml` on `main` + 6h cron.
 | ID | Change | Status |
 |---|---|---|
 | U-1 | Ecosystem unification registered: `guide/ARCHITECTURE.md` (standards B-1..B-7) + `guide/UNIFICATION-PLAN-2026-09-21.md` (gap ledger W-1..W-6/A-1..A-2, phases P0–P5). Admin tab sets verified ALREADY matching (12 = 12). Remote control stays HALTED (D-1). | REGISTERED |
-| U-2 | Next code here (on owner "go P1"): admin field-level parity audit → W-2 (AdminSettings gains programs/pilot/curriculum editors from the app's tab) + W-4 verify | OPEN |
-| U-3 | Later phases here: W-1 (home pilot/curriculum from `site_settings`), W-5 (tools/robotics page mirrors app remote UX visually — NO live transport), W-6 (dark-mode tokens) | OPEN |
+| U-2 | **P1 DONE** `3d1e210`: tab ORDER aligned to the app (Dashboard first — B-6); admin-parity test added; audit → `guide/ADMIN-PARITY-MATRIX.md` (12/12 mirrored; W-2 already closed since 2026-09-18). | DONE |
+| U-3 | **P2 DONE** `e00a956`: web home renders curriculum highlights + pilot costing from the shared tables (W-1; fallback preserved). **P3 DONE** `61af029`: /tools `RoboticsFleet` — 9-mode fleet catalogue mirroring the app Remote screen, visual only (D-1 parked). **P4 DONE** `68a06fc`: content/settings/journal admin writes now log activity (dotted vocabulary). **P5 DONE**: freeze — vitest 49/49, tsc/lint clean, CI green. | DONE |
+| U-4 | Owner calls pending: W-6 web dark mode (site is light-only by construction), W-3 web-push yes/no, P3 look-and-feel review. | OPEN |
 
 ### App·website sync round (2026-09-18) — all DONE
 
