@@ -8,6 +8,16 @@ CI: `ci.yml` on `main` · `sync-app-fallback.yml` on `main` + 6h cron.
 
 ## Items
 
+### Unification round (2026-09-21, docs-first — no code yet)
+
+| ID | Change | Status |
+|---|---|---|
+| U-1 | Ecosystem unification registered: `guide/ARCHITECTURE.md` (standards B-1..B-7) + `guide/UNIFICATION-PLAN-2026-09-21.md` (gap ledger W-1..W-6/A-1..A-2, phases P0–P5). Admin tab sets verified ALREADY matching (12 = 12). Remote control stays HALTED (D-1). | REGISTERED |
+| U-2 | Next code here (on owner "go P1"): admin field-level parity audit → W-2 (AdminSettings gains programs/pilot/curriculum editors from the app's tab) + W-4 verify | OPEN |
+| U-3 | Later phases here: W-1 (home pilot/curriculum from `site_settings`), W-5 (tools/robotics page mirrors app remote UX visually — NO live transport), W-6 (dark-mode tokens) | OPEN |
+
+### App·website sync round (2026-09-18) — all DONE
+
 | ID | Change | Status |
 |---|---|---|
 | A1 | Fix `lib/company.ts` `androidApp` corruption | DONE |

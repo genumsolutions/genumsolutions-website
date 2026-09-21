@@ -6,7 +6,9 @@ export const PAGE_SIZE = 10
 
 export const STATUSES = ['pending', 'paid', 'fulfilled', 'cancelled'] as const
 
-export const TABS = ['Orders', 'Products', 'Messages', 'Services', 'Journal', 'Finance', 'Users', 'Dashboard', 'Activity', 'Projects', 'Content', 'Settings'] as const
+// Tab ORDER mirrors the app's AdminScreen exactly (guide/ARCHITECTURE.md B-6 —
+// app is the reference order; pinned by tests/admin-parity.test.ts).
+export const TABS = ['Dashboard', 'Orders', 'Products', 'Projects', 'Services', 'Journal', 'Users', 'Messages', 'Finance', 'Activity', 'Content', 'Settings'] as const
 export type Tab = typeof TABS[number]
 
 export type Order = {

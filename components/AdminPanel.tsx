@@ -37,7 +37,7 @@ const TAB_ICONS = {
 } as const
 
 export default function AdminPanel({ initialProducts }: Props) {
-  const [tab, setTab] = useState<Tab>('Orders')
+  const [tab, setTab] = useState<Tab>('Dashboard')
   const [products, setProducts] = useState(initialProducts)
   const [message, setMessage] = useState('')
   const [visited, setVisited] = useState<Set<number>>(() => new Set([0]))
