@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { FormEvent, ReactNode, useEffect, useState } from 'react'
 import AuthPanel from './AuthPanel'
+import PushNotificationSettings from './PushNotificationSettings'
 import { formatNPR } from '../lib/catalog'
 import { initials } from '../lib/identity'
 import { inputClass } from '../lib/styles'
@@ -111,6 +112,8 @@ export default function AccountPanel() {
             <span className="mt-1 block text-sm font-semibold text-muted">Support message{customer.messages.length === 1 ? '' : 's'}</span>
           </Link>
         </div>
+
+        <PushNotificationSettings />
 
         <SectionCard title="Your orders" id="orders">
           {orders.length === 0 ? (

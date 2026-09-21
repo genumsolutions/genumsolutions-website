@@ -7,6 +7,7 @@ import PageViewTracker from '../components/PageViewTracker'
 import ServiceWorkerRegister from '../components/ServiceWorkerRegister'
 import WebVitals from '../components/WebVitals'
 import { getCompany } from '../lib/company-store'
+import { inlineThemeAttributeValue } from '../lib/theme'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
@@ -56,7 +57,9 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#1e3a8a" />
-        <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('genum-theme');if(t==='dim')document.documentElement.setAttribute('data-theme','dim')}catch(e){}` }} />
+        {/* Pre-paint theme (W-6): resolves system/light/dim before first paint
+            (no flash of the wrong theme). Must stay in sync with lib/theme.ts. */}
+        <script dangerouslySetInnerHTML={{ __html: inlineThemeAttributeValue() }} />
       </head>
       <body className={`${inter.variable} ${sora.variable}`}>
         <a

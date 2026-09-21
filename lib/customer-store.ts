@@ -40,6 +40,26 @@ export async function updateProfile(userId: string, patch: Partial<Pick<Customer
   return data
 }
 
+// Theme preference lives on the profile (W-6): one stored choice shared by
+// the website and the app through Supabase — the only client-to-client bridge.
+export type ThemePreferenceRow = 'system' | 'light' | 'dim'
+
+export async function getThemePreference(userId: string): Promise<ThemePreferenceRow> {
+  const { data } = await createClient().from('profiles').select('theme_preference').eq('id', userId).maybeSingle()
+  return data?.theme_preference === 'dim' || data?.theme_preference === 'light' ? data.theme_preference : 'system'
+}
+
+export async function updateThemePreference(userId: string, preference: ThemePreferenceRow): Promise<ThemePreferenceRow | null> {
+  const { data, error } = await createClient()
+    .from('profiles')
+    .update({ theme_preference: preference })
+    .eq('id', userId)
+    .select('theme_preference')
+    .single()
+  if (error || !data) return null
+  return (data.theme_preference as ThemePreferenceRow) || null
+}
+
 export async function getCart(userId: string): Promise<CartLine[]> {
   const { data } = await createClient().from('carts').select('lines').eq('user_id', userId).maybeSingle()
   return Array.isArray(data?.lines) ? (data!.lines as CartLine[]) : []

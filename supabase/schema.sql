@@ -14,8 +14,24 @@ create table if not exists public.profiles (
   phone text not null default '',
   address text not null default '',
   role text not null default 'customer' check (role in ('customer','admin')),
+  theme_preference text not null default 'system',
   created_at timestamptz not null default now()
 );
+
+-- W-6 (2026-09-21): theme preference (system/light/dim) shared by the app and
+-- the website through Supabase. Guarded ADD for databases created before the
+-- column existed (create table if not exists does not alter existing tables).
+alter table public.profiles add column if not exists theme_preference text not null default 'system';
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'profiles_theme_preference_check'
+  ) then
+    alter table public.profiles
+      add constraint profiles_theme_preference_check
+      check (theme_preference in ('system','light','dim'));
+  end if;
+end $$;
 
 -- auto-create a profile whenever someone signs up
 create or replace function public.handle_new_user()
@@ -443,6 +459,37 @@ drop policy if exists "own push tokens update" on public.push_tokens;
 create policy "own push tokens update" on public.push_tokens for update using (user_id = auth.uid());
 drop policy if exists "own push tokens delete" on public.push_tokens;
 create policy "own push tokens delete" on public.push_tokens for delete using (user_id = auth.uid());
+
+-- ===== WEB PUSH SUBSCRIPTIONS (W-3 — browser push, NO Firebase) =====
+-- One row per browser subscription: endpoint + the ECDH/subscription keys
+-- the Web Push protocol needs. The app uses Expo tokens (push_tokens above,
+-- dormant until Firebase is activated); the website uses standards-based
+-- Web Push (VAPID) — different transports, one delivery story, all through
+-- Supabase. The push-order-status edge function sends to BOTH.
+create table if not exists public.web_push_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  endpoint text not null,
+  p256dh text not null,
+  auth text not null,
+  user_agent text not null default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (user_id, endpoint)
+);
+create index if not exists web_push_subscriptions_user_idx on public.web_push_subscriptions(user_id);
+create index if not exists web_push_subscriptions_endpoint_idx on public.web_push_subscriptions(endpoint);
+alter table public.web_push_subscriptions enable row level security;
+
+-- users manage only their own subscriptions (edge function uses service role)
+drop policy if exists "own web push select" on public.web_push_subscriptions;
+create policy "own web push select" on public.web_push_subscriptions for select using (user_id = auth.uid());
+drop policy if exists "own web push insert" on public.web_push_subscriptions;
+create policy "own web push insert" on public.web_push_subscriptions for insert with check (user_id = auth.uid());
+drop policy if exists "own web push update" on public.web_push_subscriptions;
+create policy "own web push update" on public.web_push_subscriptions for update using (user_id = auth.uid());
+drop policy if exists "own web push delete" on public.web_push_subscriptions;
+create policy "own web push delete" on public.web_push_subscriptions for delete using (user_id = auth.uid());
 
 -- ===== JOURNAL POSTS =====
 -- Public blog/journal content shown identically on the website and the

@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { formatNPR, type Product } from '../../lib/catalog'
 import { inputClass } from '../../lib/styles'
 import { useCart } from '../../components/cart-provider'
+import CheckoutPushOptIn from '../../components/CheckoutPushOptIn'
 
 export default function CheckoutPage() {
   const { lines, setQuantity, clear, hydrated } = useCart()
@@ -128,6 +129,7 @@ export default function CheckoutPage() {
             <Link href="/login" className="font-bold text-navy transition hover:text-navy-dark">Sign in or create an account</Link>
           </div>
         )}
+        {account && hydrated && lines.length > 0 && <CheckoutPushOptIn />}
         {!hydrated ? (
           <div className="mt-10 animate-pulse rounded-2xl border border-line bg-white p-12 text-center text-sm font-bold text-muted" role="status">Loading your build list...</div>
         ) : productsState === 'loading' && lines.length > 0 ? (

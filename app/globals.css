@@ -67,7 +67,10 @@ html[data-theme='dim'] .text-slate-600 { color: #94a3b8 !important; }
 html[data-theme='dim'] .text-red-400, html[data-theme='dim'] .text-red-600,
 html[data-theme='dim'] .text-red-700 { color: #fca5a5 !important; }
 html[data-theme='dim'] .text-red-500 { color: #f87171 !important; }
-html[data-theme='dim'] .text-emerald-700 { color: #6ee7b7 !important; }
+html[data-theme='dim'] .text-emerald-700, html[data-theme='dim'] .text-emerald-800,
+html[data-theme='dim'] .text-emerald-600 { color: #6ee7b7 !important; }
+html[data-theme='dim'] .text-amber-800 { color: #fcd34d !important; }
+html[data-theme='dim'] .bg-slate-200 { background-color: #273449 !important; }
 
 /* Borders */
 html[data-theme='dim'] .border-line, html[data-theme='dim'] .border-ink { border-color: #334155 !important; }

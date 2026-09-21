@@ -4,10 +4,19 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { LogOut, Menu, Moon, ShoppingBag, Sun, User, X } from 'lucide-react'
+import { LogOut, Menu, Monitor, Moon, ShoppingBag, Sun, User, X } from 'lucide-react'
 import HeaderSession from './HeaderSession'
 import { useCart } from './cart-provider'
 import { signOut } from '../lib/auth'
+import {
+  applyThemePreference,
+  nextThemePreference,
+  prefersDarkScheme,
+  readStoredPreference,
+  resolveEffectiveTheme,
+  writeStoredPreference,
+  type ThemePreference,
+} from '../lib/theme'
 
 const nav = [
   { label: 'About', href: '/about' },
@@ -29,7 +38,6 @@ type SessionUser = { name: string; email: string; role: string }
 
 export default function SiteHeader() {
   const pathname = usePathname()
-  const [dim, setDim] = useState(false)
   const [open, setOpen] = useState(false)
   const [user, setUser] = useState<SessionUser | null>(null)
   const menuButtonRef = useRef<HTMLButtonElement>(null)
@@ -51,10 +59,43 @@ export default function SiteHeader() {
     await signOut('/')
   }
 
+  // Theme (W-6): 3-way preference — system (default) / light / dim — mirroring
+  // the app's System/Light/Dim. 'system' follows the OS via a live listener;
+  // the layout's pre-paint script already applied the stored choice.
+  const [preference, setPreference] = useState<ThemePreference>('system')
+  const [osDark, setOsDark] = useState(false)
+
   useEffect(() => {
-    const saved = window.localStorage.getItem('genum-theme') === 'dim'
-    setDim(saved)
-    document.documentElement.dataset.theme = saved ? 'dim' : 'light'
+    const stored = readStoredPreference(window.localStorage)
+    const os = prefersDarkScheme(window)
+    setPreference(stored)
+    setOsDark(os)
+    applyThemePreference(stored, os, document)
+    if (!window.matchMedia) return
+    const query = window.matchMedia('(prefers-color-scheme: dark)')
+    const onOsChange = (event: MediaQueryListEvent) => {
+      setOsDark(event.matches)
+      applyThemePreference(readStoredPreference(window.localStorage), event.matches, document)
+    }
+    query.addEventListener?.('change', onOsChange)
+    return () => query.removeEventListener?.('change', onOsChange)
+  }, [])
+
+  const cycleTheme = useCallback(() => {
+    setPreference((current) => {
+      const next = nextThemePreference(current)
+      const os = prefersDarkScheme(window)
+      applyThemePreference(next, os, document)
+      writeStoredPreference(window.localStorage, next)
+      // Signed-in users get the choice mirrored to their profile so the app
+      // and the website agree on one preference (Supabase is the only bridge).
+      fetch('/api/customer/theme', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ theme: next }),
+      }).catch(() => undefined)
+      return next
+    })
   }, [])
 
   useEffect(() => { setOpen(false) }, [pathname])
@@ -71,15 +112,6 @@ export default function SiteHeader() {
     document.addEventListener('mousedown', onClickOutside)
     return () => { document.removeEventListener('keydown', onKeyDown); document.removeEventListener('mousedown', onClickOutside) }
   }, [open])
-
-  const toggleTheme = useCallback(() => {
-    setDim((current) => {
-      const next = !current
-      document.documentElement.dataset.theme = next ? 'dim' : 'light'
-      window.localStorage.setItem('genum-theme', next ? 'dim' : 'light')
-      return next
-    })
-  }, [])
 
   const linkClass = (href: string) => {
     const active = isActive(pathname ?? '', href)
@@ -116,12 +148,14 @@ export default function SiteHeader() {
         <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
           <HeaderSession />
           <button
-            onClick={toggleTheme}
-            aria-label={dim ? 'Use light mode' : 'Use dim mode'}
-            title={dim ? 'Light mode' : 'Dim mode'}
+            onClick={cycleTheme}
+            aria-label={`Theme: ${preference}. Click to change.`}
+            title={`Theme: ${preference}${preference === 'system' ? ` (now ${resolveEffectiveTheme(preference, osDark)})` : ''} — click for ${nextThemePreference(preference)}`}
             className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-white text-muted transition hover:border-navy hover:text-navy sm:h-9 sm:w-9"
           >
-            {dim ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
+            {preference === 'system' && <Monitor size={16} aria-hidden="true" />}
+            {preference === 'light' && <Sun size={16} aria-hidden="true" />}
+            {preference === 'dim' && <Moon size={16} aria-hidden="true" />}
           </button>
           <Link
             href="/checkout"

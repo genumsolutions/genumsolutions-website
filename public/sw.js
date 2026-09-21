@@ -162,3 +162,44 @@ self.addEventListener('fetch', (event) => {
       .catch(() => caches.match(request))
   )
 })
+
+/* =========================================================================
+ * Web Push (W-3 — no Firebase; standards-based VAPID push)
+ *
+ * The push-order-status edge function encrypts messages with the browser's
+ * subscription keys; the browser (not this script) handles decryption, so
+ * there is no secret material here. Payload shape (JSON):
+ *   { title, body, url } — url is opened when the notification is tapped.
+ * ======================================================================= */
+
+self.addEventListener('push', (event) => {
+  let payload = {}
+  try {
+    payload = event.data ? event.data.json() : {}
+  } catch {
+    payload = { title: 'GENUM SOLUTIONS', body: event.data ? event.data.text() : '' }
+  }
+  const title = payload.title || 'GENUM SOLUTIONS'
+  const options = {
+    body: payload.body || '',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    data: { url: payload.url || '/account' },
+    tag: payload.tag || 'genum',
+  }
+  event.waitUntil(self.registration.showNotification(title, options))
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const target = (event.notification.data && event.notification.data.url) || '/account'
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      // Focus an existing window on our origin if one is open.
+      for (const client of clientList) {
+        if ('focus' in client) return client.focus()
+      }
+      return self.clients.openWindow(target)
+    })
+  )
+})
