@@ -82,6 +82,14 @@ try {
   page.on('requestfailed', (r) => {
     if (r.url().includes('/api/auth/login')) console.log(`[net] login request FAILED: ${r.failure() && r.failure().errorText}`)
   })
+  // SW errors surface here (e.g. a failing install precache request).
+  page.on('console', (msg) => {
+    const loc = msg.location() && msg.location().url
+    if ((loc && loc.includes('sw.js')) || msg.type() === 'error') {
+      console.log(`[console:${msg.type()}] ${loc || ''} :: ${msg.text().slice(0, 300)}`)
+    }
+  })
+  page.on('pageerror', (err) => console.log(`[pageerror] ${String(err).slice(0, 300)}`))
 
   // ---- 3. sign in through the real UI ----------------------------------------
   await page.goto(BASE + '/account', { waitUntil: 'networkidle2' })
@@ -161,13 +169,24 @@ try {
     await page.waitForFunction(() => document.body.innerText.includes('Turn off on this device'), { timeout: 45000, polling: 500 })
   } catch {
     const diag = await page.evaluate(async () => {
-      const reg = await navigator.serviceWorker.getRegistration()
-      const regState = reg ? (reg.active && reg.active.state) || 'no-active-worker' : 'no-registration'
+      // Try a manual registration to surface the real error, if any.
+      let manual = 'not attempted'
+      try {
+        await navigator.serviceWorker.register('/sw.js')
+        manual = 'registered OK'
+      } catch (e) {
+        manual = 'FAILED: ' + (e && e.message)
+      }
+      const regs = await navigator.serviceWorker.getRegistrations()
+      const reg = regs[0]
+      const regState = reg ? (reg.active && reg.active.state) || (reg.installing && 'installing') || (reg.waiting && 'waiting') || 'registered' : 'no-registration'
       const sub = reg ? await reg.pushManager.getSubscription() : null
       const alert = document.querySelector('[role="alert"]')
       const statusEl = document.querySelector('[role="status"]')
       return {
         permission: (window.Notification && Notification.permission) || 'n/a',
+        manualRegister: manual,
+        regCount: regs.length,
         swState: regState,
         hasSubscription: Boolean(sub),
         endpoint: sub ? sub.endpoint.slice(0, 60) : null,
