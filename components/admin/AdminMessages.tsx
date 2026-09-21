@@ -39,6 +39,18 @@ export default function AdminMessages({ setMessage: _setMessage }: Props) {
     if (response.ok) setMessages((current) => current.map((m) => m.id === id ? { ...m, status: 'replied' } : m))
   }
 
+  async function deleteMessage(id: string) {
+    if (!window.confirm('Delete this message? This cannot be undone.')) return
+    const response = await fetch(`/api/admin/messages?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
+    if (response.ok) {
+      setMessages((current) => current.filter((m) => m.id !== id))
+      setTotal((current) => Math.max(0, current - 1))
+    } else {
+      const result = await response.json().catch(() => ({}))
+      window.alert(result.error || 'Could not delete the message.')
+    }
+  }
+
   return (
     <section role="tabpanel" id="panel-messages" aria-labelledby="tab-messages" aria-label="Customer messages" className="mt-8 space-y-4">
       <div className="flex flex-col gap-3 border-t-2 border-ink bg-white p-6 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
@@ -62,8 +74,11 @@ export default function AdminMessages({ setMessage: _setMessage }: Props) {
                     <p className="truncate text-sm font-bold">{msg.name} <span className="font-normal text-slate-500">· {msg.email}</span></p>
                     <p className="mt-1 text-xs text-slate-400">{formatTimestamp(msg.created_at)}</p>
                   </div>
-                  {msg.status === 'new' && <button onClick={() => markReplied(msg.id)} className="border border-line px-3 py-1.5 text-xs font-bold text-navy transition hover:border-navy">Mark replied</button>}
-                  {msg.status === 'replied' && <span className="text-[10px] font-black uppercase text-emerald-600">Replied</span>}
+                  <div className="flex shrink-0 items-center gap-2">
+                    {msg.status === 'new' && <button onClick={() => markReplied(msg.id)} className="border border-line px-3 py-1.5 text-xs font-bold text-navy transition hover:border-navy">Mark replied</button>}
+                    {msg.status === 'replied' && <span className="text-[10px] font-black uppercase text-emerald-600">Replied</span>}
+                    <button onClick={() => deleteMessage(msg.id)} className="border border-red-200 px-3 py-1.5 text-xs font-bold text-red-600 transition hover:bg-red-50">Delete</button>
+                  </div>
                 </div>
                 <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-700">{msg.message}</p>
               </li>

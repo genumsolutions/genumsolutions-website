@@ -33,7 +33,11 @@ export default function AdminUsers({ setMessage }: Props) {
     if (response.ok) {
       setUserData((current) => ({ ...current, users: current.users.map((user) => user.id === userId ? { ...user, role } : user) }))
       setMessage(role === 'admin' ? 'Admin access granted.' : 'Admin access revoked.')
-    } else setMessage('Could not update the role.')
+    } else {
+      // Surface the server's reason (e.g. the self-demotion guard) instead of a generic failure.
+      const result = await response.json().catch(() => ({}))
+      setMessage(result.error || 'Could not update the role.')
+    }
   }
 
   return (

@@ -44,3 +44,21 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: 'Could not update message.' }, { status: 500 })
   }
 }
+
+// Delete a message (admin action, RLS-gated by is_admin via the service role).
+export async function DELETE(request: Request) {
+  if (!(await isAdminRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  try {
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+    if (!id) return NextResponse.json({ error: 'Missing id.' }, { status: 400 })
+
+    const supabase = createServiceClient()
+    const { error } = await supabase.from('customer_messages').delete().eq('id', id)
+    if (error) return NextResponse.json({ error: 'Could not delete the message.' }, { status: 500 })
+    return NextResponse.json({ ok: true })
+  } catch (error) {
+    console.error('Message delete failed', error)
+    return NextResponse.json({ error: 'Could not delete the message.' }, { status: 500 })
+  }
+}

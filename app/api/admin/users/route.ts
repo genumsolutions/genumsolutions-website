@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { isAdminRequest } from '../../../../lib/admin'
-import { createServiceClient } from '../../../../lib/supabase/server'
+import { createServiceClient, getSessionUser } from '../../../../lib/supabase/server'
 import { logActivity } from '../../../../lib/activity'
 
 // Admin-only user directory. Reads auth users (emails) via the service role
@@ -72,6 +72,13 @@ export async function PATCH(request: Request) {
   }
   if (role !== 'admin' && role !== 'customer') {
     return NextResponse.json({ error: 'Role must be admin or customer.' }, { status: 400 })
+  }
+
+  // Lockout guard: an admin can never demote themselves (mirrors the
+  // admin-set-role edge function the native app uses).
+  const current = await getSessionUser()
+  if (current && current.id === userId && role === 'customer') {
+    return NextResponse.json({ error: 'You cannot revoke your own admin role.' }, { status: 400 })
   }
 
   try {

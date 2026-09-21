@@ -279,6 +279,8 @@ drop policy if exists "own orders insert" on public.orders;
 create policy "own orders insert" on public.orders for insert with check (user_id = auth.uid());
 drop policy if exists "admin orders update" on public.orders;
 create policy "admin orders update" on public.orders for update using (public.is_admin());
+drop policy if exists "admin orders delete" on public.orders;
+create policy "admin orders delete" on public.orders for delete using (public.is_admin());
 
 -- messages: customers create/view own; admin manages; guests may send via the contact form
 drop policy if exists "own messages select" on public.customer_messages;
@@ -287,6 +289,8 @@ drop policy if exists "own messages insert" on public.customer_messages;
 create policy "own messages insert" on public.customer_messages for insert with check (user_id = auth.uid());
 drop policy if exists "admin messages manage" on public.customer_messages;
 create policy "admin messages manage" on public.customer_messages for update using (public.is_admin());
+drop policy if exists "admin messages delete" on public.customer_messages;
+create policy "admin messages delete" on public.customer_messages for delete using (public.is_admin());
 drop policy if exists "anon message insert" on public.customer_messages;
 create policy "anon message insert" on public.customer_messages for insert to anon with check (true);
 
@@ -490,6 +494,29 @@ drop policy if exists "own web push update" on public.web_push_subscriptions;
 create policy "own web push update" on public.web_push_subscriptions for update using (user_id = auth.uid());
 drop policy if exists "own web push delete" on public.web_push_subscriptions;
 create policy "own web push delete" on public.web_push_subscriptions for delete using (user_id = auth.uid());
+
+-- ===== USER SETTINGS (per-user preferences shared by app + web) =====
+-- One JSONB blob per user for arbitrary customization: command keywords,
+-- UI options, notification choices, etc. The theme preference stays on
+-- profiles.theme_preference (single flat column both clients read);
+-- everything else lands here so future features never need a migration
+-- per preference. Clients read/write ONLY their own row via RLS.
+create table if not exists public.user_settings (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  settings jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+alter table public.user_settings enable row level security;
+
+drop policy if exists "own user settings select" on public.user_settings;
+create policy "own user settings select" on public.user_settings for select using (user_id = auth.uid());
+drop policy if exists "own user settings insert" on public.user_settings;
+create policy "own user settings insert" on public.user_settings for insert with check (user_id = auth.uid());
+drop policy if exists "own user settings update" on public.user_settings;
+create policy "own user settings update" on public.user_settings for update using (user_id = auth.uid());
+drop policy if exists "own user settings delete" on public.user_settings;
+create policy "own user settings delete" on public.user_settings for delete using (user_id = auth.uid());
 
 -- ===== JOURNAL POSTS =====
 -- Public blog/journal content shown identically on the website and the
