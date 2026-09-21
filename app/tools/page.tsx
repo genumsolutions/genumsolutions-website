@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import PageIntro from '../../components/PageIntro'
 import PageShell from '../../components/PageShell'
 import IotRemote from '../../components/IotRemote'
+import RoboticsFleet from '../../components/RoboticsFleet'
 import OpenTools from '../../components/OpenTools'
 
 export const metadata: Metadata = {
@@ -20,6 +21,10 @@ export default function ToolsPage() {
       />
       {/* IoT & Remote Controller section - embedded in tools page */}
       <IotRemote />
+
+      {/* Fleet catalogue - mirrors the app's Remote screen fleet (W-5);
+          descriptive only, live control stays parked (D-1) */}
+      <RoboticsFleet />
 
       {/* OpenTools - third-party tools */}
       <OpenTools />
