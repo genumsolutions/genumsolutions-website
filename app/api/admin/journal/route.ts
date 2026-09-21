@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { isAdminRequest } from '../../../../lib/admin'
+import { logActivity } from '../../../../lib/activity'
 import {
   deleteJournalPost,
   getManagedJournalPosts,
@@ -57,6 +58,7 @@ async function save(request: Request) {
       sortOrder: Math.max(0, Math.round(Number(body.sortOrder) || 0)),
     }
     await saveJournalPost(post)
+    await logActivity({ action: 'journal.saved', entityType: 'journal_posts', entityId: id, details: { title: post.title } })
     return NextResponse.json({ ok: true, post })
   } catch (error) {
     console.error('Journal save failed', error)
@@ -70,6 +72,7 @@ export async function DELETE(request: Request) {
     const id = new URL(request.url).searchParams.get('id')
     if (!id) return NextResponse.json({ error: 'Journal post id is required.' }, { status: 400 })
     await deleteJournalPost(id)
+    await logActivity({ action: 'journal.deleted', entityType: 'journal_posts', entityId: id })
     return NextResponse.json({ ok: true })
   } catch (error) {
     console.error('Journal deletion failed', error)

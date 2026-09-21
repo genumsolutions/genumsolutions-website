@@ -10,6 +10,7 @@ import {
   saveCurriculumHighlight,
   deleteCurriculumHighlight,
 } from '../../../../lib/settings-store'
+import { logActivity } from '../../../../lib/activity'
 
 export async function GET() {
   if (!(await isAdminRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -41,6 +42,7 @@ export async function PUT(request: Request) {
           city: c.city ?? '', country: c.country ?? '', email: c.email ?? '',
           phone: c.phone ?? '', pan: c.pan ?? '', vatLabel: c.vatLabel ?? '', description: c.description ?? '',
         })
+        await logActivity({ action: 'company.saved', entityType: 'company_info', entityId: '1' })
         return NextResponse.json({ ok: true })
       }
       case 'training': {
@@ -97,11 +99,22 @@ export async function DELETE(request: Request) {
     const id = params.get('id')
     if (!id) return NextResponse.json({ error: 'id is required.' }, { status: 400 })
     switch (action) {
-      case 'training': await deleteTrainingProgram(id); break
-      case 'pilot': await deletePilotCostLine(id); break
-      case 'curriculum': await deleteCurriculumHighlight(id); break
-      default: return NextResponse.json({ error: 'Unknown settings action.' }, { status: 400 })
+      case 'training':
+        await deleteTrainingProgram(id)
+        await logActivity({ action: 'settings.deleted', entityType: 'training_programs', entityId: id })
+        break
+      case 'pilot':
+        await deletePilotCostLine(id)
+        await logActivity({ action: 'settings.deleted', entityType: 'pilot_cost_lines', entityId: id })
+        break
+      case 'curriculum':
+        await deleteCurriculumHighlight(id)
+        await logActivity({ action: 'settings.deleted', entityType: 'curriculum_highlights', entityId: id })
+        break
+      default:
+        return NextResponse.json({ error: 'Unknown settings action.' }, { status: 400 })
     }
+
     return NextResponse.json({ ok: true })
   } catch (error) {
     console.error('Admin settings delete failed', error)
