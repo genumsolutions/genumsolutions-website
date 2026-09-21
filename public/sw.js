@@ -15,26 +15,32 @@
  * cache while the device is offline.
  * ========================================================================= */
 
-const VERSION = 'v2'
+const VERSION = 'v3'
 
 const OFFLINE_URL = '/offline'
 
+// v2 → v3 (2026-09-21): v2's APP_SHELL listed /tools TWICE — Cache.addAll()
+// throws on duplicate URLs, so install ALWAYS rejected and the worker never
+// activated for anyone (push + offline shell were silently dead). The shell
+// is now deduplicated and install precaches each entry independently so a
+// single bad URL can never brick the whole worker again.
 const APP_SHELL = [
-  '/',
-  '/products',
-  '/services',
-  '/about',
-  '/projects',
-  '/tools',
-  '/3d-printing',
-  '/journal',
-  '/contact',
-  '/tools',
-  OFFLINE_URL,
-  '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png',
-  '/logo.png',
+  ...new Set([
+    '/',
+    '/products',
+    '/services',
+    '/about',
+    '/projects',
+    '/tools',
+    '/3d-printing',
+    '/journal',
+    '/contact',
+    OFFLINE_URL,
+    '/manifest.json',
+    '/icon-192.png',
+    '/icon-512.png',
+    '/logo.png',
+  ]),
 ]
 
 const CACHE_NAME = `genum-shell-${VERSION}`
@@ -60,7 +66,19 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
       .open(CACHE_NAME)
-      .then((cache) => cache.addAll(APP_SHELL))
+      .then((cache) =>
+        // Precache each shell entry independently: one failing URL must not
+        // reject the whole install (that killed every activation in v2).
+        Promise.allSettled(
+          APP_SHELL.map((url) =>
+            fetch(new Request(url, { cache: 'reload' }))
+              .then((response) => {
+                if (!response.ok) throw new Error(`HTTP ${response.status}`)
+                return cache.put(url, response)
+              }),
+          ),
+        ),
+      )
       .then(() => self.skipWaiting())
   )
 })
@@ -187,7 +205,15 @@ self.addEventListener('push', (event) => {
     data: { url: payload.url || '/account' },
     tag: payload.tag || 'genum',
   }
-  event.waitUntil(self.registration.showNotification(title, options))
+  event.waitUntil(
+    self.registration.showNotification(title, options).then(() => {
+      // Tell any open pages about the push (the E2E harness listens for this;
+      // apps commonly use it to update UI without a refresh).
+      return self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+        for (const client of clientList) client.postMessage({ type: 'PUSH_RECEIVED', payload })
+      })
+    }),
+  )
 })
 
 self.addEventListener('notificationclick', (event) => {
