@@ -5,3 +5,6 @@ keys*.txt
 .next
 *.tsbuildinfo
 data/*.json
+
+# Supabase CLI local state (link scratch)
+supabase/.temp/
