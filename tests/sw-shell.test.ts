@@ -19,7 +19,13 @@ function readSwSource(): string {
 function extractAppShell(source: string): string[] {
   const match = source.match(/const APP_SHELL = \[([\s\S]*?)\]/)
   if (!match) throw new Error('APP_SHELL not found in public/sw.js')
-  return [...match[1].matchAll(/'([^']+)'/g)].map((m) => m[1])
+  // Resolve constants referenced inside the shell (e.g. OFFLINE_URL).
+  const constants = new Map<string, string>()
+  for (const m of source.matchAll(/const (\w+) = '([^']+)'/g)) constants.set(m[1], m[2])
+  const raw = [...match[1].matchAll(/'([^']+)'|(\b[A-Z_]+\b)/g)]
+    .map((m) => m[1] ?? constants.get(m[2]) ?? m[2])
+    .filter((url): url is string => url.startsWith('/'))
+  return raw
 }
 
 describe('service worker precache shell (public/sw.js)', () => {
