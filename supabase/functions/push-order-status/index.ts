@@ -31,7 +31,9 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 import { sendWebPush } from './webpush.ts'
 
-const supabaseUrl = Deno.env.get('NEXT_PUBLIC_SUPABASE_URL') || ''
+// Built-in env vars first (SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY are
+// auto-injected by Supabase) — only the VAPID secrets need setting manually.
+const supabaseUrl = Deno.env.get('NEXT_PUBLIC_SUPABASE_URL') || Deno.env.get('SUPABASE_URL') || ''
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
 const vapidPublicKey = Deno.env.get('NEXT_PUBLIC_VAPID_PUBLIC_KEY') || ''
 const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY') || ''
