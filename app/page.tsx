@@ -4,7 +4,7 @@ import type { Metadata } from 'next'
 import { ArrowRight } from 'lucide-react'
 import PageShell from '../components/PageShell'
 import { getProductMedia } from '../lib/product-media'
-import { getTrainingPrograms } from '../lib/programs-store'
+import { getTrainingPrograms, getPilotCosts, getCurriculumHighlights } from '../lib/programs-store'
 import { getSiteContent } from '../lib/content-store'
 
 export const dynamic = 'force-dynamic'
@@ -44,9 +44,14 @@ const stats = [
 
 export default async function HomePage() {
   const heroMedia = getProductMedia('Robotics')
-  // Training programs render from the shared DB table (same source the app
-  // reads) with the bundled list as fallback.
-  const trainingPrograms = await getTrainingPrograms()
+  // Training programs, curriculum highlights, and pilot costing all render
+  // from the shared DB tables (the SAME source the app's Home screen reads)
+  // with the bundled lists as fallback — one company story on both surfaces.
+  const [trainingPrograms, pilotCosts, curriculum] = await Promise.all([
+    getTrainingPrograms(),
+    getPilotCosts(),
+    getCurriculumHighlights(),
+  ])
 
   return (
     <PageShell>
@@ -158,6 +163,53 @@ export default async function HomePage() {
                 </li>
               ))}
             </ul>
+            {curriculum.length > 0 && (
+              <div className="mt-10">
+                <h3 className="font-display text-lg font-bold">Curriculum highlights</h3>
+                <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {curriculum.map((band) => (
+                    <div key={band.ageBand} className="rounded-2xl border border-line bg-white p-5 sm:p-6">
+                      <h4 className="font-display text-base font-bold text-ink">{band.ageBand}</h4>
+                      <ul className="mt-3 space-y-1.5">
+                        {band.items.map((item) => (
+                          <li key={item} className="flex items-start gap-2 text-xs leading-5 text-slate-600">
+                            <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-gold" aria-hidden="true" />
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {pilotCosts.length > 0 && (
+              <div className="mt-10">
+                <h3 className="font-display text-lg font-bold">Illustrative pilot costing</h3>
+                <div className="mt-4 overflow-hidden rounded-2xl border border-line bg-white">
+                  <table className="w-full text-left text-sm">
+                    <caption className="sr-only">Illustrative pilot program running costs</caption>
+                    <thead>
+                      <tr className="border-b border-line bg-mist text-[10px] uppercase tracking-wide text-slate-500">
+                        <th scope="col" className="px-5 py-3 font-bold">Item</th>
+                        <th scope="col" className="px-5 py-3 font-bold">Cost</th>
+                        <th scope="col" className="hidden px-5 py-3 font-bold sm:table-cell">Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-line">
+                      {pilotCosts.map((line) => (
+                        <tr key={line.item}>
+                          <th scope="row" className="px-5 py-3 font-semibold text-ink">{line.item}</th>
+                          <td className="px-5 py-3 font-mono text-xs text-ink">{line.cost}</td>
+                          <td className="hidden px-5 py-3 text-xs leading-5 text-slate-600 sm:table-cell">{line.note}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <p className="border-t border-line bg-mist px-5 py-2.5 text-[10px] text-slate-500">Illustrative figures — final pilot quotes are customised per school.</p>
+                </div>
+              </div>
+            )}
             <Link
               href="/services"
               className="mt-7 inline-flex h-12 items-center gap-2 rounded-full bg-gold px-6 text-sm font-black text-ink transition hover:bg-gold-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
