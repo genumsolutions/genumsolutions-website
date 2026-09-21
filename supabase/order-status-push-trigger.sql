@@ -33,8 +33,13 @@ set search_path = public
 as $$
 declare
   fn_url text := 'https://<YOUR_PROJECT_REF>.supabase.co/functions/v1/push-order-status';
+  -- The Supabase gateway REQUIRES an Authorization header on every function
+  -- call; the public anon key satisfies it. The function's real gate is the
+  -- x-push-secret below (matched against the PUSH_TRIGGER_SECRET function
+  -- secret) — never drop that header.
   headers jsonb := jsonb_build_object(
     'Content-Type', 'application/json',
+    'Authorization', 'Bearer <YOUR_SUPABASE_ANON_KEY>',
     'x-push-secret', 'change-me-shared-secret'
   );
   payload jsonb := jsonb_build_object(
