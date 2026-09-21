@@ -19,6 +19,15 @@ export default function ServiceWorkerRegister() {
       })
     }
 
+    // This effect runs after hydration, which is often AFTER the window
+    // `load` event has already fired (cached assets, client-side navigation)
+    // — listening unconditionally meant register() never ran and the site
+    // silently had no service worker for many visits. Register immediately
+    // when the document is already loaded; listen only when it is not.
+    if (document.readyState === 'complete') {
+      register()
+      return
+    }
     window.addEventListener('load', register)
     return () => window.removeEventListener('load', register)
   }, [])
