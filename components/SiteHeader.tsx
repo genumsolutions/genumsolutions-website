@@ -150,10 +150,26 @@ export default function SiteHeader() {
           <button
             onClick={cycleTheme}
             aria-label={`Theme: ${preference}. Click to change.`}
-            title={`Theme: ${preference}${preference === 'system' ? ` (now ${resolveEffectiveTheme(preference, osDark)})` : ''} — click for ${nextThemePreference(preference)}`}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-white text-muted transition hover:border-navy hover:text-navy sm:h-9 sm:w-9"
+            title={`Theme: ${preference}${preference === 'system' ? ` (follows OS — now ${resolveEffectiveTheme(preference, osDark)})` : ''} — click for ${nextThemePreference(preference)}`}
+            className="relative flex h-10 w-10 items-center justify-center rounded-full border border-line bg-white text-muted transition hover:border-navy hover:text-navy sm:h-9 sm:w-9"
           >
-            {preference === 'system' && <Monitor size={16} aria-hidden="true" />}
+            {/* W-6 3-way cycle: system → light → dim. The three STATES are
+                distinct: monitor = system, sun = light, moon = dim. The
+                system state carries a mini sun/moon badge showing what the
+                OS resolves to RIGHT NOW — without it, a dark-mode OS makes
+                system and dim render identically and the toggle reads as
+                two-state (owner report 2026-09-22). */}
+            {preference === 'system' && (
+              <>
+                <Monitor size={16} aria-hidden="true" />
+                <span
+                  aria-hidden="true"
+                  className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-line bg-white text-muted"
+                >
+                  {osDark ? <Moon size={8} /> : <Sun size={8} />}
+                </span>
+              </>
+            )}
             {preference === 'light' && <Sun size={16} aria-hidden="true" />}
             {preference === 'dim' && <Moon size={16} aria-hidden="true" />}
           </button>

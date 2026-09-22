@@ -1,6 +1,7 @@
 'use client'
 
 import { FormEvent, useState } from 'react'
+import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import { inputClass } from '../../lib/styles'
 import type { Product } from './admin-types'
@@ -159,7 +160,9 @@ export default function AdminProjectPackages({ products, onProductsChange, setMe
           <ProjectEditor product={product} onChange={setProduct} onSave={saveProduct} onReset={() => setProduct({ ...emptyProduct, productType: 'Project package', category: 'Project Packages' })} busy={busy} categories={projectCategories.length ? projectCategories : ['Project Packages', 'Robot Cars']} />
         </section>
       </div>
-      {previewProduct && (
+      {previewProduct && createPortal(
+        // Portal to <body>: the tab track's transform + overflow-hidden clips fixed
+        // descendants — without it the preview renders off-screen (owner report 2026-09-22).
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 p-5" role="dialog" aria-modal="true" aria-label="Project package preview" onClick={() => setPreviewProduct(null)}>
           <article className="relative max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-2xl border border-line bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
             <button onClick={() => setPreviewProduct(null)} className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-ink shadow-sm transition hover:bg-white" aria-label="Close preview">✕</button>
@@ -181,7 +184,8 @@ export default function AdminProjectPackages({ products, onProductsChange, setMe
               </div>
             </div>
           </article>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   )

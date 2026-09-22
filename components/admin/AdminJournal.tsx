@@ -1,6 +1,7 @@
 'use client'
 
 import { FormEvent, useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { inputClass } from '../../lib/styles'
 import type { JournalItem } from './admin-types'
 import { emptyJournal } from './admin-types'
@@ -113,7 +114,9 @@ export default function AdminJournal({ setMessage }: Props) {
         </section>
       </div>
 
-      {previewPost && (
+      {previewPost && createPortal(
+        // Portal to <body>: the tab track's transform + overflow-hidden clips fixed
+        // descendants — without it the preview renders off-screen (owner report 2026-09-22).
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 p-5" role="dialog" aria-modal="true" aria-label="Journal post preview" onClick={() => setPreviewPost(null)}>
           <article className="relative max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-2xl border border-line bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <button onClick={() => setPreviewPost(null)} className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-ink shadow-sm transition hover:bg-white" aria-label="Close preview">✕</button>
@@ -127,7 +130,8 @@ export default function AdminJournal({ setMessage }: Props) {
               </div>
             </div>
           </article>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   )
