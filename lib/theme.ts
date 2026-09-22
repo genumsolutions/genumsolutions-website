@@ -1,41 +1,43 @@
 // =====================================================================
-// Theme preference core (W-6 web dark mode — parity with the app's
-// System / Light / Dim trio).
+// Theme preference core (W-6 web dark mode — parity with the app, 2-way).
 //
-// The site ships ONE semantic theme ("light") plus a "dim" overlay
-// keyed off `html[data-theme='dim']` (see globals.css). A preference of
-// "system" follows the OS `prefers-color-scheme` and is the default,
-// matching the app's default. Pure functions only — the DOM bits are
-// isolated in applyThemePreference() so tests can cover the logic.
+// Owner decision 2026-09-22: the theme toggle is reduced to TWO explicit
+// modes — "light" and "dim" — with no "system"/OS-follow option and no
+// OS listener (the shared `profiles.theme_preference` supports only these
+// two values too). Legacy 'system' values (the old default + anything the
+// old 3-way toggle wrote) migrate to 'dim' on read; a visitor with no
+// stored choice gets 'light'.
+//
+// The site ships ONE semantic theme ("light") plus a "dim" overlay keyed
+// off `html[data-theme='dim']` (see globals.css). Pure functions only —
+// the DOM bits are isolated so tests can cover the logic.
 // =====================================================================
 
-export type ThemePreference = 'system' | 'light' | 'dim'
+export type ThemePreference = 'light' | 'dim'
 
 export const THEME_STORAGE_KEY = 'genum-theme'
 
-export const THEME_PREFERENCES: readonly ThemePreference[] = ['system', 'light', 'dim'] as const
+export const THEME_PREFERENCES: readonly ThemePreference[] = ['light', 'dim'] as const
 
-function isThemePreference(value: unknown): value is ThemePreference {
-  return value === 'system' || value === 'light' || value === 'dim'
-}
+/** Default for a visitor with no stored preference (owner decision 2026-09-22). */
+export const DEFAULT_THEME: ThemePreference = 'light'
 
-/** Effective on-screen theme for a preference given the OS setting. */
-export function resolveEffectiveTheme(preference: ThemePreference, osPrefersDark: boolean): 'light' | 'dim' {
-  if (preference === 'system') return osPrefersDark ? 'dim' : 'light'
-  return preference
-}
+/** Legacy 'system' (OS-follow) resolves to dim — owner decision 2026-09-22. */
+export const LEGACY_SYSTEM_THEME: ThemePreference = 'dim'
 
 /**
- * Stored preference from localStorage. Legacy values are migrated:
- * the original toggle stored 'dim' or 'light' (never 'system'); both
- * remain valid, anything else falls back to 'system' (the app default).
+ * Stored preference from localStorage. Only 'light'/'dim' are valid going
+ * forward. Legacy values migrate: the old 'system' (OS-follow default)
+ * becomes 'dim'; anything unknown, missing, or unreadable becomes 'light'.
  */
 export function readStoredPreference(storage: Pick<Storage, 'getItem'> | null | undefined): ThemePreference {
   try {
     const raw = storage?.getItem(THEME_STORAGE_KEY)
-    return isThemePreference(raw) ? raw : 'system'
+    if (raw === 'dim' || raw === 'light') return raw
+    if (raw === 'system') return LEGACY_SYSTEM_THEME
+    return DEFAULT_THEME
   } catch {
-    return 'system'
+    return DEFAULT_THEME
   }
 }
 
@@ -50,27 +52,17 @@ export function writeStoredPreference(storage: Pick<Storage, 'setItem'> | null |
 
 /** Mirror of the layout's pre-paint script: resolves the attribute value without the DOM. */
 export function inlineThemeAttributeValue(): string {
-  return `try{var m=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;var t=localStorage.getItem('${THEME_STORAGE_KEY}');var p=(t==='dim'||t==='light')?t:'system';var e=p==='dim'||(p==='system'&&m);document.documentElement.setAttribute('data-theme',e?'dim':'light')}catch(e){}`
+  return `try{var t=localStorage.getItem('${THEME_STORAGE_KEY}');var p=(t==='light'||t==='dim')?t:(t==='system'?'dim':'light');document.documentElement.setAttribute('data-theme',p)}catch(e){}`
 }
 
 /** Apply the effective theme to the document root. Safe to call anywhere client-side. */
-export function applyThemePreference(preference: ThemePreference, osPrefersDark: boolean, document_: Pick<Document, 'documentElement'>): 'light' | 'dim' {
-  const effective = resolveEffectiveTheme(preference, osPrefersDark)
-  document_.documentElement.setAttribute('data-theme', effective)
-  return effective
+export function applyThemePreference(preference: ThemePreference, document_: Pick<Document, 'documentElement'>): ThemePreference {
+  document_.documentElement.setAttribute('data-theme', preference)
+  return preference
 }
 
-/** OS dark-mode query, or false when matchMedia is unavailable. */
-export function prefersDarkScheme(defaultView: { matchMedia?: (query: string) => { matches: boolean } } | undefined | null): boolean {
-  try {
-    return Boolean(defaultView?.matchMedia?.('(prefers-color-scheme: dark)')?.matches)
-  } catch {
-    return false
-  }
-}
-
-/** Next stop in the toggle cycle: system → light → dim → system. */
+/** Next stop in the toggle cycle: light ↔ dim. */
 export function nextThemePreference(current: ThemePreference): ThemePreference {
   const index = THEME_PREFERENCES.indexOf(current)
-  return THEME_PREFERENCES[(index + 1) % THEME_PREFERENCES.length] ?? 'system'
+  return THEME_PREFERENCES[(index + 1) % THEME_PREFERENCES.length] ?? 'light'
 }

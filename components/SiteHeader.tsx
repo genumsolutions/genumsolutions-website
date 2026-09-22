@@ -4,16 +4,15 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { LogOut, Menu, Monitor, Moon, ShoppingBag, Sun, User, X } from 'lucide-react'
+import { LogOut, Menu, Moon, ShoppingBag, Sun, User, X } from 'lucide-react'
 import HeaderSession from './HeaderSession'
 import { useCart } from './cart-provider'
 import { signOut } from '../lib/auth'
 import {
+  DEFAULT_THEME,
   applyThemePreference,
   nextThemePreference,
-  prefersDarkScheme,
   readStoredPreference,
-  resolveEffectiveTheme,
   writeStoredPreference,
   type ThemePreference,
 } from '../lib/theme'
@@ -59,33 +58,21 @@ export default function SiteHeader() {
     await signOut('/')
   }
 
-  // Theme (W-6): 3-way preference — system (default) / light / dim — mirroring
-  // the app's System/Light/Dim. 'system' follows the OS via a live listener;
-  // the layout's pre-paint script already applied the stored choice.
-  const [preference, setPreference] = useState<ThemePreference>('system')
-  const [osDark, setOsDark] = useState(false)
+  // Theme (W-6, 2-mode per owner decision 2026-09-22): light ⇄ dim only.
+  // No "system"/OS-follow option and no OS listener; legacy 'system'
+  // stored values are resolved to 'dim' on read (see readStoredPreference).
+  const [preference, setPreference] = useState<ThemePreference>(DEFAULT_THEME)
 
   useEffect(() => {
     const stored = readStoredPreference(window.localStorage)
-    const os = prefersDarkScheme(window)
     setPreference(stored)
-    setOsDark(os)
-    applyThemePreference(stored, os, document)
-    if (!window.matchMedia) return
-    const query = window.matchMedia('(prefers-color-scheme: dark)')
-    const onOsChange = (event: MediaQueryListEvent) => {
-      setOsDark(event.matches)
-      applyThemePreference(readStoredPreference(window.localStorage), event.matches, document)
-    }
-    query.addEventListener?.('change', onOsChange)
-    return () => query.removeEventListener?.('change', onOsChange)
+    applyThemePreference(stored, document)
   }, [])
 
   const cycleTheme = useCallback(() => {
     setPreference((current) => {
       const next = nextThemePreference(current)
-      const os = prefersDarkScheme(window)
-      applyThemePreference(next, os, document)
+      applyThemePreference(next, document)
       writeStoredPreference(window.localStorage, next)
       // Signed-in users get the choice mirrored to their profile so the app
       // and the website agree on one preference (Supabase is the only bridge).
@@ -150,28 +137,12 @@ export default function SiteHeader() {
           <button
             onClick={cycleTheme}
             aria-label={`Theme: ${preference}. Click to change.`}
-            title={`Theme: ${preference}${preference === 'system' ? ` (follows OS — now ${resolveEffectiveTheme(preference, osDark)})` : ''} — click for ${nextThemePreference(preference)}`}
+            title={`Theme: ${preference} — click for ${nextThemePreference(preference)}`}
             className="relative flex h-10 w-10 items-center justify-center rounded-full border border-line bg-white text-muted transition hover:border-navy hover:text-navy sm:h-9 sm:w-9"
           >
-            {/* W-6 3-way cycle: system → light → dim. The three STATES are
-                distinct: monitor = system, sun = light, moon = dim. The
-                system state carries a mini sun/moon badge showing what the
-                OS resolves to RIGHT NOW — without it, a dark-mode OS makes
-                system and dim render identically and the toggle reads as
-                two-state (owner report 2026-09-22). */}
-            {preference === 'system' && (
-              <>
-                <Monitor size={16} aria-hidden="true" />
-                <span
-                  aria-hidden="true"
-                  className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-line bg-white text-muted"
-                >
-                  {osDark ? <Moon size={8} /> : <Sun size={8} />}
-                </span>
-              </>
-            )}
-            {preference === 'light' && <Sun size={16} aria-hidden="true" />}
-            {preference === 'dim' && <Moon size={16} aria-hidden="true" />}
+            {/* W-6 2-way cycle: light ⇄ dim (owner decision 2026-09-22 —
+                System removed; legacy 'system' stored values resolve to dim). */}
+            {preference === 'light' ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
           </button>
           <Link
             href="/checkout"

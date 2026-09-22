@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
+  DEFAULT_THEME,
+  LEGACY_SYSTEM_THEME,
   THEME_STORAGE_KEY,
   applyThemePreference,
   inlineThemeAttributeValue,
   nextThemePreference,
-  prefersDarkScheme, 
   readStoredPreference,
-  resolveEffectiveTheme,
   writeStoredPreference,
 } from '../lib/theme'
 
@@ -18,21 +18,10 @@ function fakeStorage(initial: Record<string, string> = {}) {
   }
 }
 
-describe('resolveEffectiveTheme', () => {
-  it('system follows the OS dark setting', () => {
-    expect(resolveEffectiveTheme('system', true)).toBe('dim')
-    expect(resolveEffectiveTheme('system', false)).toBe('light')
-  })
-
-  it('explicit light/dim always win over the OS', () => {
-    expect(resolveEffectiveTheme('light', true)).toBe('light')
-    expect(resolveEffectiveTheme('dim', false)).toBe('dim')
-  })
-})
-
 describe('readStoredPreference', () => {
-  it('returns system when storage is empty', () => {
-    expect(readStoredPreference(fakeStorage())).toBe('system')
+  it('defaults to light when storage is empty', () => {
+    expect(readStoredPreference(fakeStorage())).toBe('light')
+    expect(DEFAULT_THEME).toBe('light')
   })
 
   it('accepts dim and light', () => {
@@ -40,9 +29,16 @@ describe('readStoredPreference', () => {
     expect(readStoredPreference(fakeStorage({ [THEME_STORAGE_KEY]: 'light' }))).toBe('light')
   })
 
-  it('migrates legacy values to system (app default)', () => {
-    expect(readStoredPreference(fakeStorage({ [THEME_STORAGE_KEY]: 'blue' }))).toBe('system')
-    expect(readStoredPreference(null)).toBe('system')
+  it('migrates the legacy system (OS-follow) value to dim', () => {
+    expect(readStoredPreference(fakeStorage({ [THEME_STORAGE_KEY]: 'system' }))).toBe('dim')
+    expect(LEGACY_SYSTEM_THEME).toBe('dim')
+  })
+
+  it('migrates unknown legacy values to light', () => {
+    expect(readStoredPreference(fakeStorage({ [THEME_STORAGE_KEY]: 'blue' }))).toBe('light')
+    expect(readStoredPreference(fakeStorage({ [THEME_STORAGE_KEY]: 'dark' }))).toBe('light')
+    expect(readStoredPreference(null)).toBe('light')
+    expect(readStoredPreference({ getItem: () => { throw new Error('denied') } })).toBe('light')
   })
 })
 
@@ -66,38 +62,36 @@ describe('applyThemePreference', () => {
       setAttribute: (name: string, value: string) => { last = [name, value] },
     }
     const fakeDocument = { documentElement: element as unknown as HTMLElement }
-    expect(applyThemePreference('dim', false, fakeDocument)).toBe('dim')
+    expect(applyThemePreference('dim', fakeDocument)).toBe('dim')
     expect(last).toEqual(['data-theme', 'dim'])
+    applyThemePreference('light', fakeDocument)
+    expect(last).toEqual(['data-theme', 'light'])
   })
 })
 
 describe('nextThemePreference', () => {
-  it('cycles system → light → dim → system (app order)', () => {
-    expect(nextThemePreference('system')).toBe('light')
+  it('cycles light ⇄ dim', () => {
     expect(nextThemePreference('light')).toBe('dim')
-    expect(nextThemePreference('dim')).toBe('system')
-  })
-})
-
-describe('prefersDarkScheme', () => {
-  it('reads matchMedia when available', () => {
-    expect(prefersDarkScheme({ matchMedia: () => ({ matches: true }) })).toBe(true)
-    expect(prefersDarkScheme({ matchMedia: () => ({ matches: false }) })).toBe(false)
-  })
-
-  it('returns false when matchMedia is unavailable', () => {
-    expect(prefersDarkScheme(undefined)).toBe(false)
-    expect(prefersDarkScheme({})).toBe(false)
+    expect(nextThemePreference('dim')).toBe('light')
   })
 })
 
 describe('inlineThemeAttributeValue', () => {
-  it('emits a script that resolves system/light/dim pre-paint', () => {
+  it('emits a script that resolves light/dim pre-paint — no flash, no OS follow', () => {
     const script = inlineThemeAttributeValue()
     expect(script).toContain("localStorage.getItem('genum-theme')")
-    expect(script).toContain('prefers-color-scheme: dark')
     expect(script).toContain("setAttribute('data-theme'")
+    // The pre-paint script must never reference the removed system/OS logic.
+    expect(script).not.toContain('matchMedia')
+    expect(script).not.toContain('prefers-color-scheme')
     // Must never throw into page render — wrapped in try/catch.
     expect(script).toContain('catch')
+  })
+
+  it('maps stored dim/light through and migrates system → dim / missing → light', () => {
+    const script = inlineThemeAttributeValue()
+    expect(script).toContain("'light'")
+    expect(script).toContain("'dim'")
+    expect(script).toContain("t==='system'?'dim':'light'")
   })
 })

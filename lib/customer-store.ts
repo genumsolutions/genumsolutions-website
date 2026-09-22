@@ -43,11 +43,16 @@ export async function updateProfile(userId: string, patch: Partial<Pick<Customer
 
 // Theme preference lives on the profile (W-6): one stored choice shared by
 // the website and the app through Supabase — the only client-to-client bridge.
-export type ThemePreferenceRow = 'system' | 'light' | 'dim'
+// Only light/dim are written going forward (owner decision 2026-09-22); legacy
+// 'system' rows and the old schema default resolve to 'dim' on read.
+export type ThemePreferenceRow = 'light' | 'dim'
 
 export async function getThemePreference(userId: string): Promise<ThemePreferenceRow> {
   const { data } = await createClient().from('profiles').select('theme_preference').eq('id', userId).maybeSingle()
-  return data?.theme_preference === 'dim' || data?.theme_preference === 'light' ? data.theme_preference : 'system'
+  const value = data?.theme_preference
+  if (value === 'dim' || value === 'light') return value
+  if (value === 'system') return 'dim'
+  return 'light'
 }
 
 export async function updateThemePreference(userId: string, preference: ThemePreferenceRow): Promise<ThemePreferenceRow | null> {

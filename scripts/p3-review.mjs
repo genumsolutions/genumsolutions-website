@@ -171,37 +171,41 @@ try {
     })
     const l0 = await readLabel()
     const cycle = []
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 2; i++) {
       await page.click('button[aria-label^="Theme:"]')
       await sleep(400)
       cycle.push(await readLabel())
     }
-    const seqOk = l0 && /Theme: system/.test(l0) &&
-      /Theme: light/.test(cycle[0]) && /Theme: dim/.test(cycle[1]) && /Theme: system/.test(cycle[2])
-    report(2, 'Toggle cycles system → light → dim → system', seqOk ? 'PASS' : 'SNAG',
+    // 2-mode (owner decision 2026-09-22): light ⇄ dim — a click always flips,
+    // the second click returns to the start. No System state exists anymore.
+    const seqOk = l0 && /Theme: (light|dim)/.test(l0) &&
+      cycle[0] && /Theme: (light|dim)/.test(cycle[0]) && cycle[0] !== l0 &&
+      cycle[1] === l0
+    report(2, 'Toggle cycles light ⇄ dim (System removed)', seqOk ? 'PASS' : 'SNAG',
       `start="${l0}" then="${cycle.map((c) => (c || '').slice(7, 20)).join('", "').slice(0, 60)}"`)
     // leave on dim for the remaining checks
-    await page.click('button[aria-label^="Theme:"]')
-    await sleep(300)
-    await page.click('button[aria-label^="Theme:"]')
-    await sleep(300)
+    if (/Theme: light/.test(l0)) {
+      await page.click('button[aria-label^="Theme:"]')
+      await sleep(300)
+    }
   }
   {
+    // 2-mode migration: the removed 'system' (OS-follow) value now resolves to
+    // dim on read; a visitor with no stored choice gets light. No OS listener.
     await page.evaluate(() => localStorage.setItem('genum-theme', 'system'))
     await page.reload({ waitUntil: 'networkidle2' })
-    await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }])
-    await sleep(400)
-    const dark = await page.evaluate(() => document.documentElement.getAttribute('data-theme'))
-    await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'light' }])
-    await sleep(400)
-    const light = await page.evaluate(() => document.documentElement.getAttribute('data-theme'))
-    report(2, 'System follows the OS live (no reload)', dark === 'dim' && light === 'light' ? 'PASS' : 'SNAG',
-      `os=dark → ${dark}, os=light → ${light}`)
+    const migrated = await page.evaluate(() => document.documentElement.getAttribute('data-theme'))
+    await page.evaluate(() => localStorage.removeItem('genum-theme'))
+    await page.reload({ waitUntil: 'networkidle2' })
+    const fresh = await page.evaluate(() => document.documentElement.getAttribute('data-theme'))
+    report(2, '2-mode migration: legacy system → dim, fresh (no stored) → light',
+      migrated === 'dim' && fresh === 'light' ? 'PASS' : 'SNAG',
+      `stored=system → ${migrated}, no stored → ${fresh}`)
   }
   {
     // No-flash proxy: SSR HTML carries the pre-paint resolver; reload applies dim pre-paint.
     const html = await page.evaluate(async () => await (await fetch(window.location.href)).text())
-    const scriptPresent = /prefers-color-scheme/.test(html)
+    const scriptPresent = /setAttribute\('data-theme'/.test(html)
     await page.evaluate(() => localStorage.setItem('genum-theme', 'dim'))
     await page.reload({ waitUntil: 'domcontentloaded' })
     const theme = await page.evaluate(() => document.documentElement.getAttribute('data-theme'))
@@ -304,11 +308,18 @@ try {
   }
   {
     // Persistence + Supabase shared truth: the toggle lives in SiteHeader,
-    // which /admin does not render — go home first, then click dim → system.
+    // which /admin does not render — go home first, then flip the 2-mode toggle
+    // and confirm profiles.theme_preference took exactly that value (light/dim).
     await page.goto(BASE + '/', { waitUntil: 'networkidle2' })
     await page.waitForSelector('button[aria-label^="Theme:"]', { timeout: 20000 })
-    await page.click('button[aria-label^="Theme:"]') // dim → system
+    const before = await page.evaluate(() => {
+      const b = document.querySelector('button[aria-label^="Theme:"]')
+      return b ? b.getAttribute('aria-label') : null
+    })
+    const startsDim = /Theme: dim/.test(before || '')
+    await page.click('button[aria-label^="Theme:"]') // flips to the other mode
     await sleep(800)
+    const expected = startsDim ? 'light' : 'dim'
     // The cloud write goes to WHOEVER is signed in — resolve the session first.
     const sessionUser = await page.evaluate(async () => {
       const res = await fetch('/api/auth/session')
@@ -317,12 +328,12 @@ try {
     const themeUid = sessionUser?.email === ADMIN_EMAIL ? adminId : custId
     const { data: prof } = await service.from('profiles').select('theme_preference').eq('id', themeUid).maybeSingle()
     report(2, 'Theme preference saved to profiles (Supabase shared truth)',
-      prof?.theme_preference === 'system' ? 'PASS' : 'SNAG',
-      `profiles.theme_preference = ${prof?.theme_preference} for ${sessionUser?.email} (expected system after cycling dim → system)`)
+      prof?.theme_preference === expected ? 'PASS' : 'SNAG',
+      `profiles.theme_preference = ${prof?.theme_preference} for ${sessionUser?.email} (expected ${expected})`)
     await page.reload({ waitUntil: 'networkidle2' })
     const afterReload = await page.evaluate(() => document.documentElement.getAttribute('data-theme'))
-    report(2, 'Preference persists across reload', afterReload === 'dim' || afterReload === 'light' ? 'PASS' : 'SNAG',
-      `data-theme after reload = ${afterReload} (system resolves via OS/medias)`)
+    report(2, 'Preference persists across reload', afterReload === expected ? 'PASS' : 'SNAG',
+      `data-theme after reload = ${afterReload} (expected ${expected})`)
   }
 
   // ================= SECTION 3 — regression smoke =================

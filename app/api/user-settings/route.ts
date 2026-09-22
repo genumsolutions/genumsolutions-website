@@ -7,9 +7,10 @@ import { getSessionUser } from '../../../lib/supabase/server'
 // bridge rule): this route is a thin authenticated mirror of two pieces
 // of shared truth, NOT a website-only store.
 //
-//   • profiles.theme_preference — the flat theme choice ('system' |
-//     'light' | 'dim'). 'dim' is canonical for dark; the app's 'dark'
-//     maps to it at its boundary (settingsService).
+//   • profiles.theme_preference — the flat theme choice ('light' | 'dim',
+//     owner decision 2026-09-22; legacy 'system' resolves to 'dim'). 'dim'
+//     is canonical for dark; the app's 'dark' maps to it at its boundary
+//     (settingsService).
 //   • user_settings.settings    — a JSONB bag for arbitrary per-user
 //     preferences (e.g. robot command keywords, notification quirks).
 //     Both clients read/write the SAME rows, so a preference set in the
@@ -20,7 +21,7 @@ import { getSessionUser } from '../../../lib/supabase/server'
 // another user's settings.
 // =====================================================================
 
-const THEME_VALUES = ['system', 'light', 'dim'] as const
+const THEME_VALUES = ['light', 'dim'] as const
 type ThemeValue = (typeof THEME_VALUES)[number]
 
 function parseTheme(value: unknown): ThemeValue | null {
@@ -55,8 +56,10 @@ export async function GET() {
     db.from('user_settings').select('settings, updated_at').eq('user_id', user.id).maybeSingle(),
   ])
 
+  const rawTheme = profileResult.data?.theme_preference
+  const theme: ThemeValue = rawTheme === 'system' ? 'dim' : parseTheme(rawTheme) ?? 'light'
   return NextResponse.json({
-    theme: parseTheme(profileResult.data?.theme_preference) ?? 'system',
+    theme,
     settings: settingsResult.data?.settings ?? {},
     updatedAt: settingsResult.data?.updated_at ?? null,
   })
