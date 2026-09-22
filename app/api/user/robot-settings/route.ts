@@ -27,7 +27,9 @@ function sanitizeSettings(input: unknown): Record<string, SettingsValue> | null 
   const out: Record<string, SettingsValue> = {}
   for (const [key, value] of Object.entries(input as Record<string, unknown>)) {
     if (!/^[a-zA-Z0-9_.-]{1,64}$/.test(key)) continue
-    if (value == null || ['string', 'number', 'boolean'].includes(typeof value)) {
+    if (value == null || typeof value === 'number' || typeof value === 'boolean') {
+      out[key] = value as SettingsValue
+    } else if (typeof value === 'string' && value.length <= 2000) {
       out[key] = value as SettingsValue
     } else if (Array.isArray(value) && value.length <= 100 && value.every((item) => typeof item === 'string' && item.length <= 200)) {
       out[key] = value as string[]
