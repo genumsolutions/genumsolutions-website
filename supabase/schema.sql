@@ -852,3 +852,33 @@ for delete using (
   auth.uid() = user_id
   or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
+
+-- ===== USER LAST-SEEN (admin visibility parity, app <-> website) =====
+-- The website Users tab shows "Last seen" from auth.users.last_sign_in_at
+-- (service role). The app's anon key cannot read auth.users, so the app
+-- Users tab had no equivalent field. This SECURITY DEFINER function lets
+-- signed-in ADMINS read any user's last sign-in timestamp while keeping
+-- auth data closed to everyone else (owner-confirmed parity requirement:
+-- "not even a tiny detail").
+create or replace function public.admin_user_last_seen(target_user_id uuid)
+returns timestamptz
+language plpgsql
+security definer
+set search_path = public
+stable
+as $$
+declare
+  caller_role text;
+  last_seen timestamptz;
+begin
+  select role into caller_role from public.profiles where id = auth.uid();
+  if caller_role is null or caller_role <> 'admin' then
+    return null;
+  end if;
+  select last_sign_in_at into last_seen from auth.users where id = target_user_id;
+  return last_seen;
+end;
+$$;
+
+comment on function public.admin_user_last_seen(uuid) is
+  'Returns auth.users.last_sign_in_at for the target user when the caller is an admin, else null. Parity shim for the app Users tab.';
