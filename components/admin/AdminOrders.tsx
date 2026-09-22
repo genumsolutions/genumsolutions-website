@@ -11,7 +11,7 @@ import { Pager, formatTimestamp } from './admin-helpers'
 // shows the full items list + address + provider + timestamps on the card).
 type OrderRow = OrderPage['orders'][number]
 
-export default function AdminOrders() {
+export default function AdminOrders({ canDelete }: { canDelete: boolean }) {
   const [orderData, setOrderData] = useState<OrderPage>({ orders: [], total: 0, page: 1, totalPages: 1 })
   const [loaded, setLoaded] = useState(false)
   const [orderQuery, setOrderQuery] = useState('')
@@ -80,7 +80,7 @@ export default function AdminOrders() {
                     <button onClick={() => setExpandedId((current) => current === order.id ? null : order.id)} aria-expanded={expandedId === order.id} className="border border-line px-2 py-1 text-xs font-bold text-navy transition hover:border-navy">
                       {expandedId === order.id ? 'Hide' : 'Details'}
                     </button>
-                    <button onClick={() => deleteOrder(order.id)} className="border border-red-200 px-2 py-1 text-xs font-bold text-red-600 transition hover:bg-red-50">Delete</button>
+                    {canDelete && <button onClick={() => deleteOrder(order.id)} className="border border-red-200 px-2 py-1 text-xs font-bold text-red-600 transition hover:bg-red-50">Delete</button>}
                   </div>
                 </div>
                 <ul className="mt-2 space-y-1 text-xs leading-5 text-slate-600">{order.items.map((item) => <li key={`${order.id}-${item.name}`} className="truncate">{item.quantity} × {item.name} ({formatNPR(item.price * item.quantity)})</li>)}</ul>

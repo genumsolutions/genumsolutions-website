@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
-import { isAdminRequest } from '../../../../lib/admin'
+import { isAdminRequest, isStaffRequest } from '../../../../lib/admin'
 import { createServiceClient } from '../../../../lib/supabase/server'
 
 export async function GET(request: Request) {
-  if (!(await isAdminRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await isStaffRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   try {
     const { searchParams } = new URL(request.url)
     const page = Math.max(1, Number(searchParams.get('page')) || 1)
@@ -30,7 +30,7 @@ export async function GET(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  if (!(await isAdminRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await isStaffRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   try {
     const body = await request.json().catch(() => null)
     if (!body?.id) return NextResponse.json({ error: 'Missing id.' }, { status: 400 })

@@ -7,7 +7,7 @@ import type { JournalItem } from './admin-types'
 import { emptyJournal } from './admin-types'
 import { focusEditor } from './admin-helpers'
 
-type Props = { setMessage: (msg: string) => void }
+type Props = { setMessage: (msg: string) => void; canDelete: boolean }
 
 function slugify(title: string) {
   return title
@@ -17,7 +17,7 @@ function slugify(title: string) {
     .slice(0, 80)
 }
 
-export default function AdminJournal({ setMessage }: Props) {
+export default function AdminJournal({ setMessage, canDelete }: Props) {
   const [posts, setPosts] = useState<JournalItem[]>([])
   const [loaded, setLoaded] = useState(false)
   const [post, setPost] = useState<JournalItem>(emptyJournal)
@@ -86,7 +86,7 @@ export default function AdminJournal({ setMessage }: Props) {
                       <button onClick={() => { setPost(p); focusEditor('journal-editor') }} className="text-xs font-bold text-navy underline">Edit</button>
                       <button onClick={() => setPreviewPost(p)} className="text-xs font-bold text-slate-500 underline">Preview</button>
                       <button onClick={() => void togglePostVisibility(p)} className="text-xs font-bold text-ink underline">{p.active ? 'Unpublish' : 'Publish'}</button>
-                      <button onClick={() => removePost(p.id)} className="text-xs font-bold text-red-600 underline">Delete</button>
+                      {canDelete && <button onClick={() => removePost(p.id)} className="text-xs font-bold text-red-600 underline">Delete</button>}
                     </span>
                   </div>
                 ))}

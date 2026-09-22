@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { isAdminRequest } from '../../../../lib/admin'
+import { isAdminRequest, isStaffRequest } from '../../../../lib/admin'
 import { createServiceClient } from '../../../../lib/supabase/server'
 import { listOrdersPage, updateOrderStatus } from '../../../../lib/orders'
 import { logActivity } from '../../../../lib/activity'
@@ -8,7 +8,7 @@ import type { Order } from '../../../../lib/customer'
 const STATUSES: Order['status'][] = ['pending', 'paid', 'fulfilled', 'cancelled']
 
 export async function GET(request: Request) {
-  if (!(await isAdminRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await isStaffRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const params = new URL(request.url).searchParams
   const status = params.get('status')
   const result = await listOrdersPage({
@@ -21,7 +21,7 @@ export async function GET(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  if (!(await isAdminRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await isStaffRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const body = await request.json().catch(() => null)
   const status = body?.status
   if (!body?.id || !STATUSES.includes(status)) return NextResponse.json({ error: 'Valid order id and status are required.' }, { status: 400 })

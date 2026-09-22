@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
-import { isAdminRequest } from '../../../../lib/admin'
+import { isStaffRequest } from '../../../../lib/admin'
 import { getPageViewStats } from '../../../../lib/analytics'
 
 export async function GET(request: Request) {
-  if (!(await isAdminRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await isStaffRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   try {
     const { searchParams } = new URL(request.url)
     const days = Number(searchParams.get('days')) || 30

@@ -13,7 +13,7 @@ create table if not exists public.profiles (
   name text not null default '',
   phone text not null default '',
   address text not null default '',
-  role text not null default 'customer' check (role in ('customer','admin')),
+  role text not null default 'customer' check (role in ('customer','staff','admin','owner')),
   theme_preference text not null default 'system',
   created_at timestamptz not null default now()
 );
@@ -30,6 +30,27 @@ begin
     alter table public.profiles
       add constraint profiles_theme_preference_check
       check (theme_preference in ('system','light','dim'));
+  end if;
+end $$;
+
+-- RBAC levels (2026-09-22): customer / staff / admin / owner. Guarded ADD
+-- for databases created with the older two-value check (same idempotent
+-- pattern as theme_preference). staff = all admin powers EXCEPT deletions;
+-- owner = admin powers + delete-user (sole owner account is set below).
+do $$
+begin
+  if exists (
+    select 1 from pg_constraint where conname = 'profiles_role_check'
+    and pg_get_constraintdef(oid) !~ 'owner'
+  ) then
+    alter table public.profiles drop constraint profiles_role_check;
+  end if;
+  if not exists (
+    select 1 from pg_constraint where conname = 'profiles_role_check'
+  ) then
+    alter table public.profiles
+      add constraint profiles_role_check
+      check (role in ('customer','staff','admin','owner'));
   end if;
 end $$;
 
@@ -222,9 +243,23 @@ alter table public.orders enable row level security;
 alter table public.customer_messages enable row level security;
 alter table public.transactions enable row level security;
 
+-- Role-rank helpers (2026-09-22, RBAC levels customer < staff < admin < owner).
+--   is_staff()  — any signed-in member with staff powers (staff, admin, owner)
+--   is_admin()  — full admin powers incl. deletion (admin, owner)
+--   is_owner()  — the single owner account (delete-user is owner-only)
+create or replace function public.is_staff()
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.profiles where id = auth.uid() and role in ('staff','admin','owner'));
+$$;
+
 create or replace function public.is_admin()
 returns boolean language sql stable security definer set search_path = public as $$
-  select exists (select 1 from public.profiles where id = auth.uid() and role = 'admin');
+  select exists (select 1 from public.profiles where id = auth.uid() and role in ('admin','owner'));
+$$;
+
+create or replace function public.is_owner()
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.profiles where id = auth.uid() and role = 'owner');
 $$;
 
 -- Admin-only aggregate so native clients can read cart totals without
@@ -236,8 +271,8 @@ security definer
 set search_path = public
 as $$
 begin
-  if not public.is_admin() then
-    raise exception 'Only administrators can view cart statistics.';
+  if not public.is_staff() then
+    raise exception 'Only staff members can view cart statistics.';
   end if;
   return query
     select
@@ -250,60 +285,79 @@ $$;
 revoke all on function public.get_admin_cart_stats() from public;
 grant execute on function public.get_admin_cart_stats() to authenticated;
 
--- profiles: see/edit your own; admins see all
+-- profiles: see/edit your own; staff+ see all (Users tab on both clients)
 drop policy if exists "own profile select" on public.profiles;
-create policy "own profile select" on public.profiles for select using (id = auth.uid() or public.is_admin());
+create policy "own profile select" on public.profiles for select using (id = auth.uid() or public.is_staff());
 drop policy if exists "own profile update" on public.profiles;
 create policy "own profile update" on public.profiles for update using (id = auth.uid());
 
--- products: anyone can read; writes restricted to admins (and the server's service role)
+-- products: anyone can read; writes restricted to staff+ (edit/insert) and
+-- admin+ (delete) — the server's service role bypasses all of this
 drop policy if exists "public read products" on public.products;
-create policy "public read products" on public.products for select using (true);
+create policy "public read products" on public.products for select using (true or public.is_staff());
 drop policy if exists "admin write products" on public.products;
-create policy "admin write products" on public.products for all using (public.is_admin());
+drop policy if exists "staff insert products" on public.products;
+create policy "staff insert products" on public.products for insert with check (public.is_staff());
+drop policy if exists "staff update products" on public.products;
+create policy "staff update products" on public.products for update using (public.is_staff());
+drop policy if exists "admin delete products" on public.products;
+create policy "admin delete products" on public.products for delete using (public.is_admin());
 
--- site content: public read, admin write
+-- site content: public read, staff edit, admin+ delete
 drop policy if exists "public read site content" on public.site_content;
 create policy "public read site content" on public.site_content for select using (true);
 drop policy if exists "admin write site content" on public.site_content;
-create policy "admin write site content" on public.site_content for all using (public.is_admin());
+drop policy if exists "staff insert site content" on public.site_content;
+create policy "staff insert site content" on public.site_content for insert with check (public.is_staff());
+drop policy if exists "staff update site content" on public.site_content;
+create policy "staff update site content" on public.site_content for update using (public.is_staff());
+drop policy if exists "admin delete site content" on public.site_content;
+create policy "admin delete site content" on public.site_content for delete using (public.is_admin());
 
 -- carts: owner only
 drop policy if exists "own cart" on public.carts;
 create policy "own cart" on public.carts for all using (user_id = auth.uid()) with check (user_id = auth.uid());
 
--- orders: customers create/view own; admin manages all
+-- orders: customers create/view own; staff manage all; admin+ delete
 drop policy if exists "own orders select" on public.orders;
-create policy "own orders select" on public.orders for select using (user_id = auth.uid() or public.is_admin());
+create policy "own orders select" on public.orders for select using (user_id = auth.uid() or public.is_staff());
 drop policy if exists "own orders insert" on public.orders;
 create policy "own orders insert" on public.orders for insert with check (user_id = auth.uid());
 drop policy if exists "admin orders update" on public.orders;
-create policy "admin orders update" on public.orders for update using (public.is_admin());
+drop policy if exists "staff orders update" on public.orders;
+create policy "staff orders update" on public.orders for update using (public.is_staff());
 drop policy if exists "admin orders delete" on public.orders;
 create policy "admin orders delete" on public.orders for delete using (public.is_admin());
 
--- messages: customers create/view own; admin manages; guests may send via the contact form
+-- messages: customers create/view own; staff manage; admin+ delete; guests may send via the contact form
 drop policy if exists "own messages select" on public.customer_messages;
-create policy "own messages select" on public.customer_messages for select using (user_id = auth.uid() or public.is_admin());
+create policy "own messages select" on public.customer_messages for select using (user_id = auth.uid() or public.is_staff());
 drop policy if exists "own messages insert" on public.customer_messages;
 create policy "own messages insert" on public.customer_messages for insert with check (user_id = auth.uid());
 drop policy if exists "admin messages manage" on public.customer_messages;
-create policy "admin messages manage" on public.customer_messages for update using (public.is_admin());
+drop policy if exists "staff messages update" on public.customer_messages;
+create policy "staff messages update" on public.customer_messages for update using (public.is_staff());
 drop policy if exists "admin messages delete" on public.customer_messages;
 create policy "admin messages delete" on public.customer_messages for delete using (public.is_admin());
 drop policy if exists "anon message insert" on public.customer_messages;
 create policy "anon message insert" on public.customer_messages for insert to anon with check (true);
 
--- transactions: admins read; only the server's service role writes (no client
+-- transactions: staff+ read; only the server's service role writes (no client
 -- insert/update policies on purpose - the ledger is append-only and tamper-proof)
 drop policy if exists "admin read transactions" on public.transactions;
-create policy "admin read transactions" on public.transactions for select using (public.is_admin());
+drop policy if exists "staff read transactions" on public.transactions;
+create policy "staff read transactions" on public.transactions for select using (public.is_staff());
 
--- robo_car_modes: public read, admin write
+-- robo_car_modes: public read, staff edit, admin+ delete
 drop policy if exists "public read robo_car_modes" on public.robo_car_modes;
-create policy "public read robo_car_modes" on public.robo_car_modes for select using (true);
+create policy "public read robo_car_modes" on public.robo_car_modes for select using (true or public.is_staff());
 drop policy if exists "admin write robo_car_modes" on public.robo_car_modes;
-create policy "admin write robo_car_modes" on public.robo_car_modes for all using (public.is_admin());
+drop policy if exists "staff insert robo_car_modes" on public.robo_car_modes;
+create policy "staff insert robo_car_modes" on public.robo_car_modes for insert with check (public.is_staff());
+drop policy if exists "staff update robo_car_modes" on public.robo_car_modes;
+create policy "staff update robo_car_modes" on public.robo_car_modes for update using (public.is_staff());
+drop policy if exists "admin delete robo_car_modes" on public.robo_car_modes;
+create policy "admin delete robo_car_modes" on public.robo_car_modes for delete using (public.is_admin());
 
 -- ===== STORAGE: product image bucket =====
 insert into storage.buckets (id, name, public)
@@ -313,11 +367,11 @@ on conflict (id) do nothing;
 drop policy if exists "public read images" on storage.objects;
 create policy "public read images" on storage.objects for select using (bucket_id = 'product-images');
 drop policy if exists "admin upload images" on storage.objects;
-create policy "admin upload images" on storage.objects for insert to authenticated
-  with check (bucket_id = 'product-images' and public.is_admin());
+create policy "staff upload images" on storage.objects for insert to authenticated
+  with check (bucket_id = 'product-images' and public.is_staff());
 drop policy if exists "admin update images" on storage.objects;
-create policy "admin update images" on storage.objects for update to authenticated
-  using (bucket_id = 'product-images' and public.is_admin());
+create policy "staff update images" on storage.objects for update to authenticated
+  using (bucket_id = 'product-images' and public.is_staff());
 drop policy if exists "admin delete images" on storage.objects;
 create policy "admin delete images" on storage.objects for delete to authenticated
   using (bucket_id = 'product-images' and public.is_admin());
@@ -417,17 +471,22 @@ alter table public.services enable row level security;
 alter table public.activity_log enable row level security;
 alter table public.page_views enable row level security;
 
--- services: public read, admin write
+-- services: public read, staff edit, admin+ delete
 drop policy if exists "public read services" on public.services;
-create policy "public read services" on public.services for select using (active = true or public.is_admin());
+create policy "public read services" on public.services for select using (active = true or public.is_staff());
 drop policy if exists "admin write services" on public.services;
-create policy "admin write services" on public.services for all using (public.is_admin());
+drop policy if exists "staff insert services" on public.services;
+create policy "staff insert services" on public.services for insert with check (public.is_staff());
+drop policy if exists "staff update services" on public.services;
+create policy "staff update services" on public.services for update using (public.is_staff());
+drop policy if exists "admin delete services" on public.services;
+create policy "admin delete services" on public.services for delete using (public.is_admin());
 
--- activity_log: admin read only; server writes via service role
+-- activity_log: staff+ read; server writes via service role
 drop policy if exists "admin read activity" on public.activity_log;
-create policy "admin read activity" on public.activity_log for select using (public.is_admin());
+create policy "staff read activity" on public.activity_log for select using (public.is_staff());
 
--- page_views: admin read only; anon + authenticated insert allowed for tracking
+-- page_views: staff+ read; anon + authenticated insert allowed for tracking
 -- (the app records views from signed-in users, so an authenticated insert
 -- policy is required in addition to the website's anon one)
 drop policy if exists "anon insert page views" on public.page_views;
@@ -435,7 +494,7 @@ create policy "anon insert page views" on public.page_views for insert to anon w
 drop policy if exists "authenticated insert page views" on public.page_views;
 create policy "authenticated insert page views" on public.page_views for insert to authenticated with check (true);
 drop policy if exists "admin read page views" on public.page_views;
-create policy "admin read page views" on public.page_views for select using (public.is_admin());
+create policy "staff read page views" on public.page_views for select using (public.is_staff());
 
 -- ===== PUSH TOKENS (in-app order status notifications) =====
 -- One row per device: the app registers its Expo push token here on
@@ -536,11 +595,18 @@ alter table public.journal_posts enable row level security;
 
 drop policy if exists "public read journal posts" on public.journal_posts;
 create policy "public read journal posts" on public.journal_posts
-  for select using (active = true or public.is_admin());
+  for select using (active = true or public.is_staff());
 
 drop policy if exists "admin write journal posts" on public.journal_posts;
-create policy "admin write journal posts" on public.journal_posts
-  for all using (public.is_admin());
+drop policy if exists "staff insert journal posts" on public.journal_posts;
+create policy "staff insert journal posts" on public.journal_posts
+  for insert with check (public.is_staff());
+drop policy if exists "staff update journal posts" on public.journal_posts;
+create policy "staff update journal posts" on public.journal_posts
+  for update using (public.is_staff());
+drop policy if exists "admin delete journal posts" on public.journal_posts;
+create policy "admin delete journal posts" on public.journal_posts
+  for delete using (public.is_admin());
 
 -- ===== TRAINING PROGRAMS / PILOT COSTS / CURRICULUM HIGHLIGHTS =====
 -- Public content shown identically on the website and the native app.
@@ -562,11 +628,18 @@ alter table public.training_programs enable row level security;
 
 drop policy if exists "public read training programs" on public.training_programs;
 create policy "public read training programs" on public.training_programs
-  for select using (active = true or public.is_admin());
+  for select using (active = true or public.is_staff());
 
 drop policy if exists "admin write training programs" on public.training_programs;
-create policy "admin write training programs" on public.training_programs
-  for all using (public.is_admin());
+drop policy if exists "staff insert training programs" on public.training_programs;
+create policy "staff insert training programs" on public.training_programs
+  for insert with check (public.is_staff());
+drop policy if exists "staff update training programs" on public.training_programs;
+create policy "staff update training programs" on public.training_programs
+  for update using (public.is_staff());
+drop policy if exists "admin delete training programs" on public.training_programs;
+create policy "admin delete training programs" on public.training_programs
+  for delete using (public.is_admin());
 
 create table if not exists public.pilot_cost_lines (
   id text primary key,
@@ -583,11 +656,18 @@ alter table public.pilot_cost_lines enable row level security;
 
 drop policy if exists "public read pilot cost lines" on public.pilot_cost_lines;
 create policy "public read pilot cost lines" on public.pilot_cost_lines
-  for select using (active = true or public.is_admin());
+  for select using (active = true or public.is_staff());
 
 drop policy if exists "admin write pilot cost lines" on public.pilot_cost_lines;
-create policy "admin write pilot cost lines" on public.pilot_cost_lines
-  for all using (public.is_admin());
+drop policy if exists "staff insert pilot cost lines" on public.pilot_cost_lines;
+create policy "staff insert pilot cost lines" on public.pilot_cost_lines
+  for insert with check (public.is_staff());
+drop policy if exists "staff update pilot cost lines" on public.pilot_cost_lines;
+create policy "staff update pilot cost lines" on public.pilot_cost_lines
+  for update using (public.is_staff());
+drop policy if exists "admin delete pilot cost lines" on public.pilot_cost_lines;
+create policy "admin delete pilot cost lines" on public.pilot_cost_lines
+  for delete using (public.is_admin());
 
 create table if not exists public.curriculum_highlights (
   id text primary key,
@@ -603,11 +683,18 @@ alter table public.curriculum_highlights enable row level security;
 
 drop policy if exists "public read curriculum highlights" on public.curriculum_highlights;
 create policy "public read curriculum highlights" on public.curriculum_highlights
-  for select using (active = true or public.is_admin());
+  for select using (active = true or public.is_staff());
 
 drop policy if exists "admin write curriculum highlights" on public.curriculum_highlights;
-create policy "admin write curriculum highlights" on public.curriculum_highlights
-  for all using (public.is_admin());
+drop policy if exists "staff insert curriculum highlights" on public.curriculum_highlights;
+create policy "staff insert curriculum highlights" on public.curriculum_highlights
+  for insert with check (public.is_staff());
+drop policy if exists "staff update curriculum highlights" on public.curriculum_highlights;
+create policy "staff update curriculum highlights" on public.curriculum_highlights
+  for update using (public.is_staff());
+drop policy if exists "admin delete curriculum highlights" on public.curriculum_highlights;
+create policy "admin delete curriculum highlights" on public.curriculum_highlights
+  for delete using (public.is_admin());
 
 -- ===== COMPANY INFO =====
 -- Single public row with the business contact/brand details shown on the
@@ -636,12 +723,31 @@ create policy "public read company info" on public.company_info
   for select using (true);
 
 drop policy if exists "admin write company info" on public.company_info;
-create policy "admin write company info" on public.company_info
-  for all using (public.is_admin());
+drop policy if exists "staff insert company info" on public.company_info;
+create policy "staff insert company info" on public.company_info
+  for insert with check (public.is_staff());
+drop policy if exists "staff update company info" on public.company_info;
+create policy "staff update company info" on public.company_info
+  for update using (public.is_staff());
+drop policy if exists "admin delete company info" on public.company_info;
+create policy "admin delete company info" on public.company_info
+  for delete using (public.is_admin());
 
--- ===== PROJECT CATEGORIES (controller types for the IoT hub) =====
--- Migrates hardcoded project-catalog.ts categories to the database.
--- App reads DB-first, falls back to bundled defaults if empty.
+-- Set the sole owner account (2026-09-22). Only this account may delete users.
+-- The profile may already exist from the signup trigger; upsert to force role='owner'.
+do $$
+declare
+  owner_id uuid;
+begin
+  select id into owner_id from auth.users where email = 'genumsolutions@gmail.com';
+  if owner_id is not null then
+    insert into public.profiles (id, name, role)
+    values (owner_id, coalesce((select split_part(email, '@', 1) from auth.users where id = owner_id), 'genumsolutions'), 'owner')
+    on conflict (id) do update set role = 'owner';
+  end if;
+end $$;
+
+-- Project categories (shared): 'robocar', 'home-automation', etc.
 create table if not exists public.project_categories (
   id text primary key,                  -- 'robocar', 'home-automation', etc.
   name text not null,                   -- 'Robo Car', 'Home Automation', etc.
@@ -664,8 +770,15 @@ create policy "public read project_categories" on public.project_categories
   for select using (true);
 
 drop policy if exists "admin write project_categories" on public.project_categories;
-create policy "admin write project_categories" on public.project_categories
-  for all using (public.is_admin());
+drop policy if exists "staff insert project_categories" on public.project_categories;
+create policy "staff insert project_categories" on public.project_categories
+  for insert with check (public.is_staff());
+drop policy if exists "staff update project_categories" on public.project_categories;
+create policy "staff update project_categories" on public.project_categories
+  for update using (public.is_staff());
+drop policy if exists "admin delete project_categories" on public.project_categories;
+create policy "admin delete project_categories" on public.project_categories
+  for delete using (public.is_admin());
 
 -- Seed the 5 controller categories (idempotent)
 insert into public.project_categories (id, name, icon, car_type, hardware, capabilities, capability_labels, capability_notes, car_mode_ids, sort_order) values
@@ -832,7 +945,7 @@ drop policy if exists "robot_user_settings_select_own" on public.robot_user_sett
 create policy "robot_user_settings_select_own" on public.robot_user_settings
 for select using (
   auth.uid() = user_id
-  or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+  or public.is_staff()
 );
 
 drop policy if exists "robot_user_settings_insert_own" on public.robot_user_settings;
@@ -843,14 +956,14 @@ drop policy if exists "robot_user_settings_update_own" on public.robot_user_sett
 create policy "robot_user_settings_update_own" on public.robot_user_settings
 for update using (
   auth.uid() = user_id
-  or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+  or public.is_staff()
 );
 
 drop policy if exists "robot_user_settings_delete_own" on public.robot_user_settings;
 create policy "robot_user_settings_delete_own" on public.robot_user_settings
 for delete using (
   auth.uid() = user_id
-  or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+  or public.is_admin()
 );
 
 -- ===== USER LAST-SEEN (admin visibility parity, app <-> website) =====
@@ -872,7 +985,7 @@ declare
   last_seen timestamptz;
 begin
   select role into caller_role from public.profiles where id = auth.uid();
-  if caller_role is null or caller_role <> 'admin' then
+  if caller_role is null or caller_role not in ('staff','admin','owner') then
     return null;
   end if;
   select last_sign_in_at into last_seen from auth.users where id = target_user_id;
@@ -881,4 +994,4 @@ end;
 $$;
 
 comment on function public.admin_user_last_seen(uuid) is
-  'Returns auth.users.last_sign_in_at for the target user when the caller is an admin, else null. Parity shim for the app Users tab.';
+  'Returns auth.users.last_sign_in_at for the target user when the caller has staff+ (staff/admin/owner) privileges, else null. Parity shim for the app Users tab.';

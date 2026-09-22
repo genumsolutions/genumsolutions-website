@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
-import { isAdminRequest } from '../../../../lib/admin'
+import { isAdminRequest, isStaffRequest } from '../../../../lib/admin'
 import { getManagedRoBoModes, saveRoBoMode, deleteRoBoMode } from '../../../../lib/content-store'
 
 export async function GET(request: Request) {
-  if (!(await isAdminRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await isStaffRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   try {
     const params = new URL(request.url).searchParams
     const all = await getManagedRoBoModes()
@@ -28,7 +28,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  if (!(await isAdminRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await isStaffRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   try {
     const body = await request.json().catch(() => null)
     if (!body?.id || !body?.name) return NextResponse.json({ error: 'Mode id and name are required.' }, { status: 400 })
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
 }
 
 export async function PUT(request: Request) {
-  if (!(await isAdminRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await isStaffRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   try {
     const body = await request.json().catch(() => null)
     if (!body?.id) return NextResponse.json({ error: 'Mode id is required.' }, { status: 400 })

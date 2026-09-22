@@ -3,7 +3,7 @@ import Image from 'next/image'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import dynamicImport from 'next/dynamic'
-import { getCurrentAdmin } from '../../lib/admin'
+import { getCurrentAdmin, getCurrentUserRole } from '../../lib/admin'
 import { getManagedProducts } from '../../lib/content-store'
 import LogoutButton from '../../components/LogoutButton'
 
@@ -13,8 +13,8 @@ export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Admin' }
 
 export default async function AdminPage() {
-  const [admin, products] = await Promise.all([getCurrentAdmin(), getManagedProducts()])
-  if (!admin) redirect('/login')
+  const [admin, products, role] = await Promise.all([getCurrentAdmin(), getManagedProducts(), getCurrentUserRole()])
+  if (!admin || !role) redirect('/login')
   return (
     <main className="min-h-screen bg-mist">
       <header className="border-b border-line bg-white">
@@ -38,7 +38,7 @@ export default async function AdminPage() {
           </div>
         </div>
       </header>
-      <AdminPanel initialProducts={products} />
+      <AdminPanel initialProducts={products} currentRole={role} />
     </main>
   )
 }

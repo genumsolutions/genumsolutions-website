@@ -7,9 +7,9 @@ import type { Service } from './admin-types'
 import { emptyService } from './admin-types'
 import { focusEditor } from './admin-helpers'
 
-type Props = { setMessage: (msg: string) => void }
+type Props = { setMessage: (msg: string) => void; canDelete: boolean }
 
-export default function AdminServices({ setMessage }: Props) {
+export default function AdminServices({ setMessage, canDelete }: Props) {
   const [services, setServices] = useState<Service[]>([])
   const [loaded, setLoaded] = useState(false)
   const [service, setService] = useState<Service>(emptyService)
@@ -79,7 +79,7 @@ export default function AdminServices({ setMessage }: Props) {
                     <button onClick={() => { setService(s); focusEditor('service-editor') }} className="text-xs font-bold text-navy underline">Edit</button>
                     <button onClick={() => setPreviewService(s)} className="text-xs font-bold text-slate-500 underline">Preview</button>
                     <button onClick={() => void toggleServiceVisibility(s)} className="text-xs font-bold text-ink underline">{s.active ? 'Hide' : 'Show'}</button>
-                    <button onClick={() => removeService(s.id)} className="text-xs font-bold text-red-600 underline">Delete</button>
+                    {canDelete && <button onClick={() => removeService(s.id)} className="text-xs font-bold text-red-600 underline">Delete</button>}
                   </span>
                 </div>
               ))}

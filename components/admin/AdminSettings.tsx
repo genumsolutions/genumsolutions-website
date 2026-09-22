@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from 'react'
 import { inputClass } from '../../lib/styles'
 
-type Props = { setMessage: (msg: string) => void }
+type Props = { setMessage: (msg: string) => void; canDelete: boolean }
 
 type CompanyInfo = {
   name: string; shortName: string; address: string; city: string; country: string;
@@ -28,7 +28,7 @@ const emptyCompany: CompanyInfo = {
   email: '', phone: '', pan: '', vatLabel: '', description: '',
 }
 
-export default function AdminSettings({ setMessage }: Props) {
+export default function AdminSettings({ setMessage, canDelete }: Props) {
   const [loaded, setLoaded] = useState(false)
   const [company, setCompany] = useState<CompanyInfo>(emptyCompany)
   const [programs, setPrograms] = useState<TrainingProgram[]>([])
@@ -201,7 +201,7 @@ export default function AdminSettings({ setMessage }: Props) {
               <span className="min-w-0 flex-1"><span className="block text-sm"><strong>{p.title}</strong> <span className="text-slate-400">{p.audience}</span></span></span>
               <span className="flex shrink-0 gap-2">
                 <button onClick={() => setProgram({ ...p })} className="text-xs font-bold text-navy underline">Edit</button>
-                <button onClick={() => removeProgram(p.id)} className="text-xs font-bold text-red-600 underline">Delete</button>
+                {canDelete && <button onClick={() => removeProgram(p.id)} className="text-xs font-bold text-red-600 underline">Delete</button>}
               </span>
             </div>
           ))}
@@ -234,7 +234,7 @@ export default function AdminSettings({ setMessage }: Props) {
               <span className="min-w-0 flex-1"><span className="block text-sm"><strong>{l.item}</strong> <span className="text-slate-400">{l.cost}</span></span></span>
               <span className="flex shrink-0 gap-2">
                 <button onClick={() => setPilot({ ...l })} className="text-xs font-bold text-navy underline">Edit</button>
-                <button onClick={() => removePilot(l.id)} className="text-xs font-bold text-red-600 underline">Delete</button>
+                {canDelete && <button onClick={() => removePilot(l.id)} className="text-xs font-bold text-red-600 underline">Delete</button>}
               </span>
             </div>
           ))}
@@ -266,7 +266,7 @@ export default function AdminSettings({ setMessage }: Props) {
               <span className="min-w-0 flex-1"><span className="block text-sm"><strong>{h.ageBand}</strong> <span className="text-slate-400">({h.items.length} skills)</span></span></span>
               <span className="flex shrink-0 gap-2">
                 <button onClick={() => setCurriculum({ ...h })} className="text-xs font-bold text-navy underline">Edit</button>
-                <button onClick={() => removeCurriculum(h.id)} className="text-xs font-bold text-red-600 underline">Delete</button>
+                {canDelete && <button onClick={() => removeCurriculum(h.id)} className="text-xs font-bold text-red-600 underline">Delete</button>}
               </span>
             </div>
           ))}

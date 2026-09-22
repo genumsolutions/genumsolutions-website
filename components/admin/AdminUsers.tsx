@@ -6,7 +6,7 @@ import type { UserPage } from './admin-types'
 import { PAGE_SIZE } from './admin-types'
 import { Pager } from './admin-helpers'
 
-type Props = { setMessage: (msg: string) => void }
+type Props = { setMessage: (msg: string) => void; canDelete: boolean; currentRole: 'staff' | 'admin' | 'owner' }
 
 // One robot preference row (user × robot) from robot_user_settings.
 type RobotRow = { robot_id: string; robot_name: string; settings: Record<string, unknown>; updated_at: string }
@@ -14,7 +14,7 @@ type RobotRow = { robot_id: string; robot_name: string; settings: Record<string,
 // Expandable per-user engineering manager: tier toggle + the user's robot
 // preference rows (code values / parameters / telemetry channels), kept in
 // the dedicated robot_user_settings table — never mixed with orders/carts.
-function UserRobotManager({ userId, email, setMessage }: { userId: string; email: string; setMessage: (msg: string) => void }) {
+function UserRobotManager({ userId, email, setMessage, canDelete }: { userId: string; email: string; setMessage: (msg: string) => void; canDelete: boolean }) {
   const [robots, setRobots] = useState<RobotRow[] | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draftName, setDraftName] = useState('')
@@ -83,7 +83,7 @@ function UserRobotManager({ userId, email, setMessage }: { userId: string; email
                   </div>
                   <span className="flex gap-2">
                     <button onClick={() => startEdit(robot)} className="rounded-full border border-line px-3 py-1 text-xs font-bold text-navy transition hover:border-navy">Edit</button>
-                    <button onClick={() => { if (window.confirm(`Delete the ${robot.robot_name || robot.robot_id} profile for ${email}?`)) void send('deleteRobotSetting', { robotId: robot.robot_id }, 'Robot profile deleted.') }} className="rounded-full border border-red-200 px-3 py-1 text-xs font-bold text-red-600 transition hover:bg-red-50">Delete</button>
+                    {canDelete && <button onClick={() => { if (window.confirm(`Delete the ${robot.robot_name || robot.robot_id} profile for ${email}?`)) void send('deleteRobotSetting', { robotId: robot.robot_id }, 'Robot profile deleted.') }} className="rounded-full border border-red-200 px-3 py-1 text-xs font-bold text-red-600 transition hover:bg-red-50">Delete</button>}
                   </span>
                 </div>
               )}
@@ -113,7 +113,7 @@ function UserRobotManager({ userId, email, setMessage }: { userId: string; email
   )
 }
 
-export default function AdminUsers({ setMessage }: Props) {
+export default function AdminUsers({ setMessage, canDelete, currentRole }: Props) {
   const [userData, setUserData] = useState<UserPage & { users: (UserPage['users'][number] & { tier?: string })[] }>({ users: [], page: 1, hasMore: false })
   const [loaded, setLoaded] = useState(false)
   const [userQuery, setUserQuery] = useState('')
@@ -132,17 +132,29 @@ export default function AdminUsers({ setMessage }: Props) {
     } finally { setLoaded(true) }
   }
 
-  async function setUserRole(userId: string, role: 'admin' | 'customer') {
-    const verb = role === 'admin' ? 'grant admin to' : 'revoke admin from'
-    if (!window.confirm(`Are you sure you want to ${verb} this user?`)) return
+  async function setUserRole(userId: string, role: 'customer' | 'staff' | 'admin') {
+    const labels: Record<string, string> = { customer: 'customer', staff: 'staff', admin: 'admin' }
+    if (!window.confirm(`Set this user's role to ${labels[role]}?`)) return
     const response = await fetch('/api/admin/users', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId, role }) })
     if (response.ok) {
       setUserData((current) => ({ ...current, users: current.users.map((user) => user.id === userId ? { ...user, role } : user) }))
-      setMessage(role === 'admin' ? 'Admin access granted.' : 'Admin access revoked.')
+      setMessage(`${userData.users.find((u) => u.id === userId)?.email || 'User'} is now ${labels[role]}.`)
     } else {
       // Surface the server's reason (e.g. the self-demotion guard) instead of a generic failure.
       const result = await response.json().catch(() => ({}))
       setMessage(result.error || 'Could not update the role.')
+    }
+  }
+
+  async function deleteUser(userId: string, email: string) {
+    if (!window.confirm(`Permanently delete ${email}? This removes the account, profile, orders, and messages. This cannot be undone.`)) return
+    const response = await fetch('/api/admin/users', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId }) })
+    if (response.ok) {
+      setUserData((current) => ({ ...current, users: current.users.filter((user) => user.id !== userId) }))
+      setMessage('User deleted.')
+    } else {
+      const result = await response.json().catch(() => ({}))
+      setMessage(result.error || 'Could not delete the user.')
     }
   }
 
@@ -180,14 +192,23 @@ export default function AdminUsers({ setMessage }: Props) {
                     {user.address && <p className="break-words text-xs text-slate-400">{user.address}</p>}
                     <p className="text-xs text-slate-400">Joined {new Date(user.createdAt).toLocaleDateString()}{user.lastSignInAt ? ` · Last seen ${new Date(user.lastSignInAt).toLocaleDateString()}` : ''}</p>
                     <span className="mt-1 flex flex-wrap gap-1">
-                      <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${user.role === 'admin' ? 'bg-gold text-ink' : 'bg-sky text-navy'}`}>{user.role}</span>
+                      <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${user.role === 'owner' ? 'bg-ink text-white' : user.role === 'admin' ? 'bg-gold text-ink' : user.role === 'staff' ? 'bg-navy text-white' : 'bg-sky text-navy'}`}>{user.role}</span>
                       <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${user.tier === 'pro' ? 'bg-navy text-white' : 'bg-slate-100 text-slate-500'}`}>{user.tier === 'pro' ? 'Pro' : 'Free'}</span>
                     </span>
                   </div>
                   <span className="flex shrink-0 flex-wrap gap-2">
-                    {user.role === 'admin'
-                      ? <button onClick={() => setUserRole(user.id, 'customer')} className="border border-red-200 px-3 py-1.5 text-xs font-bold text-red-600 transition hover:bg-red-50">Revoke admin</button>
-                      : <button onClick={() => setUserRole(user.id, 'admin')} className="border border-line px-3 py-1.5 text-xs font-bold text-navy transition hover:border-navy">Make admin</button>}
+                    <select
+                      value={user.role === 'owner' ? 'owner' : user.role}
+                      onChange={(e) => setUserRole(user.id, e.target.value as 'customer' | 'staff' | 'admin')}
+                      disabled={!canDelete || user.role === 'owner'}
+                      aria-label={`Role for ${user.email}`}
+                      className="border border-line bg-white px-2 py-1.5 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <option value="customer">customer</option>
+                      <option value="staff">staff</option>
+                      <option value="admin">admin</option>
+                      <option value="owner" disabled>owner</option>
+                    </select>
                     {user.tier === 'pro'
                       ? <button onClick={() => setUserTier(user.id, 'free')} className="border border-line px-3 py-1.5 text-xs font-bold text-slate-500 transition hover:border-slate-500">Downgrade to Free</button>
                       : <button onClick={() => setUserTier(user.id, 'pro')} className="border border-navy bg-navy-light px-3 py-1.5 text-xs font-bold text-navy transition hover:bg-navy hover:text-white">Upgrade to Pro</button>}
@@ -198,9 +219,10 @@ export default function AdminUsers({ setMessage }: Props) {
                     >
                       {expandedId === user.id ? 'Hide profiles' : 'Robot profiles'}
                     </button>
+                    {currentRole === 'owner' && <button onClick={() => deleteUser(user.id, user.email)} className="border border-red-200 px-3 py-1.5 text-xs font-bold text-red-600 transition hover:bg-red-50">Delete user</button>}
                   </span>
                 </div>
-                {expandedId === user.id && <UserRobotManager userId={user.id} email={user.email} setMessage={setMessage} />}
+                {expandedId === user.id && <UserRobotManager userId={user.id} email={user.email} setMessage={setMessage} canDelete={canDelete} />}
               </li>
             ))}
           </ul>

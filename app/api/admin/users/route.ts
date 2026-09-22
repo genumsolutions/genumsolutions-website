@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { isAdminRequest } from '../../../../lib/admin'
+import { isAdminRequest, isOwnerRequest, isStaffRequest } from '../../../../lib/admin'
 import { createServiceClient, getSessionUser } from '../../../../lib/supabase/server'
 import { logActivity } from '../../../../lib/activity'
 import { deleteUserRobotSetting, listUserRobotSettings, updateUserTier, upsertUserRobotSettings } from '../../../../lib/admin-users'
@@ -9,7 +9,7 @@ import { deleteUserRobotSetting, listUserRobotSettings, updateUserTier, upsertUs
 // through the service client so the DB trigger's service_role exemption
 // applies. Regular clients can never reach this route without an admin session.
 export async function GET(request: Request) {
-  if (!(await isAdminRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await isStaffRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return NextResponse.json({ error: 'Service role key is not configured.' }, { status: 503 })
 
   const params = new URL(request.url).searchParams
@@ -72,8 +72,8 @@ export async function PATCH(request: Request) {
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) {
     return NextResponse.json({ error: 'A valid user id is required.' }, { status: 400 })
   }
-  if (role !== 'admin' && role !== 'customer') {
-    return NextResponse.json({ error: 'Role must be admin or customer.' }, { status: 400 })
+  if (role !== 'admin' && role !== 'customer' && role !== 'staff') {
+    return NextResponse.json({ error: 'Role must be customer/staff/admin.' }, { status: 400 })
   }
 
   // Lockout guard: an admin can never demote themselves (mirrors the
@@ -81,6 +81,10 @@ export async function PATCH(request: Request) {
   const current = await getSessionUser()
   if (current && current.id === userId && role === 'customer') {
     return NextResponse.json({ error: 'You cannot revoke your own admin role.' }, { status: 400 })
+  }
+  // Staff may edit roles but cannot set owner; owner only sets owner via SQL
+  if (role === 'owner') {
+    return NextResponse.json({ error: 'The owner role cannot be assigned via the API.' }, { status: 400 })
   }
 
   try {
@@ -100,7 +104,7 @@ export async function PATCH(request: Request) {
 // robot preferences unlock at pro). Service-role write so the
 // protect_tier_column trigger exempts it, mirroring the role path.
 export async function PUT(request: Request) {
-  if (!(await isAdminRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await isStaffRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const body = await request.json().catch(() => null)
   const userId = String(body?.userId || '')
   const tier = body?.tier
@@ -116,11 +120,37 @@ export async function PUT(request: Request) {
   return NextResponse.json({ ok: true })
 }
 
+// DELETE accounts referenced from the admin Users tab. Owner-only; every other
+// admin and staff can do everything the directory needs except removing users.
+export async function DELETE(request: Request) {
+  if (!(await isOwnerRequest())) return NextResponse.json({ error: 'Only the owner can delete users.' }, { status: 403 })
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return NextResponse.json({ error: 'Service role key is not configured.' }, { status: 503 })
+  const body = await request.json().catch(() => null)
+  const userId = String(body?.userId || '')
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) {
+    return NextResponse.json({ error: 'A valid user id is required.' }, { status: 400 })
+  }
+  const current = await getSessionUser()
+  if (current && current.id === userId) {
+    return NextResponse.json({ error: 'You cannot delete your own account.' }, { status: 400 })
+  }
+  try {
+    const db = createServiceClient()
+    const { error } = await db.auth.admin.deleteUser(userId)
+    if (error) return NextResponse.json({ error: error.message || 'Could not delete the user.' }, { status: 500 })
+    await logActivity({ action: 'user.deleted', entityType: 'user', entityId: userId, details: { via: 'owner' } })
+    return NextResponse.json({ ok: true })
+  } catch (error) {
+    console.error('Admin user delete failed', error)
+    return NextResponse.json({ error: 'Could not delete the user.' }, { status: 500 })
+  }
+}
+
 // POST { action: 'listRobotSettings' | 'upsertRobotSetting' | 'deleteRobotSetting', userId, ... }
 // — the per-user robot preference rows (code values / parameters / telemetry
 // channels) managed from the admin Users tab.
 export async function POST(request: Request) {
-  if (!(await isAdminRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await isStaffRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const body = await request.json().catch(() => null)
   const action = String(body?.action || '')
   const userId = String(body?.userId || '')
@@ -148,6 +178,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true })
   }
   if (action === 'deleteRobotSetting') {
+    if (!(await isAdminRequest())) return NextResponse.json({ error: 'Only admins can delete robot profiles.' }, { status: 403 })
     const robotId = String(body?.robotId || '').trim()
     if (!robotId) return NextResponse.json({ error: 'A robotId is required.' }, { status: 400 })
     const ok = await deleteUserRobotSetting(userId, robotId)

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { isAdminRequest } from '../../../../lib/admin'
+import { isStaffRequest } from '../../../../lib/admin'
 import { createServiceClient } from '../../../../lib/supabase/server'
 
 const MAX_BYTES = 4 * 1024 * 1024
@@ -8,7 +8,7 @@ const ALLOWED = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/avif', 
 export const runtime = 'nodejs'
 
 export async function POST(request: Request) {
-  if (!(await isAdminRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await isStaffRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const form = await request.formData().catch(() => null)
   const file = form?.get('file')
   if (!(file instanceof File)) return NextResponse.json({ error: 'Attach an image file.' }, { status: 400 })

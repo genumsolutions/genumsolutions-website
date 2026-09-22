@@ -12,6 +12,7 @@ type Props = {
   products: Product[]
   onProductsChange: (updater: (prev: Product[]) => Product[]) => void
   setMessage: (msg: string) => void
+  canDelete: boolean
 }
 
 function ProjectEditor({ product, onChange, onSave, onReset, busy, categories }: {
@@ -78,7 +79,7 @@ function ProjectEditor({ product, onChange, onSave, onReset, busy, categories }:
   )
 }
 
-export default function AdminProjectPackages({ products, onProductsChange, setMessage }: Props) {
+export default function AdminProjectPackages({ products, onProductsChange, setMessage, canDelete }: Props) {
   const [product, setProduct] = useState<Product>(emptyProduct)
   const [previewProduct, setPreviewProduct] = useState<Product | null>(null)
   const [projectCategory, setProjectCategory] = useState('All')
@@ -147,7 +148,7 @@ export default function AdminProjectPackages({ products, onProductsChange, setMe
                     <button onClick={() => { setProduct(item); focusEditor('project-package-editor') }} className="text-xs font-bold text-navy underline">Edit</button>
                     <button onClick={() => setPreviewProduct(item)} className="text-xs font-bold text-slate-500 underline">Preview</button>
                     <button onClick={() => void toggleProductVisibility(item)} className="text-xs font-bold text-ink underline">{item.active === false ? 'Show' : 'Hide'}</button>
-                    <button onClick={() => removeProduct(item.id)} className="text-xs font-bold text-red-600 underline">Delete</button>
+                    {canDelete && <button onClick={() => removeProduct(item.id)} className="text-xs font-bold text-red-600 underline">Delete</button>}
                   </span>
                 </div>
               ))}

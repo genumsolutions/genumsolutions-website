@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { isAdminRequest } from '../../../../lib/admin'
+import { isAdminRequest, isStaffRequest } from '../../../../lib/admin'
 import {
   getManagedSettings,
   saveCompanyInfo,
@@ -13,7 +13,7 @@ import {
 import { logActivity } from '../../../../lib/activity'
 
 export async function GET() {
-  if (!(await isAdminRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await isStaffRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   try {
     return NextResponse.json(await getManagedSettings())
   } catch (error) {
@@ -23,7 +23,7 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
-  if (!(await isAdminRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await isStaffRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   try {
     const body = (await request.json().catch(() => null)) as {
       action?: string

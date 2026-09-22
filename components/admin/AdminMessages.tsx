@@ -5,9 +5,9 @@ import type { Message } from './admin-types'
 import { PAGE_SIZE } from './admin-types'
 import { Pager, formatTimestamp } from './admin-helpers'
 
-type Props = { setMessage: (msg: string) => void }
+type Props = { setMessage: (msg: string) => void; canDelete: boolean }
 
-export default function AdminMessages({ setMessage: _setMessage }: Props) {
+export default function AdminMessages({ setMessage: _setMessage, canDelete }: Props) {
   const [messages, setMessages] = useState<Message[]>([])
   const [loaded, setLoaded] = useState(false)
   const [page, setPage] = useState(1)
@@ -77,7 +77,7 @@ export default function AdminMessages({ setMessage: _setMessage }: Props) {
                   <div className="flex shrink-0 items-center gap-2">
                     {msg.status === 'new' && <button onClick={() => markReplied(msg.id)} className="border border-line px-3 py-1.5 text-xs font-bold text-navy transition hover:border-navy">Mark replied</button>}
                     {msg.status === 'replied' && <span className="text-[10px] font-black uppercase text-emerald-600">Replied</span>}
-                    <button onClick={() => deleteMessage(msg.id)} className="border border-red-200 px-3 py-1.5 text-xs font-bold text-red-600 transition hover:bg-red-50">Delete</button>
+                    {canDelete && <button onClick={() => deleteMessage(msg.id)} className="border border-red-200 px-3 py-1.5 text-xs font-bold text-red-600 transition hover:bg-red-50">Delete</button>}
                   </div>
                 </div>
                 <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-700">{msg.message}</p>

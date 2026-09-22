@@ -14,6 +14,7 @@
 // =====================================================================
 import { readFileSync } from 'node:fs'
 import { createClient } from '@supabase/supabase-js'
+import { purgeTestUsers } from './e2e-helpers.mjs'
 
 const env = {}
 for (const line of readFileSync('.env.local', 'utf8').split('\n')) {
@@ -29,6 +30,8 @@ const PW = 'Xk9!' + rand + 'Zq'
 
 const service = createClient(URL_, env.SUPABASE_SERVICE_ROLE_KEY, { auth: { autoRefreshToken: false, persistSession: false } })
 const anon = createClient(URL_, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { autoRefreshToken: false, persistSession: false } })
+
+await purgeTestUsers(service)
 
 let cid, aid
 const results = []

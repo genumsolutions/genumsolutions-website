@@ -75,6 +75,13 @@ async function main() {
   try {
     await client.connect()
     console.log(`Connected to Supabase Postgres - applying ${schemaPath} in one transaction ...`)
+    // The connection is a transaction-pooled (PgBouncer) URL: it reports
+    // current_setting('role') = 'none' even for the superuser session, which
+    // makes the protect_role_column / protect_tier_column triggers reject the
+    // owner upsert below ('Only administrators can change roles'). A schema
+    // apply is inherently a superuser operation, so pin the role to postgres
+    // for the duration of this session (same as the SQL editor does).
+    await client.query('set role postgres')
     // schema.sql is written idempotently (create table if not exists,
     // create or replace function, drop ... if exists). Running the whole
     // file as a single multi-statement query wraps it in one implicit

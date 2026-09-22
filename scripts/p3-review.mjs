@@ -11,6 +11,7 @@
 import { readFileSync } from 'node:fs'
 import puppeteer from 'puppeteer-core'
 import { createClient } from '@supabase/supabase-js'
+import { purgeTestUsers } from './e2e-helpers.mjs'
 
 const env = {}
 for (const line of readFileSync('.env.local', 'utf8').split('\n')) {
@@ -27,6 +28,8 @@ const PASSWORD = 'Xk9!' + rand + 'Zq'
 const service = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 })
+
+await purgeTestUsers(service)
 
 const lines = []
 const report = (section, item, status, note = '') => {

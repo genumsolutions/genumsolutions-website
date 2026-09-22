@@ -12,11 +12,11 @@
 // service role. This edge function is the SHARED, service-role path
 // BOTH clients use, with caller verification + admin self-protection.
 //
-// Body (JSON): { userId, role?: 'admin' | 'customer', tier?: 'free' | 'pro' }
+// Body (JSON): { userId, role?: 'customer' | 'staff' | 'admin' | 'owner', tier?: 'free' | 'pro' }
 //   - At least one of role/tier must be present (both may be sent).
 // Auth: the caller's bearer token must resolve to a profile with
-//       role = 'admin'. An admin can never demote THEMSELVES (lockout
-//       guard). Every change is logged to activity_log.
+//       role 'admin' or 'owner'. An admin can never demote THEMSELVES
+//       (lockout guard). Every change is logged to activity_log.
 //
 // Deploy (dashboard or CLI):
 //   supabase functions deploy admin-set-role
@@ -68,7 +68,7 @@ serve(async (req) => {
       .select('role')
       .eq('id', callerId)
       .maybeSingle()
-    if (callerProfile?.role !== 'admin') {
+    if (callerProfile?.role !== 'admin' && callerProfile?.role !== 'owner') {
       return json({ error: 'Only admins can change roles.' }, 403)
     }
 
@@ -81,8 +81,8 @@ serve(async (req) => {
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) {
       return json({ error: 'A valid user id is required.' }, 400)
     }
-    if (role !== null && role !== 'admin' && role !== 'customer') {
-      return json({ error: 'Role must be admin or customer.' }, 400)
+    if (role !== null && role !== 'admin' && role !== 'customer' && role !== 'staff' && role !== 'owner') {
+      return json({ error: 'Role must be customer/staff/admin/owner.' }, 400)
     }
     if (tier !== null && tier !== 'free' && tier !== 'pro') {
       return json({ error: 'Tier must be free or pro.' }, 400)
@@ -94,6 +94,10 @@ serve(async (req) => {
     // 3) Lockout guard: an admin can never demote themselves.
     if (userId === callerId && role === 'customer') {
       return json({ error: 'You cannot revoke your own admin role.' }, 400)
+    }
+    // Never allow setting 'owner' via this API (sole owner is managed via SQL)
+    if (role === 'owner') {
+      return json({ error: 'The owner role cannot be assigned via the API.' }, 400)
     }
 
     // 4) Apply via the service role (bypasses protect_role_column and

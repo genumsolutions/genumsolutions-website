@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
-import { isAdminRequest } from '../../../../lib/admin'
+import { isStaffRequest } from '../../../../lib/admin'
 import { listActivity } from '../../../../lib/activity'
 
 export async function GET(request: Request) {
-  if (!(await isAdminRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await isStaffRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   try {
     const { searchParams } = new URL(request.url)
     const page = Number(searchParams.get('page')) || 1

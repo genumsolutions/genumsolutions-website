@@ -24,6 +24,7 @@
 import { readFileSync } from 'node:fs'
 import puppeteer from 'puppeteer-core'
 import { createClient } from '@supabase/supabase-js'
+import { purgeTestUsers } from './e2e-helpers.mjs'
 
 const env = {}
 for (const line of readFileSync('.env.local', 'utf8').split('\n')) {
@@ -48,6 +49,8 @@ const assert = (name, ok, detail = '') => {
   results.push({ name, ok })
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? ' — ' + detail : ''}`)
 }
+
+await purgeTestUsers(service)
 
 // All API calls run INSIDE the page context so the browser cookie jar
 // carries the session — the same mechanism a real signed-in user uses.

@@ -1,16 +1,16 @@
 import { NextResponse } from 'next/server'
-import { isAdminRequest } from '../../../../lib/admin'
+import { isAdminRequest, isStaffRequest } from '../../../../lib/admin'
 import { listServices, saveService, deleteService } from '../../../../lib/services'
 import { logActivity } from '../../../../lib/activity'
 
 export async function GET() {
-  if (!(await isAdminRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await isStaffRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const services = await listServices(true)
   return NextResponse.json({ services })
 }
 
 export async function PUT(request: Request) {
-  if (!(await isAdminRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await isStaffRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const body = await request.json().catch(() => null)
   if (!body?.id || !body?.name) return NextResponse.json({ error: 'id and name are required.' }, { status: 400 })
   if (String(body.name).trim().length > 200) return NextResponse.json({ error: 'Name is too long (max 200).' }, { status: 400 })

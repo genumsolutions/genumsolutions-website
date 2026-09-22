@@ -12,9 +12,10 @@ type Props = {
   products: Product[]
   onProductsChange: (updater: (prev: Product[]) => Product[]) => void
   setMessage: (msg: string) => void
+  canDelete: boolean
 }
 
-export default function AdminProducts({ products, onProductsChange, setMessage }: Props) {
+export default function AdminProducts({ products, onProductsChange, setMessage, canDelete }: Props) {
   const [product, setProduct] = useState<Product>(emptyProduct)
   const [previewProduct, setPreviewProduct] = useState<Product | null>(null)
   const [query, setQuery] = useState('')
@@ -96,7 +97,7 @@ export default function AdminProducts({ products, onProductsChange, setMessage }
                   <button onClick={() => { setProduct(item); document.getElementById('product-editor')?.scrollIntoView({ behavior: 'smooth' }) }} className="text-xs font-bold text-navy underline">Edit</button>
                   <button onClick={() => setPreviewProduct(item)} className="text-xs font-bold text-slate-500 underline">Preview</button>
                   <button onClick={() => void toggleProductVisibility(item)} className="text-xs font-bold text-ink underline">{item.active === false ? 'Show' : 'Hide'}</button>
-                  <button onClick={() => removeProduct(item.id)} className="text-xs font-bold text-red-600 underline">Delete</button>
+                  {canDelete && <button onClick={() => removeProduct(item.id)} className="text-xs font-bold text-red-600 underline">Delete</button>}
                 </span>
               </div>
             ))}

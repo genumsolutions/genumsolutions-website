@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
-import { isAdminRequest } from '../../../../lib/admin'
+import { isAdminRequest, isStaffRequest } from '../../../../lib/admin'
 import { deleteProduct, getManagedProducts, saveProduct, type Product } from '../../../../lib/content-store'
 import { logActivity } from '../../../../lib/activity'
 
 export async function GET(request: Request) {
-  if (!(await isAdminRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await isStaffRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   try {
     const params = new URL(request.url).searchParams
     const all = await getManagedProducts()
@@ -27,7 +27,7 @@ export async function GET(request: Request) {
 }
 
 export async function PUT(request: Request) {
-  if (!(await isAdminRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await isStaffRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   try {
     const body = await request.json().catch(() => null)
     if (!body?.id || !body?.name || !body?.category) return NextResponse.json({ error: 'Product id, name, and category are required.' }, { status: 400 })

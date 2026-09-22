@@ -19,7 +19,7 @@ import AdminProjectPackages from './admin/AdminProjectPackages'
 import AdminContent from './admin/AdminContent'
 import AdminSettings from './admin/AdminSettings'
 
-type Props = { initialProducts: Product[] }
+type Props = { initialProducts: Product[]; currentRole: 'staff' | 'admin' | 'owner' }
 
 const TAB_ICONS = {
   Dashboard: LayoutDashboard,
@@ -36,11 +36,15 @@ const TAB_ICONS = {
   Settings: SettingsIcon,
 } as const
 
-export default function AdminPanel({ initialProducts }: Props) {
+export default function AdminPanel({ initialProducts, currentRole }: Props) {
   const [tab, setTab] = useState<Tab>('Dashboard')
   const [products, setProducts] = useState(initialProducts)
   const [message, setMessage] = useState('')
   const [visited, setVisited] = useState<Set<number>>(() => new Set([0]))
+
+  // Staff can run every panel but not perform deletions; owner additionally
+  // gets the Users-hosted account deletion controls.
+  const canDelete = currentRole === 'admin' || currentRole === 'owner'
 
   const tabIndex = TABS.indexOf(tab)
 
@@ -60,17 +64,17 @@ export default function AdminPanel({ initialProducts }: Props) {
   function renderPanel(t: Tab) {
     switch (t) {
       case 'Dashboard': return <AdminDashboard />
-      case 'Orders': return <AdminOrders />
-      case 'Products': return <AdminProducts products={products} onProductsChange={setProducts} setMessage={setMessage} />
-      case 'Services': return <AdminServices setMessage={setMessage} />
-      case 'Journal': return <AdminJournal setMessage={setMessage} />
-      case 'Messages': return <AdminMessages setMessage={setMessage} />
+      case 'Orders': return <AdminOrders canDelete={canDelete} />
+      case 'Products': return <AdminProducts products={products} onProductsChange={setProducts} setMessage={setMessage} canDelete={canDelete} />
+      case 'Services': return <AdminServices setMessage={setMessage} canDelete={canDelete} />
+      case 'Journal': return <AdminJournal setMessage={setMessage} canDelete={canDelete} />
+      case 'Messages': return <AdminMessages setMessage={setMessage} canDelete={canDelete} />
       case 'Finance': return <AdminFinance />
-      case 'Users': return <AdminUsers setMessage={setMessage} />
+      case 'Users': return <AdminUsers setMessage={setMessage} canDelete={canDelete} currentRole={currentRole} />
       case 'Activity': return <AdminActivity />
-      case 'Projects': return <AdminProjectPackages products={products} onProductsChange={setProducts} setMessage={setMessage} />
+      case 'Projects': return <AdminProjectPackages products={products} onProductsChange={setProducts} setMessage={setMessage} canDelete={canDelete} />
       case 'Content': return <AdminContent setMessage={setMessage} />
-      case 'Settings': return <AdminSettings setMessage={setMessage} />
+      case 'Settings': return <AdminSettings setMessage={setMessage} canDelete={canDelete} />
     }
   }
 

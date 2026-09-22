@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { isAdminRequest } from '../../../../lib/admin'
+import { isAdminRequest, isStaffRequest } from '../../../../lib/admin'
 import { logActivity } from '../../../../lib/activity'
 import {
   deleteJournalPost,
@@ -9,7 +9,7 @@ import {
 import type { ManagedJournalPost } from '../../../../lib/journal-store'
 
 export async function GET(request: Request) {
-  if (!(await isAdminRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await isStaffRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   try {
     const params = new URL(request.url).searchParams
     const all = await getManagedJournalPosts()
@@ -42,7 +42,7 @@ export async function PUT(request: Request) {
 }
 
 async function save(request: Request) {
-  if (!(await isAdminRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await isStaffRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   try {
     const body = (await request.json().catch(() => null)) as ManagedJournalPost | null
     if (!body?.title || !body?.title.trim()) {
