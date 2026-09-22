@@ -83,3 +83,29 @@ _Cli deployed via `supabase functions deploy <fn> --project-ref <ref>`._
   `https://genumsolutions-website.vercel.app`.
 
 *Created 2026-09-18. Update status column on every change; never delete without owner OK.*| U-11 | **AUDIT 2026-09-22 (Phase C scoping, owner chose 'audit all panels first')**: WEB Content tab today = ONLY homepage title/body (mostly empty, matches U-10). WEB AdminSettings.tsx owns ALL 3 Phase-C nouns as sub-forms bur*ied in the big Settings form: '(Training programs / Pilot cost lines / Curriculum highlights)'. So Phase C = extract these 3 sub-form blocks OUT of AdminSettings into windowed editor panels under the Content tab (web) + the app Content tab (parity), moving Settings down to Company info ONLY — exactly U-10. Also confirmed in-scope at each client: web Services + Journal are operational (not content-shaped); app Content tab = Daily/service content; app Program editors live in config/programs.ts + programsService.ts. | REGISTERED | PHASE C SCOPING AUDIT DONE - move 3 sub-forms; **Decision2 2026-09-22 (owner): homepage title/body in Content stays a PLAIN form (not windowed) - 3 windowed editors render below it; app Content keeps Daily/service block + adds same 3 below.** |
+
+## Phase C session handoff — BEFORE (written 2026-09-22, before implementation)
+
+**Goal:** In both clients, the 3 "content" editors (Training programs / Pilot cost lines / Curriculum highlights) currently buried inline in the Settings form+screen move into **windowed row-editors under the Content tab** (web: under homepage plain form; app: Content tab), reusing ONE shared windowed-row-editor engine per client. Settings shrinks to **Company info only** (both clients). Staff parity: view/edit OK, delete hidden (Phase B rule) — must NOT regress.
+
+**Orientation (read this first):**
+- Web engine to REUSE by parameterizing `kind`: the windowed row-editor in `components/admin/AdminServices.tsx` (list + preview/edit/hide/delete, `canDelete` gate, `inputClass`/`styles`, `Pager`, portal preview). Same engine pattern exists in AdminProducts/AdminProducts. **Do not invent a new engine — reuse + parameterize by `kind: 'training' | 'pilot' | 'curriculum'`.**
+- Web current state: `AdminContent.tsx` = ONLY homepage title/body plain form (NOT content yet). All 3 content nouns live inline in `AdminSettings.tsx` (state: `programs/pilots/curricula` + `program/pilot/curriculum` + saveProgram/savePilot/saveCurriculum + delete-program/pilot/curriculum, UI sections "Training programs / Pilot cost lines / Curriculum highlights"). API: `PUT /api/admin/settings` (actions `training`/`pilot`/`curriculum`), `DELETE /api/admin/settings?action=...&id=`; `GET /api/admin/settings` returns trainingPrograms/pilotCostLines/curriculumHighlights. `/api/admin/content` = homepage title/body only.
+- App current state: `mobile/src/screens/AdminScreen.tsx` (tabs incl. Content+Settings), `mobile/src/config/programs.ts` + `mobile/src/services/programsService.ts` + `adminService.ts` handle the 3 nouns app-side; app Content tab currently = daily/service content. App engine to reuse: the app's own windowed row-editor (mirror of web) — `AdminServices`-shaped editor used in product/services tabs.
+- RBAC: gate deletions behind `canDelete` prop (web) / `canDelete` equivalent (app) — staff sees Edit/Preview only, Delete hidden (Phase C MUST keep Phase B E2E 25/25 gate intact).
+
+**Locked decisions (owner-adjudicated 2026-09-22):**
+1. One shared table-row editor engine for ALL 3 nouns (no separate paragraph engine). Web = parameterize `AdminRowEditor` by kind; app = reuse app's row-engine.
+2. Homepage title/body stays a PLAIN form in Content tab (web) / app keeps its daily/service content block; 3 windowed editors render BELOW/after it. Settings ? Company info ONLY in both.
+
+**Files (web):** create `components/admin/AdminRowEditor.tsx` (windowed, kind-parameterized); rewrite `components/admin/AdminContent.tsx` (homepage plain form + 3× AdminRowEditor below); shrink `components/admin/AdminSettings.tsx` to Company-only (remove programs/pilots/curricula blocks). Keep `/api/admin/settings` + `/api/admin/content` routes unchanged (no server change, no edge fn deploy, no schema change, no PAT).
+
+**Files (app):** `mobile/src/screens/AdminScreen.tsx` Content tab + reuse app row-engine; add same 3 windowed editors under app Content tab; app Settings keeps Company-only. No new services needed (reuse programsService/adminService).
+
+**Verification + parity (must stay green):** web `tsc --noEmit` + lint + vitest; app `tsc --noEmit` + vitest; then the **staff-access E2E (staff-access-e2e.mjs web + app staff-access-e2e)** must still pass 25/25 — especially the staff-delete-403 assertions (proves canDelete gate survived the move). Push BOTH repos. THIS is the non-negotiable gate.
+
+**Secrets:** ZERO new secrets this phase. Do NOT touch the revoked PAT. Never print/commit tokens.
+
+**Known traps:** PowerShell needs `-Raw`+regex or script files for pattern work (inline quotes break); basename casing `TRACKS\INDEX.md`; edge fn deploy ref `bkylfnlybtsujwzru` (already deployed, don't redeploy). Web repo root = E:\GENUM SOLUTIONS PVT LTD\Project\genumsolutions-website; app = ...\genumsolutions-app. Working dirs must be set via them; use npx supabase only if a future deploy is genuinely needed (NOT this phase).
+
+*Next session: read this BEFORE note fully, then apply the implementation + verification checklist above. Ledger row for Phase C itself is separate (U-12 below / after).*
