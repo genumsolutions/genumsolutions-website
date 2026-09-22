@@ -63,8 +63,8 @@ export async function GET(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  if (!(await isAdminRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return NextResponse.json({ error: 'Service role key is not configured.' }, { status: 503 })
+  if (!(await isStaffRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await isAdminRequest())) return NextResponse.json({ error: 'Only administrators can change roles.' }, { status: 403 })
 
   const body = await request.json().catch(() => null)
   const userId = String(body?.userId || '')

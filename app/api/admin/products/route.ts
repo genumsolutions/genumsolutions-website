@@ -53,7 +53,8 @@ export async function PUT(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  if (!(await isAdminRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await isStaffRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await isAdminRequest())) return NextResponse.json({ error: 'Only administrators can delete products.' }, { status: 403 })
   try {
     const id = new URL(request.url).searchParams.get('id')
     if (!id) return NextResponse.json({ error: 'Product id is required.' }, { status: 400 })
