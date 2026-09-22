@@ -19,12 +19,16 @@ function readSwSource(): string {
 function extractAppShell(source: string): string[] {
   const match = source.match(/const APP_SHELL = \[([\s\S]*?)\]/)
   if (!match) throw new Error('APP_SHELL not found in public/sw.js')
+  const shellBody = match[1]
+  if (shellBody === undefined) throw new Error('APP_SHELL capture group missing')
   // Resolve constants referenced inside the shell (e.g. OFFLINE_URL).
   const constants = new Map<string, string>()
-  for (const m of source.matchAll(/const (\w+) = '([^']+)'/g)) constants.set(m[1], m[2])
-  const raw = [...match[1].matchAll(/'([^']+)'|(\b[A-Z_]+\b)/g)]
-    .map((m) => m[1] ?? constants.get(m[2]) ?? m[2])
-    .filter((url): url is string => url.startsWith('/'))
+  for (const m of source.matchAll(/const (\w+) = '([^']+)'/g)) {
+    if (m[1] !== undefined && m[2] !== undefined) constants.set(m[1], m[2])
+  }
+  const raw = [...shellBody.matchAll(/'([^']+)'|(\b[A-Z_]+\b)/g)]
+    .map((m): string | undefined => m[1] ?? (m[2] !== undefined ? constants.get(m[2]) : undefined))
+    .filter((url): url is string => typeof url === 'string' && url.startsWith('/'))
   return raw
 }
 
