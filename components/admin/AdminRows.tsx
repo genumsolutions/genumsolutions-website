@@ -15,7 +15,6 @@
 import { FormEvent, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { inputClass } from '../../lib/styles'
-import { canDeleteWhileViewing } from './admin-types'
 import { Pager } from './admin-helpers'
 
 type Kind = 'training' | 'pilot' | 'curriculum'
@@ -56,7 +55,6 @@ const SINGULAR: Record<Kind, string> = {
 }
 
 const PAGE_SIZE = 8
-let seq = 0
 let modalMount: HTMLElement | null = null
 
 export default function AdminRows({ kind, rows, onChange, caption, hint, canDelete, setMessage }: Props) {
@@ -85,7 +83,7 @@ export default function AdminRows({ kind, rows, onChange, caption, hint, canDele
     event?.preventDefault()
     const payload = { ...editing }
     if (kind === 'training' && !(payload.title ?? '').trim()) { setMessage('Program title is required.'); return }
-    if ((kind === 'pilot' || kind === 'curriculum') && !payload.id.trim()) { setMessage(`A ${singular.toLowerCase()} needs an id.`); return }
+    if ((kind === 'pilot' || kind === 'curriculum') && !((payload.id ?? '') as string).trim()) { setMessage(`A ${singular.toLowerCase()} needs an id.`); return }
     setBusy(true)
     const response = await fetch('/api/admin/settings', {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
@@ -177,7 +175,7 @@ export default function AdminRows({ kind, rows, onChange, caption, hint, canDele
       </div>
 
       {totalPages > 1 && (
-        <Pager page={page} totalPages={totalPages} onPageChange={setPage} />
+        <Pager page={page} totalPages={totalPages} onPage={setPage} />
       )}
 
       {previewing && typeof document !== 'undefined' && !modalMount && (modalMount = document.body) && createPortal(

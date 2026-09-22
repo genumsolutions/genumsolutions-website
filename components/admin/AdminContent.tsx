@@ -2,21 +2,35 @@
 
 import { useEffect, useState } from 'react'
 import { inputClass } from '../../lib/styles'
+import AdminRows from './AdminRows'
+import type { RowItem } from './AdminRows'
 
-type Props = { setMessage: (msg: string) => void }
+type Props = {
+  setMessage: (msg: string) => void
+  canDelete: boolean
+}
 
-export default function AdminContent({ setMessage }: Props) {
+export default function AdminContent({ setMessage, canDelete }: Props) {
   const [loaded, setLoaded] = useState(false)
   const [homeTitle, setHomeTitle] = useState('')
   const [homeBody, setHomeBody] = useState('')
   const [busy, setBusy] = useState(false)
 
+  const [programs, setPrograms] = useState<RowItem[]>([])
+  const [pilots, setPilots] = useState<RowItem[]>([])
+  const [curricula, setCurricula] = useState<RowItem[]>([])
+
   useEffect(() => {
-    void fetch('/api/admin/content')
-      .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then((data) => {
-        setHomeTitle(data.homeTitle || '')
-        setHomeBody(data.homeBody || '')
+    void Promise.all([
+      fetch('/api/admin/content').then((r) => (r.ok ? r.json() : Promise.reject())),
+      fetch('/api/admin/settings').then((r) => (r.ok ? r.json() : Promise.reject())),
+    ])
+      .then(([content, settings]) => {
+        setHomeTitle(content.homeTitle || '')
+        setHomeBody(content.homeBody || '')
+        setPrograms(settings.trainingPrograms ?? [])
+        setPilots(settings.pilotCostLines ?? [])
+        setCurricula(settings.curriculumHighlights ?? [])
       })
       .catch(() => setMessage('Could not load site content.'))
       .finally(() => setLoaded(true))
@@ -24,10 +38,7 @@ export default function AdminContent({ setMessage }: Props) {
 
   async function save(event?: React.FormEvent) {
     event?.preventDefault()
-    if (!homeTitle.trim() || !homeBody.trim()) {
-      setMessage('Homepage title and body are required.')
-      return
-    }
+    if (!homeTitle.trim() || !homeBody.trim()) { setMessage('Homepage title and body are required.'); return }
     setBusy(true)
     const response = await fetch('/api/admin/content', {
       method: 'PUT',
@@ -63,6 +74,36 @@ export default function AdminContent({ setMessage }: Props) {
             </div>
           </form>
         )}
+      </div>
+
+      <div className="mt-6 grid gap-6">
+        <AdminRows
+          kind="training"
+          rows={programs}
+          onChange={setPrograms}
+          caption="Training programs"
+          hint="Windo training shows on the app home + website pages."
+          canDelete={canDelete}
+          setMessage={setMessage}
+        />
+        <AdminRows
+          kind="pilot"
+          rows={pilots}
+          onChange={setPilots}
+          caption="Pilot cost lines"
+          hint="Running costs shown on the app home screen."
+          canDelete={canDelete}
+          setMessage={setMessage}
+        />
+        <AdminRows
+          kind="curriculum"
+          rows={curricula}
+          onChange={setCurricula}
+          caption="Curriculum highlights"
+          hint="Age-band skills for the app home screen."
+          canDelete={canDelete}
+          setMessage={setMessage}
+        />
       </div>
     </div>
   )

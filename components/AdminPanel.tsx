@@ -73,7 +73,7 @@ export default function AdminPanel({ initialProducts, currentRole }: Props) {
       case 'Users': return <AdminUsers setMessage={setMessage} canDelete={canDelete} currentRole={currentRole} />
       case 'Activity': return <AdminActivity />
       case 'Projects': return <AdminProjectPackages products={products} onProductsChange={setProducts} setMessage={setMessage} canDelete={canDelete} />
-      case 'Content': return <AdminContent setMessage={setMessage} />
+      case 'Content': return <AdminContent setMessage={setMessage} canDelete={canDelete} />
       case 'Settings': return <AdminSettings setMessage={setMessage} canDelete={canDelete} />
     }
   }
