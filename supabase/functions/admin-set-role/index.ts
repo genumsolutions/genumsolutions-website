@@ -1,18 +1,22 @@
 // =====================================================================
-// admin-set-role — grants or revokes the admin role on a profile.
+// admin-set-role — grants/revokes the admin role AND/OR sets the account
+// tier (free/pro) on a profile.
 //
-// WHY THIS EXISTS: the DB trigger `protect_role_column` only lets the
-// service role change profiles.role. Browser/anon-key clients (the
-// native app's Supabase client) are therefore REJECTED when they try
-// `profiles.update({ role })` — the app's "Revoke admin" silently did
-// nothing (error only in logs). The website works because its API route
-// uses the service role. This edge function is the SHARED, service-role
-// path BOTH clients use, with caller verification + admin self-protection.
+// WHY THIS EXISTS: the DB triggers `protect_role_column` and
+// `protect_tier_column` only let the service role change profiles.role /
+// profiles.tier. Browser/anon-key clients (the native app's Supabase
+// client) are therefore REJECTED when they try a direct
+// `profiles.update({ role | tier })` — the app's "Revoke admin" silently
+// did nothing (error only in logs), and the same would happen to a
+// direct tier write. The website works because its API routes use the
+// service role. This edge function is the SHARED, service-role path
+// BOTH clients use, with caller verification + admin self-protection.
 //
-// Body (JSON): { userId, role: 'admin' | 'customer' }
+// Body (JSON): { userId, role?: 'admin' | 'customer', tier?: 'free' | 'pro' }
+//   - At least one of role/tier must be present (both may be sent).
 // Auth: the caller's bearer token must resolve to a profile with
 //       role = 'admin'. An admin can never demote THEMSELVES (lockout
-//       guard). All changes are logged to activity_log.
+//       guard). Every change is logged to activity_log.
 //
 // Deploy (dashboard or CLI):
 //   supabase functions deploy admin-set-role
@@ -68,15 +72,23 @@ serve(async (req) => {
       return json({ error: 'Only admins can change roles.' }, 403)
     }
 
-    // 2) Validate the request.
+    // 2) Validate the request. role and tier are both optional but at least
+    //    one must be present (the app sends whichever its toggle changed).
     const body = await req.json().catch(() => null)
     const userId = String(body?.userId || '')
-    const role = body?.role
+    const role = body?.role ?? null
+    const tier = body?.tier ?? null
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) {
       return json({ error: 'A valid user id is required.' }, 400)
     }
-    if (role !== 'admin' && role !== 'customer') {
+    if (role !== null && role !== 'admin' && role !== 'customer') {
       return json({ error: 'Role must be admin or customer.' }, 400)
+    }
+    if (tier !== null && tier !== 'free' && tier !== 'pro') {
+      return json({ error: 'Tier must be free or pro.' }, 400)
+    }
+    if (role === null && tier === null) {
+      return json({ error: 'Nothing to change: send role and/or tier.' }, 400)
     }
 
     // 3) Lockout guard: an admin can never demote themselves.
@@ -84,25 +96,41 @@ serve(async (req) => {
       return json({ error: 'You cannot revoke your own admin role.' }, 400)
     }
 
-    // 4) Apply via the service role (bypasses protect_role_column by design).
+    // 4) Apply via the service role (bypasses protect_role_column and
+    //    protect_tier_column by design).
+    const patch: Record<string, string> = {}
+    if (role !== null) patch.role = role
+    if (tier !== null) patch.tier = tier
     const { error: updateError } = await adminClient
       .from('profiles')
-      .upsert({ id: userId, role }, { ignoreDuplicates: false })
+      .upsert({ id: userId, ...patch }, { ignoreDuplicates: false })
     if (updateError) {
       console.error('admin-set-role update failed:', updateError)
-      return json({ error: 'Could not update the role.' }, 500)
+      return json({ error: 'Could not update the profile.' }, 500)
     }
 
-    // 5) Audit trail (dotted vocabulary, same table both clients read).
-    await adminClient.from('activity_log').insert({
-      user_id: callerId,
-      action: 'user.role_changed',
-      entity_type: 'user',
-      entity_id: userId,
-      details: { role, via: 'admin-set-role' },
-    })
+    // 5) Audit trail (dotted vocabulary, same table both clients read) —
+    //    one row per changed field so the history stays unambiguous.
+    if (role !== null) {
+      await adminClient.from('activity_log').insert({
+        user_id: callerId,
+        action: 'user.role_changed',
+        entity_type: 'user',
+        entity_id: userId,
+        details: { role, via: 'admin-set-role' },
+      })
+    }
+    if (tier !== null) {
+      await adminClient.from('activity_log').insert({
+        user_id: callerId,
+        action: 'user.tier_changed',
+        entity_type: 'user',
+        entity_id: userId,
+        details: { tier, via: 'admin-set-role' },
+      })
+    }
 
-    return json({ ok: true, userId, role })
+    return json({ ok: true, userId, ...(role !== null ? { role } : {}), ...(tier !== null ? { tier } : {}) })
   } catch (error) {
     console.error('admin-set-role error:', error)
     return json({ error: error instanceof Error ? error.message : 'Internal error' }, 500)
