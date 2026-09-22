@@ -109,3 +109,26 @@ _Cli deployed via `supabase functions deploy <fn> --project-ref <ref>`._
 **Known traps:** PowerShell needs `-Raw`+regex or script files for pattern work (inline quotes break); basename casing `TRACKS\INDEX.md`; edge fn deploy ref `bkylfnlybtsujwzru` (already deployed, don't redeploy). Web repo root = E:\GENUM SOLUTIONS PVT LTD\Project\genumsolutions-website; app = ...\genumsolutions-app. Working dirs must be set via them; use npx supabase only if a future deploy is genuinely needed (NOT this phase).
 
 *Next session: read this BEFORE note fully, then apply the implementation + verification checklist above. Ledger row for Phase C itself is separate (U-12 below / after).*
+
+### BEFORE-session handoff — Phase C (web first-half) — WRITTEN 2026-09-22, pre-implementation
+
+**Cold-session orientation (read this before any edit):**
+Phase C = extract the 3 content-shaped sub-forms OUT of the web *Settings* tab and below the *Content* tab's plain homepage form, using **ONE parameterized windowed row-editor engine**, then shrink Settings to **Company-only**. App-side parity (mobile Content tab + settings) is the SECOND half of this phase — a separate session.
+
+**Files — the surgical map ended up CLEANER than the audit predicted:**
+- `components/admin/AdminSettings.tsx` (258 lines, client component) is the **engine owner**: Company form + the 3 sub-forms (Training programs / Pilot cost lines / Curriculum highlights), each a windowed row editor with `refresh(kind)` fetch + `canDelete` gate (staff sees Edit/Preview only, NO delete — Phase B parity that must survive).
+- `components/admin/AdminContent.tsx` (69 lines, client) is the **homepage plain form** only (homepage title/body). This is where the 3 windowed engines get MOUNTED (below the plain form).
+- Engine to REUSE one-to-one: the `refresh('training'|'pilot'|'curriculum')` + noun-state setter + `saveX`/`removeX` trio, all already present in `AdminSettings.tsx`. **Do NOT invent a second engine.**
+
+**The 3 locked owner decisions (do not re-litigate):**
+1. ONE row-editor engine, parameterized by `kind` (`training|pilot|curriculum`) — NOT 3 bespoke editors.
+2. Homepage form STAYS a plain form (mount the 3 windowed engines BELOW it in Content).
+3. Settings tab ? Company info ONLY, both clients.
+
+**RBAC contract (Phase B gate — deletions gated by `canDelete` prop; staff sees view/edit only).** In AdminSettings today `canDelete` is threaded through each `removeX`; the move must preserve the exact `canDelete ? Delete : (nothing)` rendering so staff-parity can't regress. After the move, re-run the staff-access E2E (25/25) on BOTH clients.
+
+**Status at write time:** website repo clean at `b59eec1`, `main` pushed & synced. Edge functions `admin-set-role` + `admin-delete-user` ACTIVE live (Phase B done). Secrets: `SUPABASE_ACCESS_TOKEN` REVOKED (PAT deleted 2026-09-22), `.env.local` clean of it; app repo (`genumsolutions-app`) clean at `b8a87bf`. Phase B E2E: web 25/25 + app 25/25 green. Phase C = PURE client-side split (no new edge fns, no schema, no PAT needed) both clients.
+
+**Verification gate before push (both halves):** `npx tsc --noEmit` green + vitest green + the 3 editors save/delete clean + staff-access E2E 25/25. Then update THIS rows status from BEFORE ? DONE with the after-note. Never print or commit tokens.
+
+*Grep gotcha: path is `TRACKS\INDEX.md` (not TRACKS\\INDEX.md), PowerShell needs -Raw for replace or script file for inline regex; never echo token values.*
