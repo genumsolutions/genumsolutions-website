@@ -6,18 +6,9 @@
 -- of whether the update came from the website admin, the app admin, or a
 -- payment callback.
 --
--- How to activate (Supabase dashboard -> SQL editor, once):
---   1. Enable pg_net (it powers the async HTTP call):
---        create extension if not exists pg_net;
---   2. Deploy the edge function first and note its URL:
---        supabase/functions deploy push-order-status
---      Function URL: https://<project-ref>.supabase.co/functions/v1/push-order-status
---   3. Replace <YOUR_PROJECT_REF> below (or the whole URL) with the real
---      function URL, then run this file.
---   4. If you set a PUSH_TRIGGER_SECRET on the function, replace
---      'change-me-shared-secret' below with the same value so the trigger
---      is the only caller the function accepts.
---
+-- Applied 2026-09-22 (U-5, commit b7a72b0). pg_net enabled, function
+-- URL: https://bkylfnlybtsujwzru.supabase.co/functions/v1/push-order-status.
+-- Secret gate: PUSH_TRIGGER_SECRET (x-push-secret header).
 -- Idempotent: safe to re-run.
 -- =====================================================================
 
@@ -32,15 +23,15 @@ security definer
 set search_path = public
 as $$
 declare
-  fn_url text := 'https://<YOUR_PROJECT_REF>.supabase.co/functions/v1/push-order-status';
+  fn_url text := 'https://bkylfnlybtsujwzru.supabase.co/functions/v1/push-order-status';
   -- The Supabase gateway REQUIRES an Authorization header on every function
   -- call; the public anon key satisfies it. The function's real gate is the
   -- x-push-secret below (matched against the PUSH_TRIGGER_SECRET function
   -- secret) — never drop that header.
   headers jsonb := jsonb_build_object(
     'Content-Type', 'application/json',
-    'Authorization', 'Bearer <YOUR_SUPABASE_ANON_KEY>',
-    'x-push-secret', 'change-me-shared-secret'
+    'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJreWxmbmx5YnRzdWp3enJvcHJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1MDE5NjksImV4cCI6MjEwMzA3Nzk2OX0.M-FOzaR4P1p-AHweG60n5STGpJRgbwdgodAcenMr0IQ',
+    'x-push-secret', '70c344d853bdcd7065ea34c5793b04ab01470c49951ae80c3f2b95a3f288c830'
   );
   payload jsonb := jsonb_build_object(
     'orderId', new.id,
