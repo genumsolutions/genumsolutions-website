@@ -39,6 +39,23 @@ CI: `ci.yml` on `main` · `sync-app-fallback.yml` on `main` + 6h cron.
 | C1 | README shared-contract section | DONE |
 | C2 | Verify `typecheck`/`lint`/`test:ci` green | DONE |
 
+## Secrets / credentials registry (names only — NEVER write values here)
+
+| Secret | Where it lives | Scope | Rotation note |
+|---|---|---|---|
+| `SUPABASE_ACCESS_TOKEN` (CLI PAT) | `~/.supabase/access-token` (write-tag `sbp_…` created 2026-09-22 **for Phase B edge-fn deploy**) | website+app shared project `genumsolutions` (ref `bkylfnlybtsujwzru`) | **REVOKE AFTER PHASE B CLOSES** — dashboard → Account → Access Tokens → delete. CLI keeps a valid session until revoked, so future `supabase` work on this project still works while you revoke. |
+| `SUPABASE_SERVICE_ROLE_KEY` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` | website `.env.local` + Vercel env; app `.env.local` | same project | Only needed per-repo; do not commit. |
+| `SUPABASE_DB_URL` | website `.env.local` | pooler (DB) host `db.bkylfnlybtsujwzru.supabase.co` | Used by `scripts/apply-schema.ts`. |
+
+## Deployed edge functions (live project ref `bkylfnlybtsujwzru`)
+
+| Function | Slug | Status (as of 2026-09-22) |
+|---|---|---|
+| admin-set-role | admin-set-role | ACTIVE v4 |
+| admin-delete-user | admin-delete-user | ACTIVE v1 |
+
+_Cli deployed via `supabase functions deploy <fn> --project-ref <ref>`._
+
 ## Notes
 
 - **Critical preexisting:** `lib/company.ts:66-69` corrupted (`version: '3.2.0',,`,
