@@ -225,12 +225,19 @@ try {
     const walkNotes = []
     for (const path of pagesToWalk) {
       await page.goto(BASE + path, { waitUntil: 'networkidle2' }).catch(() => undefined)
+      if (path === '/admin') {
+        // /admin mounts its panels client-side (ssr:false) and fetches stats
+        // async — sampling during that window counted half-painted/skeleton
+        // rows and produced the P3 snag. Wait until the dashboard actually
+        // paints (or 20s out) before sampling.
+        await page.waitForFunction(() => /transactions/i.test(document.body.innerText), { timeout: 20000, polling: 500 }).catch(() => undefined)
+      }
       const sample = await page.evaluate(() => {
         function lum(r, g, b) {
           const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4 }
           return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b)
         }
-        function parse(c) { const m = c.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/); return m ? [+m[1], +m[2], +m[3]] : [255, 255, 255] }
+        function parse(c) { const m = c.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/); return m ? [+m[1], +m[2], +m[3], m[4] === undefined ? 1 : +m[4]] : [255, 255, 255, 1] }
         function bgOf(el) {
           let node = el
           while (node && node !== document.documentElement) {
@@ -238,7 +245,7 @@ try {
             if (c && !/rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*0\s*\)/.test(c) && c !== 'transparent') return parse(c)
             node = node.parentElement
           }
-          return [255, 255, 255]
+          return [255, 255, 255, 1]
         }
         let hard = 0, warn = 0, checked = 0
         for (const el of document.querySelectorAll('body *')) {
@@ -247,17 +254,47 @@ try {
           if (!text) continue
           const cs = getComputedStyle(el)
           if (cs.display === 'none' || cs.visibility === 'hidden' || +cs.opacity === 0) continue
-          const fg = parse(cs.color)
           const bg = bgOf(el)
-          const L1 = lum(...fg), L2 = lum(...bg)
+          const fgRaw = parse(cs.color)
+          // Composite translucent text over its resolved background — the eye
+          // never sees raw rgba channels, so `text-ink/50` must be judged by
+          // its blended result, not its un-blended color.
+          const a = fgRaw[3]
+          const fg = a < 1 ? fgRaw.slice(0, 3).map((v, i) => Math.round(v * a + bg[i] * (1 - a))) : fgRaw.slice(0, 3)
+          const L1 = lum(...fg), L2 = lum(bg[0], bg[1], bg[2])
           const ratio = (Math.max(L1, L2) + 0.05) / (Math.min(L1, L2) + 0.05)
           checked++
           if (ratio < 2.0) hard++
           else if (ratio < 3.0) warn++
           if (checked >= 400) break
         }
-        return { hard, warn, checked, theme: document.documentElement.getAttribute('data-theme') }
+        const fails = []
+        for (const el of document.querySelectorAll('body *')) {
+          if (el.children.length) continue
+          const text = (el.textContent || '').trim()
+          if (!text) continue
+          const cs = getComputedStyle(el)
+          if (cs.display === 'none' || cs.visibility === 'hidden' || +cs.opacity === 0) continue
+          const bg = bgOf(el)
+          const fgRaw = parse(cs.color)
+          const a = fgRaw[3]
+          const fg = a < 1 ? fgRaw.slice(0, 3).map((v, i) => Math.round(v * a + bg[i] * (1 - a))) : fgRaw.slice(0, 3)
+          const L1 = lum(...fg), L2 = lum(bg[0], bg[1], bg[2])
+          const ratio = (Math.max(L1, L2) + 0.05) / (Math.min(L1, L2) + 0.05)
+          checked++
+          if (ratio < 2.0) {
+            hard++
+            if (fails.length < 30) fails.push({ tag: el.tagName.toLowerCase(), cls: (el.getAttribute('class') || '').slice(0, 100), color: cs.color, bg: `rgb(${bg.slice(0, 3).join(',')})`, ratio: Math.round(ratio * 100) / 100, text: text.slice(0, 40) })
+          }
+          else if (ratio < 3.0) warn++
+          if (checked >= 400) break
+        }
+        return { hard, warn, checked, fails, theme: document.documentElement.getAttribute('data-theme') }
       })
+      if (process.env.E2E_DUMP_CONTRAST && sample.fails.length) {
+        console.log(`   [dump] ${path} hard-fail elements:`)
+        for (const f of sample.fails) console.log(`     ratio ${String(f.ratio).padEnd(5)} <${f.tag} class="${f.cls}"> color=${f.color} bg=${f.bg} text="${f.text}"`)
+      }
       walkNotes.push(`${path}: ${sample.hard} hard / ${sample.warn} soft of ${sample.checked}`)
       if (sample.hard > worst.violations) worst = { page: path, violations: sample.hard, warns: sample.warn, theme: sample.theme }
     }

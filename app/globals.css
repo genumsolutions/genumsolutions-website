@@ -27,6 +27,7 @@ input, textarea, select { font-size: 16px; }
 .stamp-ring { box-shadow: 0 0 0 1px rgba(30,58,138,.18), 0 18px 45px rgba(15,23,39,.1); }
 
 /* ─── Dim (dark) theme ─── */
+html[data-theme='dim'] { color-scheme: dark; }
 html[data-theme='dim'] body { background: #0f172a; color: #f1f5f9; }
 
 /* Backgrounds */
@@ -85,6 +86,17 @@ html[data-theme='dim'] .hover\:bg-navy:hover { background-color: #3d5cb0 !import
 html[data-theme='dim'] .hover\:bg-navy-light:hover { background-color: #24365e !important; }
 html[data-theme='dim'] .hover\:bg-mist:hover { background-color: #16213a !important; }
 html[data-theme='dim'] .hover\:bg-red-50:hover { background-color: #2b1a1c !important; }
+
+/* Bare form controls: selects/inputs/options carry no color utility
+   classes, so the class-override layer never reaches them — left alone
+   they stay white-on-light in dim (P3 snag: order-status <select>s on
+   /admin sampled at ratio 1.1). Element-level fallback, not !important,
+   so class overrides above still win where they apply. */
+html[data-theme='dim'] select,
+html[data-theme='dim'] option,
+html[data-theme='dim'] input,
+html[data-theme='dim'] textarea { background-color: #1e293b; color: #f1f5f9; }
+html[data-theme='dim'] select { border-color: #334155; }
 
 /* Focus, shadows, misc */
 html[data-theme='dim'] .focus\:ring-navy\/20:focus { --tw-ring-color: rgb(165 192 245 / 0.25) !important; }
