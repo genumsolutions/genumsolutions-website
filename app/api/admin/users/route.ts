@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { isAdminRequest } from '../../../../lib/admin'
 import { createServiceClient, getSessionUser } from '../../../../lib/supabase/server'
 import { logActivity } from '../../../../lib/activity'
+import { deleteUserRobotSetting, listUserRobotSettings, updateUserTier, upsertUserRobotSettings } from '../../../../lib/admin-users'
 
 // Admin-only user directory. Reads auth users (emails) via the service role
 // because RLS hides auth.users from normal clients; role changes also run
@@ -27,7 +28,7 @@ export async function GET(request: Request) {
     if (hasMore) users = users.slice(0, limit)
 
     const ids = users.map((user) => user.id)
-    const { data: profiles } = await db.from('profiles').select('id, name, phone, address, role').in('id', ids)
+    const { data: profiles } = await db.from('profiles').select('id, name, phone, address, role, tier').in('id', ids)
     const profileById = new Map((profiles || []).map((profile) => [profile.id, profile]))
 
     let rows = users.map((user) => {
@@ -39,6 +40,7 @@ export async function GET(request: Request) {
         phone: profile?.phone || '',
         address: profile?.address || '',
         role: (profile?.role as string) || 'customer',
+        tier: profile?.tier === 'pro' ? 'pro' : 'free',
         createdAt: user.created_at,
         lastSignInAt: user.last_sign_in_at,
       }
@@ -92,4 +94,66 @@ export async function PATCH(request: Request) {
     console.error('Admin role change failed', error)
     return NextResponse.json({ error: 'Could not update the role.' }, { status: 500 })
   }
+}
+
+// PATCH action=tier — flip a user between free/pro (the Remote window and
+// robot preferences unlock at pro). Service-role write so the
+// protect_tier_column trigger exempts it, mirroring the role path.
+export async function PUT(request: Request) {
+  if (!(await isAdminRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const body = await request.json().catch(() => null)
+  const userId = String(body?.userId || '')
+  const tier = body?.tier
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) {
+    return NextResponse.json({ error: 'A valid user id is required.' }, { status: 400 })
+  }
+  if (tier !== 'free' && tier !== 'pro') {
+    return NextResponse.json({ error: 'Tier must be free or pro.' }, { status: 400 })
+  }
+  const ok = await updateUserTier(userId, tier)
+  if (!ok) return NextResponse.json({ error: 'Could not update the tier.' }, { status: 500 })
+  await logActivity({ action: 'user.tier_changed', entityType: 'user', entityId: userId, details: { tier } })
+  return NextResponse.json({ ok: true })
+}
+
+// POST { action: 'listRobotSettings' | 'upsertRobotSetting' | 'deleteRobotSetting', userId, ... }
+// — the per-user robot preference rows (code values / parameters / telemetry
+// channels) managed from the admin Users tab.
+export async function POST(request: Request) {
+  if (!(await isAdminRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const body = await request.json().catch(() => null)
+  const action = String(body?.action || '')
+  const userId = String(body?.userId || '')
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) {
+    return NextResponse.json({ error: 'A valid user id is required.' }, { status: 400 })
+  }
+
+  if (action === 'listRobotSettings') {
+    const robots = await listUserRobotSettings(userId)
+    return NextResponse.json({ robots })
+  }
+  if (action === 'upsertRobotSetting') {
+    const robotId = String(body?.robotId || '').trim()
+    const robotName = String(body?.robotName || '').slice(0, 120)
+    const settings = body?.settings
+    if (!robotId || !/^[a-zA-Z0-9_.-]{1,64}$/.test(robotId)) {
+      return NextResponse.json({ error: 'A valid robotId is required.' }, { status: 400 })
+    }
+    if (!settings || typeof settings !== 'object' || Array.isArray(settings)) {
+      return NextResponse.json({ error: 'Settings must be a JSON object.' }, { status: 400 })
+    }
+    const ok = await upsertUserRobotSettings(userId, robotId, robotName, settings as Record<string, unknown>)
+    if (!ok) return NextResponse.json({ error: 'Could not save the robot settings.' }, { status: 500 })
+    await logActivity({ action: 'user.robot_settings_updated', entityType: 'user', entityId: userId, details: { robotId, via: 'admin' } })
+    return NextResponse.json({ ok: true })
+  }
+  if (action === 'deleteRobotSetting') {
+    const robotId = String(body?.robotId || '').trim()
+    if (!robotId) return NextResponse.json({ error: 'A robotId is required.' }, { status: 400 })
+    const ok = await deleteUserRobotSetting(userId, robotId)
+    if (!ok) return NextResponse.json({ error: 'Could not delete the robot settings.' }, { status: 500 })
+    await logActivity({ action: 'user.robot_settings_deleted', entityType: 'user', entityId: userId, details: { robotId, via: 'admin' } })
+    return NextResponse.json({ ok: true })
+  }
+  return NextResponse.json({ error: 'Unknown action.' }, { status: 400 })
 }

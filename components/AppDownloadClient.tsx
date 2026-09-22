@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Check, Copy, Download, MonitorSmartphone, Settings2, ShieldCheck, Smartphone } from 'lucide-react'
+import Link from 'next/link'
+import { Check, Copy, Download, Lock, MonitorSmartphone, Settings2, ShieldCheck, Smartphone } from 'lucide-react'
 import { androidApp, refreshAndroidAppInfo, type AppInfo, type Company } from '../lib/company'
 
 export default function AppDownloadClient({
@@ -12,6 +13,7 @@ export default function AppDownloadClient({
   initial?: AppInfo
 }) {
   const [copied, setCopied] = useState(false)
+  const [session, setSession] = useState<{ signedIn: boolean; checked: boolean }>({ signedIn: false, checked: false })
   // Every rendered value (version, size, arch, download/release URLs) comes
   // from this state. `initial` is the SSR-fetched live manifest (from the /app
   // server component) so the first paint is already the real released build.
@@ -43,12 +45,24 @@ export default function AppDownloadClient({
         })
       }
     })
+    // Download gate (2026-09-22): only registered users may download. The
+    // session check runs client-side against the shared auth cookie; the page
+    // itself stays public so guests can read the specs.
+    fetch('/api/auth/session')
+      .then((response) => response.json())
+      .then((data) => { if (active) setSession({ signedIn: Boolean(data.user), checked: true }) })
+      .catch(() => { if (active) setSession({ signedIn: false, checked: true }) })
     return () => {
       active = false
     }
   }, [])
 
   const steps = [
+    {
+      title: 'Sign in',
+      icon: ShieldCheck,
+      body: 'Create a free account or sign in — the download is reserved for registered users so every install maps to a tracked GENUM profile.',
+    },
     {
       title: 'Download the APK',
       icon: Download,
@@ -98,8 +112,8 @@ export default function AppDownloadClient({
               <div>
                 <h2 className="font-display text-xl font-bold text-ink">Download for Android</h2>
                 <p className="mt-2 text-sm leading-6 text-muted">
-                  Direct APK download — the fastest way to install. Your phone may warn about unknown sources
-                  because the app isn&apos;t on Google Play yet; that&apos;s expected.
+                  Direct APK download for <strong>registered users</strong> — sign in (or create a free account) and the download unlocks. Your
+                  phone may warn about unknown sources because the app isn&apos;t on Google Play yet; that&apos;s expected.
                 </p>
                 <ul className="mt-4 space-y-2 text-sm text-slate-600">
                   <li className="flex items-center gap-2">
@@ -115,22 +129,37 @@ export default function AppDownloadClient({
                   </li>
                 </ul>
                 <div className="mt-6 flex flex-wrap items-center gap-3">
-                  <a
-                    href={appInfo.apkUrl}
-                    download
-                    className="inline-flex h-12 items-center gap-2 rounded-full bg-navy px-6 text-sm font-black text-white shadow-sm transition hover:bg-navy-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
-                  >
-                    <Download size={16} aria-hidden="true" />
-                    Download v{appInfo.version}
-                  </a>
-                  <button
-                    type="button"
-                    onClick={copyLink}
-                    className="inline-flex h-12 items-center gap-2 rounded-full border border-line bg-white px-5 text-sm font-bold text-ink transition hover:border-navy hover:text-navy focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
-                  >
-                    {copied ? <Check size={16} aria-hidden="true" /> : <Copy size={16} aria-hidden="true" />}
-                    {copied ? 'Link copied' : 'Copy direct link'}
-                  </button>
+                  {session.checked && session.signedIn ? (
+                    <>
+                      <a
+                        href={appInfo.apkUrl}
+                        download
+                        className="inline-flex h-12 items-center gap-2 rounded-full bg-navy px-6 text-sm font-black text-white shadow-sm transition hover:bg-navy-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
+                      >
+                        <Download size={16} aria-hidden="true" />
+                        Download v{appInfo.version}
+                      </a>
+                      <button
+                        type="button"
+                        onClick={copyLink}
+                        className="inline-flex h-12 items-center gap-2 rounded-full border border-line bg-white px-5 text-sm font-bold text-ink transition hover:border-navy hover:text-navy focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
+                      >
+                        {copied ? <Check size={16} aria-hidden="true" /> : <Copy size={16} aria-hidden="true" />}
+                        {copied ? 'Link copied' : 'Copy direct link'}
+                      </button>
+                    </>
+                  ) : (
+                    <div className="flex flex-wrap items-center gap-3" aria-live="polite">
+                      <Link
+                        href="/login"
+                        className="inline-flex h-12 items-center gap-2 rounded-full bg-navy px-6 text-sm font-black text-white shadow-sm transition hover:bg-navy-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
+                      >
+                        <Lock size={16} aria-hidden="true" />
+                        {session.checked ? 'Sign in to download' : 'Checking sign-in…'}
+                      </Link>
+                      <span className="text-xs font-semibold text-muted">The APK link unlocks for registered users.</span>
+                    </div>
+                  )}
                 </div>
 
                 {appInfo.updatedAt && (
@@ -162,8 +191,8 @@ export default function AppDownloadClient({
 
       <section className="border-b border-line">
         <div className="mx-auto max-w-7xl px-5 py-10 lg:px-8">
-          <h2 className="text-xs font-black uppercase tracking-[.24em] text-navy">Three quick steps</h2>
-          <div className="mt-6 grid gap-4 sm:grid-cols-3">
+          <h2 className="text-xs font-black uppercase tracking-[.24em] text-navy">Four quick steps</h2>
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {steps.map((step, i) => (
               <div key={step.title} className="rounded-2xl border border-line bg-white p-5 shadow-sm">
                 <div className="flex items-center justify-between">

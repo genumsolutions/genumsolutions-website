@@ -7,6 +7,7 @@ export type Customer = {
   phone?: string
   address?: string
   role?: 'customer' | 'admin'
+  tier?: 'free' | 'pro'
   cart: CartLine[]
   messages: CustomerMessage[]
 }

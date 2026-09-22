@@ -32,6 +32,7 @@ export type ManagedUser = {
   phone: string
   address: string
   role: string
+  tier?: string
   createdAt: string
   lastSignInAt: string | null
 }

@@ -5,7 +5,7 @@ export async function getProfile(userId: string): Promise<Customer | null> {
   if (!supabaseConfigured()) return null
   const db = createClient()
   const [{ data: profile }, { data: cart }, { data: messages }] = await Promise.all([
-    db.from('profiles').select('id, name, phone, address, role').eq('id', userId).maybeSingle(),
+    db.from('profiles').select('id, name, phone, address, role, tier').eq('id', userId).maybeSingle(),
     db.from('carts').select('lines').eq('user_id', userId).maybeSingle(),
     db.from('customer_messages').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
   ])
@@ -17,6 +17,7 @@ export async function getProfile(userId: string): Promise<Customer | null> {
     phone: profile.phone || '',
     address: profile.address || '',
     role: (profile.role as Customer['role']) || 'customer',
+    tier: profile.tier === 'pro' ? 'pro' : 'free',
     cart: Array.isArray(cart?.lines) ? (cart!.lines as CartLine[]) : [],
     messages: (messages || []).map((row) => ({
       id: row.id,

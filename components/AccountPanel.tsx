@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { FormEvent, ReactNode, useEffect, useState } from 'react'
 import AuthPanel from './AuthPanel'
 import PushNotificationSettings from './PushNotificationSettings'
+import RobotPreferencesPanel from './RobotPreferencesPanel'
 import { formatNPR } from '../lib/catalog'
 import { initials } from '../lib/identity'
 import { inputClass } from '../lib/styles'
@@ -17,6 +18,7 @@ type Customer = {
   phone?: string
   address?: string
   role?: 'admin' | 'customer'
+  tier?: 'free' | 'pro'
   cart: { productId: string; quantity: number }[]
   messages: { message: string; createdAt: string; status: string }[]
 }
@@ -89,7 +91,7 @@ export default function AccountPanel() {
             <div className="flex items-center gap-4">
               <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-navy font-display text-lg font-black text-white">{initials(customer.name)}</span>
               <div>
-                <p className="text-xs font-black uppercase tracking-[.25em] text-navy">Customer account</p>
+                <p className="text-xs font-black uppercase tracking-[.25em] text-navy">Customer account{customer.tier === 'pro' ? ' · Pro' : ''}</p>
                 <h1 className="mt-1 font-display text-2xl font-bold text-ink sm:text-3xl">Welcome, {customer.name}.</h1>
                 <p className="mt-1 text-sm text-slate-600">{customer.email}</p>
               </div>
@@ -114,6 +116,8 @@ export default function AccountPanel() {
         </div>
 
         <PushNotificationSettings />
+
+        <RobotPreferencesPanel tier={customer.tier === 'pro' ? 'pro' : 'free'} />
 
         <SectionCard title="Your orders" id="orders">
           {orders.length === 0 ? (

@@ -758,3 +758,97 @@ update public.products set car_mode_id = 'rf-manual' where id = 'rf-manual-basic
 update public.products set category = 'Drones & Aerial'
 where category = 'Pre-packaged Kits'
   and (name ilike '%drone%' or name ilike '%quadcopter%' or name ilike '%aerial%');
+
+-- ===== USER TIER (free/pro) — 2026-09-22 =====
+-- Pro users unlock the app's Remote window and the per-robot preference
+-- store below. Managed ONLY by admins (website admin panel / service role);
+-- a customer can never promote themselves, mirroring protect_role_column.
+alter table public.profiles add column if not exists tier text not null default 'free';
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'profiles_tier_check'
+  ) then
+    alter table public.profiles
+      add constraint profiles_tier_check check (tier in ('free','pro'));
+  end if;
+end $$;
+
+create or replace function public.protect_tier_column()
+returns trigger security definer set search_path = public as $$
+begin
+  if new.tier is distinct from old.tier
+     and current_setting('role') not in ('postgres', 'service_role', 'supabase_admin') then
+    raise exception 'Only administrators can change the tier.';
+  end if;
+  return new;
+end;
+$$ language plpgsql;
+
+drop trigger if exists profiles_protect_tier on public.profiles;
+create trigger profiles_protect_tier
+before update on public.profiles
+for each row execute function public.protect_tier_column();
+
+-- ===== ROBOT USER SETTINGS (per-pro-user robot preferences) =====
+-- One row per (user, robot). COMPLETELY SEPARATE from carts/orders — this is
+-- the user's own engineering profile for each robot/project: command code
+-- values, tuning parameters, and which telemetry channels they want mirrored.
+-- The app edits its own rows through RLS; admins reach every row through the
+-- website admin panel (service role) so nothing is ever untracked per user.
+create table if not exists public.robot_user_settings (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  robot_id text not null,
+  robot_name text not null default '',
+  settings jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (user_id, robot_id)
+);
+
+create index if not exists robot_user_settings_user_idx on public.robot_user_settings (user_id);
+create index if not exists robot_user_settings_robot_idx on public.robot_user_settings (robot_id);
+
+-- Keep updated_at truthful on every write.
+create or replace function public.touch_robot_user_settings()
+returns trigger set search_path = public as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
+
+drop trigger if exists robot_user_settings_touch on public.robot_user_settings;
+create trigger robot_user_settings_touch
+before update on public.robot_user_settings
+for each row execute function public.touch_robot_user_settings();
+
+-- RLS: the owner does everything with their own rows; admins (role='admin'
+-- in profiles) read/write every row so the admin panel can manage them all.
+alter table public.robot_user_settings enable row level security;
+
+drop policy if exists "robot_user_settings_select_own" on public.robot_user_settings;
+create policy "robot_user_settings_select_own" on public.robot_user_settings
+for select using (
+  auth.uid() = user_id
+  or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+);
+
+drop policy if exists "robot_user_settings_insert_own" on public.robot_user_settings;
+create policy "robot_user_settings_insert_own" on public.robot_user_settings
+for insert with check (auth.uid() = user_id);
+
+drop policy if exists "robot_user_settings_update_own" on public.robot_user_settings;
+create policy "robot_user_settings_update_own" on public.robot_user_settings
+for update using (
+  auth.uid() = user_id
+  or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+);
+
+drop policy if exists "robot_user_settings_delete_own" on public.robot_user_settings;
+create policy "robot_user_settings_delete_own" on public.robot_user_settings
+for delete using (
+  auth.uid() = user_id
+  or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+);
