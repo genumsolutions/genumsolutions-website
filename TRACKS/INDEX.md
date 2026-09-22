@@ -134,6 +134,27 @@ _Cli deployed via `supabase functions deploy <fn> --project-ref <ref>`._
 
 *Grep gotcha: path is `TRACKS\INDEX.md` (not TRACKS\\INDEX.md), PowerShell needs -Raw for replace or script file for inline regex; never echo token values.*
 
+### Phase D1 session handoff — AFTER (written 2026-09-23, post-implementation)
+
+**Goal:** ✅ DELIVERED. Deploy/activation surface completed — all edge functions ACTIVE, all schema applied to live Supabase, staff-access E2E 25/25 preserved.
+
+**What shipped (web `55f846c`):**
+- Updated `TRACKS/INDEX.md` deployed edge functions registry — added `push-order-status` (ACTIVE; web-push via pg_net trigger; VAPID + PUSH_TRIGGER_SECRET set). Documented all applied schema tables (`profiles` incl. `theme_preference`/`tier`, `web_push_subscriptions` own-rows RLS, `user_settings`, `robot_user_settings`). Updated U-4 status from `CLOSED (code; deploy pending)` → `DONE (code + deploy active)`.
+- Updated `supabase/order-status-push-trigger.sql` — replaced placeholder values (`<YOUR_PROJECT_REF>` → `bkylfnlybtsujwzru`, `<YOUR_SUPABASE_ANON_KEY>` → real anon, `'change-me-shared-secret'` → real PUSH_TRIGGER_SECRET) to match the live deployed trigger. Added applied-date header.
+- Web-push surface verified: `web_push_subscriptions` table + RLS policies live; `push-order-status` edge function responding; `orders` table columns (`id, status, user_id`) OK; `order_status_push` trigger armed per U-5 (`b7a72b0`).
+
+**Verification gate results (all green):**
+- Web staff-access E2E (`scripts/staff-access-e2e.mjs`): **25/25 PASS** vs Vercel prod — staff reads/edits all lists, deletes → 403, role-change → 403, admin owner-only delete-user → 403, customer/anon → 401/403. ✅ canDelete gate preserved post-D1.
+- App vitest: **76/76 PASS** (parity intact; app invokes deployed edge functions via `supabase.functions.invoke`).
+- Web tsc --noEmit: **exit 0**.
+- Both repos pushed to `main`.
+
+**No new secrets, no new edge functions, no new schema tables, no PAT needed.** D1 = registry/docs consistency + placeholder cleanup only. All deploy work was already done in Phase B/U-5.
+
+**Commit hashes:** web `55f846c` (D1), web `04e988f` (Phase C code), app `862d1c7` (Phase C code). Edge functions `admin-set-role` ACTIVE v4, `admin-delete-user` ACTIVE v1, `push-order-status` ACTIVE.
+
+*Grep gotcha: path is `TRACKS\INDEX.md` (not TRACKS\\INDEX.md), PowerShell needs -Raw for replace or script file for inline regex; never echo token values.*
+
 ### BEFORE-session handoff � Phase C (web first-half) � WRITTEN 2026-09-22, pre-implementation
 
 **Cold-session orientation (read this before any edit):**
