@@ -80,6 +80,8 @@ html[data-theme='dim'] .focus\:border-navy:focus { border-color: #4a6db8 !import
 html[data-theme='dim'] .border-red-200, html[data-theme='dim'] .border-red-300 { border-color: #7f1d1d !important; }
 html[data-theme='dim'] .border-gold { border-color: #d97706 !important; }
 html[data-theme='dim'] .border-emerald-200 { border-color: #065f46 !important; }
+html[data-theme='dim'] .border-slate-500,
+html[data-theme='dim'] .hover\:border-slate-500:hover { border-color: #64748b !important; }
 
 /* Hover states */
 html[data-theme='dim'] .hover\:bg-navy:hover { background-color: #3d5cb0 !important; }
