@@ -5,7 +5,9 @@
 //
 //   preview MakerWorld URL      -> found:true, title, images[0] cover
 //   create MakerWorld URL       -> 201, product row in DB, image uploaded
-//   create generic URL (example.com) -> graceful found:false / title
+//   generic URL (example.com)            -> graceful found:false / title
+//   generic URL with og:image (Wikipedia) -> title + extracted image (exercises
+//     relative URL resolution + Googlebot-UA retry on the generic path)
 //   delete probe rows (cleanup)
 //
 // Run: node scripts/verify-link-import.mjs
@@ -122,6 +124,14 @@ try {
   assert('generic preview (200)', gen.status === 200, `status ${gen.status}`)
   const gp = gen.data?.preview || {}
   assert('generic found flag (either state is OK)', typeof gp.found === 'boolean', `found=${gp.found} title=${gp.title||'""'}`)
+
+  // generic site WITH og:image (Wikipedia) — exercises the rewritten generic
+  // meta/relative-image collection + Googlebot-UA retry path
+  const gen2 = await callFn(staff.token, { action: 'preview', url: 'https://en.wikipedia.org/wiki/3D_printing' })
+  assert('generic og-image preview (200)', gen2.status === 200, `status ${gen2.status}`)
+  const gp2 = gen2.data?.preview || {}
+  assert('generic og-image title', Boolean(gp2.title), `title="${gp2.title}"`)
+  assert('generic og-image extracted', Array.isArray(gp2.images) && gp2.images.length >= 1, `imgs=${gp2.images?.length}`)
 
   // invalid URL rejected
   const bad = await callFn(staff.token, { action: 'preview', url: 'not-a-url' })

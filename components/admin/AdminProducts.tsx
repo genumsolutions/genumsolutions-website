@@ -25,6 +25,7 @@ export default function AdminProducts({ products, onProductsChange, setMessage, 
   const [uploading, setUploading] = useState(false)
   const [linkUrl, setLinkUrl] = useState('')
   const [importing, setImporting] = useState(false)
+  const [extracted, setExtracted] = useState<{ provider: string; images: string[]; fields: number } | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
   const linkInput = useRef<HTMLInputElement>(null)
 
@@ -89,49 +90,24 @@ export default function AdminProducts({ products, onProductsChange, setMessage, 
       const p = result.preview
       if (!p?.found) {
         setProduct((current) => ({ ...current, name: current.name || p?.title || '', category: current.category || p?.categoryHint || '', description: current.description || p?.description || '', image: current.image || p?.images?.[0] || '' }))
+        setExtracted(null)
         setMessage('No details found for that page — fill the fields manually, then save.')
         return
       }
-      setProduct((current) => ({ ...current, name: p.title, category: p.categoryHint || current.category, description: p.description || current.description, image: p.images?.[0] || current.image, specs: p.specs || current.specs, id: p.title ? String(p.title).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) : current.id }))
-      setMessage(`Found: ${p.provider} — review the fields below, then click "Import & save".`)
-    } finally {
-      setImporting(false)
-    }
-  }
-
-  async function importProduct(event: FormEvent) {
-    event?.preventDefault()
-    const url = linkUrl.trim()
-    if (!url) { setMessage('Paste the product link you looked up.'); return }
-    if (!product.name.trim()) { setMessage('Give the product a name before importing.'); return }
-    setImporting(true)
-    const overrides = {
-      name: product.name.trim(),
-      category: product.category.trim() || 'Retail kit',
-      description: (product.description || '').trim(),
-      price: Number(product.price) || 0,
-      priceLabel: product.priceLabel || 'Request quote',
-      stock: Number(product.stock) || 0,
-      specs: Array.isArray(product.specs) ? product.specs : [],
-    }
-    try {
-      const response = await fetch('/api/admin/link-import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'create', url, product: overrides }) })
-      const result = await response.json().catch(() => ({}))
-      if (!response.ok) { setMessage(result.error || 'Import failed.'); return }
-      const created = result.product
-      const asProduct = {
-        ...product,
-        id: created.id,
-        name: created.name,
-        category: created.category,
-        description: created.description,
-        image: created.image_url || product.image,
-        documentationUrl: created.documentation_url || url,
-      }
-      onProductsChange((current) => [...current.filter((item) => item.id !== created.id), asProduct].sort((a, b) => a.name.localeCompare(b.name)))
-      setProduct(emptyProduct)
-      setLinkUrl('')
-      setMessage(`Imported "${created.name}".`)
+      setProduct((current) => ({
+        ...current,
+        id: p.title ? String(p.title).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) : current.id,
+        name: p.title,
+        category: p.categoryHint || current.category,
+        description: p.description || current.description,
+        image: p.images?.[0] || current.image,
+        specs: p.specs || current.specs,
+        price: current.price || Number(p.extra?.price ?? 0) || 0,
+        priceLabel: current.priceLabel || 'Request quote',
+        documentationUrl: url,
+      }))
+      setExtracted({ provider: p.provider, images: (p.images || []).slice(0, 4), fields: (p.specs?.filter(Boolean) || []).length })
+      setMessage(`Extracted ${p.provider} details — review the fields in the editor below, then click "Save product".`)
     } finally {
       setImporting(false)
     }
@@ -170,16 +146,20 @@ export default function AdminProducts({ products, onProductsChange, setMessage, 
         </div>
       </section>
       <section id="product-editor" aria-label="Product editor" className="min-w-0">
-        <form onSubmit={importProduct} className="mb-6 min-w-0 overflow-hidden border-t-2 border-ink bg-white p-6">
+        <form onSubmit={previewLink} className="mb-6 min-w-0 overflow-hidden border-t-2 border-ink bg-white p-6">
           <h2 className="font-display text-xl font-bold">Import a product by link</h2>
-          <p className="mt-1 text-sm text-muted">Paste any product page (e.g. a MakerWorld model, an Amazon or shop listing). We&rsquo;ll extract the details and image automatically — you fine-tune before saving.</p>
+          <p className="mt-1 text-sm text-muted">Paste any product page (e.g. a MakerWorld model, an Amazon or shop listing). Click <strong>Extract details</strong> to pull the title, description, specs and images into the editor below — then fine-tune and click <strong>Save product</strong>.</p>
           <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-            <input ref={linkInput} value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://makerworld.com/en/models/... or any product page" aria-label="Product link" className={`w-full ${inputClass}`} />
-            <button type="submit" disabled={importing} className="shrink-0 bg-gold px-5 py-2 text-sm font-black text-ink transition hover:bg-gold-dark disabled:opacity-60">{importing ? 'Importing...' : 'Import & save'}</button>
+            <input ref={linkInput} value={linkUrl} onChange={(e) => { setLinkUrl(e.target.value); if (e.target.value !== linkUrl) setExtracted(null) }} placeholder="https://makerworld.com/en/models/... or any product page" aria-label="Product link" className={`w-full ${inputClass}`} />
+            <button type="submit" disabled={!linkUrl.trim() || importing} className="shrink-0 bg-gold px-5 py-2 text-sm font-black text-ink transition hover:bg-gold-dark disabled:opacity-60">{importing ? 'Extracting…' : 'Extract details'}</button>
           </div>
-          {linkUrl.trim() && (
-            <div className="-mt-1 flex justify-end">
-              <button type="button" disabled={importing} onClick={previewLink} className="text-xs font-bold text-navy underline disabled:opacity-60">{importing ? 'Working...' : 'Look up details first'}</button>
+          {extracted && (
+            <div className="mt-3 flex items-center gap-3 rounded bg-navy/5 p-3">
+              {extracted.images[0] ? <Image src={extracted.images[0]} alt="" width={56} height={56} className="shrink-0 rounded border border-line object-cover" /> : <div className="h-14 w-14 shrink-0 rounded border border-dashed border-line" />}
+              <p className="min-w-0 text-sm leading-snug text-ink">
+                <strong className="block">{extracted.fields > 0 ? `${extracted.fields} spec line${extracted.fields === 1 ? '' : 's'}` : 'Details'} extracted from {extracted.provider}.</strong>
+                <span className="text-muted">{extracted.images.length} image{extracted.images.length === 1 ? '' : 's'} found{extracted.images.length === 0 ? ' — you can paste or upload one below' : '; review the fields in the editor below, then click Save product'}.</span>
+              </p>
             </div>
           )}
         </form>

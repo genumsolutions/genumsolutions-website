@@ -350,19 +350,82 @@ function scanJsonLd(html: string): { name?: string; image?: string; description?
   return {}
 }
 
+const UA_GOOGLEBOT = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'
+const UA_LIST = [UA, UA_GOOGLEBOT]
+
 async function fetchPage(url: string): Promise<string | null> {
-  try {
-    const res = await fetch(url, {
-      headers: { 'User-Agent': UA, Accept: 'text/html,application/xhtml+xml' },
-      redirect: 'follow',
-    })
-    if (!res.ok) return null
-    const type = res.headers.get('content-type') || ''
-    if (!type.includes('text/html')) return null
-    return await res.text()
-  } catch {
-    return null
+  for (const ua of UA_LIST) {
+    try {
+      const res = await fetch(url, {
+        headers: {
+          'User-Agent': ua,
+          Accept: 'text/html,application/xhtml+xml,*/*',
+          'Accept-Language': 'en-US,en;q=0.9',
+        },
+        redirect: 'follow',
+      })
+      // Bot-walled shops (403/429) may still serve Googlebot — retry once.
+      if (res.status === 403 || res.status === 429) continue
+      if (!res.ok) return null
+      const type = res.headers.get('content-type') || ''
+      if (!type.includes('html')) return null
+      return await res.text()
+    } catch {
+      // transient network error — try the next UA
+    }
   }
+  return null
+}
+
+/** Turn absolute, protocol-relative (`//host/...`) or page-relative (`/img.jpg`)
+ *  image URLs into safe absolute http(s) URLs. */
+function resolveImageUrl(raw: string, base: string): string {
+  if (!raw) return ''
+  if (/^(data:|javascript:|blob:)/i.test(raw.trim())) return ''
+  try {
+    const u = new URL(raw.trim(), base)
+    if (!(u.protocol === 'https:' || u.protocol === 'http:')) return ''
+    return u.href
+  } catch {
+    return ''
+  }
+}
+
+const IMG_SKIP = /(icon|logo|avatar|pixel|spacer|bullet|favicon|badge|sprite|placeholder|1x1|transparent)/i
+
+/** Last-resort fallback: scrape `<img>` / `srcset` / lazy-load attrs / preload
+ *  images, skipping obvious icons/logos/pixels/tracking blips. */
+function scrapePageImages(html: string, base: string): string[] {
+  const out: string[] = []
+  const seen = new Set<string>()
+  const add = (raw: string) => {
+    const abs = resolveImageUrl(raw, base)
+    if (!abs || seen.has(abs)) return
+    if (IMG_SKIP.test(abs)) return
+    seen.add(abs)
+    out.push(abs)
+  }
+  const pickSrcset = (attr: string) => {
+    let best = ''
+    let bestW = -1
+    for (const part of (attr || '').split(',')) {
+      const bits = part.trim().split(/\s+/)
+      const url = bits[0] || ''
+      const d = bits[1] || ''
+      const wm = d.match(/(\d+)w/)
+      const xm = d.match(/(\d+)x/)
+      const w = wm ? Number(wm[1]) : xm ? Math.round(Number(xm[1]) * 500) : 0
+      if (w > bestW) { bestW = w; best = url }
+    }
+    if (best) add(best)
+  }
+  for (const m of html.matchAll(/<img[^>]+src=["']([^"']+)["']/gi)) add(m[1])
+  for (const m of html.matchAll(/<img[^>]+srcset=["']([^"']+)["']/gi)) pickSrcset(m[1])
+  for (const m of html.matchAll(/<source[^>]+srcset=["']([^"']+)["']/gi)) pickSrcset(m[1])
+  // Lazy-loaded galleries use data attributes for the real image.
+  for (const m of html.matchAll(/<img[^>]+\bdata-(?:src|original|lazy-src|thumb)="([^"]+)"/gi)) add(m[1])
+  for (const m of html.matchAll(/<link[^>]+rel=["']preload["'][^>]+as=["']image["'][^>]+href=["']([^"']+)["']/gi)) add(m[1])
+  return out
 }
 
 async function extractGeneric(url: string): Promise<Preview> {
@@ -377,7 +440,7 @@ async function extractGeneric(url: string): Promise<Preview> {
   const title = String(ld.name || ogTitle || htmlTitle || '').trim()
   const description = String(ld.description || ogDesc || '').trim()
 
-  // Collect every gallery/og/twitter image the page exposes, best-first.
+  // Collect every gallery/og/twitter/image_src URL the page exposes, best-first.
   const collectMeta = (prop: string): string[] => {
     const out: string[] = []
     const re1 = new RegExp(`<meta[^>]+(?:property|name)=["']${prop}["'][^>]+content=["']([^"']+)["']`, 'gi')
@@ -388,13 +451,29 @@ async function extractGeneric(url: string): Promise<Preview> {
   }
   const itemPropImages = [...html.matchAll(/<meta[^>]+itemprop=["']image["'][^>]+content=["']([^"']+)["']/gi)].map((m) => m[1])
   const linkImages = [...html.matchAll(/<link[^>]+rel=["']image_src["'][^>]+href=["']([^"']+)["']/gi)].map((m) => m[1])
-  const images = dedupe([
-    ...(Array.isArray(ld.image) ? (ld.image as string[]) : ld.image ? [ld.image as string] : []),
+
+  const ldImage = Array.isArray(ld.image) ? (ld.image as string[]) : ld.image ? [ld.image as string] : []
+  const metaImages = [
     ...collectMeta('og:image'),
+    ...collectMeta('og:image:url'),
+    ...collectMeta('og:image:secure_url'),
     ...collectMeta('twitter:image'),
     ...itemPropImages,
     ...linkImages,
-  ]).filter((u) => isHttpUrl(u as string))
+  ].map((u) => resolveImageUrl(u, url)).filter(Boolean)
+  const scraped = scrapePageImages(html, url)
+
+  const images = dedupe([
+    ...ldImage.map((u) => resolveImageUrl(u, url)),
+    ...metaImages,
+    ...(ldImage.length + metaImages.length < 3 ? scraped : []),
+  ]).filter(Boolean).slice(0, 8) as string[]
+
+  const keywords = readMeta(html, 'keywords')
+  const tags = (keywords || '')
+    .split(',').map((s) => s.trim()).filter(Boolean)
+    .filter((s) => s.length <= 40)
+    .slice(0, 12)
 
   const extra: Record<string, unknown> = {}
   if (ld.price != null) extra.price = ld.price
@@ -406,7 +485,7 @@ async function extractGeneric(url: string): Promise<Preview> {
     sourceUrl: url,
     title,
     description,
-    tags: [],
+    tags,
     images,
     specs: (ld.specs ?? []).slice(0, 12),
     categoryHint: '',
