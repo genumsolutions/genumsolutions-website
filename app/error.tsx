@@ -1,18 +1,26 @@
-'use client'
+"use client";
 
-import { useEffect } from 'react'
+import { useEffect } from "react";
 
-import { reportError } from '../lib/error-reporting'
+import { reportError } from "../lib/error-reporting";
 
-export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+export default function Error({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
   useEffect(() => {
-    reportError(error, { digest: error.digest, tags: { boundary: 'route' } })
-  }, [error])
+    reportError(error, { digest: error.digest, tags: { boundary: "route" } });
+  }, [error]);
 
   return (
     <main role="alert" className="grid min-h-[60vh] place-items-center px-5 text-center">
       <div>
-        <p className="text-xs font-black uppercase tracking-[.24em] text-navy">Something went wrong</p>
+        <p className="text-xs font-black uppercase tracking-[.24em] text-navy">
+          Something went wrong
+        </p>
         <h1 className="mt-3 font-display text-3xl font-bold text-ink">This page hit a snag.</h1>
         <p className="mx-auto mt-4 max-w-md leading-7 text-slate-600">
           We could not load this section. You can retry, or head back to the catalog.
@@ -34,5 +42,5 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
         </div>
       </div>
     </main>
-  )
+  );
 }

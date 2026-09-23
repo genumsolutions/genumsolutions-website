@@ -1,28 +1,49 @@
-import type { Metadata } from 'next'
-import ArticleCard from '../../components/ArticleCard'
-import PageIntro from '../../components/PageIntro'
-import PageShell from '../../components/PageShell'
+import type { Metadata } from "next";
+import ArticleCard from "../../components/ArticleCard";
+import PageIntro from "../../components/PageIntro";
+import PageShell from "../../components/PageShell";
 
 export const metadata: Metadata = {
-  title: 'About',
-  description: 'GENUM Solutions brings a decade of telecom, IoT, embedded systems, and STEAM education experience from Kathmandu, Nepal.',
-}
+  title: "About",
+  description:
+    "GENUM Solutions brings a decade of telecom, IoT, embedded systems, and STEAM education experience from Kathmandu, Nepal.",
+};
 
 const competencies = [
-  ['Microcontrollers', 'ESP32, Arduino, STM32, and ARM-based systems'],
-  ['Cloud platforms', 'AWS, Azure, Google Cloud, Firebase, and IoT backends'],
-  ['IoT networks', 'WiFi, Bluetooth, LoRaWAN, MQTT, CoAP, and Zigbee'],
-  ['Embedded systems', 'Firmware, real-time systems, and hardware-software integration'],
-  ['Programming', 'Python, C++, JavaScript, Java, and Embedded C'],
-  ['STEAM education', 'Curriculum development, mentoring, and technical workshops'],
-]
+  ["Microcontrollers", "ESP32, Arduino, STM32, and ARM-based systems"],
+  ["Cloud platforms", "AWS, Azure, Google Cloud, Firebase, and IoT backends"],
+  ["IoT networks", "WiFi, Bluetooth, LoRaWAN, MQTT, CoAP, and Zigbee"],
+  ["Embedded systems", "Firmware, real-time systems, and hardware-software integration"],
+  ["Programming", "Python, C++, JavaScript, Java, and Embedded C"],
+  ["STEAM education", "Curriculum development, mentoring, and technical workshops"],
+];
 
 const whatWeDo = [
-  { title: 'Products & components', body: 'Robotics kits, controllers, sensors, motors, and modules — sourced, tested, and ready to build with.', href: '/products', cta: 'Browse catalog' },
-  { title: 'Projects & robot cars', body: 'Assembled robot-car builds and named project packages for teaching, automation, and prototyping.', href: '/projects', cta: 'See projects' },
-  { title: 'Services & training', body: 'Web delivery, 3D printing, school STEM packages, teacher workshops, and curriculum programs.', href: '/services', cta: 'View services' },
-  { title: 'Open tools', body: 'Free and open-source tools for makers, educators, and developers.', href: '/tools', cta: 'Explore tools' },
-]
+  {
+    title: "Products & components",
+    body: "Robotics kits, controllers, sensors, motors, and modules — sourced, tested, and ready to build with.",
+    href: "/products",
+    cta: "Browse catalog",
+  },
+  {
+    title: "Projects & robot cars",
+    body: "Assembled robot-car builds and named project packages for teaching, automation, and prototyping.",
+    href: "/projects",
+    cta: "See projects",
+  },
+  {
+    title: "Services & training",
+    body: "Web delivery, 3D printing, school STEM packages, teacher workshops, and curriculum programs.",
+    href: "/services",
+    cta: "View services",
+  },
+  {
+    title: "Open tools",
+    body: "Free and open-source tools for makers, educators, and developers.",
+    href: "/tools",
+    cta: "Explore tools",
+  },
+];
 
 export default function AboutPage() {
   return (
@@ -56,18 +77,21 @@ export default function AboutPage() {
         <div className="mt-12 grid gap-8 sm:mt-16 sm:gap-10 lg:grid-cols-[.8fr_1.2fr]">
           <div>
             <p className="text-xs font-black uppercase tracking-[.24em] text-navy">How we work</p>
-            <h2 className="mt-3 font-display text-2xl font-bold sm:text-3xl lg:text-4xl">Make the complex useful.</h2>
+            <h2 className="mt-3 font-display text-2xl font-bold sm:text-3xl lg:text-4xl">
+              Make the complex useful.
+            </h2>
           </div>
           <div>
             <p className="leading-8 text-slate-600">
-              GENUM started with a fascination for how things communicate wirelessly and grew through telecom infrastructure,
-              embedded systems, smart automation, cloud-connected devices, and technical education. The company now gives that
-              experience a home: products people can build with, services that solve real problems, and training that leaves
-              people more capable than when they arrived.
+              GENUM started with a fascination for how things communicate wirelessly and grew
+              through telecom infrastructure, embedded systems, smart automation, cloud-connected
+              devices, and technical education. The company now gives that experience a home:
+              products people can build with, services that solve real problems, and training that
+              leaves people more capable than when they arrived.
             </p>
             <p className="mt-5 leading-8 text-slate-600">
-              Our working values are simple: innovation with evidence, collaboration with clear ownership,
-              and continuous growth through testing and sharing.
+              Our working values are simple: innovation with evidence, collaboration with clear
+              ownership, and continuous growth through testing and sharing.
             </p>
           </div>
         </div>
@@ -77,10 +101,19 @@ export default function AboutPage() {
       <section className="border-y border-line bg-mist">
         <div className="mx-auto max-w-7xl px-5 py-10 sm:py-14 lg:px-8">
           <p className="text-xs font-black uppercase tracking-[.24em] text-navy">What we do</p>
-          <h2 className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl">Our work in practice.</h2>
+          <h2 className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl">
+            Our work in practice.
+          </h2>
           <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {whatWeDo.map((item) => (
-              <ArticleCard key={item.title} variant="rounded" title={item.title} description={item.body} href={item.href} cta={item.cta} />
+              <ArticleCard
+                key={item.title}
+                variant="rounded"
+                title={item.title}
+                description={item.body}
+                href={item.href}
+                cta={item.cta}
+              />
             ))}
           </div>
         </div>
@@ -88,8 +121,12 @@ export default function AboutPage() {
 
       {/* ─── Technical foundation ─── */}
       <section className="mx-auto max-w-7xl px-5 py-10 sm:py-14 lg:px-8">
-        <p className="text-xs font-black uppercase tracking-[.24em] text-navy">Technical foundation</p>
-        <h2 className="mt-3 font-display text-2xl font-bold sm:text-3xl lg:text-4xl">Capabilities we bring to every project.</h2>
+        <p className="text-xs font-black uppercase tracking-[.24em] text-navy">
+          Technical foundation
+        </p>
+        <h2 className="mt-3 font-display text-2xl font-bold sm:text-3xl lg:text-4xl">
+          Capabilities we bring to every project.
+        </h2>
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {competencies.map(([title, text]) => (
             <article key={title} className="border-l-2 border-gold bg-white p-5">
@@ -100,5 +137,5 @@ export default function AboutPage() {
         </div>
       </section>
     </PageShell>
-  )
+  );
 }

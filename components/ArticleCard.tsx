@@ -1,22 +1,22 @@
-import type { ReactNode } from 'react'
-import Link from 'next/link'
+import type { ReactNode } from "react";
+import Link from "next/link";
 
 type ArticleCardProps = {
   /** Small uppercase tag text shown at top */
-  tag?: string
+  tag?: string;
   /** Card title */
-  title: string
+  title: string;
   /** Card description / body text */
-  description?: string
+  description?: string;
   /** Optional link href — renders a CTA link */
-  href?: string
+  href?: string;
   /** CTA label text */
-  cta?: string
+  cta?: string;
   /** Extra content below description (e.g. metadata badges) */
-  children?: ReactNode
+  children?: ReactNode;
   /** Variant: default uses border-t, 'rounded' uses rounded-2xl border */
-  variant?: 'default' | 'rounded'
-}
+  variant?: "default" | "rounded";
+};
 
 /**
  * Reusable card component for service listings, journal posts, 3D printing offers,
@@ -29,24 +29,18 @@ export default function ArticleCard({
   href,
   cta,
   children,
-  variant = 'default',
+  variant = "default",
 }: ArticleCardProps) {
   const base =
-    variant === 'rounded'
-      ? 'rounded-2xl border border-line bg-white p-5 sm:p-6'
-      : 'border-t-2 border-ink bg-white p-5 sm:p-6'
+    variant === "rounded"
+      ? "rounded-2xl border border-line bg-white p-5 sm:p-6"
+      : "border-t-2 border-ink bg-white p-5 sm:p-6";
 
   return (
     <article className={`${base} flex flex-col`}>
-      {tag && (
-        <p className="text-xs font-black uppercase tracking-widest text-navy">{tag}</p>
-      )}
-      <h3 className="mt-4 font-display text-lg font-bold leading-snug sm:text-xl">
-        {title}
-      </h3>
-      {description && (
-        <p className="mt-2 flex-1 text-sm leading-6 text-slate-600">{description}</p>
-      )}
+      {tag && <p className="text-xs font-black uppercase tracking-widest text-navy">{tag}</p>}
+      <h3 className="mt-4 font-display text-lg font-bold leading-snug sm:text-xl">{title}</h3>
+      {description && <p className="mt-2 flex-1 text-sm leading-6 text-slate-600">{description}</p>}
       {children}
       {href && cta && (
         <Link
@@ -58,5 +52,5 @@ export default function ArticleCard({
         </Link>
       )}
     </article>
-  )
+  );
 }

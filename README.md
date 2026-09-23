@@ -6,17 +6,18 @@ Live: https://genumsolutions-website.vercel.app · PAN 623676190
 
 ## Project overview
 
-| Layer | Technology |
-|---|---|
-| Framework | Next.js 14.2 (App Router) + React 18 + TypeScript |
-| Styling | Tailwind CSS (custom `ink/navy/navy-dark/navy-light/sky/mist/gold/gold-dark/line/border/surface/muted/accent` tokens) |
-| Database/Auth/Storage | Supabase (Postgres + Auth + Storage, cookie sessions via `@supabase/ssr`) |
-| Fonts | Inter + Sora via `next/font` (self-hosted) |
-| Payments | eSewa ePay v2 · Khalti ePayment v2 · Cash on delivery |
-| Email | Resend (contact form; optional) |
-| Hosting | Vercel |
+| Layer                 | Technology                                                                                                            |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Framework             | Next.js 14.2 (App Router) + React 18 + TypeScript                                                                     |
+| Styling               | Tailwind CSS (custom `ink/navy/navy-dark/navy-light/sky/mist/gold/gold-dark/line/border/surface/muted/accent` tokens) |
+| Database/Auth/Storage | Supabase (Postgres + Auth + Storage, cookie sessions via `@supabase/ssr`)                                             |
+| Fonts                 | Inter + Sora via `next/font` (self-hosted)                                                                            |
+| Payments              | eSewa ePay v2 · Khalti ePayment v2 · Cash on delivery                                                                 |
+| Email                 | Resend (contact form; optional)                                                                                       |
+| Hosting               | Vercel                                                                                                                |
 
 ### Key features
+
 - Catalog with category filters, search, quote-only project packages, and stock-aware cart.
 - Cart persisted to **localStorage** for guests and **Supabase (`carts` table)** for signed-in users; quantities are clamped to live stock server-side on every save (replace semantics — no double counting).
 - Checkout with four payment flows; every payment event is written to an append-only **`transactions`** ledger.
@@ -33,11 +34,13 @@ Live: https://genumsolutions-website.vercel.app · PAN 623676190
 ## Hardware & software requirements
 
 ### Software (development machine)
+
 - Node.js ≥ 18.17 (LTS recommended) and npm ≥ 9
 - A Supabase project (free tier is enough)
 - Optional: Vercel CLI
 
 ### Hardware (products documented in this repo)
+
 The GENUM robot-car line covers 10 modes (the full catalogue lives in the `robo_car_modes` Supabase table). Common bill of materials:
 
 - **Chassis:** 2WD chassis + 2 DC gear motors (+ caster wheel), or omni-directional chassis ×4 motors
@@ -50,16 +53,16 @@ The GENUM robot-car line covers 10 modes (the full catalogue lives in the `robo_
 
 ### Robo-car pin mapping (latest, Arduino UNO example used across all modes)
 
-| Component | Pin |
-|---|---|
-| IR Sensor 1 | D2 |
-| IR Sensor 2 | D4 |
-| Ultrasonic Trigger | D5 |
-| Ultrasonic Echo | D6 |
-| Motor Driver IN1 | D7 |
-| Motor Driver IN2 | D8 |
-| Motor Driver IN3 | D9 |
-| Motor Driver IN4 | D10 |
+| Component          | Pin |
+| ------------------ | --- |
+| IR Sensor 1        | D2  |
+| IR Sensor 2        | D4  |
+| Ultrasonic Trigger | D5  |
+| Ultrasonic Echo    | D6  |
+| Motor Driver IN1   | D7  |
+| Motor Driver IN2   | D8  |
+| Motor Driver IN3   | D9  |
+| Motor Driver IN4   | D10 |
 
 ESP32 builds use the same logical layout mapped to ESP32 GPIOs; OLED display rides I²C (SDA/SCL). Modes supported per model: WiFi (Remote/Autonomous/Web UI), Bluetooth (Manual/BT/Autonomous), Gesture, Line Follower, Obstacle Avoidance, Voice, GPS Navigation, Solar, Camera Vision, Omni-Wheel.
 
@@ -118,16 +121,16 @@ Type/lint gates: `.\node_modules\.bin\tsc.cmd --noEmit` and `npm run lint`.
 
 Copy `.env.example` → `.env.local`; add the same keys in Vercel → Project → Settings → Environment Variables:
 
-| Variable | Notes |
-|---|---|
-| `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` locally; `https://genumsolutions-website.vercel.app` (or your domain) in production. Used for all gateway callbacks. |
-| `NEXT_PUBLIC_SUPABASE_URL` | Bare project URL from Supabase → Settings → API (no `/rest/v1/` suffix). |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public anon key — safe for the browser. |
-| `SUPABASE_SERVICE_ROLE_KEY` | **Server-only secret.** Bypasses RLS. Never prefix with `NEXT_PUBLIC_`, never commit. |
-| `CONTACT_EMAIL` | Where contact-form mail lands. |
-| `RESEND_API_KEY`, `RESEND_FROM_EMAIL` | Optional — contact form degrades gracefully without them. |
-| `ESEWA_PRODUCT_CODE`, `ESEWA_SECRET_KEY`, `ESEWA_BASE_URL` | UAT: code `EPAYTEST`, base `https://uat.esewa.com.np`. |
-| `KHALTI_SECRET_KEY`, `KHALTI_BASE_URL` | Test keys + `https://a.khalti.com/api/v2`. |
+| Variable                                                   | Notes                                                                                                                                        |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SITE_URL`                                     | `http://localhost:3000` locally; `https://genumsolutions-website.vercel.app` (or your domain) in production. Used for all gateway callbacks. |
+| `NEXT_PUBLIC_SUPABASE_URL`                                 | Bare project URL from Supabase → Settings → API (no `/rest/v1/` suffix).                                                                     |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY`                            | Public anon key — safe for the browser.                                                                                                      |
+| `SUPABASE_SERVICE_ROLE_KEY`                                | **Server-only secret.** Bypasses RLS. Never prefix with `NEXT_PUBLIC_`, never commit.                                                        |
+| `CONTACT_EMAIL`                                            | Where contact-form mail lands.                                                                                                               |
+| `RESEND_API_KEY`, `RESEND_FROM_EMAIL`                      | Optional — contact form degrades gracefully without them.                                                                                    |
+| `ESEWA_PRODUCT_CODE`, `ESEWA_SECRET_KEY`, `ESEWA_BASE_URL` | UAT: code `EPAYTEST`, base `https://uat.esewa.com.np`.                                                                                       |
+| `KHALTI_SECRET_KEY`, `KHALTI_BASE_URL`                     | Test keys + `https://a.khalti.com/api/v2`.                                                                                                   |
 
 Without Supabase vars the site still renders from the bundled catalog in `lib/catalog.ts`.
 
@@ -142,9 +145,9 @@ Without Supabase vars the site still renders from the bundled catalog in `lib/ca
 
 ### Auth redirect URLs (Supabase → Authentication → URL Configuration)
 
-| Setting | Value |
-|---|---|
-| Site URL | `https://genumsolutions-website.vercel.app` |
+| Setting                  | Value                                                                      |
+| ------------------------ | -------------------------------------------------------------------------- |
+| Site URL                 | `https://genumsolutions-website.vercel.app`                                |
 | Additional redirect URLs | `https://genumsolutions-website.vercel.app/**`, `http://localhost:3000/**` |
 
 Password recovery and signup emails must land users on `<site>/auth/callback` (set "Reset password" email template link accordingly). The callback exchanges the PKCE code, then forwards to `/reset-password` or your `?next=` path. Open redirects are blocked (relative paths only).
@@ -164,13 +167,14 @@ Users can also be promoted/demoted from `/admin` → Users tab (service-role bac
 
 Safe pattern everywhere: the order is saved `pending` server-side, prices are **re-checked against the database**, and payment is confirmed only after a server-to-server verification call. Every initiation/success/failure is appended to `transactions`.
 
-| Provider | Start | Confirm |
-|---|---|---|
-| eSewa v2 | `POST /api/checkout/esewa` → signed form | `GET /api/orders/confirm/esewa?data=…` → status API must say `COMPLETE` |
-| Khalti v2 | `POST /api/checkout/khalti` → redirect | `GET /api/orders/confirm/khalti?pidx=…` → lookup must say `Completed` + paisa match |
-| Cash on delivery | `POST /api/orders` (`provider: 'cod'`) | marked when admin fulfils |
+| Provider         | Start                                    | Confirm                                                                             |
+| ---------------- | ---------------------------------------- | ----------------------------------------------------------------------------------- |
+| eSewa v2         | `POST /api/checkout/esewa` → signed form | `GET /api/orders/confirm/esewa?data=…` → status API must say `COMPLETE`             |
+| Khalti v2        | `POST /api/checkout/khalti` → redirect   | `GET /api/orders/confirm/khalti?pidx=…` → lookup must say `Completed` + paisa match |
+| Cash on delivery | `POST /api/orders` (`provider: 'cod'`)   | marked when admin fulfils                                                           |
 
 **Sandbox testing checklist (do this before production keys):**
+
 1. eSewa UAT (`EPAYTEST`) with the mobile number/password pair from developer.esewa.com.np docs.
 2. Khalti test keys from dashboard.khalti.com (test user).
 3. COD flow: order saves as `pending`, buyer's cart empties, admin sees it in `/admin`.

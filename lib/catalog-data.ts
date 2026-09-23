@@ -14,40 +14,40 @@
  * Every item starts at stock 10 so it is immediately sellable; fine-tune in
  * the admin panel.
  */
-import type { Product } from './catalog'
+import type { Product } from "./catalog";
 
 const standard = {
-  audience: 'Students, schools, hobbyists, and makers',
-  difficulty: 'Beginner' as const,
-  warranty: '7-day component replacement for manufacturing defects',
-  delivery: 'Ships in 1–2 working days',
-}
+  audience: "Students, schools, hobbyists, and makers",
+  difficulty: "Beginner" as const,
+  warranty: "7-day component replacement for manufacturing defects",
+  delivery: "Ships in 1–2 working days",
+};
 
 const palette = [
-  'from-[#dce8ff] to-[#7e9ff2]',
-  'from-[#dff4ec] to-[#79c7a8]',
-  'from-[#f1e9ff] to-[#c4a8ef]',
-  'from-[#fff1cf] to-[#f1c875]',
-  'from-[#e8f3ef] to-[#a9d9c6]',
-  'from-[#e9e0ff] to-[#b79be9]',
-  'from-[#ffe3d6] to-[#f1a17e]',
-  'from-[#dfeaff] to-[#9fbaff]',
-]
+  "from-[#dce8ff] to-[#7e9ff2]",
+  "from-[#dff4ec] to-[#79c7a8]",
+  "from-[#f1e9ff] to-[#c4a8ef]",
+  "from-[#fff1cf] to-[#f1c875]",
+  "from-[#e8f3ef] to-[#a9d9c6]",
+  "from-[#e9e0ff] to-[#b79be9]",
+  "from-[#ffe3d6] to-[#f1a17e]",
+  "from-[#dfeaff] to-[#9fbaff]",
+];
 
 /** Image fallback for items without a real product photo yet. */
-export const PLACEHOLDER_IMAGE = '/media/products/genum-product-placeholder.png'
+export const PLACEHOLDER_IMAGE = "/media/products/genum-product-placeholder.png";
 
 type Item = {
-  id: string
-  name: string
-  category: string
-  price: number
-  sku: string
-  note: string
-  description: string
-  specs: string[]
-  image?: string
-}
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+  sku: string;
+  note: string;
+  description: string;
+  specs: string[];
+  image?: string;
+};
 
 const mk = (item: Item, index: number): Product => ({
   ...standard,
@@ -55,10 +55,10 @@ const mk = (item: Item, index: number): Product => ({
   name: item.name,
   category: item.category,
   price: item.price,
-  priceLabel: `NPR ${item.price.toLocaleString('en-IN')}`,
+  priceLabel: `NPR ${item.price.toLocaleString("en-IN")}`,
   sku: item.sku,
-  productType: 'Retail kit',
-  inventoryType: 'Inhouse',
+  productType: "Retail kit",
+  inventoryType: "Inhouse",
   active: true,
   stock: 10,
   note: item.note,
@@ -66,131 +66,888 @@ const mk = (item: Item, index: number): Product => ({
   specs: item.specs,
   color: palette[index % palette.length]!,
   image: item.image ? `/media/products/${item.image}` : PLACEHOLDER_IMAGE,
-})
+});
 
 const inventoryProducts: Product[] = [
   /* 1-5 · Controllers & Boards */
-  mk({ id: 'arduino-uno', name: 'Arduino UNO R3', category: 'Controllers & Boards', price: 1600, sku: 'GEN-ARD-0001', note: 'The classroom standard', description: 'The dependable Arduino UNO R3 board for first circuits, sensors, motor control, and classroom robotics. Fully compatible with Arduino IDE and every Genum source project.', specs: ['ATmega328P microcontroller', '14 digital I/O pins', '6 analog inputs', 'USB Type-B programming port'], image: 'arduino-uno.jpg' }, 0),
-  mk({ id: 'arduino-nano', name: 'Arduino Nano', category: 'Controllers & Boards', price: 700, sku: 'GEN-ARD-0002', note: 'Compact and breadboard friendly', description: 'A compact Arduino board for embedded projects, tight robot-car layouts, and breadboard prototyping.', specs: ['ATmega328-class controller', 'Breadboard-friendly headers', 'USB programming port'], image: 'arduino-nano.jpg' }, 1),
-  mk({ id: 'arduino-mega', name: 'Arduino Mega 2560', category: 'Controllers & Boards', price: 3920, sku: 'GEN-ARD-0003', note: 'More pins, bigger builds', description: 'A larger Arduino controller with expanded digital and analog I/O for multi-sensor, display, and automation projects.', specs: ['ATmega2560 microcontroller', '54 digital I/O pins', '16 analog inputs', 'USB programming port'], image: 'arduino-mega.jpg' }, 2),
-  mk({ id: 'esp32-devkit-v1-30pin', name: 'ESP32 DevKit V1 (30-Pin)', category: 'Controllers & Boards', price: 1000, sku: 'GEN-ESP-0001', note: 'Wi-Fi + Bluetooth in one', description: 'A 30-pin ESP32 development board with Type-C USB for web-controlled robots, IoT experiments, sensors, and compact projects.', specs: ['ESP32 dual-core MCU', 'Wi-Fi and Bluetooth', 'Type-C USB programming', 'GPIO, ADC, and PWM support'], image: 'esp32-dev-board.jpg' }, 3),
-  mk({ id: 'esp32-cam', name: 'ESP32-CAM (OV2640)', category: 'Controllers & Boards', price: 1400, sku: 'GEN-ESP-0002', note: 'Camera vision projects', description: 'ESP32 with an OV2640 2MP camera for face detection, streaming, home security, and vision-based robots.', specs: ['ESP32-S MCU', 'OV2640 2MP camera', 'Wi-Fi and Bluetooth', 'Micro-SD card slot'] }, 4),
+  mk(
+    {
+      id: "arduino-uno",
+      name: "Arduino UNO R3",
+      category: "Controllers & Boards",
+      price: 1600,
+      sku: "GEN-ARD-0001",
+      note: "The classroom standard",
+      description:
+        "The dependable Arduino UNO R3 board for first circuits, sensors, motor control, and classroom robotics. Fully compatible with Arduino IDE and every Genum source project.",
+      specs: [
+        "ATmega328P microcontroller",
+        "14 digital I/O pins",
+        "6 analog inputs",
+        "USB Type-B programming port",
+      ],
+      image: "arduino-uno.jpg",
+    },
+    0
+  ),
+  mk(
+    {
+      id: "arduino-nano",
+      name: "Arduino Nano",
+      category: "Controllers & Boards",
+      price: 700,
+      sku: "GEN-ARD-0002",
+      note: "Compact and breadboard friendly",
+      description:
+        "A compact Arduino board for embedded projects, tight robot-car layouts, and breadboard prototyping.",
+      specs: ["ATmega328-class controller", "Breadboard-friendly headers", "USB programming port"],
+      image: "arduino-nano.jpg",
+    },
+    1
+  ),
+  mk(
+    {
+      id: "arduino-mega",
+      name: "Arduino Mega 2560",
+      category: "Controllers & Boards",
+      price: 3920,
+      sku: "GEN-ARD-0003",
+      note: "More pins, bigger builds",
+      description:
+        "A larger Arduino controller with expanded digital and analog I/O for multi-sensor, display, and automation projects.",
+      specs: [
+        "ATmega2560 microcontroller",
+        "54 digital I/O pins",
+        "16 analog inputs",
+        "USB programming port",
+      ],
+      image: "arduino-mega.jpg",
+    },
+    2
+  ),
+  mk(
+    {
+      id: "esp32-devkit-v1-30pin",
+      name: "ESP32 DevKit V1 (30-Pin)",
+      category: "Controllers & Boards",
+      price: 1000,
+      sku: "GEN-ESP-0001",
+      note: "Wi-Fi + Bluetooth in one",
+      description:
+        "A 30-pin ESP32 development board with Type-C USB for web-controlled robots, IoT experiments, sensors, and compact projects.",
+      specs: [
+        "ESP32 dual-core MCU",
+        "Wi-Fi and Bluetooth",
+        "Type-C USB programming",
+        "GPIO, ADC, and PWM support",
+      ],
+      image: "esp32-dev-board.jpg",
+    },
+    3
+  ),
+  mk(
+    {
+      id: "esp32-cam",
+      name: "ESP32-CAM (OV2640)",
+      category: "Controllers & Boards",
+      price: 1400,
+      sku: "GEN-ESP-0002",
+      note: "Camera vision projects",
+      description:
+        "ESP32 with an OV2640 2MP camera for face detection, streaming, home security, and vision-based robots.",
+      specs: ["ESP32-S MCU", "OV2640 2MP camera", "Wi-Fi and Bluetooth", "Micro-SD card slot"],
+    },
+    4
+  ),
 
   /* 6-7 · Motor drivers */
-  mk({ id: 'l298n-motor-driver', name: 'L298N Motor Driver Module', category: 'Motors & Motion', price: 400, sku: 'GEN-MDR-0001', note: 'Dual H-bridge motor control', description: 'A dual H-bridge driver for two DC motors or one stepper, with direction and PWM speed control for robot platforms.', specs: ['Dual H-bridge driver', 'Direction and PWM inputs', 'Motor power terminal', '5V regulator on board'], image: 'l298n-motor-driver.jpg' }, 5),
-  mk({ id: 'l298p-motor-driver', name: 'L298P Motor Driver Shield', category: 'Motors & Motion', price: 900, sku: 'GEN-MDR-0002', note: 'Stackable Arduino shield', description: 'A compact L298P shield that stacks onto an Arduino for direct two-motor robot control.', specs: ['L298P driver board', 'Dual motor channels', 'Arduino stackable headers', 'Direction and speed control'], image: 'l298p-motor-driver.jpg' }, 6),
+  mk(
+    {
+      id: "l298n-motor-driver",
+      name: "L298N Motor Driver Module",
+      category: "Motors & Motion",
+      price: 400,
+      sku: "GEN-MDR-0001",
+      note: "Dual H-bridge motor control",
+      description:
+        "A dual H-bridge driver for two DC motors or one stepper, with direction and PWM speed control for robot platforms.",
+      specs: [
+        "Dual H-bridge driver",
+        "Direction and PWM inputs",
+        "Motor power terminal",
+        "5V regulator on board",
+      ],
+      image: "l298n-motor-driver.jpg",
+    },
+    5
+  ),
+  mk(
+    {
+      id: "l298p-motor-driver",
+      name: "L298P Motor Driver Shield",
+      category: "Motors & Motion",
+      price: 900,
+      sku: "GEN-MDR-0002",
+      note: "Stackable Arduino shield",
+      description:
+        "A compact L298P shield that stacks onto an Arduino for direct two-motor robot control.",
+      specs: [
+        "L298P driver board",
+        "Dual motor channels",
+        "Arduino stackable headers",
+        "Direction and speed control",
+      ],
+      image: "l298p-motor-driver.jpg",
+    },
+    6
+  ),
 
   /* 8-9 · Displays */
-  mk({ id: 'oled-display-13', name: '1.3" OLED Display Module', category: 'Displays & Interfaces', price: 450, sku: 'GEN-DSP-0001', note: 'Live robot telemetry', description: 'A 1.3-inch OLED for robot status, modes, speed, sensor feedback, and menus.', specs: ['1.3-inch OLED', 'SH1106 / SSD1306 compatible', 'I2C interface'], image: 'oled-display-13.jpg' }, 7),
-  mk({ id: 'oled-display-09', name: '0.96" OLED Display Module', category: 'Displays & Interfaces', price: 400, sku: 'GEN-DSP-0002', note: 'Compact status display', description: 'A compact 0.96-inch OLED for small embedded controllers and robot builds.', specs: ['0.96-inch OLED', 'I2C interface', 'Compact embedded display'], image: 'oled-display-09.jpg' }, 8),
+  mk(
+    {
+      id: "oled-display-13",
+      name: '1.3" OLED Display Module',
+      category: "Displays & Interfaces",
+      price: 450,
+      sku: "GEN-DSP-0001",
+      note: "Live robot telemetry",
+      description: "A 1.3-inch OLED for robot status, modes, speed, sensor feedback, and menus.",
+      specs: ["1.3-inch OLED", "SH1106 / SSD1306 compatible", "I2C interface"],
+      image: "oled-display-13.jpg",
+    },
+    7
+  ),
+  mk(
+    {
+      id: "oled-display-09",
+      name: '0.96" OLED Display Module',
+      category: "Displays & Interfaces",
+      price: 400,
+      sku: "GEN-DSP-0002",
+      note: "Compact status display",
+      description: "A compact 0.96-inch OLED for small embedded controllers and robot builds.",
+      specs: ["0.96-inch OLED", "I2C interface", "Compact embedded display"],
+      image: "oled-display-09.jpg",
+    },
+    8
+  ),
 
   /* 10-13 · Power */
-  mk({ id: 'liion-18650-battery', name: 'Li-ion 18650 Rechargeable Battery', category: 'Power & Charging', price: 225, sku: 'GEN-PWR-0001', note: 'Rechargeable project power', description: 'A protected 18650 Li-ion cell for rechargeable robot and project power.', specs: ['3.7V 18650 cell', 'Rechargeable', 'Use with a compatible charger'], image: '18650-battery-pack.jpg' }, 9),
-  mk({ id: 'battery-holder-1s', name: '18650 Battery Holder (1S)', category: 'Power & Charging', price: 70, sku: 'GEN-PWR-0002', note: 'Single-cell holder', description: 'A single-cell 18650 battery holder for clean project power wiring.', specs: ['Holds 1 x 18650 cell', 'Wire leads', 'Insulated body'] }, 10),
-  mk({ id: 'battery-holder-2s', name: '18650 Battery Holder (2S)', category: 'Power & Charging', price: 100, sku: 'GEN-PWR-0003', note: 'Two-cell 7.4V pack', description: 'A two-cell 18650 holder wired in series for 7.4V robot builds.', specs: ['Holds 2 x 18650 cells', 'Series wiring', 'Wire leads'] }, 11),
-  mk({ id: 'battery-holder-3s', name: '18650 Battery Holder (3S)', category: 'Power & Charging', price: 120, sku: 'GEN-PWR-0004', note: 'Three-cell 11.1V pack', description: 'A three-cell 18650 holder wired in series for 11.1V platforms.', specs: ['Holds 3 x 18650 cells', 'Series wiring', 'Wire leads'] }, 12),
+  mk(
+    {
+      id: "liion-18650-battery",
+      name: "Li-ion 18650 Rechargeable Battery",
+      category: "Power & Charging",
+      price: 225,
+      sku: "GEN-PWR-0001",
+      note: "Rechargeable project power",
+      description: "A protected 18650 Li-ion cell for rechargeable robot and project power.",
+      specs: ["3.7V 18650 cell", "Rechargeable", "Use with a compatible charger"],
+      image: "18650-battery-pack.jpg",
+    },
+    9
+  ),
+  mk(
+    {
+      id: "battery-holder-1s",
+      name: "18650 Battery Holder (1S)",
+      category: "Power & Charging",
+      price: 70,
+      sku: "GEN-PWR-0002",
+      note: "Single-cell holder",
+      description: "A single-cell 18650 battery holder for clean project power wiring.",
+      specs: ["Holds 1 x 18650 cell", "Wire leads", "Insulated body"],
+    },
+    10
+  ),
+  mk(
+    {
+      id: "battery-holder-2s",
+      name: "18650 Battery Holder (2S)",
+      category: "Power & Charging",
+      price: 100,
+      sku: "GEN-PWR-0003",
+      note: "Two-cell 7.4V pack",
+      description: "A two-cell 18650 holder wired in series for 7.4V robot builds.",
+      specs: ["Holds 2 x 18650 cells", "Series wiring", "Wire leads"],
+    },
+    11
+  ),
+  mk(
+    {
+      id: "battery-holder-3s",
+      name: "18650 Battery Holder (3S)",
+      category: "Power & Charging",
+      price: 120,
+      sku: "GEN-PWR-0004",
+      note: "Three-cell 11.1V pack",
+      description: "A three-cell 18650 holder wired in series for 11.1V platforms.",
+      specs: ["Holds 3 x 18650 cells", "Series wiring", "Wire leads"],
+    },
+    12
+  ),
 
   /* 14-16 · Jumper bundles */
-  mk({ id: 'jumper-wires-ff', name: 'Jumper Wire Bundle F-F (40)', category: 'Connectors & Cables', price: 160, sku: 'GEN-CON-0001', note: '40 female-female leads', description: 'A 40-wire female-to-female jumper bundle for breadboard and header connections.', specs: ['40 jumper wires', 'Female-to-female', 'Prototyping standard'], image: 'dupont-jst-cable-pack.jpg' }, 13),
-  mk({ id: 'jumper-wires-mm', name: 'Jumper Wire Bundle M-M (40)', category: 'Connectors & Cables', price: 160, sku: 'GEN-CON-0002', note: '40 male-male leads', description: 'A 40-wire male-to-male jumper bundle for breadboard links between components.', specs: ['40 jumper wires', 'Male-to-male', 'Prototyping standard'], image: 'dupont-jst-cable-pack.jpg' }, 14),
-  mk({ id: 'jumper-wires-fm', name: 'Jumper Wire Bundle F-M (40)', category: 'Connectors & Cables', price: 160, sku: 'GEN-CON-0003', note: '40 mixed-direction leads', description: 'A 40-wire female-to-male jumper bundle for connecting extension boards to headers.', specs: ['40 jumper wires', 'Female-to-male', 'Prototyping standard'], image: 'dupont-jst-cable-pack.jpg' }, 15),
+  mk(
+    {
+      id: "jumper-wires-ff",
+      name: "Jumper Wire Bundle F-F (40)",
+      category: "Connectors & Cables",
+      price: 160,
+      sku: "GEN-CON-0001",
+      note: "40 female-female leads",
+      description:
+        "A 40-wire female-to-female jumper bundle for breadboard and header connections.",
+      specs: ["40 jumper wires", "Female-to-female", "Prototyping standard"],
+      image: "dupont-jst-cable-pack.jpg",
+    },
+    13
+  ),
+  mk(
+    {
+      id: "jumper-wires-mm",
+      name: "Jumper Wire Bundle M-M (40)",
+      category: "Connectors & Cables",
+      price: 160,
+      sku: "GEN-CON-0002",
+      note: "40 male-male leads",
+      description: "A 40-wire male-to-male jumper bundle for breadboard links between components.",
+      specs: ["40 jumper wires", "Male-to-male", "Prototyping standard"],
+      image: "dupont-jst-cable-pack.jpg",
+    },
+    14
+  ),
+  mk(
+    {
+      id: "jumper-wires-fm",
+      name: "Jumper Wire Bundle F-M (40)",
+      category: "Connectors & Cables",
+      price: 160,
+      sku: "GEN-CON-0003",
+      note: "40 mixed-direction leads",
+      description:
+        "A 40-wire female-to-male jumper bundle for connecting extension boards to headers.",
+      specs: ["40 jumper wires", "Female-to-male", "Prototyping standard"],
+      image: "dupont-jst-cable-pack.jpg",
+    },
+    15
+  ),
 
   /* 17 · Chassis */
-  mk({ id: 'chassis-4wd-kit', name: '4WD DIY Car Kit Chassis', category: 'Mechanical Parts', price: 1250, sku: 'GEN-MEC-0001', note: 'Robot car base plate', description: 'A four-wheel drive acrylic chassis kit for building robot cars, complete with plate and fastener parts.', specs: ['Acrylic chassis plates', '4-motor layout', 'Spacers and fasteners'], image: 'chassis-fastener-pack.jpg' }, 16),
+  mk(
+    {
+      id: "chassis-4wd-kit",
+      name: "4WD DIY Car Kit Chassis",
+      category: "Mechanical Parts",
+      price: 1250,
+      sku: "GEN-MEC-0001",
+      note: "Robot car base plate",
+      description:
+        "A four-wheel drive acrylic chassis kit for building robot cars, complete with plate and fastener parts.",
+      specs: ["Acrylic chassis plates", "4-motor layout", "Spacers and fasteners"],
+      image: "chassis-fastener-pack.jpg",
+    },
+    16
+  ),
 
   /* 18-19 · BO motors & wheels */
-  mk({ id: 'bo-motor-pair', name: 'BO Motor (TT Motor) Pair', category: 'Motors & Motion', price: 180, sku: 'GEN-MOT-0001', note: 'Robot car drive motors', description: 'A matched pair of BO (TT) geared motors for two-wheel and four-wheel robot cars. 100 RPM or 150 RPM variants are used across the Genum car builds.', specs: ['2 geared DC motors', '100 / 150 RPM options', 'Robot-car mounting format', 'Works with 65mm wheels'], image: 'bo-motor.jpg' }, 17),
-  mk({ id: 'bo-motor-wheels', name: 'BO Motor Wheels 65x30mm', category: 'Motors & Motion', price: 90, sku: 'GEN-MOT-0002', note: 'Grip for BO drive shafts', description: 'A pair of 65x30mm wheels that press onto BO motor shafts for robot cars and mechanisms.', specs: ['2 rubber wheels', '65x30mm size', 'Fits BO motor shafts'], image: 'robot-wheel-set.jpg' }, 18),
+  mk(
+    {
+      id: "bo-motor-pair",
+      name: "BO Motor (TT Motor) Pair",
+      category: "Motors & Motion",
+      price: 180,
+      sku: "GEN-MOT-0001",
+      note: "Robot car drive motors",
+      description:
+        "A matched pair of BO (TT) geared motors for two-wheel and four-wheel robot cars. 100 RPM or 150 RPM variants are used across the Genum car builds.",
+      specs: [
+        "2 geared DC motors",
+        "100 / 150 RPM options",
+        "Robot-car mounting format",
+        "Works with 65mm wheels",
+      ],
+      image: "bo-motor.jpg",
+    },
+    17
+  ),
+  mk(
+    {
+      id: "bo-motor-wheels",
+      name: "BO Motor Wheels 65x30mm",
+      category: "Motors & Motion",
+      price: 90,
+      sku: "GEN-MOT-0002",
+      note: "Grip for BO drive shafts",
+      description:
+        "A pair of 65x30mm wheels that press onto BO motor shafts for robot cars and mechanisms.",
+      specs: ["2 rubber wheels", "65x30mm size", "Fits BO motor shafts"],
+      image: "robot-wheel-set.jpg",
+    },
+    18
+  ),
 
   /* 20 · Switch */
-  mk({ id: 'dc-switch', name: 'DC Switch', category: 'Connectors & Cables', price: 15, sku: 'GEN-CON-0004', note: 'Simple on/off power control', description: 'A basic DC rocker switch for cutting power on battery-driven projects.', specs: ['Rocker switch', 'Panel mount', 'Power cut control'] }, 19),
+  mk(
+    {
+      id: "dc-switch",
+      name: "DC Switch",
+      category: "Connectors & Cables",
+      price: 15,
+      sku: "GEN-CON-0004",
+      note: "Simple on/off power control",
+      description: "A basic DC rocker switch for cutting power on battery-driven projects.",
+      specs: ["Rocker switch", "Panel mount", "Power cut control"],
+    },
+    19
+  ),
 
   /* 21-22 · Breadboards */
-  mk({ id: 'breadboard-small', name: 'Small Breadboard', category: 'Connectors & Cables', price: 60, sku: 'GEN-CON-0005', note: 'Prototype small circuits', description: 'A compact solderless breadboard for small circuits, sensors, and quick test setups.', specs: ['Solderless prototyping', '~400 tie points', 'Self-adhesive back'], image: 'breadboard-jumper-set.jpg' }, 20),
-  mk({ id: 'breadboard-medium', name: 'Medium Breadboard', category: 'Connectors & Cables', price: 120, sku: 'GEN-CON-0006', note: 'Room for bigger circuits', description: 'A medium solderless breadboard with power rails for classroom circuits and experiments.', specs: ['Solderless prototyping', '~830 tie points', 'Power rails'], image: 'breadboard-jumper-set.jpg' }, 21),
+  mk(
+    {
+      id: "breadboard-small",
+      name: "Small Breadboard",
+      category: "Connectors & Cables",
+      price: 60,
+      sku: "GEN-CON-0005",
+      note: "Prototype small circuits",
+      description:
+        "A compact solderless breadboard for small circuits, sensors, and quick test setups.",
+      specs: ["Solderless prototyping", "~400 tie points", "Self-adhesive back"],
+      image: "breadboard-jumper-set.jpg",
+    },
+    20
+  ),
+  mk(
+    {
+      id: "breadboard-medium",
+      name: "Medium Breadboard",
+      category: "Connectors & Cables",
+      price: 120,
+      sku: "GEN-CON-0006",
+      note: "Room for bigger circuits",
+      description:
+        "A medium solderless breadboard with power rails for classroom circuits and experiments.",
+      specs: ["Solderless prototyping", "~830 tie points", "Power rails"],
+      image: "breadboard-jumper-set.jpg",
+    },
+    21
+  ),
 
   /* 23 · Tactile switch */
-  mk({ id: 'tactile-switch', name: 'Tactile Switch (Push Button)', category: 'Connectors & Cables', price: 10, sku: 'GEN-CON-0007', note: 'Input push buttons', description: 'A tactile push button switch for control panels, mode selection, and manual inputs.', specs: ['Tactile push button', 'Momentary switch', 'Breadboard friendly'] }, 22),
+  mk(
+    {
+      id: "tactile-switch",
+      name: "Tactile Switch (Push Button)",
+      category: "Connectors & Cables",
+      price: 10,
+      sku: "GEN-CON-0007",
+      note: "Input push buttons",
+      description:
+        "A tactile push button switch for control panels, mode selection, and manual inputs.",
+      specs: ["Tactile push button", "Momentary switch", "Breadboard friendly"],
+    },
+    22
+  ),
 
   /* 24 · Joystick */
-  mk({ id: 'joystick-module', name: 'Joystick Module', category: 'Sensors & Modules', price: 250, sku: 'GEN-SEN-0001', note: 'Two-axis manual control', description: 'A two-axis joystick module with a built-in button for manual robot control panels.', specs: ['X and Y axis output', 'Built-in push button', '5V operation'] }, 23),
+  mk(
+    {
+      id: "joystick-module",
+      name: "Joystick Module",
+      category: "Sensors & Modules",
+      price: 250,
+      sku: "GEN-SEN-0001",
+      note: "Two-axis manual control",
+      description:
+        "A two-axis joystick module with a built-in button for manual robot control panels.",
+      specs: ["X and Y axis output", "Built-in push button", "5V operation"],
+    },
+    23
+  ),
 
   /* 25-26 · DC-DC converters */
-  mk({ id: 'lm2596-buck-converter', name: 'LM2596 Buck Converter', category: 'Power & Charging', price: 150, sku: 'GEN-PWR-0005', note: 'Step-down voltage regulator', description: 'An adjustable step-down converter to power controllers and sensors from higher battery voltages.', specs: ['Input 4.5-40V', 'Adjustable 1.25-37V output', 'Up to 3A'], image: 'dc-dc-converter.jpg' }, 24),
-  mk({ id: 'mt3608-boost-converter', name: 'MT3608 Boost Converter', category: 'Power & Charging', price: 100, sku: 'GEN-PWR-0006', note: 'Step-up voltage booster', description: 'A compact step-up converter to boost lower battery voltages up to 5V or more for logic circuits.', specs: ['Input 2-24V', 'Output up to 28V', 'Mini module'], image: 'dc-dc-converter.jpg' }, 25),
+  mk(
+    {
+      id: "lm2596-buck-converter",
+      name: "LM2596 Buck Converter",
+      category: "Power & Charging",
+      price: 150,
+      sku: "GEN-PWR-0005",
+      note: "Step-down voltage regulator",
+      description:
+        "An adjustable step-down converter to power controllers and sensors from higher battery voltages.",
+      specs: ["Input 4.5-40V", "Adjustable 1.25-37V output", "Up to 3A"],
+      image: "dc-dc-converter.jpg",
+    },
+    24
+  ),
+  mk(
+    {
+      id: "mt3608-boost-converter",
+      name: "MT3608 Boost Converter",
+      category: "Power & Charging",
+      price: 100,
+      sku: "GEN-PWR-0006",
+      note: "Step-up voltage booster",
+      description:
+        "A compact step-up converter to boost lower battery voltages up to 5V or more for logic circuits.",
+      specs: ["Input 2-24V", "Output up to 28V", "Mini module"],
+      image: "dc-dc-converter.jpg",
+    },
+    25
+  ),
 
   /* 27 · IMU */
-  mk({ id: 'mpu6050-imu', name: 'MPU6050 IMU Module', category: 'Sensors & Modules', price: 450, sku: 'GEN-SEN-0002', note: 'Motion and orientation sensing', description: 'A six-axis accelerometer + gyroscope module for balancing, gesture control, and movement experiments.', specs: ['3-axis accelerometer', '3-axis gyroscope', 'I2C interface'], image: 'mpu6050-imu.jpg' }, 26),
+  mk(
+    {
+      id: "mpu6050-imu",
+      name: "MPU6050 IMU Module",
+      category: "Sensors & Modules",
+      price: 450,
+      sku: "GEN-SEN-0002",
+      note: "Motion and orientation sensing",
+      description:
+        "A six-axis accelerometer + gyroscope module for balancing, gesture control, and movement experiments.",
+      specs: ["3-axis accelerometer", "3-axis gyroscope", "I2C interface"],
+      image: "mpu6050-imu.jpg",
+    },
+    26
+  ),
 
   /* 28 · Soldering iron */
-  mk({ id: 'soldering-iron-60w', name: 'Soldering Iron 220V 60W', category: 'Tools & Fabrication', price: 750, sku: 'GEN-TOL-0001', note: 'Wire and repair with ease', description: 'A 220V 60W soldering iron for wiring, repairs, and soldered circuit assembly.', specs: ['220V 60W iron', 'Fast heating', 'Replacement tips available'], image: 'soldering-tool-kit.jpg' }, 27),
+  mk(
+    {
+      id: "soldering-iron-60w",
+      name: "Soldering Iron 220V 60W",
+      category: "Tools & Fabrication",
+      price: 750,
+      sku: "GEN-TOL-0001",
+      note: "Wire and repair with ease",
+      description: "A 220V 60W soldering iron for wiring, repairs, and soldered circuit assembly.",
+      specs: ["220V 60W iron", "Fast heating", "Replacement tips available"],
+      image: "soldering-tool-kit.jpg",
+    },
+    27
+  ),
 
   /* 29 · Relay */
-  mk({ id: 'relay-1ch', name: 'Single Channel Relay Module', category: 'Sensors & Modules', price: 100, sku: 'GEN-SEN-0003', note: 'Switch higher-power loads', description: 'A single-channel relay module for switching higher-voltage loads from a microcontroller.', specs: ['1 relay channel', 'Trigger LED', '3-5V control input'] }, 28),
+  mk(
+    {
+      id: "relay-1ch",
+      name: "Single Channel Relay Module",
+      category: "Sensors & Modules",
+      price: 100,
+      sku: "GEN-SEN-0003",
+      note: "Switch higher-power loads",
+      description:
+        "A single-channel relay module for switching higher-voltage loads from a microcontroller.",
+      specs: ["1 relay channel", "Trigger LED", "3-5V control input"],
+    },
+    28
+  ),
 
   /* 30-31 · Servos */
-  mk({ id: 'sg90-servo', name: 'SG90 9g Micro Servo', category: 'Motors & Motion', price: 230, sku: 'GEN-MOT-0003', note: 'Small positioning servo', description: 'A compact 9g servo for steering, pan-tilt mounts, sensors, and small mechanisms.', specs: ['9g micro servo', '180-degree movement', 'Servo horns included', '5V operation'], image: 'sg90-servo-pair.jpg' }, 29),
-  mk({ id: 'mg996r-servo', name: 'MG996R Servo Motor', category: 'Motors & Motion', price: 675, sku: 'GEN-MOT-0004', note: 'Metal-gear torque servo', description: 'A metal-gear servo with higher torque for grippers, arms, and load-bearing mechanisms.', specs: ['Metal gear servo', 'High torque output', '180-degree movement', '5V operation'] }, 30),
+  mk(
+    {
+      id: "sg90-servo",
+      name: "SG90 9g Micro Servo",
+      category: "Motors & Motion",
+      price: 230,
+      sku: "GEN-MOT-0003",
+      note: "Small positioning servo",
+      description:
+        "A compact 9g servo for steering, pan-tilt mounts, sensors, and small mechanisms.",
+      specs: ["9g micro servo", "180-degree movement", "Servo horns included", "5V operation"],
+      image: "sg90-servo-pair.jpg",
+    },
+    29
+  ),
+  mk(
+    {
+      id: "mg996r-servo",
+      name: "MG996R Servo Motor",
+      category: "Motors & Motion",
+      price: 675,
+      sku: "GEN-MOT-0004",
+      note: "Metal-gear torque servo",
+      description:
+        "A metal-gear servo with higher torque for grippers, arms, and load-bearing mechanisms.",
+      specs: ["Metal gear servo", "High torque output", "180-degree movement", "5V operation"],
+    },
+    30
+  ),
 
   /* 32 · Li-ion charger 4S */
-  mk({ id: 'liion-charger-4s', name: '4S Li-ion Charger', category: 'Power & Charging', price: 600, sku: 'GEN-PWR-0007', note: 'Charge 4S packs safely', description: 'A charger for 4S (14.8V) Li-ion battery packs used in larger robot platforms.', specs: ['4S Li-ion support', 'Charge indicator', 'Protected charging circuit'], image: 'li-ion-charger.jpg' }, 31),
+  mk(
+    {
+      id: "liion-charger-4s",
+      name: "4S Li-ion Charger",
+      category: "Power & Charging",
+      price: 600,
+      sku: "GEN-PWR-0007",
+      note: "Charge 4S packs safely",
+      description: "A charger for 4S (14.8V) Li-ion battery packs used in larger robot platforms.",
+      specs: ["4S Li-ion support", "Charge indicator", "Protected charging circuit"],
+      image: "li-ion-charger.jpg",
+    },
+    31
+  ),
 
   /* 33-37 · Sensors */
-  mk({ id: 'dht11-sensor', name: 'DHT11 Temperature & Humidity Sensor', category: 'Sensors & Modules', price: 140, sku: 'GEN-SEN-0004', note: 'Room climate sensing', description: 'A simple digital temperature and humidity sensor for weather stations and environment projects.', specs: ['Temperature reading', 'Humidity reading', 'Single-wire digital output'] }, 32),
-  mk({ id: 'sound-sensor', name: 'Sound Sensor Module', category: 'Sensors & Modules', price: 300, sku: 'GEN-SEN-0005', note: 'React to sound', description: 'A sound sensor module (Keyestudio KS0035 style) for clap-activated and noise-reactive projects.', specs: ['Microphone-based sensing', 'Sensitivity adjustment', 'Digital + analog output'] }, 33),
-  mk({ id: 'ir-remote-ks0088', name: 'Keyestudio IR Remote Control KS0088', category: 'Sensors & Modules', price: 350, sku: 'GEN-SEN-0006', note: 'Wireless remote buttons', description: 'A Keyestudio KS0088 infrared remote control kit for wireless manual control of cars and devices.', specs: ['IR remote handset', 'Keyestudio KS0088', 'Works with IR receiver'] }, 34),
-  mk({ id: 'adxl345-accelerometer', name: 'Keyestudio ADXL345 Accelerometer', category: 'Sensors & Modules', price: 550, sku: 'GEN-SEN-0007', note: '3-axis tilt sensing', description: 'A Keyestudio ADXL345 three-axis accelerometer module for tilt, shake, and gesture detection.', specs: ['3-axis accelerometer', 'I2C interface', 'Keyestudio module'] }, 35),
-  mk({ id: 'ir-receiver', name: 'Keyestudio IR Receiver', category: 'Sensors & Modules', price: 450, sku: 'GEN-SEN-0008', note: 'Receive remote signals', description: 'A Keyestudio IR receiver module for decoding infrared remote control signals.', specs: ['IR receiver module', 'Digital output', 'Works with KS0088 remote'] }, 36),
+  mk(
+    {
+      id: "dht11-sensor",
+      name: "DHT11 Temperature & Humidity Sensor",
+      category: "Sensors & Modules",
+      price: 140,
+      sku: "GEN-SEN-0004",
+      note: "Room climate sensing",
+      description:
+        "A simple digital temperature and humidity sensor for weather stations and environment projects.",
+      specs: ["Temperature reading", "Humidity reading", "Single-wire digital output"],
+    },
+    32
+  ),
+  mk(
+    {
+      id: "sound-sensor",
+      name: "Sound Sensor Module",
+      category: "Sensors & Modules",
+      price: 300,
+      sku: "GEN-SEN-0005",
+      note: "React to sound",
+      description:
+        "A sound sensor module (Keyestudio KS0035 style) for clap-activated and noise-reactive projects.",
+      specs: ["Microphone-based sensing", "Sensitivity adjustment", "Digital + analog output"],
+    },
+    33
+  ),
+  mk(
+    {
+      id: "ir-remote-ks0088",
+      name: "Keyestudio IR Remote Control KS0088",
+      category: "Sensors & Modules",
+      price: 350,
+      sku: "GEN-SEN-0006",
+      note: "Wireless remote buttons",
+      description:
+        "A Keyestudio KS0088 infrared remote control kit for wireless manual control of cars and devices.",
+      specs: ["IR remote handset", "Keyestudio KS0088", "Works with IR receiver"],
+    },
+    34
+  ),
+  mk(
+    {
+      id: "adxl345-accelerometer",
+      name: "Keyestudio ADXL345 Accelerometer",
+      category: "Sensors & Modules",
+      price: 550,
+      sku: "GEN-SEN-0007",
+      note: "3-axis tilt sensing",
+      description:
+        "A Keyestudio ADXL345 three-axis accelerometer module for tilt, shake, and gesture detection.",
+      specs: ["3-axis accelerometer", "I2C interface", "Keyestudio module"],
+    },
+    35
+  ),
+  mk(
+    {
+      id: "ir-receiver",
+      name: "Keyestudio IR Receiver",
+      category: "Sensors & Modules",
+      price: 450,
+      sku: "GEN-SEN-0008",
+      note: "Receive remote signals",
+      description: "A Keyestudio IR receiver module for decoding infrared remote control signals.",
+      specs: ["IR receiver module", "Digital output", "Works with KS0088 remote"],
+    },
+    36
+  ),
 
   /* 38 · 4-digit 7-segment */
-  mk({ id: 'seven-segment-4digit', name: '4-Digit 7-Segment Display (with Colon)', category: 'Displays & Interfaces', price: 200, sku: 'GEN-DSP-0003', note: 'Big readable numbers', description: 'A four-digit seven-segment display module with a colon for clocks, counters, and timers.', specs: ['4 digits with colon', 'Common cathode', 'Compact module', 'I2C driver ready'] }, 37),
+  mk(
+    {
+      id: "seven-segment-4digit",
+      name: "4-Digit 7-Segment Display (with Colon)",
+      category: "Displays & Interfaces",
+      price: 200,
+      sku: "GEN-DSP-0003",
+      note: "Big readable numbers",
+      description:
+        "A four-digit seven-segment display module with a colon for clocks, counters, and timers.",
+      specs: ["4 digits with colon", "Common cathode", "Compact module", "I2C driver ready"],
+    },
+    37
+  ),
 
   /* 39 · Level shifter */
-  mk({ id: 'logic-level-shifter', name: 'Logic Level Shifter (4-Channel)', category: 'Sensors & Modules', price: 120, sku: 'GEN-SEN-0009', note: 'Bridge 5V and 3.3V logic', description: 'A four-channel bidirectional level shifter for two-way conversion between 5V TTL and 3.3V TTL logic.', specs: ['4 bidirectional channels', '5V <-> 3.3V conversion', '2 rows of 6-pin contacts'] }, 38),
+  mk(
+    {
+      id: "logic-level-shifter",
+      name: "Logic Level Shifter (4-Channel)",
+      category: "Sensors & Modules",
+      price: 120,
+      sku: "GEN-SEN-0009",
+      note: "Bridge 5V and 3.3V logic",
+      description:
+        "A four-channel bidirectional level shifter for two-way conversion between 5V TTL and 3.3V TTL logic.",
+      specs: ["4 bidirectional channels", "5V <-> 3.3V conversion", "2 rows of 6-pin contacts"],
+    },
+    38
+  ),
 
   /* 40 · Heat shrink */
-  mk({ id: 'heat-shrink-assorted', name: '2:1 Heat Shrink Tube Assorted Pack', category: 'Connectors & Cables', price: 250, sku: 'GEN-CON-0008', note: 'Neat, protected wiring', description: 'An assorted 2:1 heat-shrink tube pack for finishing and protecting soldered connections and wiring.', specs: ['2:1 shrink ratio', 'Assorted diameters', 'Electronics wiring'] }, 39),
+  mk(
+    {
+      id: "heat-shrink-assorted",
+      name: "2:1 Heat Shrink Tube Assorted Pack",
+      category: "Connectors & Cables",
+      price: 250,
+      sku: "GEN-CON-0008",
+      note: "Neat, protected wiring",
+      description:
+        "An assorted 2:1 heat-shrink tube pack for finishing and protecting soldered connections and wiring.",
+      specs: ["2:1 shrink ratio", "Assorted diameters", "Electronics wiring"],
+    },
+    39
+  ),
 
   /* 41-42 · Buzzers */
-  mk({ id: 'piezo-buzzer-small', name: 'Piezo Electric Buzzer (Small)', category: 'Sensors & Modules', price: 45, sku: 'GEN-SEN-0010', note: 'Tones and beeps', description: 'A small piezo buzzer for tones, alerts, and simple sound feedback.', specs: ['Piezo buzzer', '3-24V drive', 'Small footprint'] }, 40),
-  mk({ id: 'piezo-buzzer-big', name: 'Piezo Electric Buzzer (Big)', category: 'Sensors & Modules', price: 80, sku: 'GEN-SEN-0011', note: 'Loud alert tones', description: 'A larger piezo buzzer for louder alerts and notification sounds in projects.', specs: ['Piezo buzzer', '3-24V drive', 'Loud output'] }, 41),
+  mk(
+    {
+      id: "piezo-buzzer-small",
+      name: "Piezo Electric Buzzer (Small)",
+      category: "Sensors & Modules",
+      price: 45,
+      sku: "GEN-SEN-0010",
+      note: "Tones and beeps",
+      description: "A small piezo buzzer for tones, alerts, and simple sound feedback.",
+      specs: ["Piezo buzzer", "3-24V drive", "Small footprint"],
+    },
+    40
+  ),
+  mk(
+    {
+      id: "piezo-buzzer-big",
+      name: "Piezo Electric Buzzer (Big)",
+      category: "Sensors & Modules",
+      price: 80,
+      sku: "GEN-SEN-0011",
+      note: "Loud alert tones",
+      description: "A larger piezo buzzer for louder alerts and notification sounds in projects.",
+      specs: ["Piezo buzzer", "3-24V drive", "Loud output"],
+    },
+    41
+  ),
 
   /* 43 · Big speaker */
-  mk({ id: 'big-speaker-05w8r', name: '0.5W / 8 ohm Big Speaker Module', category: 'Sensors & Modules', price: 800, sku: 'GEN-SEN-0012', note: 'Audio playback projects', description: 'A 0.5W 8-ohm speaker module (Qhebot style) for tones, melodies, and simple audio output.', specs: ['0.5W 8-ohm speaker', 'Arduino compatible', 'Audio module'] }, 42),
+  mk(
+    {
+      id: "big-speaker-05w8r",
+      name: "0.5W / 8 ohm Big Speaker Module",
+      category: "Sensors & Modules",
+      price: 800,
+      sku: "GEN-SEN-0012",
+      note: "Audio playback projects",
+      description:
+        "A 0.5W 8-ohm speaker module (Qhebot style) for tones, melodies, and simple audio output.",
+      specs: ["0.5W 8-ohm speaker", "Arduino compatible", "Audio module"],
+    },
+    42
+  ),
 
   /* 44 · Water pump */
-  mk({ id: 'water-pump-5v', name: 'Mini Submersible 5V DC Water Pump', category: 'Sensors & Modules', price: 250, sku: 'GEN-SEN-0013', note: 'Move small volumes of water', description: 'A mini submersible 5V DC pump for fountains, watering demos, and smart-farm projects.', specs: ['5V DC submersible', 'Compact size', 'Low power draw'] }, 43),
+  mk(
+    {
+      id: "water-pump-5v",
+      name: "Mini Submersible 5V DC Water Pump",
+      category: "Sensors & Modules",
+      price: 250,
+      sku: "GEN-SEN-0013",
+      note: "Move small volumes of water",
+      description:
+        "A mini submersible 5V DC pump for fountains, watering demos, and smart-farm projects.",
+      specs: ["5V DC submersible", "Compact size", "Low power draw"],
+    },
+    43
+  ),
 
   /* 45-46 · USB cables */
-  mk({ id: 'usb-c-cable', name: 'USB-C Flashing Cable', category: 'Connectors & Cables', price: 100, sku: 'GEN-CON-0009', note: 'Program USB-C boards', description: 'A USB-C cable for programming ESP32 and other Type-C development boards.', specs: ['USB-C connector', 'Data + charging', 'Programming use'] }, 44),
-  mk({ id: 'usb-ab-cable', name: 'USB A-B (UNO) Flashing Cable', category: 'Connectors & Cables', price: 100, sku: 'GEN-CON-0010', note: 'Program Arduino UNO / Mega', description: 'A USB A-to-B cable for programming and powering Arduino UNO and Mega boards.', specs: ['USB-A to USB-B', 'Data + charging', 'Arduino programming'] }, 45),
+  mk(
+    {
+      id: "usb-c-cable",
+      name: "USB-C Flashing Cable",
+      category: "Connectors & Cables",
+      price: 100,
+      sku: "GEN-CON-0009",
+      note: "Program USB-C boards",
+      description: "A USB-C cable for programming ESP32 and other Type-C development boards.",
+      specs: ["USB-C connector", "Data + charging", "Programming use"],
+    },
+    44
+  ),
+  mk(
+    {
+      id: "usb-ab-cable",
+      name: "USB A-B (UNO) Flashing Cable",
+      category: "Connectors & Cables",
+      price: 100,
+      sku: "GEN-CON-0010",
+      note: "Program Arduino UNO / Mega",
+      description: "A USB A-to-B cable for programming and powering Arduino UNO and Mega boards.",
+      specs: ["USB-A to USB-B", "Data + charging", "Arduino programming"],
+    },
+    45
+  ),
 
   /* 47 · IR obstacle */
-  mk({ id: 'ir-obstacle-sensor', name: 'IR Obstacle Avoidance Sensor', category: 'Sensors & Modules', price: 300, sku: 'GEN-SEN-0014', note: 'Detect nearby objects', description: 'An infrared obstacle avoidance sensor for edge and proximity detection on robot cars.', specs: ['IR emitter + receiver', 'Distance adjustable', 'Digital output'] }, 46),
+  mk(
+    {
+      id: "ir-obstacle-sensor",
+      name: "IR Obstacle Avoidance Sensor",
+      category: "Sensors & Modules",
+      price: 300,
+      sku: "GEN-SEN-0014",
+      note: "Detect nearby objects",
+      description:
+        "An infrared obstacle avoidance sensor for edge and proximity detection on robot cars.",
+      specs: ["IR emitter + receiver", "Distance adjustable", "Digital output"],
+    },
+    46
+  ),
 
   /* 48 · HC-SR04 */
-  mk({ id: 'ultrasonic-sensor', name: 'HC-SR04 Ultrasonic Distance Sensor', category: 'Sensors & Modules', price: 300, sku: 'GEN-SEN-0015', note: 'Measure distance simply', description: 'An ultrasonic distance sensor for obstacle avoidance, parking experiments, and measuring projects.', specs: ['2-400 cm range', '5V operation', 'Trigger and echo pins'], image: 'ultrasonic-sensor.jpg' }, 47),
+  mk(
+    {
+      id: "ultrasonic-sensor",
+      name: "HC-SR04 Ultrasonic Distance Sensor",
+      category: "Sensors & Modules",
+      price: 300,
+      sku: "GEN-SEN-0015",
+      note: "Measure distance simply",
+      description:
+        "An ultrasonic distance sensor for obstacle avoidance, parking experiments, and measuring projects.",
+      specs: ["2-400 cm range", "5V operation", "Trigger and echo pins"],
+      image: "ultrasonic-sensor.jpg",
+    },
+    47
+  ),
 
   /* 49 · LED pack */
-  mk({ id: 'led-pack', name: 'LED Pack (50pcs Multi-Color)', category: 'Sensors & Modules', price: 100, sku: 'GEN-SEN-0016', note: 'Bright experiment LEDs', description: 'A pack of 50 assorted multi-color LEDs for indicator circuits, decorations, and experiments.', specs: ['50 assorted LEDs', 'Multi-color', '5mm standard'] }, 48),
+  mk(
+    {
+      id: "led-pack",
+      name: "LED Pack (50pcs Multi-Color)",
+      category: "Sensors & Modules",
+      price: 100,
+      sku: "GEN-SEN-0016",
+      note: "Bright experiment LEDs",
+      description:
+        "A pack of 50 assorted multi-color LEDs for indicator circuits, decorations, and experiments.",
+      specs: ["50 assorted LEDs", "Multi-color", "5mm standard"],
+    },
+    48
+  ),
 
   /* 50 · Glue gun */
-  mk({ id: 'glue-gun', name: 'Glue Gun (11mm, 80W)', category: 'Tools & Fabrication', price: 500, sku: 'GEN-TOL-0002', note: 'Strong quick bonds', description: 'An 80W 11mm glue gun for chassis assembly, mounting, and workshop fixes.', specs: ['80W glue gun', '11mm glue stick', 'Fast warm-up'] }, 49),
+  mk(
+    {
+      id: "glue-gun",
+      name: "Glue Gun (11mm, 80W)",
+      category: "Tools & Fabrication",
+      price: 500,
+      sku: "GEN-TOL-0002",
+      note: "Strong quick bonds",
+      description: "An 80W 11mm glue gun for chassis assembly, mounting, and workshop fixes.",
+      specs: ["80W glue gun", "11mm glue stick", "Fast warm-up"],
+    },
+    49
+  ),
 
   /* 51 · Potentiometer */
-  mk({ id: 'knob-potentiometer', name: 'Knob Potentiometer (1K-100K)', category: 'Sensors & Modules', price: 90, sku: 'GEN-SEN-0017', note: 'Rotary analog control', description: 'A knob potentiometer available in 1K, 2K, 5K, 10K, 50K, or 100K values for volume and speed controls.', specs: ['Rotary potentiometer', '1K / 2K / 5K / 10K / 50K / 100K', 'Analog input control'] }, 50),
+  mk(
+    {
+      id: "knob-potentiometer",
+      name: "Knob Potentiometer (1K-100K)",
+      category: "Sensors & Modules",
+      price: 90,
+      sku: "GEN-SEN-0017",
+      note: "Rotary analog control",
+      description:
+        "A knob potentiometer available in 1K, 2K, 5K, 10K, 50K, or 100K values for volume and speed controls.",
+      specs: ["Rotary potentiometer", "1K / 2K / 5K / 10K / 50K / 100K", "Analog input control"],
+    },
+    50
+  ),
 
   /* 52 · Glue stick */
-  mk({ id: 'glue-stick', name: 'Glue Stick (11mm Diameter)', category: 'Tools & Fabrication', price: 130, sku: 'GEN-TOL-0003', note: 'Refills for the glue gun', description: '11mm diameter hot glue sticks to refill the workshop glue gun.', specs: ['11mm diameter', 'Hot melt adhesive', 'Glue gun refills'] }, 51),
+  mk(
+    {
+      id: "glue-stick",
+      name: "Glue Stick (11mm Diameter)",
+      category: "Tools & Fabrication",
+      price: 130,
+      sku: "GEN-TOL-0003",
+      note: "Refills for the glue gun",
+      description: "11mm diameter hot glue sticks to refill the workshop glue gun.",
+      specs: ["11mm diameter", "Hot melt adhesive", "Glue gun refills"],
+    },
+    51
+  ),
 
   /* 53 · Ball bearings */
-  mk({ id: 'ball-bearings', name: 'Ball Bearings', category: 'Mechanical Parts', price: 300, sku: 'GEN-MEC-0002', note: 'Smooth rotating joints', description: 'A set of ball bearings for smooth wheel and mechanism rotation in robotics projects.', specs: ['Precision ball bearings', 'Wheel hub compatible', 'Smooth rotation'] }, 52),
+  mk(
+    {
+      id: "ball-bearings",
+      name: "Ball Bearings",
+      category: "Mechanical Parts",
+      price: 300,
+      sku: "GEN-MEC-0002",
+      note: "Smooth rotating joints",
+      description:
+        "A set of ball bearings for smooth wheel and mechanism rotation in robotics projects.",
+      specs: ["Precision ball bearings", "Wheel hub compatible", "Smooth rotation"],
+    },
+    52
+  ),
 
   /* 54 · PCB matrix */
-  mk({ id: 'pcb-matrix-board', name: 'PCB Matrix Board', category: 'Tools & Fabrication', price: 375, sku: 'GEN-TOL-0004', note: 'Permanent soldered circuits', description: 'A high-grade PCB matrix board for transferring breadboard prototypes into permanent soldered projects.', specs: ['Matrix perforated board', '0.1" pitch holes', 'Solder-friendly pads'] }, 53),
+  mk(
+    {
+      id: "pcb-matrix-board",
+      name: "PCB Matrix Board",
+      category: "Tools & Fabrication",
+      price: 375,
+      sku: "GEN-TOL-0004",
+      note: "Permanent soldered circuits",
+      description:
+        "A high-grade PCB matrix board for transferring breadboard prototypes into permanent soldered projects.",
+      specs: ["Matrix perforated board", '0.1" pitch holes', "Solder-friendly pads"],
+    },
+    53
+  ),
 
   /* 55 · TB6612 */
-  mk({ id: 'tb6612fng-motor-driver', name: 'TB6612FNG Motor Driver', category: 'Motors & Motion', price: 250, sku: 'GEN-MDR-0003', note: 'Efficient dual motor driver', description: 'A lightweight TB6612FNG dual motor driver for compact robots, with lower voltage drop than L298 designs.', specs: ['Dual H-bridge driver', '1.2A per channel', 'PWM speed control', 'Compact breakout board'] }, 54),
-]
+  mk(
+    {
+      id: "tb6612fng-motor-driver",
+      name: "TB6612FNG Motor Driver",
+      category: "Motors & Motion",
+      price: 250,
+      sku: "GEN-MDR-0003",
+      note: "Efficient dual motor driver",
+      description:
+        "A lightweight TB6612FNG dual motor driver for compact robots, with lower voltage drop than L298 designs.",
+      specs: [
+        "Dual H-bridge driver",
+        "1.2A per channel",
+        "PWM speed control",
+        "Compact breakout board",
+      ],
+    },
+    54
+  ),
+];
 
-export const localProducts: Product[] = inventoryProducts
+export const localProducts: Product[] = inventoryProducts;

@@ -16,64 +16,64 @@
  */
 
 export type ErrorReport = {
-  message: string
-  stack?: string
-  digest?: string
-  severity: 'error' | 'warning'
-  tags: Record<string, string>
-  timestamp: string
-}
+  message: string;
+  stack?: string;
+  digest?: string;
+  severity: "error" | "warning";
+  tags: Record<string, string>;
+  timestamp: string;
+};
 
-const MAX_BUFFER = 50
+const MAX_BUFFER = 50;
 
 /** Module-scoped ring buffer (survives per lambda instance, best-effort). */
-const buffer: ErrorReport[] = []
+const buffer: ErrorReport[] = [];
 
 function envUrl(): string | undefined {
   // NEXT_PUBLIC_* so the same module works in client boundaries.
-  return process.env.NEXT_PUBLIC_ERROR_REPORTING_URL || undefined
+  return process.env.NEXT_PUBLIC_ERROR_REPORTING_URL || undefined;
 }
 
 function sendToProvider(report: ErrorReport): void {
-  const url = envUrl()
-  if (!url) return // buffering-only mode
+  const url = envUrl();
+  if (!url) return; // buffering-only mode
   // Fire-and-forget; reporting must never break the caller.
   void fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(report),
     keepalive: true,
-  } as RequestInit).catch(() => {})
+  } as RequestInit).catch(() => {});
 }
 
 export function reportError(
   error: unknown,
-  context: { digest?: string; tags?: Record<string, string>; severity?: 'error' | 'warning' } = {},
+  context: { digest?: string; tags?: Record<string, string>; severity?: "error" | "warning" } = {}
 ): void {
   const report: ErrorReport = {
     message: error instanceof Error ? error.message : String(error),
     stack: error instanceof Error ? error.stack : undefined,
     digest: context.digest,
-    severity: context.severity ?? 'error',
+    severity: context.severity ?? "error",
     tags: context.tags ?? {},
     timestamp: new Date().toISOString(),
-  }
+  };
 
-  buffer.push(report)
-  if (buffer.length > MAX_BUFFER) buffer.shift()
+  buffer.push(report);
+  if (buffer.length > MAX_BUFFER) buffer.shift();
 
-  sendToProvider(report)
+  sendToProvider(report);
 
   // Console keeps local dev + server logs useful with zero configuration.
   // eslint-disable-next-line no-console
-  console.error('[error-reporting]', report.message, report.tags, error)
+  console.error("[error-reporting]", report.message, report.tags, error);
 }
 
 /** Expose the buffer (testing / server-log flushing / admin diagnostics). */
 export function getRecentErrorReports(): readonly ErrorReport[] {
-  return buffer
+  return buffer;
 }
 
 export function clearErrorReports(): void {
-  buffer.length = 0
+  buffer.length = 0;
 }

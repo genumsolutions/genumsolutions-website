@@ -1,25 +1,43 @@
-'use client'
+"use client";
 
-import { useEffect } from 'react'
+import { useEffect } from "react";
 
-import { reportError } from '../lib/error-reporting'
+import { reportError } from "../lib/error-reporting";
 
-export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+export default function GlobalError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
   useEffect(() => {
-    reportError(error, { digest: error.digest, tags: { boundary: 'global' } })
-  }, [error])
+    reportError(error, { digest: error.digest, tags: { boundary: "global" } });
+  }, [error]);
 
   return (
     <html lang="en">
-      <body style={{ margin: 0, fontFamily: 'system-ui, sans-serif', background: '#f6f8fc', color: '#101b3d' }}>
+      <body
+        style={{
+          margin: 0,
+          fontFamily: "system-ui, sans-serif",
+          background: "#f6f8fc",
+          color: "#101b3d",
+        }}
+      >
         <main role="alert" className="grid min-h-screen place-items-center px-5 text-center">
           <div>
-            <p className="text-xs font-black uppercase tracking-[.24em] text-[#173eaa]">Something broke on our side</p>
+            <p className="text-xs font-black uppercase tracking-[.24em] text-[#173eaa]">
+              Something broke on our side
+            </p>
             <h1 className="mt-3 font-display text-5xl font-bold">500 — Workshop hiccup.</h1>
             <p className="mx-auto mt-4 max-w-md leading-7 text-slate-600">
-              An unexpected error interrupted this page. Our engineers have been paged. Try again, or head back to safety.
+              An unexpected error interrupted this page. Our engineers have been paged. Try again,
+              or head back to safety.
             </p>
-            {error?.digest && <p className="mt-2 text-xs text-slate-400">Reference: {error.digest}</p>}
+            {error?.digest && (
+              <p className="mt-2 text-xs text-slate-400">Reference: {error.digest}</p>
+            )}
             <div className="mt-8 flex flex-wrap justify-center gap-3">
               <button
                 onClick={reset}
@@ -38,5 +56,5 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
         </main>
       </body>
     </html>
-  )
+  );
 }

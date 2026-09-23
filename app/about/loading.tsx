@@ -23,5 +23,5 @@ export default function AboutLoading() {
         </div>
       </div>
     </div>
-  )
+  );
 }

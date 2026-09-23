@@ -19,11 +19,11 @@ Do-not-break invariants + recovery during the app·website sync effort. Master p
 
 ## Recovery
 
-| Symptom | Action |
-|---|---|
-| `lib/company.ts` re-corrupted between pull and push | Re-run A2 (+A3) then A1 clean-up before pushing; the fix commit supersedes the bot commit. |
-| Typecheck still red at 5 errors on `company.ts` | Restore pre-corruption shape from `350ca9e^`/`ccea8dd`; `git diff` to confirm only `androidApp` fields changed. |
-| Pull refused (divergence) | STOP; report divergence in ledger, don't merge blindly. |
-| Manifest fetch fails during sync script | Script already exits 1 without touching the file (network guard). Safe. |
-| `.env.local` edits break a flow | Only removed: malformed line + `STRIPE_*` placeholders. Re-add from `.env.example`. |
-| Cron fired mid-effort | Sync script is now idempotent (A2) — worst case a no-op. |
+| Symptom                                             | Action                                                                                                          |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `lib/company.ts` re-corrupted between pull and push | Re-run A2 (+A3) then A1 clean-up before pushing; the fix commit supersedes the bot commit.                      |
+| Typecheck still red at 5 errors on `company.ts`     | Restore pre-corruption shape from `350ca9e^`/`ccea8dd`; `git diff` to confirm only `androidApp` fields changed. |
+| Pull refused (divergence)                           | STOP; report divergence in ledger, don't merge blindly.                                                         |
+| Manifest fetch fails during sync script             | Script already exits 1 without touching the file (network guard). Safe.                                         |
+| `.env.local` edits break a flow                     | Only removed: malformed line + `STRIPE_*` placeholders. Re-add from `.env.example`.                             |
+| Cron fired mid-effort                               | Sync script is now idempotent (A2) — worst case a no-op.                                                        |

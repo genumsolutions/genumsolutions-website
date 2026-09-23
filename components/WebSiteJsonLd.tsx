@@ -1,21 +1,26 @@
-import { company as defaultCompany, type Company } from '../lib/company'
+import { company as defaultCompany, type Company } from "../lib/company";
 
 export default function WebSiteJsonLd({ company = defaultCompany }: { company?: Company }) {
   const structuredData = {
-    '@context': 'https://schema.org',
-    '@type': 'WebSite',
+    "@context": "https://schema.org",
+    "@type": "WebSite",
     name: company.name,
     alternateName: company.shortName,
     description: company.description,
     url: company.url,
     publisher: {
-      '@type': 'Organization',
+      "@type": "Organization",
       name: company.name,
       url: company.url,
       logo: `${company.url}/logo.png`,
     },
-    inLanguage: 'en-NP',
-  }
+    inLanguage: "en-NP",
+  };
 
-  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+    />
+  );
 }

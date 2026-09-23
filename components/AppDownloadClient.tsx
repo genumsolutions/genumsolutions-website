@@ -1,19 +1,31 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import { Check, Copy, Download, Lock, MonitorSmartphone, Settings2, ShieldCheck, Smartphone } from 'lucide-react'
-import { androidApp, refreshAndroidAppInfo, type AppInfo, type Company } from '../lib/company'
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import {
+  Check,
+  Copy,
+  Download,
+  Lock,
+  MonitorSmartphone,
+  Settings2,
+  ShieldCheck,
+  Smartphone,
+} from "lucide-react";
+import { androidApp, refreshAndroidAppInfo, type AppInfo, type Company } from "../lib/company";
 
 export default function AppDownloadClient({
   company,
   initial,
 }: {
-  company: Company
-  initial?: AppInfo
+  company: Company;
+  initial?: AppInfo;
 }) {
-  const [copied, setCopied] = useState(false)
-  const [session, setSession] = useState<{ signedIn: boolean; checked: boolean }>({ signedIn: false, checked: false })
+  const [copied, setCopied] = useState(false);
+  const [session, setSession] = useState<{ signedIn: boolean; checked: boolean }>({
+    signedIn: false,
+    checked: false,
+  });
   // Every rendered value (version, size, arch, download/release URLs) comes
   // from this state. `initial` is the SSR-fetched live manifest (from the /app
   // server component) so the first paint is already the real released build.
@@ -21,17 +33,17 @@ export default function AppDownloadClient({
   // refresh from release.json on mount. Nothing reads the module-level object
   // directly, so the page is fully dynamic.
   const [appInfo, setAppInfo] = useState(() => ({
-    version: (initial?.version ?? androidApp.version) || '',
+    version: (initial?.version ?? androidApp.version) || "",
     sizeLabel: initial?.sizeLabel ?? androidApp.sizeLabel,
     arch: initial?.arch ?? androidApp.arch,
     apkUrl: initial?.apkUrl ?? androidApp.apkUrl,
     releaseUrl: initial?.releaseUrl ?? androidApp.releaseUrl,
     notes: initial?.notes ?? androidApp.notes,
     updatedAt: initial?.updatedAt ?? androidApp.updatedAt,
-  }))
+  }));
 
   useEffect(() => {
-    let active = true
+    let active = true;
     refreshAndroidAppInfo().then((info) => {
       if (active) {
         setAppInfo({
@@ -42,49 +54,53 @@ export default function AppDownloadClient({
           releaseUrl: info.releaseUrl,
           notes: info.notes,
           updatedAt: info.updatedAt,
-        })
+        });
       }
-    })
+    });
     // Download gate (2026-09-22): only registered users may download. The
     // session check runs client-side against the shared auth cookie; the page
     // itself stays public so guests can read the specs.
-    fetch('/api/auth/session')
+    fetch("/api/auth/session")
       .then((response) => response.json())
-      .then((data) => { if (active) setSession({ signedIn: Boolean(data.user), checked: true }) })
-      .catch(() => { if (active) setSession({ signedIn: false, checked: true }) })
+      .then((data) => {
+        if (active) setSession({ signedIn: Boolean(data.user), checked: true });
+      })
+      .catch(() => {
+        if (active) setSession({ signedIn: false, checked: true });
+      });
     return () => {
-      active = false
-    }
-  }, [])
+      active = false;
+    };
+  }, []);
 
   const steps = [
     {
-      title: 'Sign in',
+      title: "Sign in",
       icon: ShieldCheck,
-      body: 'Create a free account or sign in — the download is reserved for registered users so every install maps to a tracked GENUM profile.',
+      body: "Create a free account or sign in — the download is reserved for registered users so every install maps to a tracked GENUM profile.",
     },
     {
-      title: 'Download the APK',
+      title: "Download the APK",
       icon: Download,
       body: `Tap "Download" to grab v${appInfo.version} (${appInfo.sizeLabel}, ${appInfo.arch}) — signed by ${company.name}, no app store needed.`,
     },
     {
-      title: 'Allow unknown sources',
+      title: "Allow unknown sources",
       icon: Settings2,
       body: 'When your phone asks, allow installation from your browser or from "Unknown sources". You can turn this off again after installing.',
     },
     {
-      title: 'Install & open',
+      title: "Install & open",
       icon: Smartphone,
-      body: 'Open the downloaded file, confirm the install, and sign in once. The app remembers your session across tools on the same device.',
+      body: "Open the downloaded file, confirm the install, and sign in once. The app remembers your session across tools on the same device.",
     },
-  ]
+  ];
 
   async function copyLink() {
     try {
-      await navigator.clipboard.writeText(appInfo.apkUrl)
-      setCopied(true)
-      window.setTimeout(() => setCopied(false), 2000)
+      await navigator.clipboard.writeText(appInfo.apkUrl);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
     } catch {
       /* clipboard unavailable - ignore */
     }
@@ -99,8 +115,8 @@ export default function AppDownloadClient({
             Get the {company.shortName} app on your phone.
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
-            Browsing, orders, tools, and device controls — including Robo Car — in one native app for Android.
-            v{appInfo.version} · {appInfo.sizeLabel} · {appInfo.arch}.
+            Browsing, orders, tools, and device controls — including Robo Car — in one native app
+            for Android. v{appInfo.version} · {appInfo.sizeLabel} · {appInfo.arch}.
           </p>
         </div>
       </section>
@@ -112,20 +128,26 @@ export default function AppDownloadClient({
               <div>
                 <h2 className="font-display text-xl font-bold text-ink">Download for Android</h2>
                 <p className="mt-2 text-sm leading-6 text-muted">
-                  Direct APK download for <strong>registered users</strong> — sign in (or create a free account) and the download unlocks. Your
-                  phone may warn about unknown sources because the app isn&apos;t on Google Play yet; that&apos;s expected.
+                  Direct APK download for <strong>registered users</strong> — sign in (or create a
+                  free account) and the download unlocks. Your phone may warn about unknown sources
+                  because the app isn&apos;t on Google Play yet; that&apos;s expected.
                 </p>
                 <ul className="mt-4 space-y-2 text-sm text-slate-600">
                   <li className="flex items-center gap-2">
-                    <ShieldCheck size={16} className="shrink-0 text-navy" aria-hidden="true" /> Signed by {company.name}
+                    <ShieldCheck size={16} className="shrink-0 text-navy" aria-hidden="true" />{" "}
+                    Signed by {company.name}
                   </li>
                   <li className="flex items-center gap-2">
-                    <MonitorSmartphone size={16} className="shrink-0 text-navy" aria-hidden="true" /> {appInfo.arch} ·{' '}
-                    {appInfo.sizeLabel} download
+                    <MonitorSmartphone
+                      size={16}
+                      className="shrink-0 text-navy"
+                      aria-hidden="true"
+                    />{" "}
+                    {appInfo.arch} · {appInfo.sizeLabel} download
                   </li>
                   <li className="flex items-center gap-2">
-                    <Check size={16} className="shrink-0 text-navy" aria-hidden="true" /> Install over an older version to
-                    keep your data
+                    <Check size={16} className="shrink-0 text-navy" aria-hidden="true" /> Install
+                    over an older version to keep your data
                   </li>
                 </ul>
                 <div className="mt-6 flex flex-wrap items-center gap-3">
@@ -144,8 +166,12 @@ export default function AppDownloadClient({
                         onClick={copyLink}
                         className="inline-flex h-12 items-center gap-2 rounded-full border border-line bg-white px-5 text-sm font-bold text-ink transition hover:border-navy hover:text-navy focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
                       >
-                        {copied ? <Check size={16} aria-hidden="true" /> : <Copy size={16} aria-hidden="true" />}
-                        {copied ? 'Link copied' : 'Copy direct link'}
+                        {copied ? (
+                          <Check size={16} aria-hidden="true" />
+                        ) : (
+                          <Copy size={16} aria-hidden="true" />
+                        )}
+                        {copied ? "Link copied" : "Copy direct link"}
                       </button>
                     </>
                   ) : (
@@ -155,21 +181,23 @@ export default function AppDownloadClient({
                         className="inline-flex h-12 items-center gap-2 rounded-full bg-navy px-6 text-sm font-black text-white shadow-sm transition hover:bg-navy-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
                       >
                         <Lock size={16} aria-hidden="true" />
-                        {session.checked ? 'Sign in to download' : 'Checking sign-in…'}
+                        {session.checked ? "Sign in to download" : "Checking sign-in…"}
                       </Link>
-                      <span className="text-xs font-semibold text-muted">The APK link unlocks for registered users.</span>
+                      <span className="text-xs font-semibold text-muted">
+                        The APK link unlocks for registered users.
+                      </span>
                     </div>
                   )}
                 </div>
 
                 {appInfo.updatedAt && (
                   <p className="mt-4 text-xs leading-5 text-slate-400">
-                    Last published:{' '}
+                    Last published:{" "}
                     <time dateTime={appInfo.updatedAt} className="font-semibold text-slate-500">
-                      {new Date(appInfo.updatedAt).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
+                      {new Date(appInfo.updatedAt).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
                       })}
                     </time>
                     {appInfo.notes ? (
@@ -191,10 +219,15 @@ export default function AppDownloadClient({
 
       <section className="border-b border-line">
         <div className="mx-auto max-w-7xl px-5 py-10 lg:px-8">
-          <h2 className="text-xs font-black uppercase tracking-[.24em] text-navy">Four quick steps</h2>
+          <h2 className="text-xs font-black uppercase tracking-[.24em] text-navy">
+            Four quick steps
+          </h2>
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {steps.map((step, i) => (
-              <div key={step.title} className="rounded-2xl border border-line bg-white p-5 shadow-sm">
+              <div
+                key={step.title}
+                className="rounded-2xl border border-line bg-white p-5 shadow-sm"
+              >
                 <div className="flex items-center justify-between">
                   <step.icon size={20} className="text-navy" aria-hidden="true" />
                   <span className="text-3xl font-black text-mist/80">{i + 1}</span>
@@ -206,15 +239,18 @@ export default function AppDownloadClient({
           </div>
 
           <p className="mt-8 text-sm leading-6 text-muted">
-            Need a hand? Contact us at{' '}
+            Need a hand? Contact us at{" "}
             <a href={`mailto:${company.email}`} className="font-bold text-navy hover:underline">
               {company.email}
-            </a>{' '}
-            or call{' '}
-            <a href={`tel:${company.phone.replace(/\s/g, '')}`} className="font-bold text-navy hover:underline">
+            </a>{" "}
+            or call{" "}
+            <a
+              href={`tel:${company.phone.replace(/\s/g, "")}`}
+              className="font-bold text-navy hover:underline"
+            >
               {company.phone}
             </a>
-            . Release notes and version history are in the{' '}
+            . Release notes and version history are in the{" "}
             <a href={appInfo.releaseUrl} className="font-bold text-navy hover:underline">
               release manifest
             </a>
@@ -223,5 +259,5 @@ export default function AppDownloadClient({
         </div>
       </section>
     </>
-  )
+  );
 }

@@ -1,19 +1,19 @@
-import type { Metadata } from 'next'
-import Link from 'next/link'
-import { WifiOff } from 'lucide-react'
-import PageShell from '../../components/PageShell'
-import { company } from '../../lib/company'
+import type { Metadata } from "next";
+import Link from "next/link";
+import { WifiOff } from "lucide-react";
+import PageShell from "../../components/PageShell";
+import { company } from "../../lib/company";
 
 export const metadata: Metadata = {
-  title: 'You are offline',
+  title: "You are offline",
   robots: { index: false, follow: false },
-}
+};
 
 const links = [
-  { href: '/', label: 'Home' },
-  { href: '/products', label: 'Products' },
-  { href: '/tools', label: 'Tools' },
-]
+  { href: "/", label: "Home" },
+  { href: "/products", label: "Products" },
+  { href: "/tools", label: "Tools" },
+];
 
 export default function OfflinePage() {
   return (
@@ -44,8 +44,11 @@ export default function OfflinePage() {
           </div>
 
           <p className="mt-8 text-sm leading-6 text-slate-500">
-            When your connection returns, just refresh. Need help?{' '}
-            <Link href="/contact" className="font-bold text-navy underline decoration-navy decoration-2 underline-offset-4 hover:text-navy-dark">
+            When your connection returns, just refresh. Need help?{" "}
+            <Link
+              href="/contact"
+              className="font-bold text-navy underline decoration-navy decoration-2 underline-offset-4 hover:text-navy-dark"
+            >
               Contact {company.shortName}
             </Link>
             .
@@ -53,5 +56,5 @@ export default function OfflinePage() {
         </div>
       </main>
     </PageShell>
-  )
+  );
 }

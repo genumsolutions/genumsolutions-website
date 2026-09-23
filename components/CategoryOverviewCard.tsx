@@ -4,11 +4,11 @@
 // the page (mirrors the native app's Tools screen). Shows the description,
 // "What you can build" bullets, and "Typical hardware" chips.
 // =====================================================================
-import { categoryBullets } from '../lib/project-catalog'
-import type { ProjectCategory } from '../lib/project-catalog'
+import { categoryBullets } from "../lib/project-catalog";
+import type { ProjectCategory } from "../lib/project-catalog";
 
 export default function CategoryOverviewCard({ category }: { category: ProjectCategory }) {
-  const points = categoryBullets(category)
+  const points = categoryBullets(category);
 
   return (
     <section
@@ -25,11 +25,16 @@ export default function CategoryOverviewCard({ category }: { category: ProjectCa
 
       <div className="mt-6 grid gap-8 lg:grid-cols-2">
         <div>
-          <p className="text-xs font-black uppercase tracking-widest text-navy">What you can build</p>
+          <p className="text-xs font-black uppercase tracking-widest text-navy">
+            What you can build
+          </p>
           <ul className="mt-3 space-y-2.5">
             {points.map((point) => (
               <li key={point} className="flex items-start gap-2 text-sm leading-6 text-muted">
-                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden="true" />
+                <span
+                  className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-accent"
+                  aria-hidden="true"
+                />
                 {point}
               </li>
             ))}
@@ -55,5 +60,5 @@ export default function CategoryOverviewCard({ category }: { category: ProjectCa
         </div>
       </div>
     </section>
-  )
+  );
 }

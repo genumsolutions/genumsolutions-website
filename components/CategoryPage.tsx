@@ -1,12 +1,12 @@
-import Link from 'next/link'
-import { categoryBullets, getProjectCategory } from '../lib/project-catalog'
+import Link from "next/link";
+import { categoryBullets, getProjectCategory } from "../lib/project-catalog";
 
 export default function CategoryPage({ slug }: { slug: string }) {
-  const cat = getProjectCategory(slug)
+  const cat = getProjectCategory(slug);
 
-  if (!cat) return null
+  if (!cat) return null;
 
-  const points = categoryBullets(cat)
+  const points = categoryBullets(cat);
 
   return (
     <div className="mx-auto max-w-7xl px-5 py-10 lg:px-8 lg:py-12">
@@ -31,22 +31,27 @@ export default function CategoryPage({ slug }: { slug: string }) {
           <h2 className="font-display text-lg font-bold text-ink">Typical hardware</h2>
           <ul className="mt-4 flex flex-wrap gap-2">
             {cat.hardware.map((item) => (
-              <li key={item} className="whitespace-nowrap rounded-full bg-mist px-3 py-1.5 text-xs font-bold text-navy">
+              <li
+                key={item}
+                className="whitespace-nowrap rounded-full bg-mist px-3 py-1.5 text-xs font-bold text-navy"
+              >
                 {item}
               </li>
             ))}
           </ul>
           <div className="mt-6 rounded-xl bg-sky px-4 py-3">
             <Link href="/tools">
-              <p className="text-sm font-bold text-navy hover:underline">Test & control this category &rarr;</p>
+              <p className="text-sm font-bold text-navy hover:underline">
+                Test & control this category &rarr;
+              </p>
             </Link>
             <p className="mt-1 text-xs leading-5 text-muted">
-              Live controls for this category live on the Tools page
-              and use the same Bluetooth / WiFi transport as the robot cars.
+              Live controls for this category live on the Tools page and use the same Bluetooth /
+              WiFi transport as the robot cars.
             </p>
           </div>
         </section>
       </div>
     </div>
-  )
+  );
 }

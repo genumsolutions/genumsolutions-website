@@ -24,206 +24,203 @@
 // =====================================================================
 
 export type CarType =
-  | '4wd4m' // 4-wheel-drive, 4 motors
-  | '2wd1m' // 2-wheel-differential with servo steering
-  | 'self-balancing' // 1-mode autonomous (PID self-balance)
-  | 'obstacle-us' // obstacle avoidance via ultrasonic
-  | 'obstacle-ir' // obstacle avoidance via IR
-  | 'website-client' // ESP32 as website client (controls browser)
-  | 'website-server' // ESP32 as website server (hosts page)
-  | 'path-follow' // IR line/path following
-  | 'rf-manual' // manual RF (not BT/WiFi)
+  | "4wd4m" // 4-wheel-drive, 4 motors
+  | "2wd1m" // 2-wheel-differential with servo steering
+  | "self-balancing" // 1-mode autonomous (PID self-balance)
+  | "obstacle-us" // obstacle avoidance via ultrasonic
+  | "obstacle-ir" // obstacle avoidance via IR
+  | "website-client" // ESP32 as website client (controls browser)
+  | "website-server" // ESP32 as website server (hosts page)
+  | "path-follow" // IR line/path following
+  | "rf-manual"; // manual RF (not BT/WiFi)
 
 export type ControlKind =
-  | 'drive-tank' // 4WD: drive+direction
-  | 'drive-2wd1m' // 2WD1M: motor speed + servo steer
-  | 'pid-auto' // self-balancing: PID sliders + live angle
-  | 'start-stop' // autonomous: run/stop + read-only telemetry
-  | 'tuning' // config-driven (path/obstacle thresholds)
-  | 'weblink' // website client/server: point at ESP IP
+  | "drive-tank" // 4WD: drive+direction
+  | "drive-2wd1m" // 2WD1M: motor speed + servo steer
+  | "pid-auto" // self-balancing: PID sliders + live angle
+  | "start-stop" // autonomous: run/stop + read-only telemetry
+  | "tuning" // config-driven (path/obstacle thresholds)
+  | "weblink"; // website client/server: point at ESP IP
 
 export interface RoboCarMode {
-  id: CarType
-  name: string
+  id: CarType;
+  name: string;
   /** Command token sent to the car to select this mode. */
-  token: string
+  token: string;
   /**
    * Position in the device's MODE_CMDS[] array (0..8) as cycled by the
    * physical mode button:
    *   4WD4M, ESP_SER, PATH, OBS_US, OBS_IR, MAN, AUTO, ESP_CLI, 2WD1M
    */
-  deviceIndex: number
-  car: string
-  wheel: string
-  steering: string
-  sensors: string[]
+  deviceIndex: number;
+  car: string;
+  wheel: string;
+  steering: string;
+  sensors: string[];
   /** What comms the car exposes locally. */
-  transport: ('ble' | 'wifi' | 'classic-bt' | 'rf')[]
+  transport: ("ble" | "wifi" | "classic-bt" | "rf")[];
   /** Default remote the car pairs with. */
-  remoteWith: string
-  controls: ControlKind[]
+  remoteWith: string;
+  controls: ControlKind[];
   /** Whether the car needs a device connected before controls unlock. */
-  requiresConnection: boolean
-  blurb: string
+  requiresConnection: boolean;
+  blurb: string;
   /** Display order when listing modes (optional; defaults to 1000). */
-  sortOrder?: number
+  sortOrder?: number;
 }
 
 export const ROBOCAR_MODES: RoboCarMode[] = [
   {
-    id: '4wd4m',
+    id: "4wd4m",
     // X-6/X-8: the mode is named by its OPERATION (4WD4M), not its transport.
     // token matches the fleet wire token; legacy "BT" is normalized in
     // robo-car-transport.ts (receivers accept both forever).
-    name: '4WD4M',
-    token: '4WD4M',
+    name: "4WD4M",
+    token: "4WD4M",
     deviceIndex: 0,
-    car: '4-wheel-drive',
-    wheel: '4 × BO/brushed motors',
-    steering: 'Skid-steer (differential)',
+    car: "4-wheel-drive",
+    wheel: "4 × BO/brushed motors",
+    steering: "Skid-steer (differential)",
     sensors: [],
-    transport: ['ble', 'classic-bt'],
-    remoteWith: 'ESP REMOTE or app',
-    controls: ['drive-tank'],
+    transport: ["ble", "classic-bt"],
+    remoteWith: "ESP REMOTE or app",
+    controls: ["drive-tank"],
     requiresConnection: true,
-    blurb: 'A 4-motor drive car driven by direction (F/B/L/R) and speed.',
+    blurb: "A 4-motor drive car driven by direction (F/B/L/R) and speed.",
   },
   {
-    id: '2wd1m',
-    name: 'Bluetooth · 2WD + Servo (1M)',
-    token: '2WD1M',
+    id: "2wd1m",
+    name: "Bluetooth · 2WD + Servo (1M)",
+    token: "2WD1M",
     deviceIndex: 8,
-    car: '2-wheel-drive',
-    wheel: '1 × BO motor (rear)',
-    steering: '1 × servo (0..180, center 90)',
+    car: "2-wheel-drive",
+    wheel: "1 × BO motor (rear)",
+    steering: "1 × servo (0..180, center 90)",
     sensors: [],
-    transport: ['ble', 'classic-bt'],
-    remoteWith: 'ESP REMOTE two-joystick',
-    controls: ['drive-2wd1m'],
+    transport: ["ble", "classic-bt"],
+    remoteWith: "ESP REMOTE two-joystick",
+    controls: ["drive-2wd1m"],
     requiresConnection: true,
-    blurb: 'One drive motor plus a steering servo. Speed is signed SPD (fwd +ve).',
+    blurb: "One drive motor plus a steering servo. Speed is signed SPD (fwd +ve).",
   },
   {
-    id: 'self-balancing',
-    name: 'Self-Balancing',
-    token: 'AUTO',
+    id: "self-balancing",
+    name: "Self-Balancing",
+    token: "AUTO",
     deviceIndex: 6,
-    car: 'Self-balancing',
-    wheel: '2 × BO motors',
-    steering: 'Self-balance (PID)',
-    sensors: ['MPU6050 IMU'],
-    transport: ['ble', 'wifi', 'classic-bt'],
-    remoteWith: 'ESP REMOTE (PID tuning)',
-    controls: ['pid-auto'],
+    car: "Self-balancing",
+    wheel: "2 × BO motors",
+    steering: "Self-balance (PID)",
+    sensors: ["MPU6050 IMU"],
+    transport: ["ble", "wifi", "classic-bt"],
+    remoteWith: "ESP REMOTE (PID tuning)",
+    controls: ["pid-auto"],
     requiresConnection: true,
-    blurb: 'Balances itself in AUTO mode. The app/remote tune Kp/Ki/Kd OUT/OFF live.',
+    blurb: "Balances itself in AUTO mode. The app/remote tune Kp/Ki/Kd OUT/OFF live.",
   },
   {
-    id: 'obstacle-us',
-    name: 'Obstacle Avoidance · Ultrasonic',
-    token: 'OBS_US',
+    id: "obstacle-us",
+    name: "Obstacle Avoidance · Ultrasonic",
+    token: "OBS_US",
     deviceIndex: 3,
-    car: 'Obstacle avoider',
-    wheel: '2/4 × BO motors',
-    steering: 'Skid-steer',
-    sensors: ['HC-SR04 / ultrasonic'],
-    transport: ['ble', 'wifi', 'classic-bt'],
-    remoteWith: 'ESP REMOTE',
-    controls: ['start-stop'],
+    car: "Obstacle avoider",
+    wheel: "2/4 × BO motors",
+    steering: "Skid-steer",
+    sensors: ["HC-SR04 / ultrasonic"],
+    transport: ["ble", "wifi", "classic-bt"],
+    remoteWith: "ESP REMOTE",
+    controls: ["start-stop"],
     requiresConnection: true,
-    blurb: 'Runs autonomous obstacle avoidance using an ultrasonic sensor.',
+    blurb: "Runs autonomous obstacle avoidance using an ultrasonic sensor.",
   },
   {
-    id: 'obstacle-ir',
-    name: 'Obstacle Avoidance · IR',
-    token: 'OBS_IR',
+    id: "obstacle-ir",
+    name: "Obstacle Avoidance · IR",
+    token: "OBS_IR",
     deviceIndex: 4,
-    car: 'Obstacle avoider',
-    wheel: '2/4 × BO motors',
-    steering: 'Skid-steer',
-    sensors: ['IR / photodiode pair'],
-    transport: ['ble', 'wifi', 'classic-bt'],
-    remoteWith: 'ESP REMOTE',
-    controls: ['start-stop'],
+    car: "Obstacle avoider",
+    wheel: "2/4 × BO motors",
+    steering: "Skid-steer",
+    sensors: ["IR / photodiode pair"],
+    transport: ["ble", "wifi", "classic-bt"],
+    remoteWith: "ESP REMOTE",
+    controls: ["start-stop"],
     requiresConnection: true,
-    blurb: 'Autonomous obstacle avoidance driven by IR sensors.',
+    blurb: "Autonomous obstacle avoidance driven by IR sensors.",
   },
   {
-    id: 'website-client',
-    name: 'Website Controlled · Client',
-    token: 'ESP_CLI',
+    id: "website-client",
+    name: "Website Controlled · Client",
+    token: "ESP_CLI",
     deviceIndex: 7,
-    car: 'Website car',
-    wheel: '2/4 × BO motors',
-    steering: 'Skid-steer',
+    car: "Website car",
+    wheel: "2/4 × BO motors",
+    steering: "Skid-steer",
     sensors: [],
-    transport: ['wifi'],
-    remoteWith: 'Browser / app',
-    controls: ['weblink'],
+    transport: ["wifi"],
+    remoteWith: "Browser / app",
+    controls: ["weblink"],
     requiresConnection: false,
-    blurb: 'The ESP32 is a WiFi client; the browser/app acts as the control server.',
+    blurb: "The ESP32 is a WiFi client; the browser/app acts as the control server.",
   },
   {
-    id: 'website-server',
-    name: 'Website Controlled · Server',
-    token: 'ESP_SER',
+    id: "website-server",
+    name: "Website Controlled · Server",
+    token: "ESP_SER",
     deviceIndex: 1,
-    car: 'Website car',
-    wheel: '2/4 × BO motors',
-    steering: 'Skid-steer',
+    car: "Website car",
+    wheel: "2/4 × BO motors",
+    steering: "Skid-steer",
     sensors: [],
-    transport: ['wifi'],
-    remoteWith: 'Browser / app',
-    controls: ['weblink'],
+    transport: ["wifi"],
+    remoteWith: "Browser / app",
+    controls: ["weblink"],
     requiresConnection: false,
-    blurb: 'The ESP32 hosts its own web page; open its IP to drive it.',
+    blurb: "The ESP32 hosts its own web page; open its IP to drive it.",
   },
   {
-    id: 'path-follow',
-    name: 'Path Following · IR',
-    token: 'PATH',
+    id: "path-follow",
+    name: "Path Following · IR",
+    token: "PATH",
     deviceIndex: 2,
-    car: 'Line follower',
-    wheel: '2/4 × BO motors',
-    steering: 'Skid-steer',
-    sensors: ['IR line sensors'],
-    transport: ['ble', 'wifi', 'classic-bt'],
-    remoteWith: 'ESP REMOTE',
-    controls: ['start-stop'],
+    car: "Line follower",
+    wheel: "2/4 × BO motors",
+    steering: "Skid-steer",
+    sensors: ["IR line sensors"],
+    transport: ["ble", "wifi", "classic-bt"],
+    remoteWith: "ESP REMOTE",
+    controls: ["start-stop"],
     requiresConnection: true,
-    blurb: 'Follows an IR-detected line or path autonomously.',
+    blurb: "Follows an IR-detected line or path autonomously.",
   },
   {
-    id: 'rf-manual',
-    name: 'Manual · RF',
-    token: 'MAN',
+    id: "rf-manual",
+    name: "Manual · RF",
+    token: "MAN",
     deviceIndex: 5,
-    car: 'RF car',
-    wheel: '2/4 × BO motors',
-    steering: 'Skid-steer',
+    car: "RF car",
+    wheel: "2/4 × BO motors",
+    steering: "Skid-steer",
     sensors: [],
-    transport: ['rf'],
-    remoteWith: 'RF hand-held remote',
-    controls: ['drive-tank'],
+    transport: ["rf"],
+    remoteWith: "RF hand-held remote",
+    controls: ["drive-tank"],
     requiresConnection: false,
-    blurb: 'Manual control over RF modules (not BT or WiFi) - drive with the RF handset.',
+    blurb: "Manual control over RF modules (not BT or WiFi) - drive with the RF handset.",
   },
-]
+];
 
-export const CAR_TYPE_MAP = ROBOCAR_MODES.reduce<Record<string, RoboCarMode>>(
-  (map, mode) => {
-    map[mode.id] = mode
-    return map
-  },
-  {},
-)
+export const CAR_TYPE_MAP = ROBOCAR_MODES.reduce<Record<string, RoboCarMode>>((map, mode) => {
+  map[mode.id] = mode;
+  return map;
+}, {});
 
 /** Resolve a car-type id or mode token to its catalogue entry. */
 export function resolveCarType(idOrToken: string): RoboCarMode | undefined {
   return (
     CAR_TYPE_MAP[idOrToken.toLowerCase()] ??
     ROBOCAR_MODES.find((m) => m.token.toLowerCase() === idOrToken.toLowerCase())
-  )
+  );
 }
 
 /**
@@ -234,13 +231,12 @@ export function resolveCarType(idOrToken: string): RoboCarMode | undefined {
  * like the device's own mode button.
  */
 export const DEVICE_MODE_ORDER: RoboCarMode[] = [...ROBOCAR_MODES].sort(
-  (a, b) => a.deviceIndex - b.deviceIndex,
-)
+  (a, b) => a.deviceIndex - b.deviceIndex
+);
 
 /** Return the mode after `from` in the device's cycle order (wrapping). */
 export function nextDeviceMode(from: RoboCarMode): RoboCarMode {
-  const idx = DEVICE_MODE_ORDER.findIndex((m) => m.id === from.id)
-  if (idx === -1) return DEVICE_MODE_ORDER[0]!
-  return DEVICE_MODE_ORDER[(idx + 1) % DEVICE_MODE_ORDER.length]!
+  const idx = DEVICE_MODE_ORDER.findIndex((m) => m.id === from.id);
+  if (idx === -1) return DEVICE_MODE_ORDER[0]!;
+  return DEVICE_MODE_ORDER[(idx + 1) % DEVICE_MODE_ORDER.length]!;
 }
-

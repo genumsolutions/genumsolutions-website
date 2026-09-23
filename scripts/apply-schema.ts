@@ -1,69 +1,69 @@
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
-import { spawn } from 'node:child_process'
-import { Client } from 'pg'
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { spawn } from "node:child_process";
+import { Client } from "pg";
 
 // Minimal .env.local loader so `npm run db:apply` works without extra
 // dependencies (same pattern as scripts/seed-products.ts).
 function loadEnvFile() {
   try {
-    const raw = readFileSync(join(process.cwd(), '.env.local'), 'utf8')
-    for (const line of raw.split('\n')) {
-      const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/)
-      if (!match?.[1]) continue
-      const key = match[1]
-      const value = (match[2] || '').replace(/^["']|["']$/g, '')
-      if (!process.env[key]) process.env[key] = value
+    const raw = readFileSync(join(process.cwd(), ".env.local"), "utf8");
+    for (const line of raw.split("\n")) {
+      const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+      if (!match?.[1]) continue;
+      const key = match[1];
+      const value = (match[2] || "").replace(/^["']|["']$/g, "");
+      if (!process.env[key]) process.env[key] = value;
     }
   } catch {
     // Fall back to already-set environment variables.
   }
 }
 
-loadEnvFile()
+loadEnvFile();
 
-const dbUrl = process.env.SUPABASE_DB_URL
+const dbUrl = process.env.SUPABASE_DB_URL;
 if (!dbUrl) {
   console.error(
-    'Missing SUPABASE_DB_URL. Add it to .env.local first (Supabase Dashboard ' +
+    "Missing SUPABASE_DB_URL. Add it to .env.local first (Supabase Dashboard " +
       '-> Database -> Connect -> Connection string, "postgres" role, ' +
-      'e.g. postgresql://postgres.<project-ref>:<DB-PASSWORD>@aws-0-<region>.pooler.supabase.com:5432/postgres).',
-  )
-  process.exit(1)
+      "e.g. postgresql://postgres.<project-ref>:<DB-PASSWORD>@aws-0-<region>.pooler.supabase.com:5432/postgres)."
+  );
+  process.exit(1);
 }
 
-const schemaPath = join(process.cwd(), 'supabase', 'schema.sql')
-const sql = readFileSync(schemaPath, 'utf8')
+const schemaPath = join(process.cwd(), "supabase", "schema.sql");
+const sql = readFileSync(schemaPath, "utf8");
 if (!sql.trim()) {
-  console.error(`schema.sql is empty at ${schemaPath}`)
-  process.exit(1)
+  console.error(`schema.sql is empty at ${schemaPath}`);
+  process.exit(1);
 }
 
-const seed = process.argv.slice(2).includes('--seed')
+const seed = process.argv.slice(2).includes("--seed");
 
 function runSeed(script: string, tsxCli: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const child = spawn(process.execPath, [tsxCli, `scripts/${script}`], {
       cwd: process.cwd(),
-      stdio: 'inherit',
-    })
-    child.on('error', (err) => reject(new Error(`failed to start ${script}: ${err.message}`)))
-    child.on('close', (code) => {
-      if (code === 0) resolve()
-      else reject(new Error(`${script} failed (exit ${code ?? '?'}); aborting the seed pass.`))
-    })
-  })
+      stdio: "inherit",
+    });
+    child.on("error", (err) => reject(new Error(`failed to start ${script}: ${err.message}`)));
+    child.on("close", (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`${script} failed (exit ${code ?? "?"}); aborting the seed pass.`));
+    });
+  });
 }
 
 async function runSeeds() {
-  const scripts = ['seed-products.ts', 'seed-journal.ts', 'seed-programs.ts', 'seed-company.ts']
+  const scripts = ["seed-products.ts", "seed-journal.ts", "seed-programs.ts", "seed-company.ts"];
   // Spawn tsx through plain `node` (node_modules/tsx/dist/cli.mjs) using
   // ASYNC spawn: Windows libuv has a known crash with spawnSync
   // ("Assertion failed: !(handle->flags & UV_HANDLE_CLOSING)" in async.c).
-  const tsxCli = join(process.cwd(), 'node_modules', 'tsx', 'dist', 'cli.mjs')
+  const tsxCli = join(process.cwd(), "node_modules", "tsx", "dist", "cli.mjs");
   for (const script of scripts) {
-    console.log(`Seeding via ${script} ...`)
-    await runSeed(script, tsxCli)
+    console.log(`Seeding via ${script} ...`);
+    await runSeed(script, tsxCli);
   }
 }
 
@@ -71,36 +71,38 @@ async function main() {
   const client = new Client({
     connectionString: dbUrl,
     ssl: { rejectUnauthorized: false },
-  })
+  });
   try {
-    await client.connect()
-    console.log(`Connected to Supabase Postgres - applying ${schemaPath} in one transaction ...`)
+    await client.connect();
+    console.log(`Connected to Supabase Postgres - applying ${schemaPath} in one transaction ...`);
     // The connection is a transaction-pooled (PgBouncer) URL: it reports
     // current_setting('role') = 'none' even for the superuser session, which
     // makes the protect_role_column / protect_tier_column triggers reject the
     // owner upsert below ('Only administrators can change roles'). A schema
     // apply is inherently a superuser operation, so pin the role to postgres
     // for the duration of this session (same as the SQL editor does).
-    await client.query('set role postgres')
+    await client.query("set role postgres");
     // schema.sql is written idempotently (create table if not exists,
     // create or replace function, drop ... if exists). Running the whole
     // file as a single multi-statement query wraps it in one implicit
     // transaction: any statement failure rolls everything back.
-    await client.query(sql)
-    console.log('Schema applied successfully.')
+    await client.query(sql);
+    console.log("Schema applied successfully.");
     if (seed) {
-      await runSeeds()
-      console.log('Seeds complete: products, journal, programs, company.')
+      await runSeeds();
+      console.log("Seeds complete: products, journal, programs, company.");
     } else {
-      console.log('Hint: run `npm run db:apply:seed` to also re-seed products/journal/programs/company.')
+      console.log(
+        "Hint: run `npm run db:apply:seed` to also re-seed products/journal/programs/company."
+      );
     }
   } finally {
-    await client.end()
+    await client.end();
   }
 }
 
 main().catch((err: unknown) => {
-  const message = err instanceof Error ? err.message : String(err)
-  console.error(`Apply-schema failed: ${message}`)
-  process.exit(1)
-})
+  const message = err instanceof Error ? err.message : String(err);
+  console.error(`Apply-schema failed: ${message}`);
+  process.exit(1);
+});

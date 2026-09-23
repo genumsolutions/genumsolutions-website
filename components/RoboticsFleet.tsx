@@ -9,30 +9,28 @@
 // Server component - no client JS shipped.
 // =====================================================================
 
-import { ROBOCAR_MODES } from '../lib/robo-car-catalog'
-import type { ControlKind } from '../lib/robo-car-catalog'
-import PageIntro from './PageIntro'
+import { ROBOCAR_MODES } from "../lib/robo-car-catalog";
+import type { ControlKind } from "../lib/robo-car-catalog";
+import PageIntro from "./PageIntro";
 
 const CONTROL_LABELS: Record<ControlKind, string> = {
-  'drive-tank': 'Tank drive (F/B/L/R + speed)',
-  'drive-2wd1m': 'Speed + servo steering (TRIM supported)',
-  'pid-auto': 'PID tuning + live balance telemetry',
-  'start-stop': 'Run/stop + read-only telemetry',
-  tuning: 'Threshold tuning',
-  weblink: 'Points at the car-hosted page',
-}
+  "drive-tank": "Tank drive (F/B/L/R + speed)",
+  "drive-2wd1m": "Speed + servo steering (TRIM supported)",
+  "pid-auto": "PID tuning + live balance telemetry",
+  "start-stop": "Run/stop + read-only telemetry",
+  tuning: "Threshold tuning",
+  weblink: "Points at the car-hosted page",
+};
 
 const TRANSPORT_LABELS: Record<string, string> = {
-  ble: 'BLE',
-  wifi: 'WiFi',
-  'classic-bt': 'Classic BT (SPP)',
-  rf: 'RF link',
-}
+  ble: "BLE",
+  wifi: "WiFi",
+  "classic-bt": "Classic BT (SPP)",
+  rf: "RF link",
+};
 
 export default function RoboticsFleet() {
-  const modes = [...ROBOCAR_MODES].sort(
-    (a, b) => a.deviceIndex - b.deviceIndex,
-  )
+  const modes = [...ROBOCAR_MODES].sort((a, b) => a.deviceIndex - b.deviceIndex);
 
   return (
     <section className="mx-auto max-w-7xl px-5 py-10 lg:px-8 lg:py-12">
@@ -58,9 +56,7 @@ export default function RoboticsFleet() {
                 MODE&nbsp;{mode.deviceIndex + 1}/9 · {mode.token}
               </span>
             </div>
-            <p className="mt-3 flex-1 text-xs leading-5 text-slate-600">
-              {mode.blurb}
-            </p>
+            <p className="mt-3 flex-1 text-xs leading-5 text-slate-600">{mode.blurb}</p>
             <dl className="mt-4 space-y-1.5 border-t border-line pt-3 text-xs leading-5">
               <div className="flex gap-2">
                 <dt className="w-20 shrink-0 font-bold uppercase tracking-wide text-slate-500">
@@ -85,7 +81,7 @@ export default function RoboticsFleet() {
                   <dt className="w-20 shrink-0 font-bold uppercase tracking-wide text-slate-500">
                     Sensors
                   </dt>
-                  <dd className="text-slate-600">{mode.sensors.join(', ')}</dd>
+                  <dd className="text-slate-600">{mode.sensors.join(", ")}</dd>
                 </div>
               )}
               <div className="flex gap-2">
@@ -93,9 +89,7 @@ export default function RoboticsFleet() {
                   Controls
                 </dt>
                 <dd className="text-slate-600">
-                  {mode.controls
-                    .map((c) => CONTROL_LABELS[c] ?? c)
-                    .join(' · ')}
+                  {mode.controls.map((c) => CONTROL_LABELS[c] ?? c).join(" · ")}
                 </dd>
               </div>
             </dl>
@@ -118,10 +112,9 @@ export default function RoboticsFleet() {
         ))}
       </ol>
       <p className="mt-6 text-xs leading-5 text-muted">
-        Live driving stays in the GENUM app (native Bluetooth/WiFi links) or each
-        car&apos;s own hosted page — website remote control is paused by design
-        (decision D-1).
+        Live driving stays in the GENUM app (native Bluetooth/WiFi links) or each car&apos;s own
+        hosted page — website remote control is paused by design (decision D-1).
       </p>
     </section>
-  )
+  );
 }

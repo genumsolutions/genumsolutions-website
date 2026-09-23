@@ -12,4 +12,4 @@
 // own hosted page (http://<car-ip>).
 // =====================================================================
 
-export const REMOTE_CONTROL_ENABLED = false
+export const REMOTE_CONTROL_ENABLED = false;

@@ -1,59 +1,60 @@
-import { localProducts } from './catalog-data'
-import type { Product } from './catalog'
-import { ROBOCAR_MODES as localRoBoModes, type RoboCarMode } from './robo-car-catalog'
-import { createServiceClient, supabaseConfigured } from './supabase/server'
-import { unstable_noStore } from 'next/cache'
+import { localProducts } from "./catalog-data";
+import type { Product } from "./catalog";
+import { ROBOCAR_MODES as localRoBoModes, type RoboCarMode } from "./robo-car-catalog";
+import { createServiceClient, supabaseConfigured } from "./supabase/server";
+import { unstable_noStore } from "next/cache";
 
-export type { Product } from './catalog'
+export type { Product } from "./catalog";
 
 export type SiteContent = {
-  homeTitle: string
-  homeBody: string
-  products: Partial<Product>[]
-}
+  homeTitle: string;
+  homeBody: string;
+  products: Partial<Product>[];
+};
 
 const defaultContent: SiteContent = {
-  homeTitle: 'Technology you can touch, test, and trust.',
-  homeBody: 'Robotics kits, project solutions, fabrication, open tools, and training for curious builders, schools, and teams.',
+  homeTitle: "Technology you can touch, test, and trust.",
+  homeBody:
+    "Robotics kits, project solutions, fabrication, open tools, and training for curious builders, schools, and teams.",
   products: [],
-}
+};
 
 type ProductRow = {
-  id: string
-  name: string
-  category: string
-  price: number
-  price_label: string | null
-  sku: string | null
-  product_type: string | null
-  inventory_type: string | null
-  active: boolean | null
-  project_overview: string | null
-  objectives: unknown
-  materials_required: unknown
-  learning_outcomes: unknown
-  build_steps: unknown
-  control_methods: unknown
-  prerequisites: unknown
-  deliverables: unknown
-  estimated_duration: string | null
-  source_folder: string | null
-  documentation_url: string | null
-  video_url: string | null
-  maintenance_notes: string | null
-  note: string | null
-  description: string | null
-  specs: unknown
-  audience: string | null
-  difficulty: string | null
-  warranty: string | null
-  stock: number | null
-  delivery: string | null
-  color: string | null
-  badge: string | null
-  supplier: string | null
-  image_url: string | null
-}
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+  price_label: string | null;
+  sku: string | null;
+  product_type: string | null;
+  inventory_type: string | null;
+  active: boolean | null;
+  project_overview: string | null;
+  objectives: unknown;
+  materials_required: unknown;
+  learning_outcomes: unknown;
+  build_steps: unknown;
+  control_methods: unknown;
+  prerequisites: unknown;
+  deliverables: unknown;
+  estimated_duration: string | null;
+  source_folder: string | null;
+  documentation_url: string | null;
+  video_url: string | null;
+  maintenance_notes: string | null;
+  note: string | null;
+  description: string | null;
+  specs: unknown;
+  audience: string | null;
+  difficulty: string | null;
+  warranty: string | null;
+  stock: number | null;
+  delivery: string | null;
+  color: string | null;
+  badge: string | null;
+  supplier: string | null;
+  image_url: string | null;
+};
 
 function rowToProduct(row: ProductRow): Product {
   return {
@@ -61,37 +62,42 @@ function rowToProduct(row: ProductRow): Product {
     name: row.name,
     category: row.category,
     price: row.price ?? 0,
-    priceLabel: row.price_label || (row.price ? `NPR ${row.price.toLocaleString('en-IN')}` : 'Request quote'),
-    sku: row.sku || '',
-    productType: (row.product_type as Product['productType']) || 'Retail kit',
-    inventoryType: (row.inventory_type as Product['inventoryType']) || 'Catalog',
+    priceLabel:
+      row.price_label || (row.price ? `NPR ${row.price.toLocaleString("en-IN")}` : "Request quote"),
+    sku: row.sku || "",
+    productType: (row.product_type as Product["productType"]) || "Retail kit",
+    inventoryType: (row.inventory_type as Product["inventoryType"]) || "Catalog",
     active: row.active !== false,
-    projectOverview: row.project_overview || '',
-    objectives: Array.isArray(row.objectives) ? row.objectives as string[] : [],
-    materialsRequired: Array.isArray(row.materials_required) ? row.materials_required as string[] : [],
-    learningOutcomes: Array.isArray(row.learning_outcomes) ? row.learning_outcomes as string[] : [],
-    buildSteps: Array.isArray(row.build_steps) ? row.build_steps as string[] : [],
-    controlMethods: Array.isArray(row.control_methods) ? row.control_methods as string[] : [],
-    prerequisites: Array.isArray(row.prerequisites) ? row.prerequisites as string[] : [],
-    deliverables: Array.isArray(row.deliverables) ? row.deliverables as string[] : [],
-    estimatedDuration: row.estimated_duration || '',
-    sourceFolder: row.source_folder || '',
-    documentationUrl: row.documentation_url || '',
-    videoUrl: row.video_url || '',
-    maintenanceNotes: row.maintenance_notes || '',
-    note: row.note || '',
-    description: row.description || '',
+    projectOverview: row.project_overview || "",
+    objectives: Array.isArray(row.objectives) ? (row.objectives as string[]) : [],
+    materialsRequired: Array.isArray(row.materials_required)
+      ? (row.materials_required as string[])
+      : [],
+    learningOutcomes: Array.isArray(row.learning_outcomes)
+      ? (row.learning_outcomes as string[])
+      : [],
+    buildSteps: Array.isArray(row.build_steps) ? (row.build_steps as string[]) : [],
+    controlMethods: Array.isArray(row.control_methods) ? (row.control_methods as string[]) : [],
+    prerequisites: Array.isArray(row.prerequisites) ? (row.prerequisites as string[]) : [],
+    deliverables: Array.isArray(row.deliverables) ? (row.deliverables as string[]) : [],
+    estimatedDuration: row.estimated_duration || "",
+    sourceFolder: row.source_folder || "",
+    documentationUrl: row.documentation_url || "",
+    videoUrl: row.video_url || "",
+    maintenanceNotes: row.maintenance_notes || "",
+    note: row.note || "",
+    description: row.description || "",
     specs: Array.isArray(row.specs) ? (row.specs as string[]) : [],
-    audience: row.audience || '',
-    difficulty: (row.difficulty as Product['difficulty']) || 'Beginner',
-    warranty: row.warranty || '',
+    audience: row.audience || "",
+    difficulty: (row.difficulty as Product["difficulty"]) || "Beginner",
+    warranty: row.warranty || "",
     stock: row.stock ?? 0,
-    delivery: row.delivery || '',
-    color: row.color || 'from-[#dce8ff] to-[#7e9ff2]',
+    delivery: row.delivery || "",
+    color: row.color || "from-[#dce8ff] to-[#7e9ff2]",
     ...(row.badge ? { badge: row.badge } : {}),
     ...(row.supplier ? { supplier: row.supplier } : {}),
     ...(row.image_url ? { image: row.image_url } : {}),
-  }
+  };
 }
 
 export function productToRow(product: Product) {
@@ -103,9 +109,9 @@ export function productToRow(product: Product) {
     price_label: product.priceLabel,
     sku: product.sku,
     product_type: product.productType,
-    inventory_type: product.inventoryType || 'Catalog',
+    inventory_type: product.inventoryType || "Catalog",
     active: product.active !== false,
-    project_overview: product.projectOverview || '',
+    project_overview: product.projectOverview || "",
     objectives: product.objectives || [],
     materials_required: product.materialsRequired || [],
     learning_outcomes: product.learningOutcomes || [],
@@ -113,11 +119,11 @@ export function productToRow(product: Product) {
     control_methods: product.controlMethods || [],
     prerequisites: product.prerequisites || [],
     deliverables: product.deliverables || [],
-    estimated_duration: product.estimatedDuration || '',
-    source_folder: product.sourceFolder || '',
-    documentation_url: product.documentationUrl || '',
-    video_url: product.videoUrl || '',
-    maintenance_notes: product.maintenanceNotes || '',
+    estimated_duration: product.estimatedDuration || "",
+    source_folder: product.sourceFolder || "",
+    documentation_url: product.documentationUrl || "",
+    video_url: product.videoUrl || "",
+    maintenance_notes: product.maintenanceNotes || "",
     note: product.note,
     description: product.description,
     specs: product.specs,
@@ -131,98 +137,116 @@ export function productToRow(product: Product) {
     supplier: product.supplier || null,
     image_url: product.image || null,
     updated_at: new Date().toISOString(),
-  }
+  };
 }
 
 // Reads the authoritative catalog. Falls back to the bundled catalog when Supabase
 // is not configured or unreachable so the site never renders empty.
 export async function getManagedProducts(): Promise<Product[]> {
-  unstable_noStore()
-  if (!supabaseConfigured()) return localProducts
+  unstable_noStore();
+  if (!supabaseConfigured()) return localProducts;
   try {
-    const db = createServiceClient()
-    const { data, error } = await db.from('products').select('*').order('sort_order', { ascending: true }).order('name', { ascending: true })
-    if (error) throw error
-    if (!data || data.length === 0) return localProducts
-    const localImageMap = new Map(localProducts.map((p) => [p.id, p.image]))
+    const db = createServiceClient();
+    const { data, error } = await db
+      .from("products")
+      .select("*")
+      .order("sort_order", { ascending: true })
+      .order("name", { ascending: true });
+    if (error) throw error;
+    if (!data || data.length === 0) return localProducts;
+    const localImageMap = new Map(localProducts.map((p) => [p.id, p.image]));
     return data.map((row) => {
-      const product = rowToProduct(row)
+      const product = rowToProduct(row);
       if (!product.image) {
-        const localImg = localImageMap.get(row.id)
-        if (localImg) product.image = localImg
+        const localImg = localImageMap.get(row.id);
+        if (localImg) product.image = localImg;
       }
-      return product
-    })
+      return product;
+    });
   } catch (error) {
-    console.error('Supabase product read failed; using local catalog.', error)
-    return localProducts
+    console.error("Supabase product read failed; using local catalog.", error);
+    return localProducts;
   }
 }
 
 export async function saveProduct(product: Product) {
-  await createServiceClient().from('products').upsert(productToRow(product))
+  await createServiceClient().from("products").upsert(productToRow(product));
 }
 
 export async function deleteProduct(id: string) {
-  await createServiceClient().from('products').delete().eq('id', id)
+  await createServiceClient().from("products").delete().eq("id", id);
 }
 
 export async function getSiteContent(): Promise<SiteContent> {
-  if (!supabaseConfigured()) return defaultContent
+  if (!supabaseConfigured()) return defaultContent;
   try {
-    const { data, error } = await createServiceClient().from('site_content').select('*').eq('id', 1).maybeSingle()
-    if (error || !data) return defaultContent
-    return { homeTitle: data.home_title, homeBody: data.home_body, products: [] }
+    const { data, error } = await createServiceClient()
+      .from("site_content")
+      .select("*")
+      .eq("id", 1)
+      .maybeSingle();
+    if (error || !data) return defaultContent;
+    return { homeTitle: data.home_title, homeBody: data.home_body, products: [] };
   } catch {
-    return defaultContent
+    return defaultContent;
   }
 }
 
-export async function saveSiteContent(values: Pick<SiteContent, 'homeTitle' | 'homeBody'>) {
+export async function saveSiteContent(values: Pick<SiteContent, "homeTitle" | "homeBody">) {
   await createServiceClient()
-    .from('site_content')
-    .update({ home_title: values.homeTitle, home_body: values.homeBody, updated_at: new Date().toISOString() })
-    .eq('id', 1)
+    .from("site_content")
+    .update({
+      home_title: values.homeTitle,
+      home_body: values.homeBody,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", 1);
 }
 
-export type { RoboCarMode }
+export type { RoboCarMode };
 
-export const roboModes: RoboCarMode[] = localRoBoModes
+export const roboModes: RoboCarMode[] = localRoBoModes;
 
 export async function getManagedRoBoModes(): Promise<RoboCarMode[]> {
-  if (!supabaseConfigured()) return localRoBoModes
+  if (!supabaseConfigured()) return localRoBoModes;
   try {
-    const db = createServiceClient()
-    const { data, error } = await db.from('robo_car_modes').select('*').order('sort_order', { ascending: true }).order('name', { ascending: true })
-    if (error) throw error
-    if (!data || data.length === 0) return localRoBoModes
-    return data as RoboCarMode[]
+    const db = createServiceClient();
+    const { data, error } = await db
+      .from("robo_car_modes")
+      .select("*")
+      .order("sort_order", { ascending: true })
+      .order("name", { ascending: true });
+    if (error) throw error;
+    if (!data || data.length === 0) return localRoBoModes;
+    return data as RoboCarMode[];
   } catch (error) {
-    console.error('Supabase robo mode read failed; using local catalog.', error)
-    return localRoBoModes
+    console.error("Supabase robo mode read failed; using local catalog.", error);
+    return localRoBoModes;
   }
 }
 
 export async function saveRoBoMode(mode: RoboCarMode) {
-  await createServiceClient().from('robo_car_modes').upsert({
-    id: mode.id,
-    name: mode.name,
-    token: mode.token,
-    device_index: mode.deviceIndex,
-    car: mode.car,
-    wheel: mode.wheel,
-    steering: mode.steering,
-    sensors: mode.sensors,
-    transport: mode.transport,
-    remote_with: mode.remoteWith,
-    controls: mode.controls,
-    requires_connection: mode.requiresConnection,
-    blurb: mode.blurb,
-    sort_order: mode.sortOrder ?? 1000,
-    updated_at: new Date().toISOString(),
-  })
+  await createServiceClient()
+    .from("robo_car_modes")
+    .upsert({
+      id: mode.id,
+      name: mode.name,
+      token: mode.token,
+      device_index: mode.deviceIndex,
+      car: mode.car,
+      wheel: mode.wheel,
+      steering: mode.steering,
+      sensors: mode.sensors,
+      transport: mode.transport,
+      remote_with: mode.remoteWith,
+      controls: mode.controls,
+      requires_connection: mode.requiresConnection,
+      blurb: mode.blurb,
+      sort_order: mode.sortOrder ?? 1000,
+      updated_at: new Date().toISOString(),
+    });
 }
 
 export async function deleteRoBoMode(id: string) {
-  await createServiceClient().from('robo_car_modes').delete().eq('id', id)
+  await createServiceClient().from("robo_car_modes").delete().eq("id", id);
 }

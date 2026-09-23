@@ -1,15 +1,15 @@
-import type { Metadata } from 'next'
-import PageIntro from '../../components/PageIntro'
-import PageShell from '../../components/PageShell'
-import IotRemote from '../../components/IotRemote'
-import RoboticsFleet from '../../components/RoboticsFleet'
-import OpenTools from '../../components/OpenTools'
+import type { Metadata } from "next";
+import PageIntro from "../../components/PageIntro";
+import PageShell from "../../components/PageShell";
+import IotRemote from "../../components/IotRemote";
+import RoboticsFleet from "../../components/RoboticsFleet";
+import OpenTools from "../../components/OpenTools";
 
 export const metadata: Metadata = {
-  title: 'Tools',
+  title: "Tools",
   description:
-    'Free and open-source tools for designing, simulating, programming, and documenting robotics and fabrication work. Includes the Control Panel.',
-}
+    "Free and open-source tools for designing, simulating, programming, and documenting robotics and fabrication work. Includes the Control Panel.",
+};
 
 export default function ToolsPage() {
   return (
@@ -29,5 +29,5 @@ export default function ToolsPage() {
       {/* OpenTools - third-party tools */}
       <OpenTools />
     </PageShell>
-  )
+  );
 }
