@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { inputClass } from '../../lib/styles'
 import type { Product } from './admin-types'
 import { emptyProduct, fields, PAGE_SIZE } from './admin-types'
-import { Pager } from './admin-helpers'
+import { EmptyState, Pager, SaveBar, editorCard, editorCardTitle, panelListSection, panelTitle, PanelCard } from './admin-helpers'
 
 type Props = {
   products: Product[]
@@ -116,9 +116,9 @@ export default function AdminProducts({ products, onProductsChange, setMessage, 
   return (
     <>
       <div role="tabpanel" id="panel-products" aria-labelledby="tab-products" className="mt-8 grid min-w-0 gap-8 xl:grid-cols-[1fr_1.3fr]">
-      <section aria-label="Product list" className="min-w-0 space-y-6">
-        <div className="min-w-0 border-t-2 border-ink bg-white p-6">
-          <h2 className="font-display text-xl font-bold">Products ({filteredProducts.length})</h2>
+      <section aria-label="Product list" className={panelListSection}>
+        <PanelCard>
+          <h2 className={panelTitle}>Products ({filteredProducts.length})</h2>
           <div className="mt-3 flex flex-col gap-2 sm:flex-row">
             <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by name, SKU, or id" aria-label="Search products" className={`w-full ${inputClass}`} />
             <select value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Category filter" className={`w-full sm:w-48 ${inputClass}`}>
@@ -132,7 +132,7 @@ export default function AdminProducts({ products, onProductsChange, setMessage, 
                 <div className="min-w-0 flex-1">
                   <span className="block line-clamp-2 text-sm"><strong>{item.name}</strong> <span className="text-slate-400">{item.sku}</span></span>
                 </div>
-                <span className="flex shrink-0 flex-wrap gap-2">
+<span className="flex shrink-0 flex-wrap gap-2">
                   <button onClick={() => { setProduct(item); document.getElementById('product-editor')?.scrollIntoView({ behavior: 'smooth' }) }} className="text-xs font-bold text-navy underline">Edit</button>
                   <button onClick={() => setPreviewProduct(item)} className="text-xs font-bold text-slate-500 underline">Preview</button>
                   <button onClick={() => void toggleProductVisibility(item)} className="text-xs font-bold text-ink underline">{item.active === false ? 'Show' : 'Hide'}</button>
@@ -140,14 +140,14 @@ export default function AdminProducts({ products, onProductsChange, setMessage, 
                 </span>
               </div>
             ))}
-            {shownProducts.length === 0 && <p className="py-3 text-sm text-slate-500">No products match &ldquo;{query}&rdquo;.</p>}
+            {shownProducts.length === 0 && <EmptyState>No products match &ldquo;{query}&rdquo;.</EmptyState>}
           </div>
           <Pager page={productPage} totalPages={totalPages} onPage={setProductPage} />
-        </div>
+        </PanelCard>
       </section>
       <section id="product-editor" aria-label="Product editor" className="min-w-0">
-        <form onSubmit={previewLink} className="mb-6 min-w-0 overflow-hidden border-t-2 border-ink bg-white p-6">
-          <h2 className="font-display text-xl font-bold">Import a product by link</h2>
+        <form onSubmit={previewLink} className={`${editorCard} mb-6`}>
+          <h2 className={editorCardTitle}>Import a product by link</h2>
           <p className="mt-1 text-sm text-muted">Paste any product page (e.g. a MakerWorld model, an Amazon or shop listing). Click <strong>Extract details</strong> to pull the title, description, specs and images into the editor below — then fine-tune and click <strong>Save product</strong>.</p>
           <div className="mt-4 flex flex-col gap-2 sm:flex-row">
             <input ref={linkInput} value={linkUrl} onChange={(e) => { setLinkUrl(e.target.value); if (e.target.value !== linkUrl) setExtracted(null) }} placeholder="https://makerworld.com/en/models/... or any product page" aria-label="Product link" className={`w-full ${inputClass}`} />
@@ -163,8 +163,8 @@ export default function AdminProducts({ products, onProductsChange, setMessage, 
             </div>
           )}
         </form>
-        <form onSubmit={saveProduct} className="min-w-0 overflow-hidden border-t-2 border-ink bg-white p-6">
-          <h2 className="font-display text-2xl font-bold">{products.some((item) => item.id === product.id) ? `Edit ${product.id}` : 'Add a new product'}</h2>
+        <form onSubmit={saveProduct} className={editorCard}>
+          <h2 className={editorCardTitle}>{products.some((item) => item.id === product.id) ? `Edit ${product.id}` : 'Add a new product'}</h2>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             {fields.filter((key) => key !== 'category').map((key) => <label key={key} className="min-w-0 text-sm font-bold capitalize">{key}<input value={String(product[key] ?? '')} onChange={(e) => updateProduct(key, ['price', 'stock'].includes(key) ? Number(e.target.value) : e.target.value)} className={`mt-2 w-full ${inputClass}`} /></label>)}
             <label className="min-w-0 text-sm font-bold capitalize">category
@@ -192,10 +192,10 @@ export default function AdminProducts({ products, onProductsChange, setMessage, 
               </div>
             </div>
           </div>
-          <div className="mt-5 flex gap-3">
+          <SaveBar>
             <button type="submit" disabled={busy || uploading} className="bg-gold px-5 py-3 text-sm font-black text-ink transition hover:bg-gold-dark disabled:opacity-60">{busy ? 'Saving...' : 'Save product'}</button>
             {product.id && <button type="button" onClick={() => setProduct(emptyProduct)} className="border border-line px-5 py-3 text-sm font-black text-ink transition hover:border-navy">New product</button>}
-          </div>
+          </SaveBar>
         </form>
       </section>
     </div>

@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom'
 import { inputClass } from '../../lib/styles'
 import type { JournalItem } from './admin-types'
 import { emptyJournal } from './admin-types'
-import { focusEditor } from './admin-helpers'
+import { EmptyState, LoadingRow, RowActions, SaveBar, editorCard, editorCardTitle, focusEditor, panelListSection, panelTitle, PanelCard } from './admin-helpers'
 
 type Props = { setMessage: (msg: string) => void; canDelete: boolean }
 
@@ -68,13 +68,13 @@ export default function AdminJournal({ setMessage, canDelete }: Props) {
   return (
     <>
       <div role="tabpanel" id="panel-journal" aria-labelledby="tab-journal" className="mt-8 grid min-w-0 gap-8 xl:grid-cols-[1fr_1.3fr]">
-        <section aria-label="Journal post list" className="min-w-0 space-y-6">
-          <div className="min-w-0 border-t-2 border-ink bg-white p-6">
-            <h2 className="font-display text-xl font-bold">Journal posts ({posts.length})</h2>
+        <section aria-label="Journal post list" className={panelListSection}>
+          <PanelCard>
+            <h2 className={panelTitle}>Journal posts ({posts.length})</h2>
             <p className="mt-1 text-xs text-slate-500">
               Published posts appear on /journal and in the native app&apos;s Journal screen. Editing here updates the DB - both clients render the latest copy.
             </p>
-            {!loaded ? <p className="mt-3 text-sm text-slate-500" role="status">Loading…</p> : (
+            {!loaded ? <LoadingRow className="mt-3" /> : (
               <div className="mt-3 divide-y divide-line">
                 {posts.map((p) => (
                   <div key={p.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
@@ -82,22 +82,25 @@ export default function AdminJournal({ setMessage, canDelete }: Props) {
                       <span className="block line-clamp-2 text-sm"><strong>{p.title}</strong> <span className="text-slate-400">{p.tag}</span></span>
                       {!p.active && <span className="ml-2 text-[10px] font-black uppercase text-red-500">hidden</span>}
                     </div>
-                    <span className="flex shrink-0 flex-wrap gap-2">
-                      <button onClick={() => { setPost(p); focusEditor('journal-editor') }} className="text-xs font-bold text-navy underline">Edit</button>
-                      <button onClick={() => setPreviewPost(p)} className="text-xs font-bold text-slate-500 underline">Preview</button>
-                      <button onClick={() => void togglePostVisibility(p)} className="text-xs font-bold text-ink underline">{p.active ? 'Unpublish' : 'Publish'}</button>
-                      {canDelete && <button onClick={() => removePost(p.id)} className="text-xs font-bold text-red-600 underline">Delete</button>}
-                    </span>
+                    <RowActions
+                      actions={[
+                        { label: 'Edit', tone: 'navy', onClick: () => { setPost(p); focusEditor('journal-editor') } },
+                        { label: 'Preview', tone: 'slate', onClick: () => setPreviewPost(p) },
+                        { label: p.active ? 'Unpublish' : 'Publish', tone: 'ink', onClick: () => void togglePostVisibility(p) },
+                        { label: 'Delete', tone: 'red', show: canDelete, onClick: () => removePost(p.id) },
+                      ]}
+                    />
                   </div>
                 ))}
               </div>
             )}
-          </div>
+            {loaded && posts.length === 0 && <EmptyState>No journal posts yet.</EmptyState>}
+          </PanelCard>
         </section>
 
         <section id="journal-editor" aria-label="Journal post editor" className="min-w-0">
-          <form onSubmit={savePostItem} className="min-w-0 overflow-hidden border-t-2 border-ink bg-white p-6">
-            <h2 className="font-display text-2xl font-bold">{posts.some((p) => p.id === post.id) ? `Edit ${post.id}` : 'Add a new journal post'}</h2>
+          <form onSubmit={savePostItem} className={editorCard}>
+            <h2 className={editorCardTitle}>{posts.some((p) => p.id === post.id) ? `Edit ${post.id}` : 'Add a new journal post'}</h2>
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
               <label className="min-w-0 text-sm font-bold">Id (slug, auto-generated from title if blank)<input value={post.id} onChange={(e) => updatePost('id', e.target.value)} className={`mt-2 w-full ${inputClass}`} placeholder="e.g. esp32-beginner-project" /></label>
               <label className="min-w-0 text-sm font-bold">Tag / category<input value={post.tag} onChange={(e) => updatePost('tag', e.target.value)} className={`mt-2 w-full ${inputClass}`} placeholder="Tutorial · Robotics" /></label>
@@ -106,10 +109,10 @@ export default function AdminJournal({ setMessage, canDelete }: Props) {
               <label className="min-w-0 text-sm font-bold">Sort order<input type="number" value={post.sortOrder} onChange={(e) => updatePost('sortOrder', Number(e.target.value))} className={`mt-2 w-full ${inputClass}`} /></label>
               <label className="flex items-center gap-2 text-sm font-bold"><input type="checkbox" checked={post.active} onChange={(e) => updatePost('active', e.target.checked)} className="h-4 w-4" /> Published (visible on site + app)</label>
             </div>
-            <div className="mt-5 flex gap-3">
+            <SaveBar>
               <button type="submit" disabled={busy} className="bg-gold px-5 py-3 text-sm font-black text-ink transition hover:bg-gold-dark disabled:opacity-60">{busy ? 'Saving...' : 'Save post'}</button>
               {post.id && <button type="button" onClick={() => setPost(emptyJournal)} className="border border-line px-5 py-3 text-sm font-black text-ink transition hover:border-navy">New post</button>}
-            </div>
+            </SaveBar>
           </form>
         </section>
       </div>

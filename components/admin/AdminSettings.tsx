@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react'
 import { inputClass } from '../../lib/styles'
+import { LoadingRow, PanelCard, SaveBar, editorCardTitle } from './admin-helpers'
 
 type Props = { setMessage: (msg: string) => void; canDelete: boolean }
 
@@ -44,10 +45,10 @@ export default function AdminSettings({ setMessage, canDelete: _canDelete }: Pro
 
   return (
     <div role="tabpanel" id="panel-settings" aria-labelledby="tab-settings" className="mt-8">
-      <div className="min-w-0 border-t-2 border-ink bg-white p-6">
-        <h2 className="font-display text-2xl font-bold">Company information</h2>
+      <PanelCard>
+        <h2 className={editorCardTitle}>Company information</h2>
         {!loaded ? (
-          <p className="mt-3 text-sm text-slate-500" role="status">Loading…</p>
+          <LoadingRow className="mt-3" />
         ) : (
           <form onSubmit={saveCompany} className="mt-5 grid gap-4">
             <label className="min-w-0 text-sm font-bold">Name<input value={company.name} onChange={(e) => setCompany({ ...company, name: e.target.value })} className={`mt-2 w-full ${inputClass}`} /></label>
@@ -60,14 +61,14 @@ export default function AdminSettings({ setMessage, canDelete: _canDelete }: Pro
             <label className="min-w-0 text-sm font-bold">PAN<input value={company.pan} onChange={(e) => setCompany({ ...company, pan: e.target.value })} className={`mt-2 w-full ${inputClass}`} /></label>
             <label className="min-w-0 text-sm font-bold">VAT label<input value={company.vatLabel} onChange={(e) => setCompany({ ...company, vatLabel: e.target.value })} className={`mt-2 w-full ${inputClass}`} /></label>
             <label className="min-w-0 text-sm font-bold">Description<textarea value={company.description} onChange={(e) => setCompany({ ...company, description: e.target.value })} rows={3} className={`mt-2 w-full ${inputClass}`} /></label>
-            <div className="flex gap-3">
+            <SaveBar>
               <button type="submit" disabled={busy} className="bg-navy px-5 py-3 text-sm font-black text-white transition hover:bg-navy/90 disabled:opacity-60">
                 {busy ? 'Saving...' : 'Save company'}
               </button>
-            </div>
+            </SaveBar>
           </form>
         )}
-      </div>
+      </PanelCard>
     </div>
   )
 }

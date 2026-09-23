@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { formatNPR } from '../../lib/catalog'
 import type { DashboardStats } from './admin-types'
+import { PanelCard, panelTitle } from './admin-helpers'
 
 export default function AdminFinance() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
@@ -13,8 +14,8 @@ export default function AdminFinance() {
 
   return (
     <section role="tabpanel" id="panel-finance" aria-labelledby="tab-finance" aria-label="Finance overview" className="mt-8 space-y-6">
-      <div className="border-t-2 border-ink bg-white p-6">
-        <h2 className="font-display text-xl font-bold">Finance &amp; Transactions</h2>
+      <PanelCard>
+        <h2 className={panelTitle}>Finance &amp; Transactions</h2>
         {stats && (
           <div className="mt-4 grid gap-4 sm:grid-cols-3">
             <div className="rounded border border-line p-4">
@@ -32,9 +33,9 @@ export default function AdminFinance() {
             </div>
           </div>
         )}
-      </div>
+      </PanelCard>
       {stats && stats.totalOrders > 0 && (
-        <div className="border-t-2 border-ink bg-white p-6">
+        <PanelCard>
           <h3 className="font-display text-lg font-bold">Order Status Breakdown</h3>
           <div className="mt-3 flex flex-wrap gap-3">
             {[
@@ -51,7 +52,7 @@ export default function AdminFinance() {
               )
             })}
           </div>
-        </div>
+        </PanelCard>
       )}
     </section>
   )

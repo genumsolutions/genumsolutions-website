@@ -34,3 +34,51 @@ export function focusEditor(id: string) {
     editor?.querySelector<HTMLInputElement>('input, textarea, select')?.focus()
   })
 }
+
+// ---------------------------------------------------------------
+// Shared panel primitives — the admin panels (Products / Services /
+// Journal / Projects / Messages / Activity / Finance / Content) all
+// build on the same card + title + rows + save-bar anatomy. Keeping
+// these in one place keeps every panel looking consistent.
+// ---------------------------------------------------------------
+
+export const panelCard = 'min-w-0 border-t-2 border-ink bg-white p-6'
+export const panelListSection = 'min-w-0 space-y-6'
+export const editorCard = 'min-w-0 overflow-hidden border-t-2 border-ink bg-white p-6'
+export const editorCardTitle = 'font-display text-2xl font-bold text-ink'
+export const panelTitle = 'font-display text-xl font-bold text-ink'
+
+export function PanelCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return <div className={`${panelCard} ${className}`.trim()}>{children}</div>
+}
+
+export function LoadingRow({ className = '' }: { className?: string }) {
+  return (
+    <p role="status" className={`text-sm text-slate-500 ${className}`.trim()}>Loading…</p>
+  )
+}
+
+export function EmptyState({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return <p className={`py-3 text-sm text-slate-500 ${className}`.trim()}>{children}</p>
+}
+
+/** The standard inline row actions (Edit / Preview / Hide / Delete / …). */
+export function RowActions({ actions }: { actions: { label: string; onClick: () => void; tone?: 'navy' | 'slate' | 'ink' | 'red'; show?: boolean }[] }) {
+  const toneClass: Record<string, string> = { navy: 'text-navy', slate: 'text-slate-500', ink: 'text-ink', red: 'text-red-600' }
+  return (
+    <span className="flex shrink-0 flex-wrap gap-2">
+      {actions.filter((a) => a.show ?? true).map((a) => (
+        <button key={a.label} onClick={a.onClick} className={`text-xs font-bold underline ${toneClass[a.tone ?? 'ink']}`}>{a.label}</button>
+      ))}
+    </span>
+  )
+}
+
+/** Bottom action bar of an editor form (gold primary + any siblings). */
+export function SaveBar({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return <div className={`mt-5 flex gap-3 ${className}`.trim()}>{children}</div>
+}
+
+export function EditorCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return <div className={`${editorCard} ${className}`.trim()}>{children}</div>
+}

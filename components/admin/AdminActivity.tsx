@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import type { ActivityEntry } from './admin-types'
 import { PAGE_SIZE } from './admin-types'
-import { Pager, formatTimestamp } from './admin-helpers'
+import { EmptyState, LoadingRow, Pager, formatTimestamp, panelTitle, PanelCard } from './admin-helpers'
 
 export default function AdminActivity() {
   const [activities, setActivities] = useState<ActivityEntry[]>([])
@@ -30,10 +30,10 @@ export default function AdminActivity() {
 
   return (
     <section role="tabpanel" id="panel-activity" aria-labelledby="tab-activity" aria-label="Activity log" className="mt-8 space-y-4">
-      <div className="border-t-2 border-ink bg-white p-6">
-        <h2 className="font-display text-xl font-bold">Activity Log</h2>
-      </div>
-      {!loaded ? <p className="text-sm text-slate-500" role="status">Loading…</p> : activities.length === 0 ? <p className="text-sm text-slate-500">No activity recorded yet.</p> : (
+      <PanelCard>
+        <h2 className={panelTitle}>Activity</h2>
+      </PanelCard>
+      {!loaded ? <LoadingRow /> : activities.length === 0 ? <EmptyState>No activity recorded yet.</EmptyState> : (
         <>
           <ul className="space-y-2">
             {activities.map((entry) => (

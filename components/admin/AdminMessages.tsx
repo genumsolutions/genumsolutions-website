@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import type { Message } from './admin-types'
 import { PAGE_SIZE } from './admin-types'
-import { Pager, formatTimestamp } from './admin-helpers'
+import { EmptyState, LoadingRow, Pager, formatTimestamp, panelTitle } from './admin-helpers'
 
 type Props = { setMessage: (msg: string) => void; canDelete: boolean }
 
@@ -54,7 +54,7 @@ export default function AdminMessages({ setMessage: _setMessage, canDelete }: Pr
   return (
     <section role="tabpanel" id="panel-messages" aria-labelledby="tab-messages" aria-label="Customer messages" className="mt-8 space-y-4">
       <div className="flex flex-col gap-3 border-t-2 border-ink bg-white p-6 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
-        <h2 className="font-display text-xl font-bold">Messages</h2>
+        <h2 className={panelTitle}>Messages</h2>
         <label className="ml-auto text-sm font-bold text-slate-500">Status
           <select value={filter} onChange={(e) => setFilter(e.target.value)} className="ml-2 border border-line px-3 py-2 text-sm font-bold">
             <option value="">All</option>
@@ -64,7 +64,7 @@ export default function AdminMessages({ setMessage: _setMessage, canDelete }: Pr
         </label>
         <button onClick={() => void loadMessages(1)} className="bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark">Apply</button>
       </div>
-      {!loaded ? <p className="text-sm text-slate-500" role="status">Loading…</p> : messages.length === 0 ? <p className="text-sm text-slate-500">No messages found.</p> : (
+      {!loaded ? <LoadingRow /> : messages.length === 0 ? <EmptyState>No messages found.</EmptyState> : (
         <>
           <ul className="space-y-3">
             {messages.map((msg) => (

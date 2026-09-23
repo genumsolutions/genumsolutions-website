@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { inputClass } from '../../lib/styles'
 import AdminRows from './AdminRows'
 import type { RowItem } from './AdminRows'
+import { LoadingRow, PanelCard, SaveBar, editorCardTitle } from './admin-helpers'
 
 type Props = {
   setMessage: (msg: string) => void
@@ -53,10 +54,10 @@ export default function AdminContent({ setMessage, canDelete }: Props) {
 
   return (
     <div role="tabpanel" id="panel-content" aria-labelledby="tab-content" className="mt-8">
-      <div className="min-w-0 border-t-2 border-ink bg-white p-6">
-        <h2 className="font-display text-2xl font-bold">Homepage content</h2>
+      <PanelCard>
+        <h2 className={editorCardTitle}>Homepage content</h2>
         {!loaded ? (
-          <p className="mt-3 text-sm text-slate-500" role="status">Loading…</p>
+          <LoadingRow className="mt-3" />
         ) : (
           <form onSubmit={save} className="mt-5 grid gap-4">
             <label className="min-w-0 text-sm font-bold">
@@ -67,14 +68,14 @@ export default function AdminContent({ setMessage, canDelete }: Props) {
               Homepage body
               <textarea value={homeBody} onChange={(e) => setHomeBody(e.target.value)} rows={8} className={`mt-2 w-full ${inputClass}`} />
             </label>
-            <div className="flex gap-3">
+            <SaveBar>
               <button type="submit" disabled={busy} className="bg-gold px-5 py-3 text-sm font-black text-ink transition hover:bg-gold-dark disabled:opacity-60">
                 {busy ? 'Saving...' : 'Save content'}
               </button>
-            </div>
+            </SaveBar>
           </form>
         )}
-      </div>
+      </PanelCard>
 
       <div className="mt-6 grid gap-6">
         <AdminRows

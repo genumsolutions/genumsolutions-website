@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom'
 import { inputClass } from '../../lib/styles'
 import type { Service } from './admin-types'
 import { emptyService } from './admin-types'
-import { focusEditor } from './admin-helpers'
+import { EmptyState, LoadingRow, RowActions, SaveBar, editorCard, editorCardTitle, focusEditor, panelListSection, panelTitle, PanelCard } from './admin-helpers'
 
 type Props = { setMessage: (msg: string) => void; canDelete: boolean }
 
@@ -57,10 +57,10 @@ export default function AdminServices({ setMessage, canDelete }: Props) {
   return (
     <>
       <div role="tabpanel" id="panel-services" aria-labelledby="tab-services" className="mt-8 grid min-w-0 gap-8 xl:grid-cols-[1fr_1.3fr]">
-      <section aria-label="Service list" className="min-w-0 space-y-6">
-        <div className="min-w-0 border-t-2 border-ink bg-white p-6">
-          <h2 className="font-display text-xl font-bold">Services ({filteredServices.length})</h2>
-          {!loaded ? <p className="text-sm text-slate-500" role="status">Loading…</p> : (
+      <section aria-label="Service list" className={panelListSection}>
+        <PanelCard>
+          <h2 className={panelTitle}>Services ({filteredServices.length})</h2>
+          {!loaded ? <LoadingRow className="mt-3" /> : (
             <>
               {categories.length > 0 && (
                 <select value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Category filter" className={`mt-3 w-full sm:w-48 ${inputClass}`}>
@@ -75,22 +75,25 @@ export default function AdminServices({ setMessage, canDelete }: Props) {
                     <span className="block line-clamp-2 text-sm"><strong>{s.name}</strong> <span className="text-slate-400">{s.priceLabel}</span></span>
                     {!s.active && <span className="ml-2 text-[10px] font-black uppercase text-red-500">inactive</span>}
                   </div>
-                  <span className="flex shrink-0 flex-wrap gap-2">
-                    <button onClick={() => { setService(s); focusEditor('service-editor') }} className="text-xs font-bold text-navy underline">Edit</button>
-                    <button onClick={() => setPreviewService(s)} className="text-xs font-bold text-slate-500 underline">Preview</button>
-                    <button onClick={() => void toggleServiceVisibility(s)} className="text-xs font-bold text-ink underline">{s.active ? 'Hide' : 'Show'}</button>
-                    {canDelete && <button onClick={() => removeService(s.id)} className="text-xs font-bold text-red-600 underline">Delete</button>}
-                  </span>
+                  <RowActions
+                    actions={[
+                      { label: 'Edit', tone: 'navy', onClick: () => { setService(s); focusEditor('service-editor') } },
+                      { label: 'Preview', tone: 'slate', onClick: () => setPreviewService(s) },
+                      { label: s.active ? 'Hide' : 'Show', tone: 'ink', onClick: () => void toggleServiceVisibility(s) },
+                      { label: 'Delete', tone: 'red', show: canDelete, onClick: () => removeService(s.id) },
+                    ]}
+                  />
                 </div>
               ))}
               </div>
+              {filteredServices.length === 0 && <EmptyState>No services found.</EmptyState>}
             </>
           )}
-        </div>
+        </PanelCard>
       </section>
       <section id="service-editor" aria-label="Service editor" className="min-w-0">
-        <form onSubmit={saveServiceItem} className="min-w-0 overflow-hidden border-t-2 border-ink bg-white p-6">
-          <h2 className="font-display text-2xl font-bold">{services.some((s) => s.id === service.id) ? `Edit ${service.id}` : 'Add a new service'}</h2>
+        <form onSubmit={saveServiceItem} className={editorCard}>
+          <h2 className={editorCardTitle}>{services.some((s) => s.id === service.id) ? `Edit ${service.id}` : 'Add a new service'}</h2>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             <label className="min-w-0 text-sm font-bold">Id<input value={service.id} onChange={(e) => updateService('id', e.target.value)} className={`mt-2 w-full ${inputClass}`} placeholder="e.g. website-design" /></label>
             <label className="min-w-0 text-sm font-bold">Name<input value={service.name} onChange={(e) => updateService('name', e.target.value)} className={`mt-2 w-full ${inputClass}`} /></label>
@@ -101,10 +104,10 @@ export default function AdminServices({ setMessage, canDelete }: Props) {
             <label className="min-w-0 text-sm font-bold sm:col-span-2">Description<textarea value={service.description} onChange={(e) => updateService('description', e.target.value)} rows={3} className={`mt-2 w-full ${inputClass}`} /></label>
             <label className="flex items-center gap-2 text-sm font-bold"><input type="checkbox" checked={service.active} onChange={(e) => updateService('active', e.target.checked)} className="h-4 w-4" /> Active (visible on site)</label>
           </div>
-          <div className="mt-5 flex gap-3">
+          <SaveBar>
             <button type="submit" disabled={busy} className="bg-gold px-5 py-3 text-sm font-black text-ink transition hover:bg-gold-dark disabled:opacity-60">{busy ? 'Saving...' : 'Save service'}</button>
             {service.id && <button type="button" onClick={() => setService(emptyService)} className="border border-line px-5 py-3 text-sm font-black text-ink transition hover:border-navy">New service</button>}
-          </div>
+          </SaveBar>
         </form>
       </section>
     </div>
