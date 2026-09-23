@@ -1,21 +1,25 @@
-import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
-import ProductDetailPro from '../../../components/ProductDetailPro'
-import ProductJsonLd from '../../../components/ProductJsonLd'
-import BreadcrumbListJsonLd from '../../../components/BreadcrumbListJsonLd'
-import PageShell from '../../../components/PageShell'
-import { getManagedProducts } from '../../../lib/content-store'
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import ProductDetailPro from "../../../components/ProductDetailPro";
+import ProductJsonLd from "../../../components/ProductJsonLd";
+import BreadcrumbListJsonLd from "../../../components/BreadcrumbListJsonLd";
+import PageShell from "../../../components/PageShell";
+import { getManagedProducts } from "../../../lib/content-store";
 
 export function generateStaticParams() {
-  return []
+  return [];
 }
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const product = (await getManagedProducts()).find((item) => item.id === params.slug)
-  if (!product) return {}
-  const description = (product.note || product.description || '').slice(0, 155)
+export async function generateMetadata({
+  params,
+}: {
+  params: { slug: string };
+}): Promise<Metadata> {
+  const product = (await getManagedProducts()).find((item) => item.id === params.slug);
+  if (!product) return {};
+  const description = (product.note || product.description || "").slice(0, 155);
   return {
     title: product.name,
     description,
@@ -26,17 +30,27 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       url: `/products/${product.id}`,
       images: product.image ? [{ url: product.image, alt: product.name }] : undefined,
     },
-  }
+  };
 }
 
 export default async function ProductPage({ params }: { params: { slug: string } }) {
-  const product = (await getManagedProducts()).find((item) => item.id === params.slug)
-  if (!product) notFound()
+  const products = await getManagedProducts();
+  const product = products.find((item) => item.id === params.slug);
+  if (!product) notFound();
   return (
     <>
       <ProductJsonLd product={product} />
-      <BreadcrumbListJsonLd items={[{ name: 'Home', path: '/' }, { name: 'Products', path: '/products' }, { name: product.name, path: `/products/${product.id}` }]} />
-      <PageShell><ProductDetailPro product={product} /></PageShell>
+      <BreadcrumbListJsonLd
+        items={[
+          { name: "Home", path: "/" },
+          { name: "Products", path: "/products" },
+          { name: product.name, path: `/products/${product.id}` },
+        ]}
+      />
+      {/* C3: full list powers the "Related products" row. */}
+      <PageShell>
+        <ProductDetailPro product={product} allProducts={products} />
+      </PageShell>
     </>
-  )
+  );
 }

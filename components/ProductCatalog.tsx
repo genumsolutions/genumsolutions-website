@@ -15,10 +15,12 @@ import {
   PAGE_SIZE,
   PRICE_CEILINGS,
   priceCeilingLabel,
+  resolveRecentlyViewed,
   SORT_LABELS,
   sortProducts,
   withinPrice,
 } from "../lib/catalog";
+import { loadRecentlyViewed } from "../lib/recently-viewed";
 import { getProductMedia } from "../lib/product-media";
 import { useCart } from "./cart-provider";
 
@@ -52,6 +54,14 @@ export default function ProductCatalog({
   const [page, setPage] = useState(Math.max(1, initialPage));
   const [addedId, setAddedId] = useState<string | null>(null);
   const { add, count, hydrated } = useCart();
+  // C3 (2026-09-23): "Recently viewed" strip. Empty on the server and filled
+  // after mount (localStorage) — so SSR output is deterministic and private
+  // mode just hides the row.
+  const [recent, setRecent] = useState<Product[]>([]);
+
+  useEffect(() => {
+    setRecent(resolveRecentlyViewed(products, loadRecentlyViewed()));
+  }, [products]);
 
   useEffect(() => {
     if (!addedId) return;
@@ -263,6 +273,43 @@ export default function ProductCatalog({
           </span>
         </div>
       </div>
+
+      {recent.length > 0 && (
+        <div className="mt-8 border-b border-line pb-6">
+          <p className="text-xs font-black uppercase tracking-[.24em] text-navy">Recently viewed</p>
+          <div className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-4">
+            {recent.slice(0, 4).map((item) => {
+              const media = item.image
+                ? { src: item.image, alt: item.name }
+                : getProductMedia(item.category);
+              return (
+                <Link
+                  key={item.id}
+                  href={`/products/${item.id}`}
+                  className="group overflow-hidden rounded-2xl border border-line bg-white shadow-sm transition hover:shadow-md"
+                  aria-label={`View ${item.name}`}
+                >
+                  <span className="relative block h-28 overflow-hidden bg-ink">
+                    <Image
+                      src={media.src}
+                      alt={media.alt}
+                      fill
+                      sizes="(max-width: 640px) 50vw, 25vw"
+                      className="object-cover transition duration-500 group-hover:scale-105"
+                    />
+                  </span>
+                  <span className="block p-3">
+                    <span className="block truncate text-sm font-bold text-ink">{item.name}</span>
+                    <span className="mt-1 block text-sm font-display font-bold text-ink">
+                      {item.priceLabel}
+                    </span>
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {items.length === 0 && (
