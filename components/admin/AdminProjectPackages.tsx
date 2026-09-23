@@ -36,7 +36,7 @@ function ProjectEditor({ product, onChange, onSave, onReset, busy, categories }:
   ]
 
   return (
-    <section id="project-package-editor" aria-label="Project package editor" className="min-w-0 border-t-2 border-ink bg-white p-6">
+    <section id="project-package-editor" aria-label="Project package editor" className={editorCard}>
       <form onSubmit={onSave}>
         <h2 className="font-display text-2xl font-bold">{product.id ? `Edit ${product.name}` : 'Add a project package'}</h2>
         <p className="mt-1 text-sm text-muted">These fields are stored in the shared products table and appear on the public project page and native app.</p>
