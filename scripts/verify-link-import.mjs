@@ -30,6 +30,9 @@ const STAFF_EMAIL = `link-import-probe-staff-${rand}@genumtest.invalid`
 const OWNER_EMAIL = `link-import-probe-owner-${rand}@genumtest.invalid`
 const PASSWORD = 'Xk9!' + rand + 'Zq'
 const MAKERWORLD_URL = process.env.LINK_IMPORT_URL || 'https://makerworld.com/en/models/45000'
+// Multi-photo design (one of the live sample links) — preview ONLY so a
+// create never touches the curated row. Proves gallery + specs extraction.
+const SAMPLE_URL = 'https://makerworld.com/en/models/559102'
 
 const svc = createClient(URL, SVC, { auth: { autoRefreshToken: false, persistSession: false } })
 const anon = createClient(URL, ANON, { auth: { autoRefreshToken: false, persistSession: false } })
@@ -63,6 +66,10 @@ async function callFn(token, body) {
 }
 
 let staff, owner, createdId
+// Snapshot existing product ids so cleanup never deletes curated live rows
+// that an upsert might have overwritten (the slug can collide).
+const { data: preRows } = await svc.from('products').select('id')
+const preExistingIds = new Set((preRows || []).map((r) => r.id))
 try {
   // anon rejected
   const anonRes = await callFn('', { action: 'preview', url: MAKERWORLD_URL })
@@ -78,6 +85,16 @@ try {
   assert('makerworld title', Boolean(p.title), `title="${p.title}"`)
   assert('makerworld image cover', p.images?.length > 0, `img=${p.images?.[0]?.slice(0, 60)}`)
   assert('makerworld category 3D Models', p.categoryHint === '3D Models', `hint=${p.categoryHint}`)
+  assert('makerworld specs extracted (print profile/weight)', Array.isArray(p.specs) && p.specs.length >= 1, `specs=${JSON.stringify(p.specs)}`)
+  assert('makerworld at least one image', p.images.length >= 1, `imgs=${p.images.length}`)
+  assert('makerworld description enriched', Boolean(p.description) && p.description.length >= 30, `len=${p.description.length}`)
+
+  // preview-only against the multi-photo sample (no create — never touches the curated row)
+  const samp = await callFn(staff.token, { action: 'preview', url: SAMPLE_URL })
+  const sp = samp.data?.preview || {}
+  assert('sample preview (200)', samp.status === 200 && sp.found === true, `status ${samp.status}`)
+  assert('sample gallery images extracted', sp.images?.length >= 2, `imgs=${sp.images?.length}`)
+  assert('sample specs extracted', Array.isArray(sp.specs) && sp.specs.length >= 2, `specs=${sp.specs?.length}`)
 
   // create MakerWorld -> row + uploaded image
   const created = await callFn(staff.token, {
@@ -92,6 +109,7 @@ try {
   assert('price override applied', prod?.price === 1500, `price=${prod?.price}`)
   assert('source link stored in documentation_url', prod?.documentation_url === MAKERWORLD_URL, prod?.documentation_url)
   assert('image_url populated (storage upload)', Boolean(prod?.image_url), prod?.image_url?.slice(0, 80))
+  assert('created product has specs from preview', Array.isArray(prod?.specs) && prod.specs.length >= 1, `specs=${prod?.specs?.length}`)
 
   // row visible in DB
   if (createdId) {
@@ -112,7 +130,8 @@ try {
   assert('THREW', false, e.message)
 } finally {
   if (!KEEP) {
-    if (createdId) {
+    // Only remove a row this run actually created; never a pre-existing (curated) product.
+    if (createdId && !preExistingIds.has(createdId)) {
       try { await svc.from('products').delete().eq('id', createdId) } catch { /* ignore */ }
     }
     if (staff) await svc.auth.admin.deleteUser(staff.id)

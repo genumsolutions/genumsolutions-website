@@ -92,7 +92,7 @@ export default function AdminProducts({ products, onProductsChange, setMessage, 
         setMessage('No details found for that page — fill the fields manually, then save.')
         return
       }
-      setProduct((current) => ({ ...current, name: p.title, category: p.categoryHint || current.category, description: p.description || current.description, image: p.images?.[0] || current.image, id: p.title ? String(p.title).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) : current.id }))
+      setProduct((current) => ({ ...current, name: p.title, category: p.categoryHint || current.category, description: p.description || current.description, image: p.images?.[0] || current.image, specs: p.specs || current.specs, id: p.title ? String(p.title).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) : current.id }))
       setMessage(`Found: ${p.provider} — review the fields below, then click "Import & save".`)
     } finally {
       setImporting(false)
@@ -112,6 +112,7 @@ export default function AdminProducts({ products, onProductsChange, setMessage, 
       price: Number(product.price) || 0,
       priceLabel: product.priceLabel || 'Request quote',
       stock: Number(product.stock) || 0,
+      specs: Array.isArray(product.specs) ? product.specs : [],
     }
     try {
       const response = await fetch('/api/admin/link-import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'create', url, product: overrides }) })
