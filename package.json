@@ -7,8 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "lint:check": "next lint --max-warnings 0",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "test": "vitest",
     "test:ci": "vitest run",
     "icons": "node scripts/generate-icons.mjs",
@@ -17,7 +19,8 @@
     "seed:programs": "tsx scripts/seed-programs.ts",
     "seed:company": "tsx scripts/seed-company.ts",
     "db:apply": "tsx scripts/apply-schema.ts",
-    "db:apply:seed": "tsx scripts/apply-schema.ts --seed"
+    "db:apply:seed": "tsx scripts/apply-schema.ts --seed",
+    "prepare": "husky"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
@@ -37,6 +40,8 @@
     "eslint": "^8.57.1",
     "eslint-config-next": "^14.2.35",
     "eslint-config-prettier": "^9.1.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.2",
     "pg": "^8.23.0",
     "postcss": "^8.4.47",
     "prettier": "^3.3.3",
