@@ -169,7 +169,7 @@ const inventoryProducts: Product[] = [
   mk({ id: 'ir-obstacle-sensor', name: 'IR Obstacle Avoidance Sensor', category: 'Sensors & Modules', price: 300, sku: 'GEN-SEN-0014', note: 'Detect nearby objects', description: 'An infrared obstacle avoidance sensor for edge and proximity detection on robot cars.', specs: ['IR emitter + receiver', 'Distance adjustable', 'Digital output'] }, 46),
 
   /* 48 · HC-SR04 */
-  mk({ id: 'ultrasonic-sensor', name: 'HC-SR04 Ultrasonic Distance Sensor', category: 'Sensors & Modules', price: 1500, sku: 'GEN-SEN-0015', note: 'Measure distance simply', description: 'An ultrasonic distance sensor for obstacle avoidance, parking experiments, and measuring projects.', specs: ['2-400 cm range', '5V operation', 'Trigger and echo pins'], image: 'ultrasonic-sensor.jpg' }, 47),
+  mk({ id: 'ultrasonic-sensor', name: 'HC-SR04 Ultrasonic Distance Sensor', category: 'Sensors & Modules', price: 300, sku: 'GEN-SEN-0015', note: 'Measure distance simply', description: 'An ultrasonic distance sensor for obstacle avoidance, parking experiments, and measuring projects.', specs: ['2-400 cm range', '5V operation', 'Trigger and echo pins'], image: 'ultrasonic-sensor.jpg' }, 47),
 
   /* 49 · LED pack */
   mk({ id: 'led-pack', name: 'LED Pack (50pcs Multi-Color)', category: 'Sensors & Modules', price: 100, sku: 'GEN-SEN-0016', note: 'Bright experiment LEDs', description: 'A pack of 50 assorted multi-color LEDs for indicator circuits, decorations, and experiments.', specs: ['50 assorted LEDs', 'Multi-color', '5mm standard'] }, 48),
