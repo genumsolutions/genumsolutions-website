@@ -89,18 +89,18 @@ for (const dir of SOURCE_DIRS) {
 }
 
 const dimCss = GLOBALS_CSS.replace(/\r\n/g, "\n");
+// Quote-agnostic attribute selector: prettier (pre-commit, .css in scope) may
+// render html[data-theme='dim'] with double quotes — accept either style
+// (2026-09-23 sweep, same lesson as the B-6 / sync-app-fallback fixes).
+const DIM_SELECTOR = /html\[data-theme=["']dim["']\]/.source;
 function hasDimOverride(utility: string): boolean {
   // The dim layer overrides both the base class and its hover/focus variants.
   const escaped = utility.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const direct = new RegExp(
-    `html\\[data-theme='dim'\\][^{]*\\.${escaped.replace(/\\/g, "")}[^a-z0-9-]`
-  );
+  const direct = new RegExp(`${DIM_SELECTOR}[^{]*\\.${escaped.replace(/\\/g, "")}[^a-z0-9-]`);
   if (direct.test(dimCss)) return true;
   // Grouped selectors put the last class before the `{`: ".bg-white\\/80,\n… { … }"
   const grouped = new RegExp(`\\.(${escaped})(?:\\\\/\\d+)?[,\\n\\s]*[^{]*\\{`);
-  return (
-    new RegExp(`html\\[data-theme='dim'\\][^}]*${escaped}`).test(dimCss) || grouped.test(dimCss)
-  );
+  return new RegExp(`${DIM_SELECTOR}[^}]*${escaped}`).test(dimCss) || grouped.test(dimCss);
 }
 
 describe("dim theme coverage guard (W-6)", () => {
@@ -116,6 +116,7 @@ describe("dim theme coverage guard (W-6)", () => {
   });
 
   it("keeps the dim layer keyed on html[data-theme] (not a media query)", () => {
-    expect(dimCss).toContain("html[data-theme='dim']");
+    // Quote-agnostic: prettier may flip the attribute quotes (see above).
+    expect(dimCss).toMatch(/html\[data-theme=["']dim["']\]/);
   });
 });
