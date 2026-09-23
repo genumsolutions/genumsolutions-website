@@ -23,7 +23,10 @@ export default function AdminProducts({ products, onProductsChange, setMessage, 
   const [productPage, setProductPage] = useState(1)
   const [busy, setBusy] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [linkUrl, setLinkUrl] = useState('')
+  const [importing, setImporting] = useState(false)
   const fileInput = useRef<HTMLInputElement>(null)
+  const linkInput = useRef<HTMLInputElement>(null)
 
   useEffect(() => { setProductPage(1) }, [query, category])
 
@@ -74,6 +77,65 @@ export default function AdminProducts({ products, onProductsChange, setMessage, 
     setUploading(false)
   }
 
+  async function previewLink(event: FormEvent) {
+    event?.preventDefault()
+    const url = linkUrl.trim()
+    if (!url) { setMessage('Paste a product link first.'); return }
+    setImporting(true); setMessage('')
+    try {
+      const response = await fetch('/api/admin/link-import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'preview', url }) })
+      const result = await response.json().catch(() => ({}))
+      if (!response.ok) { setMessage(result.error || 'Could not look up that link.'); return }
+      const p = result.preview
+      if (!p?.found) {
+        setProduct((current) => ({ ...current, name: current.name || p?.title || '', category: current.category || p?.categoryHint || '', description: current.description || p?.description || '', image: current.image || p?.images?.[0] || '' }))
+        setMessage('No details found for that page — fill the fields manually, then save.')
+        return
+      }
+      setProduct((current) => ({ ...current, name: p.title, category: p.categoryHint || current.category, description: p.description || current.description, image: p.images?.[0] || current.image, id: p.title ? String(p.title).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) : current.id }))
+      setMessage(`Found: ${p.provider} — review the fields below, then click "Import & save".`)
+    } finally {
+      setImporting(false)
+    }
+  }
+
+  async function importProduct(event: FormEvent) {
+    event?.preventDefault()
+    const url = linkUrl.trim()
+    if (!url) { setMessage('Paste the product link you looked up.'); return }
+    if (!product.name.trim()) { setMessage('Give the product a name before importing.'); return }
+    setImporting(true)
+    const overrides = {
+      name: product.name.trim(),
+      category: product.category.trim() || 'Retail kit',
+      description: (product.description || '').trim(),
+      price: Number(product.price) || 0,
+      priceLabel: product.priceLabel || 'Request quote',
+      stock: Number(product.stock) || 0,
+    }
+    try {
+      const response = await fetch('/api/admin/link-import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'create', url, product: overrides }) })
+      const result = await response.json().catch(() => ({}))
+      if (!response.ok) { setMessage(result.error || 'Import failed.'); return }
+      const created = result.product
+      const asProduct = {
+        ...product,
+        id: created.id,
+        name: created.name,
+        category: created.category,
+        description: created.description,
+        image: created.image_url || product.image,
+        documentationUrl: created.documentation_url || url,
+      }
+      onProductsChange((current) => [...current.filter((item) => item.id !== created.id), asProduct].sort((a, b) => a.name.localeCompare(b.name)))
+      setProduct(emptyProduct)
+      setLinkUrl('')
+      setMessage(`Imported "${created.name}".`)
+    } finally {
+      setImporting(false)
+    }
+  }
+
   return (
     <>
       <div role="tabpanel" id="panel-products" aria-labelledby="tab-products" className="mt-8 grid min-w-0 gap-8 xl:grid-cols-[1fr_1.3fr]">
@@ -107,11 +169,36 @@ export default function AdminProducts({ products, onProductsChange, setMessage, 
         </div>
       </section>
       <section id="product-editor" aria-label="Product editor" className="min-w-0">
+        <form onSubmit={importProduct} className="mb-6 min-w-0 overflow-hidden border-t-2 border-ink bg-white p-6">
+          <h2 className="font-display text-xl font-bold">Import a product by link</h2>
+          <p className="mt-1 text-sm text-muted">Paste any product page (e.g. a MakerWorld model, an Amazon or shop listing). We&rsquo;ll extract the details and image automatically — you fine-tune before saving.</p>
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+            <input ref={linkInput} value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://makerworld.com/en/models/... or any product page" aria-label="Product link" className={`w-full ${inputClass}`} />
+            <button type="submit" disabled={importing} className="shrink-0 bg-gold px-5 py-2 text-sm font-black text-ink transition hover:bg-gold-dark disabled:opacity-60">{importing ? 'Importing...' : 'Import & save'}</button>
+          </div>
+          {linkUrl.trim() && (
+            <div className="-mt-1 flex justify-end">
+              <button type="button" disabled={importing} onClick={previewLink} className="text-xs font-bold text-navy underline disabled:opacity-60">{importing ? 'Working...' : 'Look up details first'}</button>
+            </div>
+          )}
+        </form>
         <form onSubmit={saveProduct} className="min-w-0 overflow-hidden border-t-2 border-ink bg-white p-6">
           <h2 className="font-display text-2xl font-bold">{products.some((item) => item.id === product.id) ? `Edit ${product.id}` : 'Add a new product'}</h2>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             {fields.filter((key) => key !== 'category').map((key) => <label key={key} className="min-w-0 text-sm font-bold capitalize">{key}<input value={String(product[key] ?? '')} onChange={(e) => updateProduct(key, ['price', 'stock'].includes(key) ? Number(e.target.value) : e.target.value)} className={`mt-2 w-full ${inputClass}`} /></label>)}
-            <label className="min-w-0 text-sm font-bold capitalize">category<select value={product.category} onChange={(e) => updateProduct('category', e.target.value)} className={`mt-2 w-full ${inputClass}`}><option value="Controllers & Boards">Controllers &amp; Boards</option>{categories.map((cat) => <option key={cat} value={cat}>{cat}</option>)}</select></label>
+            <label className="min-w-0 text-sm font-bold capitalize">category
+                <input
+                  list="product-category-suggestions"
+                  value={product.category}
+                  onChange={(e) => updateProduct('category', e.target.value)}
+                  placeholder="Type a category, e.g. 3D Models"
+                  aria-label="Category (type or pick)"
+                  className={`mt-2 w-full ${inputClass}`}
+                />
+                <datalist id="product-category-suggestions">
+                  {categories.map((cat) => <option key={cat} value={cat} />)}
+                </datalist>
+              </label>
             <label className="min-w-0 text-sm font-bold capitalize">product type<select value={product.productType} onChange={(e) => updateProduct('productType', e.target.value)} className={`mt-2 w-full ${inputClass}`}>{['Retail kit', 'Project package', 'Material', 'Service package'].map((t) => <option key={t} value={t}>{t}</option>)}</select></label>
             <label className="min-w-0 text-sm font-bold sm:col-span-2">Specs, one per line<textarea value={Array.isArray(product.specs) ? product.specs.join('\n') : String(product.specs)} onChange={(e) => updateProduct('specs', e.target.value.split('\n'))} rows={4} className={`mt-2 w-full ${inputClass}`} /></label>
             <div className="min-w-0 sm:col-span-2">

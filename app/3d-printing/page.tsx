@@ -1,10 +1,14 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import { ArrowUpRight } from 'lucide-react'
 import ArticleCard from '../../components/ArticleCard'
 import PageIntro from '../../components/PageIntro'
 import PageShell from '../../components/PageShell'
 import ModelBrowser from '../../components/ModelBrowser'
+import { getManagedProducts } from '../../lib/content-store'
+
+export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: '3D Printing',
@@ -17,7 +21,17 @@ const offers = [
   { title: 'Small-batch parts', text: 'Repeatable print runs for fixtures, replacement parts, classroom sets, and maker products.', meta: 'Quote by volume' },
 ]
 
-export default function PrintingPage() {
+async function getModels() {
+  try {
+    const products = await getManagedProducts()
+    return products.filter((p) => p.category?.trim().toLowerCase() === '3d models' && p.active !== false)
+  } catch {
+    return []
+  }
+}
+
+export default async function PrintingPage() {
+  const models = await getModels()
   return (
     <PageShell>
       <PageIntro
@@ -32,6 +46,38 @@ export default function PrintingPage() {
             <ArticleCard key={offer.title} tag={offer.meta} title={offer.title} description={offer.text} href="/contact" cta="Request a quote" />
           ))}
         </div>
+
+        {models.length > 0 && (
+          <section className="mt-12 border-t border-line pt-8 sm:mt-14 sm:pt-10" aria-label="Models we print">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[.24em] text-navy">Print-to-order catalogue</p>
+                <h2 className="mt-2 font-display text-2xl font-bold sm:text-3xl">Models we print.</h2>
+              </div>
+              <p className="max-w-md text-sm leading-6 text-muted">Popular community models we can print on demand. Want something else? Send us the link - we price it and print it.</p>
+            </div>
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {models.map((model) => (
+                <article key={model.id} className="group flex flex-col overflow-hidden rounded-2xl border border-line bg-white transition hover:-translate-y-0.5 hover:border-navy hover:shadow-lg">
+                  <Link href={`/products/${model.id}`} className="relative block h-48 w-full bg-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy">
+                    {model.image
+                      ? <Image src={model.image} alt={model.name} fill className="object-cover transition duration-300 group-hover:scale-[1.03]" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" />
+                      : <span className="flex h-full items-center justify-center text-xs font-black uppercase tracking-widest text-white/60">No image</span>}
+                  </Link>
+                  <div className="flex flex-1 flex-col p-5">
+                    <p className="truncate text-xs font-black uppercase tracking-widest text-navy">{model.badge || 'Print-to-order'}</p>
+                    <h3 className="mt-1.5 line-clamp-2 font-display text-lg font-bold leading-snug text-ink">{model.name}</h3>
+                    <p className="mt-1.5 line-clamp-2 flex-1 text-sm leading-6 text-muted">{model.note || model.description?.split('. ')[0]}</p>
+                    <div className="mt-4 flex items-center justify-between gap-3">
+                      <strong className="font-display text-lg text-ink">{model.priceLabel}</strong>
+                      <Link href={`/products/${model.id}`} className="inline-flex items-center gap-1 rounded-full bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark" aria-label={`View ${model.name}`}>View <ArrowUpRight size={14} aria-hidden="true" /></Link>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
 
         <div className="mt-10 grid gap-6 border-y border-line py-8 sm:mt-12 sm:gap-8 sm:py-10 lg:grid-cols-[.8fr_1.2fr]">
           <div>

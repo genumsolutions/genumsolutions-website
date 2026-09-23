@@ -1,168 +1,126 @@
+// =====================================================================
+// admin-products — shared product CRUD for BOTH clients (app + website).
+//
+// WHY IT EXISTS: the website writes products via its own Next.js API
+// routes (service role, cookie session). The native app has no website
+// URL, so it must go through a shared service-role edge function instead
+// of a direct anon-key upsert (RLS only allows staff, but the app's
+// fallback silently swallowed failures). This function is the app's
+// write path — and the website proxies to the SAME function via
+// /api/admin/link-import for the link-based importer.
+//
+// Auth: caller's bearer token must resolve to a profile with role
+//       'staff' | 'admin' | 'owner' for read/write; deletes require
+//       'admin' | 'owner'. Mirrors the website's staff/admin gates.
+//
+// Body (JSON): { action: 'list' | 'create' | 'update' | 'delete',
+//                id?: string, product?: object }
+//
+// Deploy:
+//   supabase functions deploy admin-products --project-ref bkylfnlybtsujwzru
+//   (no extra secrets — uses the project's service role + URL env vars)
+// =====================================================================
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 
-const supabaseUrl = Deno.env.get('NEXT_PUBLIC_SUPABASE_URL')!
-const supabaseAnonKey = Deno.env.get('NEXT_PUBLIC_SUPABASE_ANON_KEY')!
-const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+const supabaseUrl = Deno.env.get('NEXT_PUBLIC_SUPABASE_URL') || Deno.env.get('SUPABASE_URL') || ''
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey!, {
-  auth: { autoRefreshToken: false, persistSession: false },
-})
+function json(data: unknown, status = 200) {
+  return new Response(JSON.stringify(data), {
+    headers: { 'Content-Type': 'application/json' },
+    status,
+  })
+}
+
+// Resolve the caller's profile role from their bearer token.
+async function callerRole(req: Request): Promise<{ role: string | null; client: ReturnType<typeof createClient>; error?: string }> {
+  const authHeader = req.headers.get('Authorization') || ''
+  const callerToken = authHeader.replace(/^Bearer\s+/i, '')
+  if (!callerToken) return { role: null, client: null as unknown as ReturnType<typeof createClient>, error: 'Sign in to manage products.' }
+
+  const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  })
+  const { data: userData, error: userError } = await adminClient.auth.getUser(callerToken)
+  const callerId = userData?.user?.id
+  if (userError || !callerId) return { role: null, client: adminClient, error: 'Sign in to manage products.' }
+
+  const { data: callerProfile } = await adminClient
+    .from('profiles')
+    .select('role')
+    .eq('id', callerId)
+    .maybeSingle()
+  if (!callerProfile?.role) return { role: null, client: adminClient, error: 'Only staff members can manage products.' }
+  return { role: String(callerProfile.role), client: adminClient }
+}
+
+function isStaff(role: string | null) {
+  return role === 'staff' || role === 'admin' || role === 'owner'
+}
+function isAdmin(role: string | null) {
+  return role === 'admin' || role === 'owner'
+}
 
 serve(async (req) => {
-  const url = new URL(req.url)
-  const pathName = url.pathname.replace('/function/', '').replace('/functions', '')
-
-  // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response(null, {
       headers: {
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'authorization, content-type, apikey',
       },
     })
   }
 
   try {
-    const body = await req.json()
-    const action = body.action
+    const { role, client, error } = await callerRole(req)
+    if (error || !client) return json({ error: error || 'Sign in to manage products.' }, 401)
+    if (!isStaff(role)) return json({ error: 'Only staff members can manage products.' }, 403)
 
-    // --- Product CRUD ---
+    const body = await req.json().catch(() => null)
+    const action = String(body?.action || '')
 
-    if (pathName === 'admin-products') {
-      if (action === 'list') {
-        const { data, error } = await supabase.from('products').select('*').order('sort_order', { ascending: true }).order('name', { ascending: true })
-        if (error) throw error
-        return new Response(JSON.stringify({ products: data }), {
-          headers: { 'Content-Type': 'application/json' },
-          status: 200,
-        })
-      }
+    // Shared id sanitizer (matches the website route + app editor).
+    const slugify = (raw: string) => String(raw).trim().toLowerCase().replace(/\s+/g, '-').slice(0, 120)
 
-      if (action === 'create') {
-        const { product } = body
-        if (!product?.id || !product?.name) {
-          return new Response(JSON.stringify({ error: 'Product needs id and name' }), {
-            headers: { 'Content-Type': 'application/json' },
-            status: 400,
-          })
-        }
-        const payload = { ...product, id: product.id.trim().toLowerCase().replace(/\s+/g, '-'), updated_at: new Date().toISOString() }
-        const { data, error } = await supabase.from('products').upsert(payload).select()
-        if (error) throw error
-        return new Response(JSON.stringify({ product: data[0] }), {
-          headers: { 'Content-Type': 'application/json' },
-          status: 201,
-        })
-      }
-
-      if (action === 'update') {
-        const { id, product } = body
-        if (!id || !product) {
-          return new Response(JSON.stringify({ error: 'Missing id or product' }), {
-            headers: { 'Content-Type': 'application/json' },
-            status: 400,
-          })
-        }
-        const payload = { ...product, id: id.trim().toLowerCase().replace(/\s+/g, '-'), updated_at: new Date().toISOString() }
-        const { data, error } = await supabase.from('products').upsert(payload).select()
-        if (error) throw error
-        return new Response(JSON.stringify({ product: data[0] }), {
-          headers: { 'Content-Type': 'application/json' },
-          status: 200,
-        })
-      }
-
-      if (action === 'delete') {
-        const { id } = body
-        if (!id) {
-          return new Response(JSON.stringify({ error: 'Missing id' }), {
-            headers: { 'Content-Type': 'application/json' },
-            status: 400,
-          })
-        }
-        const { error } = await supabase.from('products').delete().eq('id', id)
-        if (error) throw error
-        return new Response(JSON.stringify({ deleted: true }), {
-          headers: { 'Content-Type': 'application/json' },
-          status: 200,
-        })
-      }
+    if (action === 'list') {
+      const { data, error: listError } = await client
+        .from('products')
+        .select('*')
+        .order('sort_order', { ascending: true })
+        .order('name', { ascending: true })
+      if (listError) throw listError
+      return json({ products: data })
     }
 
-    // --- Service CRUD ---
-
-    if (pathName === 'admin-services') {
-      if (action === 'list') {
-        const { data, error } = await supabase.from('services').select('*').order('sort_order', { ascending: true })
-        if (error) throw error
-        return new Response(JSON.stringify({ services: data }), {
-          headers: { 'Content-Type': 'application/json' },
-          status: 200,
-        })
+    if (action === 'create' || action === 'update') {
+      const product = body?.product ?? null
+      const id = slugify(String(product?.id || body?.id || ''))
+      if (!id || !product?.name) {
+        return json({ error: 'Product needs id and name.' }, 400)
       }
-
-      if (action === 'create') {
-        const { service } = body
-        if (!service?.id || !service?.name) {
-          return new Response(JSON.stringify({ error: 'Service needs id and name' }), {
-            headers: { 'Content-Type': 'application/json' },
-            status: 400,
-          })
-        }
-        const payload = { ...service, updated_at: new Date().toISOString() }
-        const { data, error } = await supabase.from('services').upsert(payload).select()
-        if (error) throw error
-        return new Response(JSON.stringify({ service: data[0] }), {
-          headers: { 'Content-Type': 'application/json' },
-          status: 201,
-        })
+      if (!/^[a-z0-9-]+$/.test(id)) {
+        return json({ error: 'Product id must be alphanumeric with dashes only.' }, 400)
       }
-
-      if (action === 'update') {
-        const { id, service } = body
-        if (!id || !service) {
-          return new Response(JSON.stringify({ error: 'Missing id or service' }), {
-            headers: { 'Content-Type': 'application/json' },
-            status: 400,
-          })
-        }
-        const payload = { ...service, id: id.trim().toLowerCase().replace(/\s+/g, '-'), updated_at: new Date().toISOString() }
-        const { data, error } = await supabase.from('services').upsert(payload).select()
-        if (error) throw error
-        return new Response(JSON.stringify({ service: data[0] }), {
-          headers: { 'Content-Type': 'application/json' },
-          status: 200,
-        })
-      }
-
-      if (action === 'delete') {
-        const { id } = body
-        if (!id) {
-          return new Response(JSON.stringify({ error: 'Missing id' }), {
-            headers: { 'Content-Type': 'application/json' },
-            status: 400,
-          })
-        }
-        const { error } = await supabase.from('services').delete().eq('id', id)
-        if (error) throw error
-        return new Response(JSON.stringify({ deleted: true }), {
-          headers: { 'Content-Type': 'application/json' },
-          status: 200,
-        })
-      }
+      const payload = { ...product, id, updated_at: new Date().toISOString() }
+      const { data, error: upsertError } = await client.from('products').upsert(payload).select()
+      if (upsertError) throw upsertError
+      return json({ product: data?.[0] ?? payload }, action === 'create' ? 201 : 200)
     }
 
-    return new Response(JSON.stringify({ error: 'Unknown path or action' }), {
-      headers: { 'Content-Type': 'application/json' },
-      status: 404,
-    })
+    if (action === 'delete') {
+      if (!isAdmin(role)) return json({ error: 'Only administrators can delete products.' }, 403)
+      const id = String(body?.id || '')
+      if (!id) return json({ error: 'Missing id' }, 400)
+      const { error: deleteError } = await client.from('products').delete().eq('id', id)
+      if (deleteError) throw deleteError
+      return json({ deleted: true })
+    }
+
+    return json({ error: 'Unknown action.' }, 404)
   } catch (error) {
-    console.error('Admin Edge Function error:', error)
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { 'Content-Type': 'application/json' },
-      status: 500,
-    })
+    console.error('admin-products error:', error)
+    return json({ error: error instanceof Error ? error.message : 'Internal error' }, 500)
   }
 })
