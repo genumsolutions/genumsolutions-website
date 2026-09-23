@@ -13,27 +13,33 @@
 // the cached copy to refresh; call revalidateTag('company-info') from an
 // admin write path to purge it immediately.
 // =====================================================================
-import { unstable_cache } from 'next/cache'
-import { company as defaultCompany, type Company } from './company'
-import { createServiceClient, supabaseConfigured } from './supabase/server'
+import { unstable_cache } from "next/cache";
+import { company as defaultCompany, type Company } from "./company";
+import { createServiceClient, supabaseConfigured } from "./supabase/server";
 
 type CompanyRow = {
-  name: string | null
-  short_name: string | null
-  address: string | null
-  city: string | null
-  country: string | null
-  email: string | null
-  phone: string | null
-  pan: string | null
-  vat_label: string | null
-  description: string | null
-}
+  name: string | null;
+  short_name: string | null;
+  address: string | null;
+  city: string | null;
+  country: string | null;
+  email: string | null;
+  phone: string | null;
+  pan: string | null;
+  vat_label: string | null;
+  description: string | null;
+  whatsapp_number?: string | null;
+  facebook_url?: string | null;
+  instagram_url?: string | null;
+  tiktok_url?: string | null;
+  linkedin_url?: string | null;
+  youtube_url?: string | null;
+};
 
-const COMPANY_CACHE_TTL_SECONDS = 300
+const COMPANY_CACHE_TTL_SECONDS = 300;
 
 function mergeRow(row: CompanyRow): Company {
-  const pick = (db: string | null, fallback: string) => (db && db.trim() ? db.trim() : fallback)
+  const pick = (db: string | null, fallback: string) => (db && db.trim() ? db.trim() : fallback);
   return {
     name: pick(row.name, defaultCompany.name),
     shortName: pick(row.short_name, defaultCompany.shortName),
@@ -47,35 +53,43 @@ function mergeRow(row: CompanyRow): Company {
     pan: pick(row.pan, defaultCompany.pan),
     vatLabel: pick(row.vat_label, defaultCompany.vatLabel),
     description: pick(row.description, defaultCompany.description),
-  }
+    // C5: DB value wins when non-empty; empty DB cell keeps the (placeholder)
+    // default so pre-C5 rows still render the fallback WhatsApp number.
+    whatsappNumber: pick(row.whatsapp_number ?? null, defaultCompany.whatsappNumber),
+    facebookUrl: pick(row.facebook_url ?? null, defaultCompany.facebookUrl),
+    instagramUrl: pick(row.instagram_url ?? null, defaultCompany.instagramUrl),
+    tiktokUrl: pick(row.tiktok_url ?? null, defaultCompany.tiktokUrl),
+    linkedinUrl: pick(row.linkedin_url ?? null, defaultCompany.linkedinUrl),
+    youtubeUrl: pick(row.youtube_url ?? null, defaultCompany.youtubeUrl),
+  };
 }
 
 async function readCompanyCached(): Promise<Company> {
-  if (!supabaseConfigured()) return defaultCompany
+  if (!supabaseConfigured()) return defaultCompany;
   try {
-    const db = createServiceClient()
-    const { data, error } = await db.from('company_info').select('*').eq('id', 1).maybeSingle()
-    if (error) throw error
-    if (!data) return defaultCompany
-    return mergeRow(data as CompanyRow)
+    const db = createServiceClient();
+    const { data, error } = await db.from("company_info").select("*").eq("id", 1).maybeSingle();
+    if (error) throw error;
+    if (!data) return defaultCompany;
+    return mergeRow(data as CompanyRow);
   } catch (error) {
-    console.error('Supabase company_info read failed; using bundled data.', error)
-    return defaultCompany
+    console.error("Supabase company_info read failed; using bundled data.", error);
+    return defaultCompany;
   }
 }
 
-const getCompanyCached = unstable_cache(readCompanyCached, ['company-info'], {
+const getCompanyCached = unstable_cache(readCompanyCached, ["company-info"], {
   revalidate: COMPANY_CACHE_TTL_SECONDS,
-  tags: ['company-info'],
-})
+  tags: ["company-info"],
+});
 
 /** Company details, DB-first with bundled fallback (cached up to 5 min). */
 export async function getCompany(): Promise<Company> {
-  return getCompanyCached()
+  return getCompanyCached();
 }
 
 /** Purge the cached company info (call from an admin write path). */
 export async function invalidateCompanyCache(): Promise<void> {
-  const { revalidateTag } = await import('next/cache')
-  revalidateTag('company-info')
+  const { revalidateTag } = await import("next/cache");
+  revalidateTag("company-info");
 }

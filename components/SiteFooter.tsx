@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getCompany } from "../lib/company-store";
+import { socialLinks, whatsappLink } from "../lib/socials";
 import NewsletterOptIn from "./NewsletterOptIn";
 
 const exploreLinks = [
@@ -57,11 +58,42 @@ export default async function SiteFooter() {
                 Solutions Pvt.&thinsp;Ltd.
               </span>
             </span>
-          </Link>
+          </Link>{" "}
           <p className="mt-3 max-w-sm text-sm leading-5 text-white/60 sm:mt-4 sm:text-base sm:leading-6">
             Robotics, electronics, AI, IoT, 3D printing, digital products, and practical technology
             training from Kathmandu, Nepal.
           </p>
+          {/* C5 (2026-09-23): socials + WhatsApp — admin-editable, hidden when unset. */}
+          {(socialLinks(company).length > 0 || company.whatsappNumber) && (
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              {socialLinks(company).map((link) => (
+                <a
+                  key={link.key}
+                  href={link.url}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  aria-label={`${link.label} (opens in a new tab)`}
+                  className="rounded-full border border-white/20 px-3 py-1.5 text-[11px] font-black uppercase tracking-wide text-white/70 transition hover:border-gold hover:text-gold"
+                >
+                  {link.label}
+                </a>
+              ))}
+              {company.whatsappNumber && (
+                <a
+                  href={whatsappLink(
+                    company.whatsappNumber,
+                    "Hi GENUM Solutions! I have a question."
+                  )}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  aria-label="Chat on WhatsApp (opens in a new tab)"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3 py-1.5 text-[11px] font-black uppercase tracking-wide text-white transition hover:bg-emerald-500"
+                >
+                  WhatsApp
+                </a>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Explore */}

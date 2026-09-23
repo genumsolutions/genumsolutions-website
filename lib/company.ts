@@ -8,32 +8,49 @@
 // =====================================================================
 
 export type Company = {
-  name: string
-  shortName: string
-  url: string
-  address: string
-  city: string
-  country: string
-  email: string
-  phone: string
-  pan: string
-  vatLabel: string
-  description: string
-}
+  name: string;
+  shortName: string;
+  url: string;
+  address: string;
+  city: string;
+  country: string;
+  email: string;
+  phone: string;
+  pan: string;
+  vatLabel: string;
+  description: string;
+  // C5 (2026-09-23): admin-editable socials + WhatsApp. Empty = surface not
+  // used (the UI hides the entry). whatsappNumber is digits-only WITH country
+  // code (no '+'), e.g. '9779861842552' — see lib/socials.ts.
+  whatsappNumber: string;
+  facebookUrl: string;
+  instagramUrl: string;
+  tiktokUrl: string;
+  linkedinUrl: string;
+  youtubeUrl: string;
+};
 
 export const company: Company = {
-  name: 'GENUM SOLUTIONS PVT. LTD.',
-  shortName: 'GENUM SOLUTIONS',
-  url: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
-  address: 'Shringhkhala Galli-32, Kathmandu, Nepal',
-  city: 'Kathmandu',
-  country: 'NP',
-  email: 'genumsolutions@gmail.com',
-  phone: '+977 9861842552',
-  pan: '623676190',
-  vatLabel: 'PAN registered',
-  description: 'Robotics, electronics, 3D printing, AI, IoT, digital products, and practical technology training from Kathmandu, Nepal.',
-}
+  name: "GENUM SOLUTIONS PVT. LTD.",
+  shortName: "GENUM SOLUTIONS",
+  url: process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
+  address: "Shringhkhala Galli-32, Kathmandu, Nepal",
+  city: "Kathmandu",
+  country: "NP",
+  email: "genumsolutions@gmail.com",
+  phone: "+977 9861842552",
+  pan: "623676190",
+  vatLabel: "PAN registered",
+  description:
+    "Robotics, electronics, 3D printing, AI, IoT, digital products, and practical technology training from Kathmandu, Nepal.",
+  // C5: PLACEHOLDERS until the owner fills real values in admin Settings.
+  whatsappNumber: "9779861842552", // default = the business phone, digits-only
+  facebookUrl: "",
+  instagramUrl: "",
+  tiktokUrl: "",
+  linkedinUrl: "",
+  youtubeUrl: "",
+};
 
 // ---------------------------------------------------------------------------
 // Dynamic app info - the live Supabase release.json manifest is the SINGLE
@@ -43,19 +60,19 @@ export const company: Company = {
 // ---------------------------------------------------------------------------
 
 export type AppInfo = {
-  version: string
-  versionCode: number
-  sizeLabel: string
-  arch: string
-  apkUrl: string
-  latestApkUrl: string
-  releaseUrl: string
-  appsPagePath: string
+  version: string;
+  versionCode: number;
+  sizeLabel: string;
+  arch: string;
+  apkUrl: string;
+  latestApkUrl: string;
+  releaseUrl: string;
+  appsPagePath: string;
   /** What changed in the latest publish ("OTA · …" for short updates). */
-  notes?: string
+  notes?: string;
   /** Last-published ISO timestamp from release.json. */
-  updatedAt?: string
-}
+  updatedAt?: string;
+};
 
 // Bundled fallback used ONLY when the manifest is unreachable (offline dev,
 // first deploy, bucket outage). It reflects the LAST RELEASED build — it is
@@ -63,36 +80,38 @@ export type AppInfo = {
 //   node scripts/sync-app-fallback.mjs
 // (in this repo). bump-version.mjs in the app repo no longer touches this file.
 export const androidApp: AppInfo = {
-  version: '3.2.5',
+  version: "3.2.5",
   versionCode: 58,
-  sizeLabel: '42.7 MB',
-  arch: 'Android · 64-bit',
-  apkUrl: 'https://bkylfnlybtsujwzropru.supabase.co/storage/v1/object/public/app-releases/genum-solutions-latest.apk',
-  latestApkUrl: 'https://bkylfnlybtsujwzropru.supabase.co/storage/v1/object/public/app-releases/genum-solutions-latest.apk',
+  sizeLabel: "42.7 MB",
+  arch: "Android · 64-bit",
+  apkUrl:
+    "https://bkylfnlybtsujwzropru.supabase.co/storage/v1/object/public/app-releases/genum-solutions-latest.apk",
+  latestApkUrl:
+    "https://bkylfnlybtsujwzropru.supabase.co/storage/v1/object/public/app-releases/genum-solutions-latest.apk",
   releaseUrl:
-    'https://bkylfnlybtsujwzropru.supabase.co/storage/v1/object/public/app-releases/release.json',
-  appsPagePath: '/app',
-}
+    "https://bkylfnlybtsujwzropru.supabase.co/storage/v1/object/public/app-releases/release.json",
+  appsPagePath: "/app",
+};
 
 const RELEASE_URL =
-  'https://bkylfnlybtsujwzropru.supabase.co/storage/v1/object/public/app-releases/release.json'
+  "https://bkylfnlybtsujwzropru.supabase.co/storage/v1/object/public/app-releases/release.json";
 
 async function fetchReleaseManifest(): Promise<Record<string, unknown> | null> {
   try {
     // Cache-bust: CDN / browser may cache this file. Append a timestamp +
     // no-store so every call gets the freshest manifest.
-    const bust = `?_t=${Date.now()}`
+    const bust = `?_t=${Date.now()}`;
     const res = await fetch(RELEASE_URL + bust, {
-      cache: 'no-store',
+      cache: "no-store",
       headers: {
-        Accept: 'application/json',
-        'Cache-Control': 'no-cache',
+        Accept: "application/json",
+        "Cache-Control": "no-cache",
       },
-    })
-    if (!res.ok) return null
-    return (await res.json()) as Record<string, unknown>
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as Record<string, unknown>;
   } catch {
-    return null
+    return null;
   }
 }
 
@@ -110,19 +129,23 @@ async function fetchReleaseManifest(): Promise<Record<string, unknown> | null> {
  * real bytes, so a real manifest always has a real size.
  */
 export function sizeLabelFromManifest(manifest: Record<string, unknown>): string | undefined {
-  if (typeof manifest.size_bytes === 'number' && Number.isFinite(manifest.size_bytes) && manifest.size_bytes > 0) {
-    return `${(manifest.size_bytes / 1_000_000).toFixed(1)} MB`
+  if (
+    typeof manifest.size_bytes === "number" &&
+    Number.isFinite(manifest.size_bytes) &&
+    manifest.size_bytes > 0
+  ) {
+    return `${(manifest.size_bytes / 1_000_000).toFixed(1)} MB`;
   }
-  if (typeof manifest.sizeLabel === 'string' && manifest.sizeLabel !== '0') {
-    return manifest.sizeLabel
+  if (typeof manifest.sizeLabel === "string" && manifest.sizeLabel !== "0") {
+    return manifest.sizeLabel;
   }
-  if (typeof manifest.size_mb === 'number' && manifest.size_mb > 0) {
-    return `${Number(manifest.size_mb).toFixed(1)} MB`
+  if (typeof manifest.size_mb === "number" && manifest.size_mb > 0) {
+    return `${Number(manifest.size_mb).toFixed(1)} MB`;
   }
-  if (typeof manifest.size === 'string' && manifest.size && manifest.size !== '0') {
-    return manifest.size
+  if (typeof manifest.size === "string" && manifest.size && manifest.size !== "0") {
+    return manifest.size;
   }
-  return undefined
+  return undefined;
 }
 
 /**
@@ -130,30 +153,30 @@ export function sizeLabelFromManifest(manifest: Record<string, unknown>): string
  * in the manifest are set, so nothing is wiped to empty/zero.
  */
 export function appInfoFromManifest(manifest: Record<string, unknown>): Partial<AppInfo> {
-  const info: Partial<AppInfo> = {}
-  if (typeof manifest.version === 'string' && manifest.version) info.version = manifest.version
-  if (typeof manifest.version_code === 'number' && Number.isFinite(manifest.version_code)) {
-    info.versionCode = manifest.version_code
+  const info: Partial<AppInfo> = {};
+  if (typeof manifest.version === "string" && manifest.version) info.version = manifest.version;
+  if (typeof manifest.version_code === "number" && Number.isFinite(manifest.version_code)) {
+    info.versionCode = manifest.version_code;
   }
-  const sizeLabel = sizeLabelFromManifest(manifest)
-  if (sizeLabel) info.sizeLabel = sizeLabel
-  if (typeof manifest.apkUrl === 'string' && manifest.apkUrl) info.apkUrl = manifest.apkUrl
-  if (typeof manifest.latestApkUrl === 'string' && manifest.latestApkUrl) {
-    info.latestApkUrl = manifest.latestApkUrl
+  const sizeLabel = sizeLabelFromManifest(manifest);
+  if (sizeLabel) info.sizeLabel = sizeLabel;
+  if (typeof manifest.apkUrl === "string" && manifest.apkUrl) info.apkUrl = manifest.apkUrl;
+  if (typeof manifest.latestApkUrl === "string" && manifest.latestApkUrl) {
+    info.latestApkUrl = manifest.latestApkUrl;
   }
-  if (typeof manifest.releaseUrl === 'string' && manifest.releaseUrl) {
-    info.releaseUrl = manifest.releaseUrl
+  if (typeof manifest.releaseUrl === "string" && manifest.releaseUrl) {
+    info.releaseUrl = manifest.releaseUrl;
   }
-  if (typeof manifest.appsPagePath === 'string' && manifest.appsPagePath) {
-    info.appsPagePath = manifest.appsPagePath
+  if (typeof manifest.appsPagePath === "string" && manifest.appsPagePath) {
+    info.appsPagePath = manifest.appsPagePath;
   }
   // Human-facing metadata (optional). Present on every real manifest; absent
   // on the bundled fallback so nothing is wiped to empty in dev/offline.
-  if (typeof manifest.notes === 'string' && manifest.notes) info.notes = manifest.notes
-  if (typeof manifest.updated_at === 'string' && manifest.updated_at) {
-    info.updatedAt = manifest.updated_at
+  if (typeof manifest.notes === "string" && manifest.notes) info.notes = manifest.notes;
+  if (typeof manifest.updated_at === "string" && manifest.updated_at) {
+    info.updatedAt = manifest.updated_at;
   }
-  return info
+  return info;
 }
 
 /**
@@ -164,12 +187,12 @@ export function appInfoFromManifest(manifest: Record<string, unknown>): Partial<
  * unreachable. Non-mutating; safe to call from server components.
  */
 export async function getLiveAppInfo(): Promise<AppInfo> {
-  const manifest = await fetchReleaseManifest()
-  if (!manifest) return { ...androidApp }
+  const manifest = await fetchReleaseManifest();
+  if (!manifest) return { ...androidApp };
   return {
     ...androidApp,
     ...appInfoFromManifest(manifest),
-  }
+  };
 }
 
 /**
@@ -178,7 +201,7 @@ export async function getLiveAppInfo(): Promise<AppInfo> {
  * live values. Fails silently to the bundled fallback when unreachable.
  */
 export async function refreshAndroidAppInfo(): Promise<AppInfo> {
-  const live = await getLiveAppInfo()
-  Object.assign(androidApp, live)
-  return live
+  const live = await getLiveAppInfo();
+  Object.assign(androidApp, live);
+  return live;
 }

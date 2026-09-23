@@ -23,14 +23,14 @@ export default function AdminMessages({ setMessage: _setMessage, canDelete }: Pr
   const [subsTotal, setSubsTotal] = useState(0);
   const [subsTotalPages, setSubsTotalPages] = useState(1);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     void loadMessages(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     void loadSubscribers(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function loadSubscribers(p: number) {

@@ -751,9 +751,26 @@ create table if not exists public.company_info (
   pan text not null default '',
   vat_label text not null default '',
   description text not null default '',
+  -- C5 (2026-09-23): socials + WhatsApp, admin-editable in Settings.
+  -- whatsapp_number: digits with country code, no '+' (e.g. '9779861842552')
+  -- so wa.me links build directly; social URLs may stay '' (row hidden).
+  whatsapp_number text not null default '',
+  facebook_url text not null default '',
+  instagram_url text not null default '',
+  tiktok_url text not null default '',
+  linkedin_url text not null default '',
+  youtube_url text not null default '',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- C5 idempotence: older deployed rows predate the social columns.
+alter table public.company_info add column if not exists whatsapp_number text not null default '';
+alter table public.company_info add column if not exists facebook_url text not null default '';
+alter table public.company_info add column if not exists instagram_url text not null default '';
+alter table public.company_info add column if not exists tiktok_url text not null default '';
+alter table public.company_info add column if not exists linkedin_url text not null default '';
+alter table public.company_info add column if not exists youtube_url text not null default '';
 
 alter table public.company_info enable row level security;
 
