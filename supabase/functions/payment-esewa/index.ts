@@ -1,8 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
-const supabaseUrl = Deno.env.get("NEXT_PUBLIC_SUPABASE_URL")!;
-const supabaseAnonKey = Deno.env.get("NEXT_PUBLIC_SUPABASE_ANON_KEY")!;
+// C1 fix (2026-09-23): the edge runtime injects the STANDARD env names
+// (SUPABASE_URL / SUPABASE_ANON_KEY) — the NEXT_PUBLIC_* names are only set
+// if explicitly added as function secrets. Fall back so the module always
+// boots (an unbootable module = WORKER_ERROR on every request).
+const supabaseUrl = Deno.env.get("NEXT_PUBLIC_SUPABASE_URL") ?? Deno.env.get("SUPABASE_URL") ?? "";
+const supabaseAnonKey =
+  Deno.env.get("NEXT_PUBLIC_SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const esewaSecretKey = Deno.env.get("ESEWA_SECRET_KEY")!;
 const esewaBaseUrl = Deno.env.get("ESEWA_BASE_URL") || "https://uat.esewa.com.np";
