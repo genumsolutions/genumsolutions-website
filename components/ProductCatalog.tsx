@@ -1,100 +1,164 @@
-'use client'
+"use client";
 
-import { useState, useEffect, useMemo } from 'react'
-import Link from 'next/link'
-import Image from 'next/image'
-import { useRouter } from 'next/navigation'
-import { Check, ChevronDown, Search } from 'lucide-react'
-import type { Product } from '../lib/catalog'
-import { applyScope, filterProducts, paginate, PAGE_SIZE } from '../lib/catalog'
-import { getProductMedia } from '../lib/product-media'
-import { useCart } from './cart-provider'
+import { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { Check, ChevronDown, Search } from "lucide-react";
+import type { Product, SortOption } from "../lib/catalog";
+import {
+  applyScope,
+  filterProducts,
+  inStockOnly,
+  isSortOption,
+  paginate,
+  PAGE_SIZE,
+  PRICE_CEILINGS,
+  priceCeilingLabel,
+  SORT_LABELS,
+  sortProducts,
+  withinPrice,
+} from "../lib/catalog";
+import { getProductMedia } from "../lib/product-media";
+import { useCart } from "./cart-provider";
 
 export default function ProductCatalog({
-  scope = 'components',
+  scope = "components",
   products = [],
   initialPage = 1,
-  initialQuery = '',
-  initialCategory = 'All',
+  initialQuery = "",
+  initialCategory = "All",
+  initialSort = "featured",
+  initialMaxPrice = 0,
+  initialInStock = false,
 }: {
-  scope?: string
-  products?: Product[]
-  initialPage?: number
-  initialQuery?: string
-  initialCategory?: string
+  scope?: string;
+  products?: Product[];
+  initialPage?: number;
+  initialQuery?: string;
+  initialCategory?: string;
+  initialSort?: SortOption;
+  initialMaxPrice?: number;
+  initialInStock?: boolean;
 }) {
-  const router = useRouter()
-  const [category, setCategory] = useState(initialCategory)
-  const [query, setQuery] = useState(initialQuery)
-  const [page, setPage] = useState(Math.max(1, initialPage))
-  const [addedId, setAddedId] = useState<string | null>(null)
-  const { add, count, hydrated } = useCart()
+  const router = useRouter();
+  const [category, setCategory] = useState(initialCategory);
+  const [query, setQuery] = useState(initialQuery);
+  const [sort, setSort] = useState<SortOption>(
+    isSortOption(initialSort) ? initialSort : "featured"
+  );
+  const [maxPrice, setMaxPrice] = useState(initialMaxPrice);
+  const [inStock, setInStock] = useState(initialInStock);
+  const [page, setPage] = useState(Math.max(1, initialPage));
+  const [addedId, setAddedId] = useState<string | null>(null);
+  const { add, count, hydrated } = useCart();
 
   useEffect(() => {
-    if (!addedId) return
-    const timer = window.setTimeout(() => setAddedId(null), 1600)
-    return () => window.clearTimeout(timer)
-  }, [addedId])
+    if (!addedId) return;
+    const timer = window.setTimeout(() => setAddedId(null), 1600);
+    return () => window.clearTimeout(timer);
+  }, [addedId]);
 
-  const scopedProducts = useMemo(() => applyScope(products, scope).filter((product) => product.active !== false), [products, scope])
+  const scopedProducts = useMemo(
+    () => applyScope(products, scope).filter((product) => product.active !== false),
+    [products, scope]
+  );
 
   const categories = useMemo(() => {
-    const present: string[] = []
+    const present: string[] = [];
     for (const p of scopedProducts) {
-      if (!present.includes(p.category)) present.push(p.category)
+      if (!present.includes(p.category)) present.push(p.category);
     }
-    return present
-  }, [scopedProducts])
+    return present;
+  }, [scopedProducts]);
 
   const filtered = useMemo(
-    () => filterProducts(scopedProducts, category, query),
-    [scopedProducts, category, query],
-  )
+    () =>
+      inStockOnly(
+        withinPrice(sortProducts(filterProducts(scopedProducts, category, query), sort), maxPrice),
+        inStock
+      ),
+    [scopedProducts, category, query, sort, maxPrice, inStock]
+  );
 
-  const { items, page: activePage, total, totalPages, hasMore } = useMemo(
-    () => paginate(filtered, page),
-    [filtered, page],
-  )
+  const {
+    items,
+    page: activePage,
+    total,
+    totalPages,
+    hasMore,
+  } = useMemo(() => paginate(filtered, page), [filtered, page]);
 
-  // Keep the URL in sync so /products?page=2&q=...&category=... are real,
-  // shareable sub-pages (this is what the app's WebView mirrors too).
-  function syncUrl(next: { category?: string; query?: string; page?: number }) {
-    const params = new URLSearchParams()
-    const cat = next.category ?? category
-    const q = next.query ?? query
-    if (cat !== 'All') params.set('category', cat)
-    if (q.trim()) params.set('q', q.trim())
-    if (next.page && next.page > 1) params.set('page', String(next.page))
-    const qs = params.toString()
-    router.replace(qs ? `/products?${qs}` : '/products', { scroll: false })
+  // Keep the URL in sync so /products?page=2&q=...&category=...&sort=... are
+  // real, shareable sub-pages (this is what the app's WebView mirrors too).
+  function syncUrl(next: {
+    category?: string;
+    query?: string;
+    page?: number;
+    sort?: SortOption;
+    maxPrice?: number;
+    inStock?: boolean;
+  }) {
+    const params = new URLSearchParams();
+    const cat = next.category ?? category;
+    const q = next.query ?? query;
+    const st = next.sort ?? sort;
+    const mp = next.maxPrice ?? maxPrice;
+    const stock = next.inStock ?? inStock;
+    if (cat !== "All") params.set("category", cat);
+    if (q.trim()) params.set("q", q.trim());
+    if (st !== "featured") params.set("sort", st);
+    if (mp > 0) params.set("maxPrice", String(mp));
+    if (stock) params.set("inStock", "1");
+    if (next.page && next.page > 1) params.set("page", String(next.page));
+    const qs = params.toString();
+    router.replace(qs ? `/products?${qs}` : "/products", { scroll: false });
   }
 
   function chooseCategory(next: string) {
-    setCategory(next)
-    setPage(1)
-    syncUrl({ category: next, page: 1 })
+    setCategory(next);
+    setPage(1);
+    syncUrl({ category: next, page: 1 });
   }
 
   function handleQueryChange(value: string) {
-    setQuery(value)
-    setPage(1)
-    syncUrl({ query: value, page: 1 })
+    setQuery(value);
+    setPage(1);
+    syncUrl({ query: value, page: 1 });
+  }
+
+  function chooseSort(next: SortOption) {
+    setSort(next);
+    setPage(1);
+    syncUrl({ sort: next, page: 1 });
+  }
+
+  function chooseMaxPrice(next: number) {
+    setMaxPrice(next);
+    setPage(1);
+    syncUrl({ maxPrice: next, page: 1 });
+  }
+
+  function toggleInStock(next: boolean) {
+    setInStock(next);
+    setPage(1);
+    syncUrl({ inStock: next, page: 1 });
   }
 
   function loadMore() {
-    const next = page + 1
-    setPage(next)
-    syncUrl({ page: next })
+    const next = page + 1;
+    setPage(next);
+    syncUrl({ page: next });
   }
 
   function addToCart(productId: string) {
-    const product = products.find((item) => item.id === productId)
-    if (!product || product.stock === 0 || product.productType === 'Project package') {
-      window.location.href = `/products/${productId}`
-      return
+    const product = products.find((item) => item.id === productId);
+    if (!product || product.stock === 0 || product.productType === "Project package") {
+      window.location.href = `/products/${productId}`;
+      return;
     }
-    add(productId, 1)
-    setAddedId(productId)
+    add(productId, 1);
+    setAddedId(productId);
   }
 
   return (
@@ -110,7 +174,11 @@ export default function ProductCatalog({
             aria-label="Search products"
           />
           {query && (
-            <button onClick={() => handleQueryChange('')} aria-label="Clear search" className="text-xs font-bold text-navy underline-offset-2 hover:underline">
+            <button
+              onClick={() => handleQueryChange("")}
+              aria-label="Clear search"
+              className="text-xs font-bold text-navy underline-offset-2 hover:underline"
+            >
               Clear
             </button>
           )}
@@ -127,20 +195,71 @@ export default function ProductCatalog({
             >
               <option value="All">All categories</option>
               {categories.map((item) => (
-                <option key={item} value={item}>{item} ({filterProducts(scopedProducts, item, query).length})</option>
+                <option key={item} value={item}>
+                  {item} ({filterProducts(scopedProducts, item, query).length})
+                </option>
               ))}
             </select>
+          </label>
+          <label className="flex min-h-[44px] items-center gap-2 rounded-full border border-line bg-white px-4 text-sm font-bold text-muted shadow-sm sm:w-auto">
+            <span className="sr-only">Sort products</span>
+            <select
+              value={sort}
+              onChange={(event) =>
+                chooseSort(isSortOption(event.target.value) ? event.target.value : "featured")
+              }
+              aria-label="Sort products"
+              className="w-full bg-transparent py-2 text-sm font-bold outline-none sm:w-52"
+            >
+              {(Object.keys(SORT_LABELS) as SortOption[]).map((option) => (
+                <option key={option} value={option}>
+                  {SORT_LABELS[option]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex min-h-[44px] items-center gap-2 rounded-full border border-line bg-white px-4 text-sm font-bold text-muted shadow-sm sm:w-auto">
+            <span className="sr-only">Filter by maximum price</span>
+            <select
+              value={maxPrice}
+              onChange={(event) => chooseMaxPrice(Number(event.target.value) || 0)}
+              aria-label="Filter by maximum price"
+              className="w-full bg-transparent py-2 text-sm font-bold outline-none sm:w-48"
+            >
+              {PRICE_CEILINGS.map((ceiling) => (
+                <option key={ceiling} value={ceiling}>
+                  {priceCeilingLabel(ceiling)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex min-h-[44px] cursor-pointer items-center gap-2 rounded-full border border-line bg-white px-4 py-2 text-sm font-bold text-muted shadow-sm">
+            <input
+              type="checkbox"
+              checked={inStock}
+              onChange={(event) => toggleInStock(event.target.checked)}
+              aria-label="Show in-stock products only"
+              className="h-4 w-4 accent-navy"
+            />
+            In stock only
           </label>
           <span className="text-xs text-muted">{filtered.length} total</span>
         </div>
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm text-muted">
           <span aria-live="polite">
-            {total} listing{total === 1 ? '' : 's'} found
-            {category !== 'All' && <> in <strong className="text-navy">{category}</strong></>}
+            {total} listing{total === 1 ? "" : "s"} found
+            {category !== "All" && (
+              <>
+                {" "}
+                in <strong className="text-navy">{category}</strong>
+              </>
+            )}
           </span>
           <span className="font-bold text-navy">
-            {hydrated && count > 0 ? `${count} item${count === 1 ? '' : 's'} in your build list` : 'Page ' + activePage + ' of ' + totalPages}
+            {hydrated && count > 0
+              ? `${count} item${count === 1 ? "" : "s"} in your build list`
+              : "Page " + activePage + " of " + totalPages}
           </span>
         </div>
       </div>
@@ -149,17 +268,34 @@ export default function ProductCatalog({
         {items.length === 0 && (
           <div className="col-span-full border-t-2 border-ink bg-white p-10 text-center">
             <p className="font-display text-xl font-bold">No products found</p>
-            <p className="mt-2 text-sm text-muted">Try a different search term or browse another category.</p>
+            <p className="mt-2 text-sm text-muted">
+              Try a different search term or browse another category.
+            </p>
+            {(maxPrice > 0 || inStock || sort !== "featured") && (
+              <button
+                onClick={() => {
+                  chooseMaxPrice(0);
+                  toggleInStock(false);
+                  chooseSort("featured");
+                }}
+                className="mt-4 rounded-full border border-navy px-5 py-2 text-xs font-black text-navy transition hover:bg-mist"
+              >
+                Clear price &amp; stock filters
+              </button>
+            )}
           </div>
         )}
         {items.map((product) => {
           const media = product.image
             ? { src: product.image, alt: product.name }
-            : getProductMedia(product.category)
-          const quoteOnly = product.stock === 0 || product.productType === 'Project package'
+            : getProductMedia(product.category);
+          const quoteOnly = product.stock === 0 || product.productType === "Project package";
 
           return (
-            <article key={product.id} className="flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-sm">
+            <article
+              key={product.id}
+              className="flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-sm"
+            >
               <Link
                 href={`/products/${product.id}`}
                 aria-label={`View ${product.name}`}
@@ -173,30 +309,50 @@ export default function ProductCatalog({
                   className="object-cover transition duration-500 hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-ink/70 to-transparent" />
-                <span className="absolute bottom-3 left-4 max-w-[calc(100%-2rem)] truncate text-xs font-black uppercase tracking-widest text-white">{product.category}</span>
+                <span className="absolute bottom-3 left-4 max-w-[calc(100%-2rem)] truncate text-xs font-black uppercase tracking-widest text-white">
+                  {product.category}
+                </span>
               </Link>
               <div className="flex flex-1 flex-col p-5">
-                <p className="truncate text-xs font-black uppercase tracking-widest text-navy">{product.badge || product.productType}</p>
-                <h2 className="mt-2 line-clamp-2 font-display text-xl font-bold leading-snug">{product.name}</h2>
-                <p className="mt-2 line-clamp-2 flex-1 text-sm leading-6 text-muted">{product.note || product.description?.split('. ')[0]}</p>
+                <p className="truncate text-xs font-black uppercase tracking-widest text-navy">
+                  {product.badge || product.productType}
+                </p>
+                <h2 className="mt-2 line-clamp-2 font-display text-xl font-bold leading-snug">
+                  {product.name}
+                </h2>
+                <p className="mt-2 line-clamp-2 flex-1 text-sm leading-6 text-muted">
+                  {product.note || product.description?.split(". ")[0]}
+                </p>
                 <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
                   <strong className="font-display text-lg">{product.priceLabel}</strong>
                   {quoteOnly ? (
-                    <Link href={`/products/${product.id}`} className="rounded-full bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark" aria-label={`View details for ${product.name}`}>View details</Link>
+                    <Link
+                      href={`/products/${product.id}`}
+                      className="rounded-full bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark"
+                      aria-label={`View details for ${product.name}`}
+                    >
+                      View details
+                    </Link>
                   ) : (
                     <button
                       onClick={() => addToCart(product.id)}
-                      className={`rounded-full px-4 py-2 text-xs font-black text-white transition ${addedId === product.id ? 'bg-emerald-600' : 'bg-navy hover:bg-navy-dark'}`}
-                      aria-label={`${addedId === product.id ? 'Added' : 'Add'} ${product.name} to build list`}
+                      className={`rounded-full px-4 py-2 text-xs font-black text-white transition ${addedId === product.id ? "bg-emerald-600" : "bg-navy hover:bg-navy-dark"}`}
+                      aria-label={`${addedId === product.id ? "Added" : "Add"} ${product.name} to build list`}
                       aria-live="polite"
                     >
-                      {addedId === product.id ? <span className="inline-flex items-center gap-1.5"><Check size={13} aria-hidden="true" /> Added</span> : 'Add'}
+                      {addedId === product.id ? (
+                        <span className="inline-flex items-center gap-1.5">
+                          <Check size={13} aria-hidden="true" /> Added
+                        </span>
+                      ) : (
+                        "Add"
+                      )}
                     </button>
                   )}
                 </div>
               </div>
             </article>
-          )
+          );
         })}
       </div>
 
@@ -209,7 +365,8 @@ export default function ProductCatalog({
             See more <ChevronDown size={16} aria-hidden="true" />
           </button>
           <p className="text-xs text-muted">
-            Showing {Math.min(total, activePage * PAGE_SIZE)} of {total} — page {activePage} of {totalPages}
+            Showing {Math.min(total, activePage * PAGE_SIZE)} of {total} — page {activePage} of{" "}
+            {totalPages}
           </p>
         </div>
       )}
@@ -217,5 +374,5 @@ export default function ProductCatalog({
         <p className="mt-10 text-center text-xs text-muted">You have seen all {total} listings.</p>
       )}
     </section>
-  )
+  );
 }

@@ -4,81 +4,129 @@
  * The actual product data lives in Supabase (served via getManagedProducts)
  * with a local fallback in `catalog-data.ts` for offline / seed purposes.
  */
-import { localProducts } from './catalog-data'
+import { localProducts } from "./catalog-data";
 
 export type Product = {
-  id: string
-  name: string
-  category: string
-  price: number
-  priceLabel: string
-  sku: string
-  productType: 'Retail kit' | 'Project package' | 'Material' | 'Service package'
-  inventoryType?: 'Inhouse' | 'Catalog' | 'Supplier'
-  active?: boolean
-  projectOverview?: string
-  objectives?: string[]
-  materialsRequired?: string[]
-  learningOutcomes?: string[]
-  buildSteps?: string[]
-  controlMethods?: string[]
-  prerequisites?: string[]
-  deliverables?: string[]
-  estimatedDuration?: string
-  sourceFolder?: string
-  documentationUrl?: string
-  videoUrl?: string
-  maintenanceNotes?: string
-  note: string
-  description: string
-  specs: string[]
-  audience: string
-  difficulty: 'Beginner' | 'Intermediate' | 'Advanced' | 'Professional'
-  warranty: string
-  stock: number
-  delivery: string
-  color: string
-  badge?: string
-  supplier?: string
-  image?: string
-}
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+  priceLabel: string;
+  sku: string;
+  productType: "Retail kit" | "Project package" | "Material" | "Service package";
+  inventoryType?: "Inhouse" | "Catalog" | "Supplier";
+  active?: boolean;
+  projectOverview?: string;
+  objectives?: string[];
+  materialsRequired?: string[];
+  learningOutcomes?: string[];
+  buildSteps?: string[];
+  controlMethods?: string[];
+  prerequisites?: string[];
+  deliverables?: string[];
+  estimatedDuration?: string;
+  sourceFolder?: string;
+  documentationUrl?: string;
+  videoUrl?: string;
+  maintenanceNotes?: string;
+  note: string;
+  description: string;
+  specs: string[];
+  audience: string;
+  difficulty: "Beginner" | "Intermediate" | "Advanced" | "Professional";
+  warranty: string;
+  stock: number;
+  delivery: string;
+  color: string;
+  badge?: string;
+  supplier?: string;
+  image?: string;
+};
 
 /** Re-export local seed data for backward compatibility and seeding. */
-export const products: Product[] = localProducts
+export const products: Product[] = localProducts;
 
-export const formatNPR = (value: number) => `NPR ${value.toLocaleString('en-IN')}`
-export const findProduct = (slug: string) => products.find((product) => product.id === slug)
+export const formatNPR = (value: number) => `NPR ${value.toLocaleString("en-IN")}`;
+export const findProduct = (slug: string) => products.find((product) => product.id === slug);
 
-export const PAGE_SIZE = 12
+export const PAGE_SIZE = 12;
+
+// ===== C2 (2026-09-23): sort + price/stock filters (shared by /products UI,
+// the products API, and mirrored 1:1 by the app's Shop screen) =====
+export const SORT_OPTIONS = ["featured", "price-asc", "price-desc", "name"] as const;
+export type SortOption = (typeof SORT_OPTIONS)[number];
+
+export const SORT_LABELS: Record<SortOption, string> = {
+  featured: "Featured",
+  "price-asc": "Price: low to high",
+  "price-desc": "Price: high to low",
+  name: "Name A–Z",
+};
+
+// Price ceilings in NPR (0 = any price). Quote-only rows (price 0) never
+// match a ceiling — filtering by price implies a buyable budget.
+export const PRICE_CEILINGS = [0, 500, 1000, 2500, 5000, 10000] as const;
+export const priceCeilingLabel = (ceiling: number) =>
+  ceiling === 0 ? "Any price" : `Up to NPR ${ceiling.toLocaleString("en-IN")}`;
+
+export function isSortOption(value: string): value is SortOption {
+  return (SORT_OPTIONS as readonly string[]).includes(value);
+}
+
+// 'featured' preserves the curated sort_order the list arrived in.
+export function sortProducts(list: Product[], sort: SortOption): Product[] {
+  const sorted = [...list];
+  if (sort === "price-asc")
+    sorted.sort((a, b) => a.price - b.price || a.name.localeCompare(b.name));
+  else if (sort === "price-desc")
+    sorted.sort((a, b) => b.price - a.price || a.name.localeCompare(b.name));
+  else if (sort === "name") sorted.sort((a, b) => a.name.localeCompare(b.name));
+  return sorted;
+}
+
+export function withinPrice(list: Product[], ceiling: number): Product[] {
+  if (!ceiling) return list;
+  return list.filter((p) => p.price > 0 && p.price <= ceiling);
+}
+
+export function inStockOnly(list: Product[], only: boolean): Product[] {
+  return only ? list.filter((p) => p.stock > 0) : list;
+}
 
 // Narrow a product list by catalog scope. "components" is everything except
 // robot cars, pre-packaged kits and project packages; "cars" is robot cars
 // only; "projects" is project packages only.
 export function applyScope(all: Product[], scope: string): Product[] {
-  if (scope === 'cars') return all.filter((p) => p.category === 'Robot Cars')
-  if (scope === 'projects') return all.filter((p) => p.productType === 'Project package')
+  if (scope === "cars") return all.filter((p) => p.category === "Robot Cars");
+  if (scope === "projects") return all.filter((p) => p.productType === "Project package");
   return all.filter(
     (p) =>
-      !['Robot Cars', 'Pre-packaged Kits'].includes(p.category) &&
-      p.productType !== 'Project package',
-  )
+      !["Robot Cars", "Pre-packaged Kits"].includes(p.category) &&
+      p.productType !== "Project package"
+  );
 }
 
 // Combine a category and a free-text query into a single filter predicate.
 export function filterProducts(list: Product[], category: string, query: string): Product[] {
-  const needle = query.trim().toLowerCase()
+  const needle = query.trim().toLowerCase();
   return list.filter((p) => {
-    if (category !== 'All' && p.category !== category) return false
-    if (!needle) return true
-    return `${p.name} ${p.note} ${p.description}`.toLowerCase().includes(needle)
-  })
+    if (category !== "All" && p.category !== category) return false;
+    if (!needle) return true;
+    return `${p.name} ${p.note} ${p.description}`.toLowerCase().includes(needle);
+  });
 }
 
 // Split a (already scoped + filtered) list into pages for the catalog.
 export function paginate(list: Product[], page: number, pageSize = PAGE_SIZE) {
-  const total = list.length
-  const totalPages = Math.max(1, Math.ceil(total / pageSize))
-  const safePage = Math.min(Math.max(1, page), totalPages)
-  const start = (safePage - 1) * pageSize
-  return { items: list.slice(start, start + pageSize), page: safePage, total, totalPages, hasMore: safePage < totalPages }
+  const total = list.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const start = (safePage - 1) * pageSize;
+  return {
+    items: list.slice(start, start + pageSize),
+    page: safePage,
+    total,
+    totalPages,
+    hasMore: safePage < totalPages,
+  };
 }
