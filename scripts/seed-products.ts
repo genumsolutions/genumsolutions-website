@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { createClient } from '@supabase/supabase-js'
 import { localProducts as products } from '../lib/catalog-data'
@@ -51,7 +51,7 @@ const rows = products.map((product, index) => ({
   price_label: product.priceLabel,
   sku: product.sku,
   product_type: product.productType,
-  inventory_type: product.inventoryType ?? 'Catalog',
+  inventory_type: product.inventoryType ?? 'Inhouse',
   active: product.active !== false,
   project_overview: product.projectOverview ?? '',
   objectives: product.objectives ?? [],
@@ -81,12 +81,56 @@ const rows = products.map((product, index) => ({
   sort_order: index,
 }))
 
+// Ensure every site-relative image referenced by the new catalog exists as an
+// object in the public "product-images" bucket. Existing objects are reused;
+// only missing files are uploaded (e.g. the shared placeholder PNG).
+async function ensureBucketImages(): Promise<void> {
+  const { data: existing } = await db.storage.from('product-images').list('', { limit: 1000 })
+  const present = new Set((existing || []).map((o) => o.name))
+  const wanted = new Set(
+    products
+      .map((p) => (p.image && p.image.startsWith('/') ? p.image.split('/').pop() : null))
+      .filter((n): n is string => Boolean(n)),
+  )
+  for (const name of wanted) {
+    if (present.has(name)) continue
+    const abs = join(process.cwd(), 'public', 'media', 'products', name)
+    if (!existsSync(abs)) {
+      console.error(`  WARN: referenced image not found locally: ${name}`)
+      continue
+    }
+    const body = readFileSync(abs)
+    const { error } = await db.storage.from('product-images').upload(name, body, {
+      contentType: name.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg',
+      upsert: true,
+    })
+    if (error) {
+      console.error(`  WARN: could not upload ${name}: ${error.message}`)
+    } else {
+      console.log(`  uploaded ${name}`)
+    }
+  }
+}
+
 async function main() {
   console.log(`Seeding ${rows.length} products to ${url} ...`)
+  console.log('Ensuring product images are present in the bucket ...')
+  await ensureBucketImages()
+
+  // Replace catalog: remove every existing product row, then insert the new
+  // catalog. No Foreign Key points back at products, and car_mode_id only
+  // references robo_car_modes (kept intact), so the wipe is safe.
+  const { error: wipeError } = await db.from('products').delete().neq('id', '')
+  if (wipeError) {
+    console.error('Wipe failed:', wipeError.message)
+    process.exit(1)
+  }
+  console.log('  removed existing product rows')
+
   let done = 0
   for (let index = 0; index < rows.length; index += 50) {
     const chunk = rows.slice(index, index + 50)
-    const { error } = await db.from('products').upsert(chunk)
+    const { error } = await db.from('products').insert(chunk)
     if (error) {
       console.error(`Chunk ${index}-${index + chunk.length} failed:`, error.message)
       process.exit(1)
@@ -96,8 +140,9 @@ async function main() {
   }
 
   const content = {
+    id: 1,
     home_title: 'Technology you can touch, test, and trust.',
-    home_body: 'Robotics kits, project solutions, fabrication, open tools, and training for curious builders, schools, and teams.',
+    home_body: 'Electronics and robotics components, project solutions, fabrication, open tools, and training for curious builders, schools, and teams.',
     updated_at: new Date().toISOString(),
   }
   const { error } = await db.from('site_content').upsert(content)
