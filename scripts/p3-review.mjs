@@ -219,8 +219,11 @@ try {
   {
     // Dim walk with a contrast sampler (flags hard unreadable text only).
     const pagesToWalk = ['/', '/products', '/tools', '/account', '/checkout', '/admin']
-    // ensure the cart has an item so /checkout renders
-    const prod = await service.from('products').select('id, price').eq('active', true).limit(1).single()
+    // ensure the cart has an item so /checkout renders — pick a STOCKED,
+    // shelf-ordered product (the /api/cart PUT drops zero-stock lines, and
+    // most of the catalogue is quoted/zero-stock)
+    const prod = await service.from('products').select('id, price').eq('active', true).gt('stock', 0)
+      .order('sort_order', { ascending: true }).order('name', { ascending: true }).limit(1).maybeSingle()
     await page.evaluate(async (pid) => {
       await fetch('/api/cart', {
         method: 'PUT',
@@ -341,10 +344,16 @@ try {
 
   // ================= SECTION 3 — regression smoke =================
   {
-    const badge = await page.evaluate(() => {
-      const b = document.querySelector('a[aria-label^="Open checkout"]')
-      return b ? b.getAttribute('aria-label') : null
-    })
+    // The badge count renders only after cart-provider hydration (a cold first
+    // hit can hydrate after networkidle2 fires), so poll instead of an instant read.
+    let badge = null
+    for (let i = 0; i < 40 && !/Open checkout, \d+ item/.test(badge || ''); i++) {
+      badge = await page.evaluate(() => {
+        const b = document.querySelector('a[aria-label^="Open checkout"]')
+        return b ? b.getAttribute('aria-label') : null
+      }).catch(() => null)
+      if (!/Open checkout, \d+ item/.test(badge || '')) await sleep(500)
+    }
     report(3, 'Header cart badge counts items', /Open checkout, 1 item/.test(badge || '') ? 'PASS' : 'SNAG', `aria="${badge}"`)
   }
   {
@@ -436,7 +445,14 @@ try {
         if (e.data && e.data.type === 'PUSH_RECEIVED') window.__pushArrived = e.data.payload
       })
     })
-    const cardShown = await page.evaluate(() => document.body.innerText.includes('Order notifications'))
+    // The card mounts async (SW-ready + permission-state checks resolve before
+    // it renders), so poll instead of a one-shot instant read — a cold first
+    // hit can hydrate after networkidle2 fires.
+    let cardShown = false
+    for (let i = 0; i < 40 && !cardShown; i++) {
+      cardShown = await page.evaluate(() => document.body.innerText.includes('Order notifications')).catch(() => false)
+      if (!cardShown) await sleep(500)
+    }
     report(4, 'Account shows the "Order notifications" card', cardShown ? 'PASS' : 'FAIL')
     await page.evaluate(() => {
       const b = [...document.querySelectorAll('button')].find((x) => x.textContent.includes('Turn on notifications'))
@@ -524,7 +540,8 @@ try {
     }
     // checkout opt-in once + "Not now" sticks (needs items in the build list;
     // §3's COD order emptied the cart, so re-add one first)
-    const prodForCheckout = await service.from('products').select('id').eq('active', true).limit(1).single()
+    const prodForCheckout = await service.from('products').select('id').eq('active', true).gt('stock', 0)
+      .order('sort_order', { ascending: true }).order('name', { ascending: true }).limit(1).maybeSingle()
     await page.evaluate(async (pid) => {
       await fetch('/api/cart', {
         method: 'PUT',
@@ -537,7 +554,7 @@ try {
     // checks (SW ready, permission state) resolve — poll for it instead of
     // sampling once at an arbitrary instant.
     let optIn = 0
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 80; i++) {
       optIn = await page.evaluate(() => (document.body.innerText.match(/Want a push notification/g) || []).length)
       if (optIn > 0) break
       await sleep(500)
