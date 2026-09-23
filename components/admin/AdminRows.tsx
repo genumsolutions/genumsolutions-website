@@ -104,6 +104,20 @@ export default function AdminRows({ kind, rows, onChange, caption, hint, canDele
     else { const result = await response.json().catch(() => ({})); setMessage(result.error || 'Could not delete.') }
   }
 
+  async function toggleVisibility(r: RowItem) {
+    const payload = { ...r, active: r.active === false }
+    setBusy(true)
+    const response = await fetch('/api/admin/settings', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: kind, [noun]: payload }),
+    })
+    const result = await response.json().catch(() => ({}))
+    setBusy(false)
+    if (!response.ok) { setMessage(result.error || `Could not update ${singular.toLowerCase()}.`); return }
+    onChange(rows.map((row) => row.id === r.id ? payload : row))
+    setMessage(r.active === false ? `${singular} shown.` : `${singular} hidden.`)
+  }
+
   const safe = (r: RowItem, fallback = '') => (r as { title?: string }).title?.trim() || r.id || fallback
   const filtered = rows
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
@@ -167,6 +181,7 @@ export default function AdminRows({ kind, rows, onChange, caption, hint, canDele
             <span className="flex shrink-0 gap-2">
               <button onClick={() => setPreviewing(r)} className="text-xs font-bold text-navy underline">Preview</button>
               <button onClick={() => setEditing({ ...r })} className="text-xs font-bold text-navy underline">Edit</button>
+              <button onClick={() => void toggleVisibility(r)} disabled={busy} className="text-xs font-bold text-ink underline disabled:opacity-60">{r.active === false ? 'Show' : 'Hide'}</button>
               {canDelete && <button onClick={() => void remove(r.id)} className="text-xs font-bold text-red-600 underline">Delete</button>}
             </span>
           </div>

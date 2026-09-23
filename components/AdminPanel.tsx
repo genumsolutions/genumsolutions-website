@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Activity, BookOpen, FileText, LayoutDashboard, MessageSquare, Package, Settings as SettingsIcon, ShoppingBag, Users, Wallet, Wrench } from 'lucide-react'
 import { tabActive, tabBase, tabInactive } from '../lib/styles'
+import { isAdminRole } from '../lib/roles'
 import type { Product } from '../lib/content-store'
 import { TABS } from './admin/admin-types'
 import type { Tab } from './admin/admin-types'
@@ -44,7 +45,7 @@ export default function AdminPanel({ initialProducts, currentRole }: Props) {
 
   // Staff can run every panel but not perform deletions; owner additionally
   // gets the Users-hosted account deletion controls.
-  const canDelete = currentRole === 'admin' || currentRole === 'owner'
+  const canDelete = isAdminRole(currentRole)
 
   const tabIndex = TABS.indexOf(tab)
 

@@ -1,4 +1,6 @@
 import { createClient, supabaseConfigured } from './supabase/server'
+import { isAdminRole, isOwnerRole, isStaffRole, isValidAdminRole } from './roles'
+import type { AdminRole } from './roles'
 
 // Admin is any signed-in user whose profile row has role in ('staff','admin','owner').
 export async function getCurrentAdmin(): Promise<{ id: string; email: string } | null> {
@@ -8,8 +10,7 @@ export async function getCurrentAdmin(): Promise<{ id: string; email: string } |
     const { data } = await supabase.auth.getUser()
     if (!data.user) return null
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).maybeSingle()
-    const role = String(profile?.role || '')
-    if (role !== 'staff' && role !== 'admin' && role !== 'owner') return null
+    if (!isValidAdminRole(profile?.role)) return null
     return { id: data.user.id, email: data.user.email ?? '' }
   } catch {
     return null
@@ -22,12 +23,7 @@ export async function getCurrentAdmin(): Promise<{ id: string; email: string } |
 export async function isAdminRequest(): Promise<boolean> {
   if (!supabaseConfigured()) return false
   try {
-    const supabase = createClient()
-    const { data } = await supabase.auth.getUser()
-    if (!data.user) return false
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).maybeSingle()
-    const role = String(profile?.role || '')
-    return role === 'admin' || role === 'owner'
+    return isAdminRole(await currentProfileRole())
   } catch {
     return false
   }
@@ -36,12 +32,7 @@ export async function isAdminRequest(): Promise<boolean> {
 export async function isStaffRequest(): Promise<boolean> {
   if (!supabaseConfigured()) return false
   try {
-    const supabase = createClient()
-    const { data } = await supabase.auth.getUser()
-    if (!data.user) return false
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).maybeSingle()
-    const role = String(profile?.role || '')
-    return role === 'staff' || role === 'admin' || role === 'owner'
+    return isStaffRole(await currentProfileRole())
   } catch {
     return false
   }
@@ -50,11 +41,7 @@ export async function isStaffRequest(): Promise<boolean> {
 export async function isOwnerRequest(): Promise<boolean> {
   if (!supabaseConfigured()) return false
   try {
-    const supabase = createClient()
-    const { data } = await supabase.auth.getUser()
-    if (!data.user) return false
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).maybeSingle()
-    return String(profile?.role || '') === 'owner'
+    return isOwnerRole(await currentProfileRole())
   } catch {
     return false
   }
@@ -62,17 +49,22 @@ export async function isOwnerRequest(): Promise<boolean> {
 
 // Raw role string for the signed-in admin ('staff' | 'admin' | 'owner'), used
 // by the server page to hand UI gating to the client admin shell.
-export async function getCurrentUserRole(): Promise<'staff' | 'admin' | 'owner' | null> {
+export async function getCurrentUserRole(): Promise<AdminRole | null> {
   if (!supabaseConfigured()) return null
   try {
-    const supabase = createClient()
-    const { data } = await supabase.auth.getUser()
-    if (!data.user) return null
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).maybeSingle()
-    const role = String(profile?.role || '')
-    if (role !== 'staff' && role !== 'admin' && role !== 'owner') return null
-    return role
+    const role = await currentProfileRole()
+    return isValidAdminRole(role) ? role : null
   } catch {
     return null
   }
+}
+
+// Reads the signed-in user's profiles.role ('' when no user / no row).
+async function currentProfileRole(): Promise<string> {
+  const supabase = createClient()
+  const { data } = await supabase.auth.getUser()
+  if (!data.user) return ''
+  if (!supabaseConfigured()) return ''
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).maybeSingle()
+  return String(profile?.role ?? '')
 }
