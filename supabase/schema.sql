@@ -550,6 +550,39 @@ create index if not exists web_push_subscriptions_user_idx on public.web_push_su
 create index if not exists web_push_subscriptions_endpoint_idx on public.web_push_subscriptions(endpoint);
 alter table public.web_push_subscriptions enable row level security;
 
+-- ===== NEWSLETTER SUBSCRIBERS (C4, 2026-09-23) =====
+-- Public opt-in list captured from the website footer and checkout. Email is
+-- the identity (unique, lowercase-normalized by the API before insert);
+-- `source` records which surface captured it ('footer' | 'checkout').
+-- Anon visitors can INSERT only (capturing themselves); everything else is
+-- staff+ via RLS, and the admin list reads through the service role.
+create table if not exists public.newsletter_subscribers (
+  id uuid primary key default gen_random_uuid(),
+  email text not null unique,
+  source text not null default 'footer',
+  status text not null default 'subscribed',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists newsletter_subscribers_created_idx on public.newsletter_subscribers(created_at);
+alter table public.newsletter_subscribers enable row level security;
+
+-- anyone may add themselves; one email = one row (unique index is the dedupe)
+drop policy if exists "public insert newsletter" on public.newsletter_subscribers;
+create policy "public insert newsletter" on public.newsletter_subscribers
+  for insert with check (true);
+
+-- reads and any mutation beyond the self-insert are staff-only
+drop policy if exists "staff read newsletter" on public.newsletter_subscribers;
+create policy "staff read newsletter" on public.newsletter_subscribers
+  for select using (public.is_staff());
+drop policy if exists "staff update newsletter" on public.newsletter_subscribers;
+create policy "staff update newsletter" on public.newsletter_subscribers
+  for update using (public.is_staff());
+drop policy if exists "admin delete newsletter" on public.newsletter_subscribers;
+create policy "admin delete newsletter" on public.newsletter_subscribers
+  for delete using (public.is_admin());
+
 -- users manage only their own subscriptions (edge function uses service role)
 drop policy if exists "own web push select" on public.web_push_subscriptions;
 create policy "own web push select" on public.web_push_subscriptions for select using (user_id = auth.uid());
