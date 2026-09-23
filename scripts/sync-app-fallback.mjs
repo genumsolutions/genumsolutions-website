@@ -49,14 +49,20 @@ async function main() {
 
   // Update the version, versionCode, and sizeLabel fields.
   // These patterns match the FULL statement INCLUDING the trailing comma(s) that
-  // follow the value. Historical bug: the old patterns stopped short of the
+  // follow the value. Historical bug #1: the old patterns stopped short of the
   // closing quote/comma, so every run added one more `,` / `',` and the file
   // got progressively corrupted (TS1136/TS1002). The `(?:,'?)*` tail matcher
   // touches up any already-mangled extra `,'` runs, making the rewrite
   // self-healing and idempotent (run twice = no diff).
-  const versionPattern = /version: '\d+\.\d+\.\d+'(?:,'?)*/
+  // Historical bug #2 (2026-09-23): the patterns assumed SINGLE quotes, but
+  // the pre-commit prettier hook renders company.ts with DOUBLE quotes —
+  // which made every post-C5 sync run exit 1. The patterns are now
+  // quote-agnostic (['\"]) and the replacement preserves whichever quote
+  // style the file currently uses, so prettier never sees a diff to revert.
+  const q = /["']/.exec(src.match(/version:\s*["']\d/)?.[0] ?? "'")?.[0] ?? "'"
+  const versionPattern = new RegExp(`version: ['"]\\d+\\.\\d+\\.\\d+['"](?:,'?)*`)
   const versionCodePattern = /versionCode: \d+(?:,'?)*/
-  const sizeLabelPattern = /sizeLabel: '[^']*'(?:,'?)*/
+  const sizeLabelPattern = new RegExp(`sizeLabel: ['"][^'"]*['"](?:,'?)*`)
 
   // Check if patterns exist before replacing
   if (!versionPattern.test(src)) {
@@ -71,7 +77,7 @@ async function main() {
   const sizeLabelExists = sizeLabelPattern.test(src)
 
   // Replace version (always exactly one comma after the value)
-  src = src.replace(versionPattern, `version: '${version}',`)
+  src = src.replace(versionPattern, `version: ${q}${version}${q},`)
 
   // Replace versionCode
   src = src.replace(versionCodePattern, `versionCode: ${versionCode},`)
@@ -81,7 +87,7 @@ async function main() {
     // Extract the new sizeLabel (use 34.5 MB as default if manifest doesn't have size info)
     const defaultSizeLabel = '34.5 MB'
     const newSizeLabel = typeof manifest.sizeLabel === 'string' && manifest.sizeLabel !== '' ? manifest.sizeLabel : defaultSizeLabel
-    src = src.replace(sizeLabelPattern, `sizeLabel: '${newSizeLabel}',`)
+    src = src.replace(sizeLabelPattern, `sizeLabel: ${q}${newSizeLabel}${q},`)
   }
 
   // Check if anything actually changed
