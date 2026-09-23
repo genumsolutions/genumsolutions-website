@@ -366,10 +366,14 @@ on conflict (id) do nothing;
 
 drop policy if exists "public read images" on storage.objects;
 create policy "public read images" on storage.objects for select using (bucket_id = 'product-images');
+-- drop BOTH names: early rounds created these as "admin *", later as "staff *"
+-- (the create below uses the staff name — dropping both keeps db:apply re-runnable).
 drop policy if exists "admin upload images" on storage.objects;
+drop policy if exists "staff upload images" on storage.objects;
 create policy "staff upload images" on storage.objects for insert to authenticated
   with check (bucket_id = 'product-images' and public.is_staff());
 drop policy if exists "admin update images" on storage.objects;
+drop policy if exists "staff update images" on storage.objects;
 create policy "staff update images" on storage.objects for update to authenticated
   using (bucket_id = 'product-images' and public.is_staff());
 drop policy if exists "admin delete images" on storage.objects;
@@ -484,6 +488,7 @@ create policy "admin delete services" on public.services for delete using (publi
 
 -- activity_log: staff+ read; server writes via service role
 drop policy if exists "admin read activity" on public.activity_log;
+drop policy if exists "staff read activity" on public.activity_log;
 create policy "staff read activity" on public.activity_log for select using (public.is_staff());
 
 -- page_views: staff+ read; anon + authenticated insert allowed for tracking
@@ -494,6 +499,7 @@ create policy "anon insert page views" on public.page_views for insert to anon w
 drop policy if exists "authenticated insert page views" on public.page_views;
 create policy "authenticated insert page views" on public.page_views for insert to authenticated with check (true);
 drop policy if exists "admin read page views" on public.page_views;
+drop policy if exists "staff read page views" on public.page_views;
 create policy "staff read page views" on public.page_views for select using (public.is_staff());
 
 -- ===== PUSH TOKENS (in-app order status notifications) =====
@@ -995,3 +1001,165 @@ $$;
 
 comment on function public.admin_user_last_seen(uuid) is
   'Returns auth.users.last_sign_in_at for the target user when the caller has staff+ (staff/admin/owner) privileges, else null. Parity shim for the app Users tab.';
+
+-- ===== STOCK DECREMENT / RESTORE (C1, 2026-09-23) =====
+-- Stock leaves the shelf at the moment an order is PAID (never at creation:
+-- pending orders that are abandoned must not hold stock back forever) and
+-- comes back when a PAID order is cancelled.
+--
+-- mark_order_paid is the single atomic pay transition used by the website
+-- confirm routes, the app payment edge functions, and the webhook: it locks
+-- the order row (FOR UPDATE), no-ops when the order is already
+-- paid/fulfilled (gateway webhook + redirect race), decrements the order's
+-- items, and flips status -> paid in the same transaction. Returns true
+-- only for the call that actually performed the transition.
+--
+-- restore_order_stock restores a paid/fulfilled order's items. The caller
+-- passes the pre-status it read (expect_status); the row is locked and the
+-- status re-checked inside the function, so a concurrent status change
+-- makes the restore a no-op (no double restore).
+--
+-- Both are SECURITY DEFINER, callable by the service role (server routes /
+-- edge functions) and staff+ for manual fixes. Decrements clamp at zero and
+-- skip rows already at 0 (hardware realities beat ledger purity).
+create or replace function public.adjust_order_stock(order_items jsonb, direction text)
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  line jsonb;
+  pid text;
+  qty integer;
+  delta integer;
+  changed integer := 0;
+begin
+  -- service role bypasses RLS but has no auth.uid(); staff+ pass via profile.
+  if auth.uid() is not null and not public.is_staff() then
+    raise exception 'adjust_order_stock: staff privileges required';
+  end if;
+  if direction not in ('decrement', 'restore') then
+    raise exception 'adjust_order_stock: direction must be decrement or restore';
+  end if;
+
+  if order_items is null or jsonb_typeof(order_items) <> 'array' then
+    return 0;
+  end if;
+
+  for line in select * from jsonb_array_elements(order_items)
+  loop
+    pid := line->>'productId';
+    qty := coalesce((line->>'quantity')::int, 0);
+    continue when pid is null or qty is null or qty <= 0;
+
+    delta := case when direction = 'decrement' then -qty else qty end;
+    update public.products
+       set stock = greatest(0, stock + delta),
+           updated_at = now()
+     where id = pid
+       and (direction = 'restore' or stock > 0);
+    if found then
+      changed := changed + 1;
+    end if;
+  end loop;
+  return changed;
+end;
+$$;
+
+comment on function public.adjust_order_stock(jsonb, text) is
+  'C1 stock engine: decrement/restore products.stock for an order''s items jsonb. SECURITY DEFINER, service-role or staff+ only. Restores are unbounded; decrements clamp at zero (and skip rows already at 0).';
+
+revoke all on function public.adjust_order_stock(jsonb, text) from public;
+revoke all on function public.adjust_order_stock(jsonb, text) from anon;
+grant execute on function public.adjust_order_stock(jsonb, text) to service_role;
+grant execute on function public.adjust_order_stock(jsonb, text) to authenticated;
+
+-- Atomic pay transition: decrement stock + flip status -> paid, row-locked.
+-- NOTE: the second parameter MUST stay named provider_ref (callers pass it as
+-- a named RPC arg). The column/param name collision inside the UPDATE is
+-- resolved with the new_ref variable, NOT by renaming the parameter
+-- (create or replace cannot rename parameters anyway).
+create or replace function public.mark_order_paid(order_id uuid, provider_ref text default '')
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  ord public.orders%rowtype;
+  new_ref text := nullif(provider_ref, '');
+begin
+  if auth.uid() is not null and not public.is_staff() then
+    raise exception 'mark_order_paid: staff privileges required';
+  end if;
+  select * into ord from public.orders where id = order_id for update;
+  if not found then
+    return false;
+  end if;
+  if ord.status in ('paid', 'fulfilled') then
+    return false; -- already paid: webhook + confirm-route race, stock intact
+  end if;
+  perform public.adjust_order_stock(ord.items, 'decrement');
+  update public.orders
+     set status = 'paid',
+         provider_ref = coalesce(new_ref, ord.provider_ref),
+         updated_at = now()
+   where id = order_id;
+  return true;
+end;
+$$;
+
+comment on function public.mark_order_paid(uuid, text) is
+  'C1: atomically marks an order paid and decrements its items'' stock. Row-locked and idempotent (false when already paid/fulfilled). SECURITY DEFINER, service-role or staff+ only.';
+
+revoke all on function public.mark_order_paid(uuid, text) from public;
+revoke all on function public.mark_order_paid(uuid, text) from anon;
+grant execute on function public.mark_order_paid(uuid, text) to service_role;
+grant execute on function public.mark_order_paid(uuid, text) to authenticated;
+
+
+
+-- Restore stock for a paid/fulfilled order being cancelled. Guarded on the
+-- caller's observed pre-status + a row lock, so concurrent admins cannot
+-- double-restore. The guarded transition is ATOMIC: stock restore + status
+-- flip to 'cancelled' happen in the same locked transaction, so a retry
+-- (or a crashed caller between restore and its own status update) can
+-- never restore twice.
+create or replace function public.restore_order_stock(order_id uuid, expect_status text default 'paid')
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  ord public.orders%rowtype;
+  changed integer := 0;
+begin
+  if auth.uid() is not null and not public.is_staff() then
+    raise exception 'restore_order_stock: staff privileges required';
+  end if;
+  if expect_status not in ('paid', 'fulfilled') then
+    return 0; -- nothing was ever decremented for pending orders
+  end if;
+  select * into ord from public.orders where id = order_id for update;
+  if not found or ord.status <> expect_status then
+    return 0; -- already restored / never paid / concurrently changed
+  end if;
+  changed := public.adjust_order_stock(ord.items, 'restore');
+  update public.orders
+     set status = 'cancelled',
+         updated_at = now()
+   where id = order_id;
+  return changed;
+end;
+$$;
+
+comment on function public.restore_order_stock(uuid, text) is
+  'C1: atomically restores products.stock for a paid/fulfilled order and flips it to cancelled. No-ops unless the row is still in expect_status (row-locked, idempotent). SECURITY DEFINER, service-role or staff+ only.';
+
+revoke all on function public.restore_order_stock(uuid, text) from public;
+revoke all on function public.restore_order_stock(uuid, text) from anon;
+grant execute on function public.restore_order_stock(uuid, text) to service_role;
+grant execute on function public.restore_order_stock(uuid, text) to authenticated;
+

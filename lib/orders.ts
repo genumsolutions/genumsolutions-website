@@ -1,20 +1,20 @@
-import { createClient, createServiceClient, getSessionUser } from './supabase/server'
-import { saveCart } from './customer-store'
-import type { Order, OrderItem } from './customer'
+import { createClient, createServiceClient, getSessionUser } from "./supabase/server";
+import { saveCart } from "./customer-store";
+import type { Order, OrderItem } from "./customer";
 
 type OrderRow = {
-  id: string
-  items: unknown
-  total_npr: number
-  status: Order['status']
-  provider: Order['provider']
-  customer_name: string
-  email: string
-  phone: string
-  address: string
-  provider_ref: string | null
-  created_at: string
-}
+  id: string;
+  items: unknown;
+  total_npr: number;
+  status: Order["status"];
+  provider: Order["provider"];
+  customer_name: string;
+  email: string;
+  phone: string;
+  address: string;
+  provider_ref: string | null;
+  created_at: string;
+};
 
 function rowToOrder(row: OrderRow): Order {
   return {
@@ -28,156 +28,221 @@ function rowToOrder(row: OrderRow): Order {
     phone: row.phone,
     address: row.address,
     createdAt: row.created_at,
-  }
+  };
 }
 
 export async function getCurrentUserOrThrow() {
-  const user = await getSessionUser()
-  if (!user) return null
-  return user
+  const user = await getSessionUser();
+  if (!user) return null;
+  return user;
 }
 
 export async function listOrders(userId?: string): Promise<Order[]> {
   const query = createClient()
-    .from('orders')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(200)
-  const { data, error } = await (userId ? query.eq('user_id', userId) : query)
-  if (error || !data) return []
-  return data.map(rowToOrder)
+    .from("orders")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(200);
+  const { data, error } = await (userId ? query.eq("user_id", userId) : query);
+  if (error || !data) return [];
+  return data.map(rowToOrder);
 }
 
 // Paginated admin listing with optional status filter and text search over
 // buyer fields. Returns one page plus exact totals so the panel can render
 // real pagination controls.
 export async function listOrdersPage(options: {
-  page?: number
-  limit?: number
-  status?: Order['status']
-  query?: string
+  page?: number;
+  limit?: number;
+  status?: Order["status"];
+  query?: string;
 }): Promise<{ orders: Order[]; total: number; page: number; totalPages: number }> {
-  const page = Math.max(1, Math.floor(options.page || 1))
-  const limit = Math.min(50, Math.max(5, Math.floor(options.limit || 10)))
+  const page = Math.max(1, Math.floor(options.page || 1));
+  const limit = Math.min(50, Math.max(5, Math.floor(options.limit || 10)));
   let query = createClient()
-    .from('orders')
-    .select('*', { count: 'exact' })
-    .order('created_at', { ascending: false })
-    .range((page - 1) * limit, page * limit - 1)
-  if (options.status) query = query.eq('status', options.status)
-  const needle = options.query?.trim()
+    .from("orders")
+    .select("*", { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range((page - 1) * limit, page * limit - 1);
+  if (options.status) query = query.eq("status", options.status);
+  const needle = options.query?.trim();
   if (needle) {
     // Search across buyer identity fields; ids are uuids so they are matched
     // through their prefix on email/name instead.
-    query = query.or(`email.ilike.%${needle}%,customer_name.ilike.%${needle}%`)
+    query = query.or(`email.ilike.%${needle}%,customer_name.ilike.%${needle}%`);
   }
-  const { data, error, count } = await query
-  if (error) throw new Error(`Order list failed: ${error.message}`)
-  const total = count ?? 0
+  const { data, error, count } = await query;
+  if (error) throw new Error(`Order list failed: ${error.message}`);
+  const total = count ?? 0;
   return {
     orders: (data || []).map(rowToOrder),
     total,
     page,
     totalPages: Math.max(1, Math.ceil(total / limit)),
-  }
+  };
 }
 
 export async function createOrder(input: {
-  userId: string
-  items: OrderItem[]
-  totalNpr: number
-  provider: Order['provider']
-  customerName: string
-  email: string
-  phone: string
-  address: string
+  userId: string;
+  items: OrderItem[];
+  totalNpr: number;
+  provider: Order["provider"];
+  customerName: string;
+  email: string;
+  phone: string;
+  address: string;
 }): Promise<Order | null> {
   const { data, error } = await createClient()
-    .from('orders')
+    .from("orders")
     .insert({
       user_id: input.userId,
       items: input.items,
       total_npr: input.totalNpr,
       provider: input.provider,
-      status: 'pending',
+      status: "pending",
       customer_name: input.customerName,
       email: input.email,
       phone: input.phone,
       address: input.address,
     })
     .select()
-    .single()
-  if (error || !data) return null
-  return rowToOrder(data)
+    .single();
+  if (error || !data) return null;
+  return rowToOrder(data);
 }
 
 export async function setOrderRef(orderId: string, providerRef: string) {
-  await createClient().from('orders').update({ provider_ref: providerRef, updated_at: new Date().toISOString() }).eq('id', orderId)
+  await createClient()
+    .from("orders")
+    .update({ provider_ref: providerRef, updated_at: new Date().toISOString() })
+    .eq("id", orderId);
 }
 
-export async function findOrderByRef(providerRef: string): Promise<Order & { userId: string } | null> {
-  const { data } = await createClient().from('orders').select('*').eq('provider_ref', providerRef).maybeSingle()
-  if (!data) return null
-  return { ...rowToOrder(data), userId: data.user_id }
+// NOTE (C1): the old thin updateOrderStatus one-liner grew transition logic —
+// see the definition below (kept in this file, same export name).
+
+export async function findOrderByRef(
+  providerRef: string
+): Promise<(Order & { userId: string }) | null> {
+  const { data } = await createClient()
+    .from("orders")
+    .select("*")
+    .eq("provider_ref", providerRef)
+    .maybeSingle();
+  if (!data) return null;
+  return { ...rowToOrder(data), userId: data.user_id };
 }
 
-export async function findOrderById(orderId: string): Promise<Order & { userId: string } | null> {
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId)) return null
-  const { data } = await createClient().from('orders').select('*').eq('id', orderId).maybeSingle()
-  if (!data) return null
-  return { ...rowToOrder(data), userId: data.user_id }
+export async function findOrderById(orderId: string): Promise<(Order & { userId: string }) | null> {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId)) return null;
+  const { data } = await createClient().from("orders").select("*").eq("id", orderId).maybeSingle();
+  if (!data) return null;
+  return { ...rowToOrder(data), userId: data.user_id };
 }
 
-export async function updateOrderStatus(orderId: string, status: Order['status']) {
-  await createClient().from('orders').update({ status, updated_at: new Date().toISOString() }).eq('id', orderId)
-}
-
-// Marks an order paid and empties the buyer's saved cart.
+// Marks an order paid and empties the buyer's saved cart. C1 (2026-09-23):
+// the pending -> paid flip AND the stock decrement happen atomically inside
+// the mark_order_paid SECURITY DEFINER RPC (row-locked, idempotent: a webhook
+// + confirm-route race decrements exactly once). Failure is logged, never
+// thrown - a stock hiccup must not fail a verified payment.
 export async function markOrderPaidAndClearCart(order: Order & { userId: string }) {
-  if (order.status === 'pending') await updateOrderStatus(order.id, 'paid')
-  await saveCart(order.userId, [])
+  if (order.status === "pending") await markOrderPaidRpc(order.id);
+  await saveCart(order.userId, []);
+}
+
+// C1 RPC wrappers. All run server-side (service role) from the confirm routes,
+// the admin orders route, and the app's edge functions. Best-effort like
+// logTransaction: failures are logged (error only) and never break a payment
+// or an admin status change.
+async function markOrderPaidRpc(orderId: string) {
+  try {
+    const { error } = await createServiceClient().rpc("mark_order_paid", { order_id: orderId });
+    if (error) throw new Error(error.message);
+  } catch (error) {
+    console.error(`mark_order_paid failed for order ${orderId}`, error);
+  }
+}
+
+async function restoreOrderStockRpc(orderId: string, expectStatus: "paid" | "fulfilled") {
+  try {
+    const { error } = await createServiceClient().rpc("restore_order_stock", {
+      order_id: orderId,
+      expect_status: expectStatus,
+    });
+    if (error) throw new Error(error.message);
+  } catch (error) {
+    console.error(`stock restore failed for order ${orderId}`, error);
+  }
+}
+
+// Admin status change (PATCH /api/admin/orders). C1 (2026-09-23):
+// transition-aware so stock follows the order lifecycle -
+//   pending -> paid/fulfilled    : atomic decrement via mark_order_paid
+//   paid/fulfilled -> cancelled  : guarded restore via restore_order_stock
+//   paid -> fulfilled            : no stock change (decremented at pay)
+//   cancelled -> paid/fulfilled  : re-decrement (order reinstated)
+export async function updateOrderStatus(orderId: string, status: Order["status"]) {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId)) return;
+  const order = await findOrderById(orderId);
+  if (!order) return;
+
+  if (order.status === "pending" && (status === "paid" || status === "fulfilled")) {
+    // Flips the row to paid + decrements; the final update below retitles to
+    // 'fulfilled' when the admin jumped straight there (mark_order_paid
+    // no-ops on already-paid rows, so no double decrement is possible).
+    await markOrderPaidRpc(orderId);
+  } else if ((order.status === "paid" || order.status === "fulfilled") && status === "cancelled") {
+    await restoreOrderStockRpc(orderId, order.status);
+  } else if (order.status === "cancelled" && (status === "paid" || status === "fulfilled")) {
+    await markOrderPaidRpc(orderId);
+  }
+
+  await createClient()
+    .from("orders")
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq("id", orderId);
 }
 
 // Append-only ledger write. Never throws into the caller's flow - a failed
 // log should not break a successful payment, but it is reported to logs.
 export async function logTransaction(input: {
-  orderId: string
-  userId?: string | null
-  provider: Order['provider']
-  providerRef?: string
-  amountNpr: number
-  status: 'initiated' | 'succeeded' | 'failed'
-  rawPayload?: unknown
+  orderId: string;
+  userId?: string | null;
+  provider: Order["provider"];
+  providerRef?: string;
+  amountNpr: number;
+  status: "initiated" | "succeeded" | "failed";
+  rawPayload?: unknown;
 }) {
   try {
-    const db = createServiceClient()
-    await db.from('transactions').insert({
+    const db = createServiceClient();
+    await db.from("transactions").insert({
       order_id: input.orderId,
       ...(input.userId ? { user_id: input.userId } : {}),
       provider: input.provider,
-      provider_ref: String(input.providerRef || ''),
+      provider_ref: String(input.providerRef || ""),
       amount_npr: Math.max(0, Math.floor(input.amountNpr)),
       status: input.status,
       raw_payload: (input.rawPayload ?? {}) as object,
-    })
+    });
   } catch (error) {
-    console.error('transaction log failed', error)
+    console.error("transaction log failed", error);
   }
 }
 
 // Idempotency guard for confirmation paths: true if this provider_ref already
 // has a succeeded row (webhook + redirect both firing must not double-log).
 export async function transactionAlreadySucceeded(providerRef: string): Promise<boolean> {
-  if (!providerRef) return false
+  if (!providerRef) return false;
   try {
     const { data } = await createServiceClient()
-      .from('transactions')
-      .select('id')
-      .eq('provider_ref', providerRef)
-      .eq('status', 'succeeded')
-      .limit(1)
-    return Boolean(data?.length)
+      .from("transactions")
+      .select("id")
+      .eq("provider_ref", providerRef)
+      .eq("status", "succeeded")
+      .limit(1);
+    return Boolean(data?.length);
   } catch {
-    return false
+    return false;
   }
 }
