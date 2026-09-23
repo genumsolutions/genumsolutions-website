@@ -15,9 +15,9 @@
  * cache while the device is offline.
  * ========================================================================= */
 
-const VERSION = 'v3'
+const VERSION = "v3";
 
-const OFFLINE_URL = '/offline'
+const OFFLINE_URL = "/offline";
 
 // v2 → v3 (2026-09-21): v2's APP_SHELL listed /tools TWICE — Cache.addAll()
 // throws on duplicate URLs, so install ALWAYS rejected and the worker never
@@ -26,43 +26,43 @@ const OFFLINE_URL = '/offline'
 // single bad URL can never brick the whole worker again.
 const APP_SHELL = [
   ...new Set([
-    '/',
-    '/products',
-    '/services',
-    '/about',
-    '/projects',
-    '/tools',
-    '/3d-printing',
-    '/journal',
-    '/contact',
+    "/",
+    "/products",
+    "/services",
+    "/about",
+    "/projects",
+    "/tools",
+    "/3d-printing",
+    "/journal",
+    "/contact",
     OFFLINE_URL,
-    '/manifest.json',
-    '/icon-192.png',
-    '/icon-512.png',
-    '/logo.png',
+    "/manifest.json",
+    "/icon-192.png",
+    "/icon-512.png",
+    "/logo.png",
   ]),
-]
+];
 
-const CACHE_NAME = `genum-shell-${VERSION}`
-const ASSET_CACHE = `genum-assets-${VERSION}`
+const CACHE_NAME = `genum-shell-${VERSION}`;
+const ASSET_CACHE = `genum-assets-${VERSION}`;
 
 // Private / dynamic paths that must never be served from cache. The public
 // products API is the one exception: it powers the offline catalog, so its
 // GET responses are cached stale-while-revalidate (see below).
 function isPrivate(url) {
-  const path = url.pathname
-  if (path === '/api/products') return false
+  const path = url.pathname;
+  if (path === "/api/products") return false;
   return (
-    path.startsWith('/api/') ||
-    path.startsWith('/account') ||
-    path.startsWith('/admin') ||
-    path.startsWith('/checkout') ||
-    path.startsWith('/login') ||
-    path.startsWith('/auth/')
-  )
+    path.startsWith("/api/") ||
+    path.startsWith("/account") ||
+    path.startsWith("/admin") ||
+    path.startsWith("/checkout") ||
+    path.startsWith("/login") ||
+    path.startsWith("/auth/")
+  );
 }
 
-self.addEventListener('install', (event) => {
+self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(CACHE_NAME)
@@ -71,19 +71,18 @@ self.addEventListener('install', (event) => {
         // reject the whole install (that killed every activation in v2).
         Promise.allSettled(
           APP_SHELL.map((url) =>
-            fetch(new Request(url, { cache: 'reload' }))
-              .then((response) => {
-                if (!response.ok) throw new Error(`HTTP ${response.status}`)
-                return cache.put(url, response)
-              }),
-          ),
-        ),
+            fetch(new Request(url, { cache: "reload" })).then((response) => {
+              if (!response.ok) throw new Error(`HTTP ${response.status}`);
+              return cache.put(url, response);
+            })
+          )
+        )
       )
       .then(() => self.skipWaiting())
-  )
-})
+  );
+});
 
-self.addEventListener('activate', (event) => {
+self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
       .keys()
@@ -95,40 +94,39 @@ self.addEventListener('activate', (event) => {
         )
       )
       .then(() => self.clients.claim())
-  )
-})
+  );
+});
 
-self.addEventListener('fetch', (event) => {
-  const request = event.request
-  const url = new URL(request.url)
+self.addEventListener("fetch", (event) => {
+  const request = event.request;
+  const url = new URL(request.url);
 
   // Only handle GET requests to our own origin; let everything else through.
-  if (request.method !== 'GET' || url.origin !== self.location.origin) return
-  if (isPrivate(url)) return
+  if (request.method !== "GET" || url.origin !== self.location.origin) return;
+  if (isPrivate(url)) return;
 
-  const isNavigation = request.mode === 'navigate'
-  const isImageOrIcon = url.pathname.startsWith('/images/')
-  const isStaticAsset =
-    /\.(js|css|png|jpg|jpeg|webp|avif|svg|ico|woff2?|ttf)$/.test(url.pathname)
+  const isNavigation = request.mode === "navigate";
+  const isImageOrIcon = url.pathname.startsWith("/images/");
+  const isStaticAsset = /\.(js|css|png|jpg|jpeg|webp|avif|svg|ico|woff2?|ttf)$/.test(url.pathname);
 
   // Public products API: stale-while-revalidate so the catalog (and its
   // search) keeps working with the last-good data while offline.
-  if (url.pathname === '/api/products') {
+  if (url.pathname === "/api/products") {
     event.respondWith(
       caches.match(request).then((cached) => {
         const fetchPromise = fetch(request)
           .then((response) => {
             if (response && response.ok) {
-              const copy = response.clone()
-              caches.open(ASSET_CACHE).then((cache) => cache.put(request, copy))
+              const copy = response.clone();
+              caches.open(ASSET_CACHE).then((cache) => cache.put(request, copy));
             }
-            return response
+            return response;
           })
-          .catch(() => cached)
-        return cached || fetchPromise
+          .catch(() => cached);
+        return cached || fetchPromise;
       })
-    )
-    return
+    );
+    return;
   }
 
   if (isNavigation) {
@@ -136,17 +134,13 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          const copy = response.clone()
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy))
-          return response
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+          return response;
         })
-        .catch(() =>
-          caches
-            .match(request)
-            .then((cached) => cached || caches.match(OFFLINE_URL))
-        )
-    )
-    return
+        .catch(() => caches.match(request).then((cached) => cached || caches.match(OFFLINE_URL)))
+    );
+    return;
   }
 
   if (isStaticAsset || isImageOrIcon) {
@@ -156,16 +150,16 @@ self.addEventListener('fetch', (event) => {
         const fetchPromise = fetch(request)
           .then((response) => {
             if (response && response.ok) {
-              const copy = response.clone()
-              caches.open(ASSET_CACHE).then((cache) => cache.put(request, copy))
+              const copy = response.clone();
+              caches.open(ASSET_CACHE).then((cache) => cache.put(request, copy));
             }
-            return response
+            return response;
           })
-          .catch(() => cached)
-        return cached || fetchPromise
+          .catch(() => cached);
+        return cached || fetchPromise;
       })
-    )
-    return
+    );
+    return;
   }
 
   // Everything else (documents we don't precache, e.g. /services): cache-as-
@@ -173,13 +167,13 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(request)
       .then((response) => {
-        const copy = response.clone()
-        caches.open(CACHE_NAME).then((cache) => cache.put(request, copy))
-        return response
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+        return response;
       })
       .catch(() => caches.match(request))
-  )
-})
+  );
+});
 
 /* =========================================================================
  * Web Push (W-3 — no Firebase; standards-based VAPID push)
@@ -190,42 +184,44 @@ self.addEventListener('fetch', (event) => {
  *   { title, body, url } — url is opened when the notification is tapped.
  * ======================================================================= */
 
-self.addEventListener('push', (event) => {
-  let payload = {}
+self.addEventListener("push", (event) => {
+  let payload = {};
   try {
-    payload = event.data ? event.data.json() : {}
+    payload = event.data ? event.data.json() : {};
   } catch {
-    payload = { title: 'GENUM SOLUTIONS', body: event.data ? event.data.text() : '' }
+    payload = { title: "GENUM SOLUTIONS", body: event.data ? event.data.text() : "" };
   }
-  const title = payload.title || 'GENUM SOLUTIONS'
+  const title = payload.title || "GENUM SOLUTIONS";
   const options = {
-    body: payload.body || '',
-    icon: '/icon-192.png',
-    badge: '/icon-192.png',
-    data: { url: payload.url || '/account' },
-    tag: payload.tag || 'genum',
-  }
+    body: payload.body || "",
+    icon: "/icon-192.png",
+    badge: "/icon-192.png",
+    data: { url: payload.url || "/account" },
+    tag: payload.tag || "genum",
+  };
   event.waitUntil(
     self.registration.showNotification(title, options).then(() => {
       // Tell any open pages about the push (the E2E harness listens for this;
       // apps commonly use it to update UI without a refresh).
-      return self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-        for (const client of clientList) client.postMessage({ type: 'PUSH_RECEIVED', payload })
-      })
-    }),
-  )
-})
+      return self.clients
+        .matchAll({ type: "window", includeUncontrolled: true })
+        .then((clientList) => {
+          for (const client of clientList) client.postMessage({ type: "PUSH_RECEIVED", payload });
+        });
+    })
+  );
+});
 
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close()
-  const target = (event.notification.data && event.notification.data.url) || '/account'
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const target = (event.notification.data && event.notification.data.url) || "/account";
   event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
       // Focus an existing window on our origin if one is open.
       for (const client of clientList) {
-        if ('focus' in client) return client.focus()
+        if ("focus" in client) return client.focus();
       }
-      return self.clients.openWindow(target)
+      return self.clients.openWindow(target);
     })
-  )
-})
+  );
+});
