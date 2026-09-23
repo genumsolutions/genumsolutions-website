@@ -58,6 +58,7 @@ CI: `ci.yml` on `main` · `sync-app-fallback.yml` on `main` + 6h cron.
 | push-order-status | push-order-status | ACTIVE (web-push via pg_net trigger; VAPID + PUSH_TRIGGER_SECRET set) |
 | admin-products | admin-products | ACTIVE (U-14, 2026-09-23 — JWT staff+ gate; create/update/list, admin+ delete; live-verified 9/9) |
 | link-import | link-import | ACTIVE (U-14, 2026-09-23 — share product-by-link extractor for both clients; live-verified 15/15) |
+| admin-services | admin-services | ACTIVE (2026-09-23 — SECURITY FIX: was writing with the service role and NO caller check; now JWT staff+ gate, admin+ delete, id sanitize — mirrors admin-products; live-verified 10/10, app writes now route through it) |
 
 _Schema tables applied to live DB (`bkylfnlybtsujwzru`): `profiles` (incl. `theme_preference`, `tier`), `web_push_subscriptions` (own-rows RLS), `user_settings`, `robot_user_settings`. Web Push: `web_push_subscriptions` table + RLS policies + `sw.js` handlers + subscribe/unsubscribe APIs live; account card + checkout opt-in live; edge function sends Web Push (ACTIVE) + Expo (dormant until Firebase). Secrets: `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `PUSH_TRIGGER_SECRET` in `.env.local` (never committed)._
 
