@@ -1,19 +1,21 @@
 // ux-audit.mjs — human-flow audit of the LIVE website.
 //
 // Drives Chrome through every public page like a person would: loads the
-// page, follows above-the-fold links, and at TWO viewports (360x800 phone,
-// 1440x900 desktop) records:
+// page, follows above-the-fold links, and at FOUR viewports (320x640 xs,
+// 360x800 phone, 768x900 tablet, 1440x900 desktop) records:
 //   • console errors/warnings + pageerrors
 //   • failed network requests (4xx/5xx)
 //   • broken images (naturalWidth === 0)
 //   • horizontal overflow (document.scrollWidth > innerWidth + 2)
 //   • tap targets < 36px (buttons/links), counted
+//   • LOW-CONTRAST text scan (U-24): WCAG contrast < 4.5:1 for body text,
+//     < 3:1 for large/bold — reported as soft findings + per-page counts
 //   • full-page screenshot per page per viewport into ux-audit-shots/
 //
 // Exit codes (CI-friendly): 0 = clean, 1 = hard failures found (load errors,
 // HTTP >= 400, horizontal overflow, console/page errors, broken images).
-// Soft findings (small tap targets, text clipping) are reported but never
-// fail the run — they need human judgment to avoid false positives.
+// Soft findings (small tap targets, text clipping, low contrast) are reported
+// but never fail the run — they need human judgment to avoid false positives.
 //
 // Env: BASE_URL (default: production), UX_AUDIT_SOFT=1 also fails on softs.
 // Run:  node scripts/ux-audit.mjs
@@ -74,7 +76,9 @@ const PAGES = [
 ];
 
 const VIEWPORTS = [
+  { name: "xs", width: 320, height: 640 },
   { name: "phone", width: 360, height: 800 },
+  { name: "tablet", width: 768, height: 900 },
   { name: "desktop", width: 1440, height: 900 },
 ];
 
@@ -117,7 +121,9 @@ for (const vp of VIEWPORTS) {
 
       findings.console = consoleIssues.slice(0, 6);
 
-      // broken images + overflow + tap targets, evaluated in the page
+      // broken images + overflow + tap targets + low-contrast text, evaluated
+      // in the page. U-24: a WCAG contrast pass over visible text (skips text
+      // sitting on images/gradients — those need human eyes).
       findings.dom = await page.evaluate(() => {
         const brokenImgs = [...document.querySelectorAll("img")].filter(
           (i) => i.complete && i.naturalWidth === 0
@@ -134,7 +140,85 @@ for (const vp of VIEWPORTS) {
             getComputedStyle(el).overflow !== "hidden" &&
             el.clientWidth > 0
         ).length;
-        return { brokenImgs, overflow, smallTargets, textOverflow };
+
+        // ---- WCAG contrast scan -------------------------------------
+        const parseColor = (c) => {
+          const m = /rgba?\(([^)]+)\)/i.exec(c);
+          if (!m) return null;
+          const p = m[1].split(",").map((v) => parseFloat(v.trim()));
+          if (p.length < 3) return null;
+          return p.slice(0, 3).map((v) => Math.max(0, Math.min(255, v)));
+        };
+        const lum = ([r, g, b]) => {
+          const f = (v) => {
+            const s = v / 255;
+            return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+          };
+          return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+        };
+        const ratio = (a, b) => {
+          const [l1, l2] = [lum(a), lum(b)].sort((x, y) => y - x);
+          return (l1 + 0.05) / (l2 + 0.05);
+        };
+        const isTransparent = (c) => /^rgba\([^)]*, ?0\)$/i.test(c);
+        const low = [];
+        let checked = 0;
+        const textSel =
+          "p, span, a, li, h1, h2, h3, h4, h5, h6, strong, em, small, dt, dd, label, td, th, input, button";
+        for (const el of document.querySelectorAll(textSel)) {
+          if (checked > 900) break;
+          const r = el.getBoundingClientRect();
+          if (r.width < 2 || r.height < 2 || r.top > window.innerHeight) continue;
+          if (!(el.textContent || "").trim()) continue; // decorative dot/bullet
+          const cs = getComputedStyle(el);
+          const fg = parseColor(cs.color);
+          if (!fg || cs.opacity === "0") continue;
+          const node = el.nodeName.toLowerCase();
+          const fontSize = parseFloat(cs.fontSize);
+          const bold = parseInt(cs.fontWeight) >= 700;
+          const large = fontSize >= 24 || (fontSize >= 18.66 && bold);
+          const need = large ? 3 : 4.5;
+          // skip text laid over an image / gradient (text colors depend on
+          // the exact pixels underneath — human judgment area)
+          let bg = null;
+          let hasImageBg = false;
+          let h = el;
+          while (h && h !== document.body) {
+            const bcs = getComputedStyle(h);
+            if (bcs.backgroundImage && bcs.backgroundImage !== "none") {
+              hasImageBg = true;
+              break;
+            }
+            const b = parseColor(bcs.backgroundColor);
+            if (b && !isTransparent(bcs.backgroundColor)) {
+              bg = b;
+              break;
+            }
+            h = h.parentElement;
+          }
+          if (hasImageBg) continue;
+          if (!bg) {
+            const bodyBg = parseColor(getComputedStyle(document.body).backgroundColor);
+            bg = bodyBg || [255, 255, 255];
+          }
+          checked++;
+          const cr = ratio(fg, bg);
+          if (cr < need) {
+            if (low.length < 8)
+              low.push(
+                `${node}<${el.className ? "class=" + String(el.className).slice(0, 40) : "unclassed"}> ${cr.toFixed(2)}:1 ${fg} on ${bg} "${(el.textContent || "").trim().split(/\s+/).slice(0, 6).join(" ")}"`
+              );
+          }
+        }
+        return {
+          brokenImgs,
+          overflow,
+          smallTargets,
+          textOverflow,
+          contrastLowCount: low.length,
+          contrastLowChecked: checked,
+          contrastSamples: low,
+        };
       });
 
       await page.screenshot({
@@ -174,6 +258,10 @@ for (const r of report) {
     hardProbs.push("CONSOLE-ERR");
   if (r.dom?.smallTargets) softProbs.push(`SMALL-TARGETS(${r.dom.smallTargets})`);
   if ((r.dom?.textOverflow ?? 0) > 8) softProbs.push(`TEXT-CLIP(${r.dom.textOverflow})`);
+  if (r.dom?.contrastLowCount) {
+    softProbs.push(`LOW-CONTRAST(${r.dom.contrastLowCount})`);
+    softProbs.push(...(r.dom.contrastSamples ?? []).map((s) => `   .. ${s}`));
+  }
   hard += hardProbs.length;
   if (softProbs.length) {
     soft += softProbs.length;

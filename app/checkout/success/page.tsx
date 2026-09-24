@@ -63,7 +63,7 @@ export default async function CheckoutSuccessPage() {
                   href={waHref}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-4 py-2 text-xs font-black uppercase tracking-wide text-white transition hover:bg-emerald-500"
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-emerald-700 px-4 py-2 text-xs font-black uppercase tracking-wide text-white transition hover:bg-emerald-600"
                 >
                   Chat on WhatsApp
                 </a>

@@ -365,3 +365,11 @@ html[data-theme="dim"] .shadow-xl {
     scroll-behavior: auto !important;
   }
 }
+
+/* U-24 (2026-09-24): contrast pass — slate-400 meta text (addresses,
+   timestamps, SKUs, px-only labels) reads at ~2.56:1 on white. Bump the
+   LIGHT theme to slate-600 (~7:1). The dim override above keeps its brighter
+   slate mapping via higher specificity + !important. */
+.text-slate-400 {
+  color: #475569 !important;
+}

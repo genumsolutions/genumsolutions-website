@@ -173,8 +173,17 @@ interface Preview {
   // become spec lines, gallery images are collected, stats enrich the
   // description — so the admin reviews prefilled data instead of retyping it.
   specs?: string[];
+  // U-24 (2026-09-24): canonical MakerWorld spec model — { key, value } pairs
+  // rendered as an organized "Specifications" block on product pages, and
+  // flattened to `specs` string lines for the card chips.
+  structuredSpecs?: { key: string; value: string }[];
   priceLabel?: string;
   extra?: Record<string, unknown>;
+}
+
+export interface MakerWorldSpecEntry {
+  key: string;
+  value: string;
 }
 
 /** Extract design id from a MakerWorld URL: https://makerworld.com/en/models/45000 ...
@@ -232,34 +241,49 @@ function makerworldImages(design: Record<string, unknown>): string[] {
   ]).filter(ok) as string[];
 }
 
-/** Spec lines from the default (or first) print profile of a design. */
-function makerworldSpecs(design: Record<string, unknown>): string[] {
+/**
+ * U-24 (2026-09-24): canonical MakerWorld spec extraction. Only STANDARD
+ * MakerWorld/Bambu profile fields are kept — no instance titles, no scraped
+ * filler, no guessed units. The result feeds both the card chips (`specs`
+ * lines) and the organized "Specifications" block (structured key/value).
+ */
+function makerworldStructuredSpecs(design: Record<string, unknown>): MakerWorldSpecEntry[] {
   const instances = Array.isArray(design.instances)
     ? (design.instances as Record<string, unknown>[])
     : [];
   const defaultId = String(design.defaultInstanceId ?? "");
   const best = instances.find((i) => String(i.id ?? "") === defaultId) || instances[0];
   if (!best) return [];
-  const specs: string[] = [];
-  if (best.title) specs.push(String(best.title).trim());
-  if (typeof best.weight === "number" && best.weight > 0) specs.push(`Weight: ${best.weight} g`);
-  if (typeof best.materialCnt === "number" && best.materialCnt > 0)
-    specs.push(`Materials: ${best.materialCnt}`);
-  if (Array.isArray(best.instanceFilaments))
-    specs.push(`Filament types: ${(best.instanceFilaments as unknown[]).length}`);
+  const entries: MakerWorldSpecEntry[] = [];
   const ext = (best.extention ?? {}) as Record<string, unknown>;
   const mi = (ext.modelInfo ?? {}) as Record<string, unknown>;
   const comp = (mi.compatibility ?? {}) as Record<string, unknown>;
-  if (comp.devProductName)
-    specs.push(`Compatible: ${comp.devProductName} · ${comp.nozzleDiameter ?? 0.4}mm nozzle`);
-  // P7 (2026-09-24): dimensions + estimated print time into the detail specs
-  // when the profile reports them — guarded reads, skipped when absent.
+  if (comp.devProductName) {
+    const value = String(comp.devProductName).trim();
+    entries.push({ key: "Compatible", value: value.replace(/\s+/g, " ").slice(0, 60) });
+  }
+  // Dimensions (W × D × H mm) when the profile reports all present parts.
   const dim = (mi.dimension ?? {}) as Record<string, unknown>;
   const dWidth = typeof dim.width === "number" && dim.width > 0 ? dim.width : null;
   const dDepth = typeof dim.depth === "number" && dim.depth > 0 ? dim.depth : null;
   const dHeight = typeof dim.height === "number" && dim.height > 0 ? dim.height : null;
   if (dWidth || dDepth || dHeight)
-    specs.push(`Dimensions: ${[dWidth, dDepth, dHeight].filter((n) => n != null).join(" × ")} mm`);
+    entries.push({
+      key: "Dimensions",
+      value: `${[dWidth, dDepth, dHeight].filter((n) => n != null).join(" × ")} mm`,
+    });
+  if (typeof best.weight === "number" && best.weight > 0)
+    entries.push({ key: "Weight", value: `${best.weight} g` });
+  if (typeof best.materialCnt === "number" && best.materialCnt > 0)
+    entries.push({ key: "Materials", value: String(best.materialCnt) });
+  // Filament types by NAME (MakerWorld standard), capped at 3, skipped when
+  // the API only reports a count (no names = not a standard value).
+  if (Array.isArray(best.instanceFilaments)) {
+    const types = (best.instanceFilaments as Record<string, unknown>[])
+      .map((f) => String(f.translateName || f.name || "").trim())
+      .filter(Boolean);
+    if (types.length) entries.push({ key: "Filament types", value: types.slice(0, 3).join(", ") });
+  }
   const printEstimates = [
     String(best.estimatedPrintTime ?? ""),
     String(best.printTime ?? ""),
@@ -270,19 +294,81 @@ function makerworldSpecs(design: Record<string, unknown>): string[] {
   if (printEstimates.length) {
     const value = printEstimates[0];
     const n = Number(value);
-    specs.push(
-      Number.isFinite(n) && n > 0 && value === String(Math.round(n))
-        ? `Print time: ~${Math.round((n >= 3600 ? n / 3600 : n / 60) * 10) / 10} ${n >= 3600 ? "h" : "min"}`
-        : `Print time: ${value}`
-    );
+    entries.push({
+      key: "Print time",
+      value:
+        Number.isFinite(n) && n > 0 && value === String(Math.round(n))
+          ? `~${Math.round((n >= 3600 ? n / 3600 : n / 60) * 10) / 10} ${n >= 3600 ? "h" : "min"}`
+          : String(value).slice(0, 40),
+    });
   }
-  return dedupe(specs) as string[];
+  return entries;
 }
 
-/** Clean description (stats/likes/license move to `extra` — the owner wanted
- *  the imported description free of "Printed N times · N likes" noise). */
+/** Clean description ... */
+
+/**
+ * U-24 (2026-09-24): standard MakerWorld description only. The Bambu API's
+ * summary is the designer's own blurb (likes/downloads live in separate
+ * fields), so we strip any leftover stat/boilerplate phrases and cap at a
+ * readable length — the "printed N times · liked N times" noise never ships.
+ */
 function makerworldDescription(design: Record<string, unknown>): string {
-  return curateDescription(String(design.summary || design.summaryTranslated || ""), 600);
+  const raw = String(design.summary || design.summaryTranslated || "");
+  const cleaned = raw.replace(/\b(printed|boost|like|download|collection)\w*:\s*\d+[km]?\b/gi, "");
+  return curateDescription(cleaned, 420);
+}
+
+/** Map MakerWorld category/tag keywords onto the company's REAL catalog
+ *  taxonomy (query of live categories, 2026-09-24: 3D Models · Connectors &
+ *  Cables · Controllers & Boards · Displays & Interfaces · Mechanical Parts ·
+ *  Motors & Motion · Power & Charging · Robot Cars · Sensors & Modules ·
+ *  Tools & Fabrication). Unknown items default to "3D Models" — the hint is
+ *  reviewed in the editor before save, never applied blindly. */
+function makerworldCategoryHint(design: Record<string, unknown>): string {
+  const categories = Array.isArray(design.categories)
+    ? (design.categories as Record<string, unknown>[]).map((c) =>
+        String(c.name || "").toLowerCase()
+      )
+    : [];
+  const tags = [...(design.tags ?? []), ...(design.tagsTranslated ?? [])]
+    .map((t) => String(t).toLowerCase())
+    .join(" ");
+  const haystack = `${categories.join(" ")} ${tags}`;
+  if (/(robot|rc |rc-) ?(car|vehicle)|\bcar\b|chassis|servo|tank|holonomic/.test(haystack))
+    return "Robot Cars";
+  if (
+    /(arduino|esp32|esp8266|raspberry|micro.bit|circuit|pcb|electronic|soldering|breadboard|chip)/.test(
+      haystack
+    )
+  )
+    return "Controllers & Boards";
+  if (
+    /(sensor|imu|gyro|accelerometer|gps|lidar|ultrasonic|camera|joystick|encoder|thermistor)/.test(
+      haystack
+    )
+  )
+    return "Sensors & Modules";
+  if (/(screen|display|lcd|oled|indicator|led |segment)/.test(haystack))
+    return "Displays & Interfaces";
+  if (
+    /(holder|organizer|storage|bracket|mount|tray|gear|pulley|spacer|bearing|hinge|clamp)/.test(
+      haystack
+    )
+  )
+    return "Mechanical Parts";
+  if (/(motor|wheel|gearbox|pump|fan |drone|propeller)/.test(haystack)) return "Motors & Motion";
+  if (/(battery|charger|charging|power|usb-c|type-c|solar|dynamo)/.test(haystack))
+    return "Power & Charging";
+  if (
+    /(screwdriver|hammer|wrench|caliper|fixture|socket set|pry bar|dust-collector)/.test(haystack)
+  )
+    return "Tools & Fabrication";
+  if (/(cable|clip|connector|plug|adapter|crimping|wire)/.test(haystack))
+    return "Connectors & Cables";
+  if (/(figure|miniature|decor|art|sculpture|ornament|fidget|sign)/.test(haystack))
+    return "3D Models";
+  return "3D Models";
 }
 
 async function extractMakerWorld(url: string): Promise<Preview> {
@@ -316,6 +402,7 @@ async function extractMakerWorld(url: string): Promise<Preview> {
   const categories = Array.isArray(design.categories)
     ? (design.categories as Record<string, unknown>[])
     : [];
+  const structuredSpecs = makerworldStructuredSpecs(design);
 
   return {
     found: true,
@@ -323,10 +410,11 @@ async function extractMakerWorld(url: string): Promise<Preview> {
     sourceUrl: url,
     title: String(design.title || design.titleTranslated || "").trim(),
     description: makerworldDescription(design),
-    tags,
+    tags: tags.filter((t) => String(t).length <= 30).slice(0, 12),
     images: makerworldImages(design),
-    categoryHint: "3D Models",
-    specs: makerworldSpecs(design),
+    categoryHint: makerworldCategoryHint(design),
+    specs: structuredSpecs.map((s) => `${s.key}: ${s.value}`),
+    structuredSpecs,
     extra: {
       designId,
       modelId: design.modelId,
@@ -751,7 +839,27 @@ async function runCreate(body: Record<string, unknown>, client: ReturnType<typeo
   if (!isHttpUrl(url))
     return { status: 400, data: { error: "Please paste a valid https product link." } };
 
-  const preview = await runPreview(url);
+  // U-24 (2026-09-24): re-extraction is now a FALLBACK, not a hard gate. The
+  // admin reviewed the preview and possibly edited the image/gallery — those
+  // reviewed URLs win. Only when they are absent do we re-extract from the
+  // source, so a slow/down source never blocks or silently swaps the pictures
+  // the admin already approved.
+  let preview: Preview = {
+    found: false,
+    provider: "",
+    sourceUrl: url,
+    title: "",
+    description: "",
+    tags: [],
+    images: [],
+    categoryHint: "",
+  };
+  try {
+    preview = await runPreview(url);
+  } catch {
+    // preview failure is non-fatal when the admin supplied explicit fields
+  }
+
   const rawName = String(overrides?.name || preview.title || "").trim();
   if (!rawName)
     return {
@@ -759,13 +867,31 @@ async function runCreate(body: Record<string, unknown>, client: ReturnType<typeo
       data: { error: "No product name available. Please fill the name manually." },
     };
 
-  // Upload the FULL gallery (cap 8), best-first, into `product-images`.
-  // The first success becomes the primary image; every success becomes a
-  // gallery entry, so links with many photos keep ALL of them.
+  const overridesList = [
+    ...(Array.isArray(overrides?.gallery)
+      ? (overrides.gallery as unknown[]).filter((u): u is string => typeof u === "string")
+      : []),
+    ...(typeof overrides?.image === "string" && overrides.image.trim()
+      ? [overrides.image.trim()]
+      : []),
+  ];
+  const isStorage = (u: string) =>
+    Boolean(supabaseUrl) && u.startsWith(`${supabaseUrl}/storage/v1/`);
+
+  // Upload the FULL gallery (cap 8), reviewed URLs FIRST, source-extracted
+  // best-first after. The first success becomes the primary image; every
+  // success becomes a gallery entry, so multi-photo rows keep ALL pictures.
   const GALLERY_CAP = 8;
   const uploaded: string[] = [];
   let imageUrl = "";
-  for (const candidate of preview.images.slice(0, GALLERY_CAP)) {
+  for (const candidate of dedupe([...overridesList, ...preview.images]).slice(0, GALLERY_CAP)) {
+    if (!isHttpUrl(candidate)) continue;
+    // Already ours (re-save of a storage row): keep the URL as-is, no re-host.
+    if (isStorage(candidate)) {
+      if (!imageUrl) imageUrl = candidate;
+      if (!uploaded.includes(candidate)) uploaded.push(candidate);
+      continue;
+    }
     const img = await downloadImage(candidate);
     if ("error" in img) {
       console.warn("link-import image skip:", img.error);
@@ -813,8 +939,14 @@ async function runCreate(body: Record<string, unknown>, client: ReturnType<typeo
   if (typeof extra.creator === "string" && extra.creator) importMeta.creator = extra.creator;
   if (typeof extra.license === "string" && extra.license) importMeta.license = extra.license;
   if (typeof extra.designId === "number") importMeta.designId = extra.designId;
+  if (typeof extra.subcategory === "string" && extra.subcategory.trim())
+    importMeta.subcategory = extra.subcategory.trim().slice(0, 80);
   if (Array.isArray(preview.tags) && preview.tags.length)
     importMeta.tags = preview.tags.slice(0, 12);
+  // U-24 (2026-09-24): structured specs ride along so the organized
+  // "Specifications" block renders on the product page, not just the chips.
+  if (Array.isArray(preview.structuredSpecs) && preview.structuredSpecs.length)
+    importMeta.structuredSpecs = preview.structuredSpecs.slice(0, 12);
   if (extra.stats && typeof extra.stats === "object") importMeta.stats = extra.stats;
 
   // Dedupe by SOURCE LINK (owner request: each unique link saved once, reused

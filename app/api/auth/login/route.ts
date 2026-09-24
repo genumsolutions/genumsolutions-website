@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient, supabaseConfigured } from "../../../../lib/supabase/server";
+import { isValidAdminRole } from "../../../../lib/roles";
 import { checkRateLimit, clientIp } from "../../../../lib/rate-limit";
 import { enforceSingleSession } from "../../../../lib/single-session";
 
@@ -34,14 +35,16 @@ export async function POST(request: Request) {
     if (error || !data.user)
       return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
 
-    let role: "admin" | "customer" = "customer";
+    let role = "customer";
     try {
       const { data: profile } = await supabase
         .from("profiles")
         .select("role")
         .eq("id", data.user.id)
         .maybeSingle();
-      if (profile?.role === "admin") role = "admin";
+      // U-24 (2026-09-24): staff/admin/owner are all admin-capable; the header
+      // routes any of them to /admin. Server RBAC never trusts this value.
+      if (profile && isValidAdminRole(profile.role)) role = profile.role;
     } catch {
       // Profile lookup is best-effort; default to customer.
     }

@@ -37,7 +37,7 @@ export default async function ContactPage() {
               href={whatsappLink(company.whatsappNumber, "Hi GENUM Solutions! I have a question.")}
               target="_blank"
               rel="noreferrer noopener"
-              className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-xs font-black uppercase tracking-wide text-white transition hover:bg-emerald-500"
+              className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-full bg-emerald-700 px-4 py-2 text-xs font-black uppercase tracking-wide text-white transition hover:bg-emerald-600"
             >
               Chat on WhatsApp
             </a>

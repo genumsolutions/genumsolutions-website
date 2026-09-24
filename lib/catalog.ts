@@ -52,6 +52,10 @@ export type ProductImportMeta = {
   designId?: string;
   tags?: string[];
   sourceUrl?: string;
+  subcategory?: string;
+  structuredSpecs?: { key: string; value: string }[];
+  stats?: Record<string, number>;
+  pricing?: Record<string, unknown>;
 };
 
 export const galleryImages = (product: Pick<Product, "image" | "gallery">): string[] => {

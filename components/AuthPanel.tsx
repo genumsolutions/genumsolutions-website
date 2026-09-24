@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { initials } from "../lib/identity";
 import { readLocalCart, unionQuantities, writeLocalCart } from "../lib/cart-client";
 import { inputClass } from "../lib/styles";
+import { isStaffRole } from "../lib/roles";
 
 type Mode = "signin" | "signup" | "forgot";
 
@@ -132,7 +133,8 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
       } catch {
         /* non-blocking: proceed even if cart merge fails */
       }
-      router.replace(result.role === "admin" ? "/admin" : "/account");
+      // U-24 (2026-09-24): staff/admin/owner all land on the admin home.
+      router.replace(isStaffRole(result.role) ? "/admin" : "/account");
       router.refresh();
     } catch {
       setError("Network error. Please try again.");

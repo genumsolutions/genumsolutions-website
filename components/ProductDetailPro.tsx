@@ -26,6 +26,19 @@ export default function ProductDetailPro({
   const isQuote = product.productType === "Project package" || product.stock === 0;
   const related = relatedProducts(allProducts, product);
   const images = galleryImages(product);
+  // U-24 (2026-09-24): canonical MakerWorld specs as rows; falls back to the
+  // plain `specs` chip lines when a product was entered by hand.
+  const specRows = product.importMeta?.structuredSpecs?.length
+    ? product.importMeta.structuredSpecs
+    : product.specs
+        .filter(Boolean)
+        .map((line) => {
+          const idx = line.indexOf(":");
+          return idx > 0
+            ? { key: line.slice(0, idx).trim(), value: line.slice(idx + 1).trim() }
+            : { key: "", value: line };
+        })
+        .filter((row) => row.key);
 
   // U-23 (2026-09-24): reset the gallery position if the product changes.
   useEffect(() => setActiveImage(0), [product.id]);
@@ -112,27 +125,49 @@ export default function ProductDetailPro({
             <p className="mt-4 max-w-xl text-base leading-7 text-muted sm:mt-5 sm:text-lg">
               {product.description}
             </p>
-            {product.importMeta?.sourceSite || product.documentationUrl ? (
-              <p className="mt-3 max-w-xl text-xs leading-5 text-muted">
-                Source:{" "}
-                {product.documentationUrl ? (
-                  <>
-                    <a
-                      href={product.documentationUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="font-bold text-navy underline decoration-line underline-offset-2 transition hover:text-navy-dark"
-                    >
-                      {product.importMeta?.sourceSite || "Original"}
-                    </a>
-                    {product.importMeta?.creator
-                      ? ` · ${String(product.importMeta.creator).slice(0, 40)}`
-                      : ""}
-                  </>
-                ) : (
-                  product.importMeta?.sourceSite
-                )}
-              </p>
+            {product.importMeta?.creator ||
+            product.importMeta?.license ||
+            product.importMeta?.sourceSite ||
+            product.documentationUrl ? (
+              <dl className="mt-3 max-w-xl divide-y divide-line rounded-xl border border-line bg-mist/60 px-4 py-2">
+                {product.importMeta?.creator ? (
+                  <div className="flex justify-between gap-4 py-2">
+                    <dt className="text-xs font-black uppercase tracking-widest text-navy">
+                      Design by
+                    </dt>
+                    <dd className="text-sm text-ink">{String(product.importMeta.creator)}</dd>
+                  </div>
+                ) : null}
+                {product.importMeta?.license ? (
+                  <div className="flex justify-between gap-4 py-2">
+                    <dt className="text-xs font-black uppercase tracking-widest text-navy">
+                      License
+                    </dt>
+                    <dd className="text-sm text-ink">{String(product.importMeta.license)}</dd>
+                  </div>
+                ) : null}
+                {product.importMeta?.sourceSite || product.documentationUrl ? (
+                  <div className="flex justify-between gap-4 py-2">
+                    <dt className="text-xs font-black uppercase tracking-widest text-navy">
+                      Source
+                    </dt>
+                    <dd className="text-sm">
+                      {product.documentationUrl ? (
+                        <a
+                          href={product.documentationUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-bold text-navy underline decoration-line underline-offset-2 transition hover:text-navy-dark"
+                        >
+                          {product.importMeta?.sourceSite || "Original"} ↗
+                        </a>
+                      ) : (
+                        <span className="text-ink">{product.importMeta?.sourceSite}</span>
+                      )}
+                    </dd>
+                  </div>
+                ) : null}
+              </dl>
             ) : null}
             <div className="mt-7 flex flex-wrap items-baseline gap-3">
               <span className="font-display text-3xl font-bold">{product.priceLabel}</span>
@@ -269,6 +304,25 @@ export default function ProductDetailPro({
                 </a>
               ) : null}
             </div>
+          </div>
+        )}
+
+        {specRows.length > 0 && (
+          <div className="mt-12 border-t-2 border-line pt-8">
+            <p className="text-xs font-black uppercase tracking-[.24em] text-navy">
+              Specifications
+            </p>
+            <dl className="mt-4 grid gap-x-8 gap-y-3 sm:grid-cols-2">
+              {specRows.map((row) => (
+                <div
+                  key={row.key}
+                  className="flex items-baseline justify-between gap-4 border-b border-line pb-2"
+                >
+                  <dt className="text-sm font-bold text-ink">{row.key}</dt>
+                  <dd className="text-sm text-right text-muted">{row.value}</dd>
+                </div>
+              ))}
+            </dl>
           </div>
         )}
 

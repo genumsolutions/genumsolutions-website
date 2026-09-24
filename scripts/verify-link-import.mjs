@@ -108,7 +108,11 @@ try {
     Array.isArray(p.specs) && p.specs.length >= 1,
     `specs=${JSON.stringify(p.specs)}`
   );
-  assert("makerworld at least one image", Array.isArray(p.images) && p.images.length >= 1, `imgs=${p.images?.length}`);
+  assert(
+    "makerworld at least one image",
+    Array.isArray(p.images) && p.images.length >= 1,
+    `imgs=${p.images?.length}`
+  );
   assert(
     "makerworld description enriched",
     Boolean(p.description) && p.description.length >= 12,

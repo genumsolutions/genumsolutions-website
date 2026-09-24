@@ -54,6 +54,9 @@ const DIM_SAFE = new Set([
   "bg-amber-500",
   "bg-emerald-500", // status dots on dark panels
   "bg-emerald-600", // CTA button on dark cards
+  "bg-emerald-700", // U-24 WhatsApp pill — solid brand-green fill with white
+  // text (>=4.5:1 on emerald-700 in BOTH themes; light theme uses 700 for AA
+  // contrast, dim keeps the same saturated green chip)
   "text-emerald-300",
   "text-emerald-400", // glow accents on the car-control deck (dark by design)
   "bg-slate-600",

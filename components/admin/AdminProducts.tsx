@@ -86,25 +86,33 @@ export default function AdminProducts({
           ? String(product.specs).split("\n").filter(Boolean)
           : product.specs,
     };
-    const response = await fetch("/api/admin/products", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      setMessage(result.error || "Could not save product.");
+    try {
+      const response = await fetch("/api/admin/products", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        // U-24 (2026-09-24): the save path re-hosts foreign images through the
+        // link-import edge and can time out on big galleries — surface that
+        // instead of dying silently (the old code left the button busy).
+        setMessage(result.error || "Could not save product.");
+        return;
+      }
+      onProductsChange((current) =>
+        [...current.filter((item) => item.id !== payload.id), payload].sort((a, b) =>
+          a.name.localeCompare(b.name)
+        )
+      );
+      setProduct(emptyProduct);
+      setMessage("Product saved.");
+    } catch (error) {
+      console.error("save failed", error);
+      setMessage("Save failed — is your connection ok? Try again.");
+    } finally {
       setBusy(false);
-      return;
     }
-    onProductsChange((current) =>
-      [...current.filter((item) => item.id !== payload.id), payload].sort((a, b) =>
-        a.name.localeCompare(b.name)
-      )
-    );
-    setProduct(emptyProduct);
-    setMessage("Product saved.");
-    setBusy(false);
   }
 
   async function removeProduct(id: string) {
@@ -120,14 +128,22 @@ export default function AdminProducts({
 
   async function toggleProductVisibility(item: Product) {
     const payload = { ...item, active: item.active === false };
-    const response = await fetch("/api/admin/products", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (response.ok) {
-      onProductsChange((current) => current.map((p) => (p.id === item.id ? payload : p)));
-      setMessage(item.active === false ? "Product shown." : "Product hidden.");
+    try {
+      const response = await fetch("/api/admin/products", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (response.ok) {
+        onProductsChange((current) => current.map((p) => (p.id === item.id ? payload : p)));
+        setMessage(item.active === false ? "Product shown." : "Product hidden.");
+      } else {
+        const result = await response.json().catch(() => ({}));
+        setMessage(result.error || "Could not update visibility.");
+      }
+    } catch (error) {
+      console.error("visibility toggle failed", error);
+      setMessage("Update failed — try again.");
     }
   }
 
@@ -198,6 +214,22 @@ export default function AdminProducts({
         price: current.price || Number(p.extra?.price ?? 0) || 0,
         priceLabel: current.priceLabel || "Request quote",
         documentationUrl: url,
+        // U-24 (2026-09-24): carry the source credit + canonical specs into
+        // import_meta so the "Design & source" block and the organized
+        // "Specifications" section render on the published page.
+        importMeta: {
+          sourceSite: p.provider,
+          sourceUrl: url,
+          ...(p.extra?.creator ? { creator: String(p.extra.creator) } : {}),
+          ...(p.extra?.license ? { license: String(p.extra.license) } : {}),
+          ...(typeof p.extra?.designId === "number" ? { designId: p.extra.designId } : {}),
+          ...(p.extra?.subcategory ? { subcategory: String(p.extra.subcategory) } : {}),
+          ...(Array.isArray(p.tags) && p.tags.length ? { tags: p.tags.slice(0, 12) } : {}),
+          ...(Array.isArray(p.structuredSpecs) && p.structuredSpecs.length
+            ? { structuredSpecs: p.structuredSpecs.slice(0, 12) }
+            : {}),
+          ...(p.extra?.stats && typeof p.extra.stats === "object" ? { stats: p.extra.stats } : {}),
+        },
       }));
       setExtracted({
         provider: p.provider,

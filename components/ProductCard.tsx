@@ -48,7 +48,10 @@ export default function ProductCard({
       <Link
         href={`/products/${product.id}`}
         aria-label={`View ${product.name}`}
-        className={`relative block overflow-hidden bg-mist ${compact ? "h-28" : "h-56"}`}
+        // U-24 (2026-09-24): whole-image card (owner: "like the app") — the
+        // media box shows the FULL photo on a light tray like the native card;
+        // no dark gradient, no caption text on the image.
+        className={`relative block overflow-hidden bg-mist ${compact ? "aspect-[4/3]" : "aspect-square"}`}
       >
         <Image
           src={media}
@@ -59,12 +62,8 @@ export default function ProductCard({
               ? "(max-width: 640px) 50vw, 25vw"
               : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           }
-          className="object-cover transition duration-500 hover:scale-105"
+          className="object-contain transition duration-500 hover:scale-105"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-ink/70 to-transparent" />
-        <span className="absolute bottom-3 left-4 max-w-[calc(100%-2rem)] truncate text-xs font-black uppercase tracking-widest text-white">
-          {product.category}
-        </span>
       </Link>
       <div className={`flex flex-1 flex-col ${compact ? "p-3" : "p-5"}`}>
         <p className="truncate text-xs font-black uppercase tracking-widest text-navy">
@@ -77,6 +76,15 @@ export default function ProductCard({
         >
           {product.name}
         </h2>
+        {!compact && product.importMeta?.creator ? (
+          <p
+            className="mt-1 truncate text-[11px] font-semibold text-muted"
+            title={String(product.importMeta.creator)}
+          >
+            Design: {String(product.importMeta.creator)}
+            {product.importMeta.license ? ` · ${String(product.importMeta.license)}` : ""}
+          </p>
+        ) : null}
         {!compact && (
           <>
             <p className="mt-2 line-clamp-2 flex-1 text-sm leading-6 text-muted">
@@ -103,7 +111,7 @@ export default function ProductCard({
             (quoteOnly ? (
               <Link
                 href={`/products/${product.id}`}
-                className="rounded-full bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
+                className="inline-flex min-h-11 items-center rounded-full bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
                 aria-label={`View details for ${product.name}`}
               >
                 View details
@@ -114,7 +122,7 @@ export default function ProductCard({
                   add(product.id, 1);
                   setAdded(true);
                 }}
-                className={`rounded-full px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy ${
+                className={`inline-flex min-h-11 items-center rounded-full px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy ${
                   added ? "bg-emerald-600" : "bg-navy"
                 }`}
                 aria-label={addAriaLabel ?? `Add ${product.name} to build list`}

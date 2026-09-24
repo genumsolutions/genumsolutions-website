@@ -17,6 +17,15 @@ export const ROLE_RANK: Record<Role, number> = {
   owner: 3,
 };
 
+// Display labels for the account menu badge. Unknown roles fall back to
+// "Customer" so a stale value is never blank in the UI.
+export const ROLE_LABELS: Record<string, string> = {
+  customer: "Customer",
+  staff: "Staff",
+  admin: "Admin",
+  owner: "Owner",
+};
+
 // Unknown/nil roles rank as customer (0) — never above.
 export function roleRank(role: unknown): number {
   if (typeof role !== "string") return 0;

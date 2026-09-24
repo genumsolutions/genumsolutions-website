@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { initials } from "../lib/identity";
 import { signOut } from "../lib/auth";
 import { useCart } from "./cart-provider";
+import { isStaffRole, ROLE_LABELS } from "../lib/roles";
 
 type SessionUser = { name: string; email: string; role: string };
 
@@ -93,9 +94,9 @@ export default function HeaderSession() {
           <div className="border-b border-line px-4 py-3">
             <p className="truncate text-sm font-black text-ink">{user.name}</p>
             <p className="mt-0.5 truncate text-xs text-slate-500">{user.email}</p>
-            {user.role === "admin" && (
+            {isStaffRole(user.role) && (
               <span className="mt-2 inline-block rounded-full bg-gold px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-ink">
-                Admin
+                {ROLE_LABELS[user.role] ?? "Staff"}
               </span>
             )}
           </div>
@@ -108,7 +109,7 @@ export default function HeaderSession() {
             >
               Your account
             </Link>
-            {user.role === "admin" && (
+            {isStaffRole(user.role) && (
               <Link
                 href="/admin"
                 role="menuitem"

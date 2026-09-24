@@ -73,7 +73,7 @@ export default async function SiteFooter() {
                   target="_blank"
                   rel="noreferrer noopener"
                   aria-label={`${link.label} (opens in a new tab)`}
-                  className="rounded-full border border-white/20 px-3 py-1.5 text-[11px] font-black uppercase tracking-wide text-white/70 transition hover:border-gold hover:text-gold"
+                  className="inline-flex min-h-9 items-center rounded-full border border-white/20 px-3 py-1.5 text-[11px] font-black uppercase tracking-wide text-white/70 transition hover:border-gold hover:text-gold"
                 >
                   {link.label}
                 </a>
@@ -87,7 +87,7 @@ export default async function SiteFooter() {
                   target="_blank"
                   rel="noreferrer noopener"
                   aria-label="Chat on WhatsApp (opens in a new tab)"
-                  className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3 py-1.5 text-[11px] font-black uppercase tracking-wide text-white transition hover:bg-emerald-500"
+                  className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-emerald-700 px-3 py-1.5 text-[11px] font-black uppercase tracking-wide text-white transition hover:bg-emerald-600"
                 >
                   WhatsApp
                 </a>
@@ -102,7 +102,10 @@ export default async function SiteFooter() {
           <ul className="mt-4 space-y-2.5">
             {exploreLinks.map((link) => (
               <li key={link.href}>
-                <Link href={link.href} className="transition hover:text-gold">
+                <Link
+                  href={link.href}
+                  className="inline-flex min-h-9 items-center transition hover:text-gold"
+                >
                   {link.label}
                 </Link>
               </li>
@@ -116,7 +119,10 @@ export default async function SiteFooter() {
           <ul className="mt-4 space-y-2.5">
             {companyLinks.map((link) => (
               <li key={link.href}>
-                <Link href={link.href} className="transition hover:text-gold">
+                <Link
+                  href={link.href}
+                  className="inline-flex min-h-9 items-center transition hover:text-gold"
+                >
                   {link.label}
                 </Link>
               </li>
@@ -133,13 +139,16 @@ export default async function SiteFooter() {
             <p>
               <a
                 href={`tel:${company.phone.replace(/\s/g, "")}`}
-                className="transition hover:text-gold"
+                className="inline-flex min-h-9 items-center transition hover:text-gold"
               >
                 {company.phone}
               </a>
             </p>
             <p>
-              <a href={`mailto:${company.email}`} className="transition hover:text-gold">
+              <a
+                href={`mailto:${company.email}`}
+                className="inline-flex min-h-9 items-center transition hover:text-gold"
+              >
                 {company.email}
               </a>
             </p>
@@ -160,7 +169,7 @@ export default async function SiteFooter() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-white/40 underline-offset-2 transition hover:text-gold hover:underline"
+                className="inline-flex min-h-9 items-center text-white/40 underline-offset-2 transition hover:text-gold hover:underline"
               >
                 {link.label}
               </Link>

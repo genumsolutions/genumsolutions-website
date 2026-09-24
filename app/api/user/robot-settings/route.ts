@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient, createServiceClient, getSessionUser } from "../../../../lib/supabase/server";
 import { logActivity } from "../../../../lib/activity";
+import { isStaffRole } from "../../../../lib/roles";
 
 // Robot user settings — the per-user engineering profile for each robot /
 // project (code values, parameters, telemetry channels). Stored in the
@@ -53,7 +54,7 @@ async function resolveViewer() {
     .select("role, tier")
     .eq("id", session.id)
     .maybeSingle();
-  return { session, isAdmin: profile?.role === "admin" };
+  return { session, isAdmin: isStaffRole(profile?.role) };
 }
 
 export async function GET(request: Request) {
