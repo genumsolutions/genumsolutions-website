@@ -1,9 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
-const supabaseUrl = Deno.env.get("NEXT_PUBLIC_SUPABASE_URL")!;
-const supabaseAnonKey = Deno.env.get("NEXT_PUBLIC_SUPABASE_ANON_KEY")!;
-const resendApiKey = Deno.env.get("RESEND_API_KEY")!;
+const supabaseUrl = Deno.env.get("NEXT_PUBLIC_SUPABASE_URL") ?? Deno.env.get("SUPABASE_URL") ?? "";
+const supabaseAnonKey =
+  Deno.env.get("NEXT_PUBLIC_SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+const resendApiKey = Deno.env.get("RESEND_API_KEY") || "";
 const contactEmail = Deno.env.get("CONTACT_EMAIL") || "genumsolutions@gmail.com";
 const sender = Deno.env.get("RESEND_FROM_EMAIL") || "GENUM website <onboarding@resend.dev>";
 

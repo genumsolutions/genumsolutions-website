@@ -8,3 +8,6 @@ data/*.json
 
 # Supabase CLI local state (link scratch)
 supabase/.temp/
+
+# UX audit screenshots (regenerable)
+ux-audit-shots/

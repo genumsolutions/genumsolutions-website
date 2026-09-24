@@ -218,3 +218,25 @@ _Grep gotcha: path is `TRACKS\INDEX.md` (not TRACKS\\INDEX.md), PowerShell needs
 **Phase C9 — hygiene:** web `lint:check`/`format:check` + husky/lint-staged pre-commit; app `lint:check`/`format`/`format:check` + husky/lint-staged (`prepare: "husky"` in `mobile/package.json`); stale `mobile/.husky/pre-commit` removed; keystore confirmed gitignored with `with-release-signing.js` debug fallback; C6 sitemap already complete.
 
 **Gates:** web tsc 0 · lint 0 · vitest 92/92 · app tsc 0 · vitest 140/140 · live harnesses 9/9 + 25/25 + 10/10 + 25/25.
+
+## 2026-09-24 — R6 UX audit round (browser-driven)
+
+**Audit:** `guide/UX-AUDIT-2026-09-24.md` — puppeteer/Chrome vs production (14
+pages, 360px+desktop, both themes) + scripted flows + app code-path review.
+Probe users/orders/messages purged after verification.
+
+**Fixed (web):** `/api/contact` no longer destroys guest inquiries when the
+email send fails — every inquiry persists to `customer_messages` first
+(guests included; RLS verified), email is best-effort with a success response.
+Root cause of the standing 500: `RESEND_API_KEY` missing on Vercel (owner
+action pending). Added `scripts/ux-audit.mjs` (14-page crawl) +
+`scripts/ux-purchase-flow.mjs` (signup→build list→checkout→COD→success
+regression, real order verified end-to-end).
+
+**Fixed (shared edge fns):** `contact` + `site-content` were never deployed
+(app contact 404'd; app home hero never loaded DB content). After deploy both
+`WORKER_ERROR`-ed on `NEXT_PUBLIC_*` env names (same root cause as C1
+payment-esewa) plus a fatal `single()` destructure in site-content — fixed,
+deployed, live-verified.
+
+**Gates:** tsc 0 · vitest 118/118 · build green.

@@ -1,9 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
-const supabaseUrl = Deno.env.get("NEXT_PUBLIC_SUPABASE_URL")!;
-const supabaseAnonKey = Deno.env.get("NEXT_PUBLIC_SUPABASE_ANON_KEY")!;
-const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const supabaseUrl = Deno.env.get("NEXT_PUBLIC_SUPABASE_URL") ?? Deno.env.get("SUPABASE_URL") ?? "";
+const supabaseAnonKey =
+  Deno.env.get("NEXT_PUBLIC_SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+const supabaseServiceKey =
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SERVICE_ROLE_KEY") ?? "";
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey!, {
   auth: { autoRefreshToken: false, persistSession: false },
@@ -28,7 +30,12 @@ serve(async (req) => {
     const action = body.action;
 
     if (action === "get") {
-      const [{ data }] = await supabase.from("site_content").select("*").eq("id", 1).single();
+      // R6 fix: single() resolves to { data, error } — it is NOT iterable, so
+      // the old `const [{ data }] =` destructure threw "is not iterable" on
+      // every request (seen as WORKER_ERROR in production). Read the result
+      // object directly instead.
+      const { data, error } = await supabase.from("site_content").select("*").eq("id", 1).single();
+      if (error) console.error("site_content read failed:", error.message);
       if (data)
         return new Response(JSON.stringify({ content: data }), {
           headers: { "Content-Type": "application/json" },

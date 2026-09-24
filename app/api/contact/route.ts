@@ -35,20 +35,33 @@ export async function POST(request: Request) {
     }
 
     const user = await getSessionUser();
-    // Persist the inquiry for logged-in customers (best effort - email still goes out on failure).
-    if (user) {
-      try {
-        await addCustomerMessage(user.id, { name, email, message });
-      } catch (error) {
-        console.error("Message persistence failed", error);
-      }
+    // R6 parity fix: persist EVERY inquiry (guests included — the app's edge
+    // function already does this and RLS allows anon inserts). Previously a
+    // guest message lived only in the email send, so a missing/broken
+    // RESEND_API_KEY (500) destroyed it before anyone saw it.
+    let persisted = false;
+    try {
+      await addCustomerMessage(user?.id ?? null, { name, email, message });
+      persisted = true;
+    } catch (error) {
+      console.error("Message persistence failed", error);
     }
-    await sendEmail({
-      replyTo: email,
-      subject: `New website inquiry from ${name}`,
-      text: `Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`,
-    });
-    return NextResponse.json({ message: "Thanks. Your inquiry has been sent." });
+    try {
+      await sendEmail({
+        replyTo: email,
+        subject: `New website inquiry from ${name}`,
+        text: `Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`,
+      });
+      return NextResponse.json({ message: "Thanks. Your inquiry has been sent.", persisted });
+    } catch (error) {
+      // Email is best-effort: the message is safely in the admin inbox, so
+      // don't tell the customer the submission failed.
+      console.error("Contact email failed (message persisted)", error);
+      return NextResponse.json({
+        message: "Thanks. Your inquiry has been received — our team will get back to you shortly.",
+        persisted,
+      });
+    }
   } catch (error) {
     console.error("Contact email failed", error);
     return NextResponse.json(
