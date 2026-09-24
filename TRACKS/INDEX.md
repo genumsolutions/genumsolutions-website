@@ -260,3 +260,11 @@ panel immediately. Verified 0 hard issues against a local build, then live.
 
 **First CI run:** green — 30 loads / 0 hard issues, purchase flow 7/7,
 cleanup verified. Run 35992965169.
+
+**R7b — harness extended to contact + newsletter flows (2026-09-24):**
+`ux-purchase-flow.mjs` now runs 3 flows / 13 asserts: purchase (5), contact
+guest submit → row verified + deleted (4), newsletter footer opt-in → row
+verified subscribed + deleted (4). Consent checkbox must be ticked via its
+LABEL click — React ignores synthetic `checked` writes (harness lesson).
+Second dispatch run green: 13/13 + crawl 0 hard, all cleanups 204/200
+(run 35999078054). Failure notifications (Slack/email) deferred by owner.
