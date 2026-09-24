@@ -65,7 +65,18 @@ const rand = Math.random().toString(36).slice(2, 8);
 const EMAIL = `uxflow-${rand}@genumtest.invalid`;
 const results = [];
 const step = (name, ok, detail = "") => {
-  const flow = results.length < 5 ? "purchase" : results.length < 9 ? "contact" : "newsletter";
+  const flow =
+    results.length < 5
+      ? "purchase"
+      : results.length < 9
+        ? "contact"
+        : results.length < 13
+          ? "newsletter"
+          : results.length < 16
+            ? "auth"
+            : results.length < 18
+              ? "profile"
+              : "cart";
   results.push({ flow, name, ok, detail });
   console.log(`${ok ? "PASS" : "FAIL"} [${flow}] ${name}${detail ? " — " + detail : ""}`);
 };
@@ -328,6 +339,185 @@ try {
   } else {
     step("newsletter row verified", false, "no service key");
   }
+
+  // ---------- FLOW 4: LOGIN AFTER LOGOUT (session round-trip) ----------
+  // The purchase flow already registered the probe user; sign out, then sign
+  // back in through the real UI and confirm the account page loads again.
+  // The account panel hydrates late — wait for the Log out button to exist.
+  await page.goto(BASE + "/account", { waitUntil: "networkidle2", timeout: 60000 });
+  const logoutBtn = await page
+    .waitForFunction(
+      () =>
+        [...document.querySelectorAll("button")].some((b) =>
+          /^log out$/i.test(b.textContent?.trim() || "")
+        ),
+      { timeout: 15000 }
+    )
+    .then(() => true)
+    .catch(() => false);
+  await page.evaluate(() => {
+    [...document.querySelectorAll("button")]
+      .find((b) => /^log out$/i.test(b.textContent?.trim() || ""))
+      ?.click();
+  });
+  // signOut() redirects to "/" — wait for the guest state to be visible.
+  // Flake guard: an occasional slow logout POST can outlive one window, so
+  // click + wait again before declaring failure (scheduled runs must be
+  // deterministic; a single retry absorbs transient latency).
+  const waitGuest = () =>
+    page
+      .waitForFunction(
+        () => location.pathname === "/" && /sign in/i.test(document.body.innerText),
+        {
+          timeout: 20000,
+        }
+      )
+      .then(() => true)
+      .catch(() => false);
+  let loggedOut = await waitGuest();
+  if (!loggedOut) {
+    await page.evaluate(() => {
+      [...document.querySelectorAll("button")]
+        .find((b) => /^log out$/i.test(b.textContent?.trim() || ""))
+        ?.click();
+    });
+    loggedOut = await waitGuest();
+  }
+  step("logout works", logoutBtn && loggedOut, page.url().replace(BASE, ""));
+
+  await page.goto(BASE + "/login", { waitUntil: "networkidle2", timeout: 60000 });
+  await page.evaluate(() => {
+    const tab = [...document.querySelectorAll("button")].find((x) =>
+      /^sign in$/i.test(x.textContent?.trim() || "")
+    );
+    if (tab) tab.click();
+  });
+  const loginFilled = await page.evaluate((email) => {
+    const nativeI = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+    let n = 0;
+    for (const el of document.querySelectorAll("input")) {
+      if (el.name === "email") {
+        nativeI.call(el, email);
+        el.dispatchEvent(new Event("input", { bubbles: true }));
+        n++;
+      } else if (el.name === "password") {
+        nativeI.call(el, "Genum-e2e-2026!");
+        el.dispatchEvent(new Event("input", { bubbles: true }));
+        n++;
+      }
+    }
+    return n;
+  }, EMAIL);
+  step("login form filled", loginFilled === 2, `${loginFilled}/2 fields`);
+  await page.evaluate(() =>
+    [...document.querySelectorAll("button")]
+      .find((b) => /^sign in$/i.test(b.textContent?.trim() || "") && b.type === "submit")
+      ?.click()
+  );
+  const backIn = await page
+    .waitForFunction(() => /\/account|\/admin/.test(location.pathname), { timeout: 20000 })
+    .then(() => true)
+    .catch(() => false);
+  step("login round-trip", backIn, page.url().replace(BASE, ""));
+
+  // ---------- FLOW 5: PROFILE SAVE (account details round-trip) ----------
+  // Only meaningful when signed in (flow 4 just got us there).
+  if (backIn) {
+    await page.goto(BASE + "/account", { waitUntil: "networkidle2", timeout: 60000 });
+    // Profile fields render only after /api/customer/me resolves — wait for them.
+    const profileReady = await page
+      .waitForFunction(() => !!document.querySelector('input[name="phone"]'), {
+        timeout: 20000,
+      })
+      .then(() => true)
+      .catch(() => false);
+    const profileSet = profileReady
+      ? await page.evaluate(() => {
+          const nativeI = Object.getOwnPropertyDescriptor(
+            window.HTMLInputElement.prototype,
+            "value"
+          ).set;
+          const nativeT = Object.getOwnPropertyDescriptor(
+            window.HTMLTextAreaElement.prototype,
+            "value"
+          ).set;
+          const set = (el, v) => {
+            (el.tagName === "TEXTAREA" ? nativeT : nativeI).call(el, v);
+            el.dispatchEvent(new Event("input", { bubbles: true }));
+          };
+          let n = 0;
+          for (const el of document.querySelectorAll("input, textarea")) {
+            if (el.name === "phone") {
+              set(el, "9801234567");
+              n++;
+            } else if (el.name === "address") {
+              set(el, "ux-flow profile probe, Lalitpur");
+              n++;
+            }
+          }
+          return n;
+        })
+      : 0;
+    step("profile form present", profileSet === 2, `${profileSet}/2 fields`);
+    await page.evaluate(() =>
+      [...document.querySelectorAll("button")]
+        .find((b) => /save details/i.test(b.textContent || ""))
+        ?.click()
+    );
+    const saved = await page
+      .waitForFunction(
+        () =>
+          [...document.querySelectorAll('[role="status"]')].some((p) =>
+            /details saved/i.test(p.textContent || "")
+          ),
+        { timeout: 15000 }
+      )
+      .then(() => true)
+      .catch(() => false);
+    step("profile saved", saved);
+  } else {
+    step("profile form present", false, "skipped: login round-trip failed");
+    step("profile saved", false, "skipped: login round-trip failed");
+  }
+
+  // ---------- FLOW 6: CART QUANTITY EDIT (checkout qty controls) ----------
+  await page.goto(BASE + "/products/arduino-uno", { waitUntil: "networkidle2", timeout: 60000 });
+  await page.evaluate(() => {
+    const a = [...document.querySelectorAll("a")].find((x) =>
+      /add to build list/i.test(x.textContent || "")
+    );
+    if (a) a.click();
+  });
+  await new Promise((r) => setTimeout(r, 1500));
+  await page.goto(BASE + "/checkout", { waitUntil: "networkidle2", timeout: 60000 });
+  await new Promise((r) => setTimeout(r, 1200));
+  const qtyBefore = await page.evaluate(() => {
+    const plus = [...document.querySelectorAll("button")].find((b) =>
+      /add another/i.test(b.getAttribute("aria-label") || "")
+    );
+    if (plus) plus.click();
+    return !!plus;
+  });
+  await new Promise((r) => setTimeout(r, 800));
+  const qtyAfter = await page.evaluate(() => {
+    const badge = document.querySelector('[aria-live="polite"]');
+    return badge?.textContent?.trim() ?? null;
+  });
+  step("cart qty + works", qtyBefore && qtyAfter === "2", `qty now ${qtyAfter}`);
+  const removed = await page.evaluate(() => {
+    const rm = [...document.querySelectorAll("button")].find((b) =>
+      /remove/i.test(b.getAttribute("aria-label") || "")
+    );
+    if (rm) rm.click();
+    return !!rm;
+  });
+  await new Promise((r) => setTimeout(r, 800));
+  const emptyAfterRemove = await page.evaluate(() =>
+    /build list is empty|no purchasable items|some items in your build list/i.test(
+      document.body.innerText
+    )
+  );
+  step("cart remove works", removed && emptyAfterRemove);
 } catch (e) {
   step("flow crashed", false, String(e).slice(0, 200));
 } finally {
@@ -374,7 +564,7 @@ try {
 }
 
 const failed = results.filter((r) => !r.ok);
-for (const flow of ["purchase", "contact", "newsletter"]) {
+for (const flow of ["purchase", "contact", "newsletter", "auth", "profile", "cart"]) {
   const steps = results.filter((r) => r.flow === flow);
   if (steps.length)
     console.log(`${flow}: ${steps.filter((s) => s.ok).length}/${steps.length} steps`);
