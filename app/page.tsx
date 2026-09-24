@@ -271,8 +271,10 @@ export default async function HomePage() {
             {pilotCosts.length > 0 && (
               <div className="mt-10">
                 <h3 className="font-display text-lg font-bold">Illustrative pilot costing</h3>
-                <div className="mt-4 overflow-hidden rounded-2xl border border-line bg-white">
-                  <table className="w-full text-left text-sm">
+                {/* W2b (F1): the 6-column costing table clipped at 360px —
+                    scroll it on phones instead. */}
+                <div className="mt-4 overflow-x-auto rounded-2xl border border-line bg-white">
+                  <table className="w-full min-w-[420px] text-left text-sm">
                     <caption className="sr-only">Illustrative pilot program running costs</caption>
                     <thead>
                       <tr className="border-b border-line bg-mist text-[10px] uppercase tracking-wide text-slate-500">

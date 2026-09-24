@@ -124,8 +124,10 @@ export default async function SiteFooter() {
           </ul>
         </nav>
 
-        {/* Contact & payments */}
-        <div className="col-span-2 text-sm text-white/60 lg:col-span-1">
+        {/* Contact & payments — W2b (F3): on phones this block leads
+            (brand blurb first, then contact/newsletter), desktop keeps the
+            source-order last column via lg:order-3. */}
+        <div className="col-span-2 order-first text-sm text-white/60 lg:order-none lg:col-span-1">
           <h2 className={heading}>Get in touch</h2>
           <address className="mt-4 space-y-2 not-italic">
             <p>{company.address}</p>

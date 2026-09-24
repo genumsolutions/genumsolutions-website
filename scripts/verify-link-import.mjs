@@ -190,6 +190,33 @@ try {
   // invalid URL rejected
   const bad = await callFn(staff.token, { action: "preview", url: "not-a-url" });
   assert("invalid url rejected (400)", bad.status === 400, `status ${bad.status}`);
+
+  // W1 (2026-09-24): upload-image action — downloads a foreign image URL and
+  // returns a durable product-images storage URL (the web admin save path's
+  // image-parity fix). Then negative: a non-image URL must fail cleanly.
+  const upl = await callFn(staff.token, {
+    action: "upload-image",
+    url: "https://en.wikipedia.org/wiki/3D_printing",
+    imageUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/1/13/ P1050782_-_Disassembled_MD-83_GPS_-_Wikimedia_Australia.jpg/320px-P1050782_-_Disassembled_MD-83_GPS_-_Wikimedia_Australia.jpg".replace(" ", ""),
+  });
+  assert(
+    "upload-image returns a storage URL (200)",
+    upl.status === 200 &&
+      typeof upl.data?.imageUrl === "string" &&
+      upl.data.imageUrl.includes("/storage/v1/object/public/product-images/"),
+    `status ${upl.status} url=${String(upl.data?.imageUrl || "").slice(0, 60)}`
+  );
+  const uplBad = await callFn(staff.token, {
+    action: "upload-image",
+    url: "https://example.com",
+    imageUrl: "https://example.com/not-an-image",
+  });
+  assert(
+    "upload-image rejects a non-image (4xx/5xx)",
+    uplBad.status >= 400,
+    `status ${uplBad.status}`
+  );
 } catch (e) {
   assert("THREW", false, e.message);
 } finally {

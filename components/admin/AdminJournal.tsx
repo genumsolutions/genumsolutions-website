@@ -274,7 +274,7 @@ export default function AdminJournal({ setMessage, canDelete }: Props) {
             >
               <button
                 onClick={() => setPreviewPost(null)}
-                className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-ink shadow-sm transition hover:bg-white"
+                className="absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-ink shadow-sm transition hover:bg-white"
                 aria-label="Close preview"
               >
                 ✕

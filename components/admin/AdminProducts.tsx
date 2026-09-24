@@ -332,6 +332,7 @@ export default function AdminProducts({
                     alt=""
                     width={56}
                     height={56}
+                    unoptimized
                     className="shrink-0 rounded border border-line object-cover"
                   />
                 ) : (
@@ -429,6 +430,7 @@ export default function AdminProducts({
                       alt={product.name || "Product preview"}
                       width={64}
                       height={64}
+                      unoptimized
                       className="shrink-0 rounded object-cover"
                     />
                   )}
@@ -500,7 +502,7 @@ export default function AdminProducts({
             >
               <button
                 onClick={() => setPreviewProduct(null)}
-                className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-ink shadow-sm transition hover:bg-white"
+                className="absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-ink shadow-sm transition hover:bg-white"
                 aria-label="Close preview"
               >
                 ✕
@@ -511,6 +513,7 @@ export default function AdminProducts({
                     src={previewProduct.image}
                     alt={previewProduct.name}
                     fill
+                    unoptimized
                     className="object-cover"
                   />
                 ) : null}

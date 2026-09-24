@@ -131,14 +131,16 @@ export function RowActions({
     red: "text-red-600",
   };
   return (
-    <span className="flex shrink-0 flex-wrap gap-2">
+    // W2b (F2): text-link row actions were ~28px tall and cramped together on
+    // phones — pad to a 36px tap target and space them out.
+    <span className="flex shrink-0 flex-wrap items-center gap-3">
       {actions
         .filter((a) => a.show ?? true)
         .map((a) => (
           <button
             key={a.label}
             onClick={a.onClick}
-            className={`text-xs font-bold underline ${toneClass[a.tone ?? "ink"]}`}
+            className={`flex min-h-[36px] items-center px-1 text-xs font-bold underline ${toneClass[a.tone ?? "ink"]}`}
           >
             {a.label}
           </button>

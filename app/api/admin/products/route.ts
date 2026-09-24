@@ -7,6 +7,7 @@ import {
   type Product,
 } from "../../../../lib/content-store";
 import { logActivity } from "../../../../lib/activity";
+import { isStorageImage } from "../../../../lib/product-image";
 
 export async function GET(request: Request) {
   if (!(await isStaffRequest()))
@@ -74,6 +75,61 @@ export async function PUT(request: Request) {
     const product: Product = { ...body, id, name, category, specs };
     if (Number.isFinite(price)) product.price = price;
     if (Number.isInteger(stock)) product.stock = stock;
+
+    // W1 (2026-09-24) — link-import image parity: the editor seeds the image
+    // field with the ORIGINAL third-party URL from the extracted page (e.g.
+    // makerworld.com CDN). next/image + our CSP only allow our own Supabase
+    // bucket, so such a row renders with NO image on the site (the app was
+    // unaffected because its create path uploads to the bucket first).
+    // Before persisting, hand the foreign URL to the link-import edge
+    // (action: upload-image) which downloads it SSRF-guarded, magic-byte
+    // sniffed, ≤4MB — and returns a durable product-images storage URL.
+    // Idempotence guard: storage URLs pass through untouched, so re-saving
+    // an already-fixed row never re-downloads.
+    const rawImage = typeof product.image === "string" ? product.image.trim() : "";
+    if (rawImage && !isStorageImage(rawImage)) {
+      try {
+        const sourceUrl = String(product.documentationUrl || body?.linkImportUrl || "");
+        const origin = new URL(request.url).origin;
+        const edgeResponse = await fetch(`${origin}/api/admin/link-import`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            // Forward the caller's Supabase session so the edge role gate
+            // sees the same staff+ identity that passed this route.
+            ...(request.headers.get("authorization")
+              ? { authorization: request.headers.get("authorization") as string }
+              : request.headers.get("cookie")
+                ? { "x-forwarded-authorization": "" }
+                : {}),
+            ...(request.headers.get("cookie")
+              ? { cookie: request.headers.get("cookie") as string }
+              : {}),
+          },
+          body: JSON.stringify({
+            action: "upload-image",
+            url: sourceUrl || rawImage,
+            imageUrl: rawImage,
+          }),
+        });
+        const result = (await edgeResponse.json().catch(() => ({}))) as {
+          imageUrl?: string;
+          error?: string;
+        };
+        if (edgeResponse.ok && result.imageUrl) {
+          product.image = result.imageUrl;
+        } else {
+          // Non-fatal: save the row anyway, but without a broken foreign
+          // image — the catalog falls back to the category placeholder.
+          console.warn("admin product image persist skipped:", result.error || edgeResponse.status);
+          product.image = "";
+        }
+      } catch (e) {
+        console.warn("admin product image persist failed:", e);
+        product.image = "";
+      }
+    }
+
     await saveProduct(product);
     await logActivity({
       action: "product.saved",

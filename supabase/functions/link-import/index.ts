@@ -638,6 +638,61 @@ async function runPreview(url: string): Promise<Preview> {
   return preview;
 }
 
+/**
+ * W1 (2026-09-24): download ONE image URL (SSRF-guarded, magic-byte sniffed)
+ * and upload it to the `product-images` bucket, returning its public storage
+ * URL. Used by the WEBSITE admin save path so a product whose editor seeded
+ * the ORIGINAL third-party image URL (makerworld CDN, shop image, ...) gets
+ * the same durable storage copy the app's create flow always produced —
+ * next/image + CSP only allow our own bucket.
+ * Body: { action:'upload-image', url, imageUrl }  (url = the source link,
+ * used for the MakerWorld extractor when imageUrl is absent).
+ */
+async function runUploadImage(
+  body: Record<string, unknown>,
+  client: ReturnType<typeof createClient>
+) {
+  const url = String(body?.url || "");
+  const explicit = String(body?.imageUrl || "").trim();
+  if (!isHttpUrl(url) && !isHttpUrl(explicit))
+    return { status: 400, data: { error: "Please paste a valid https image/link." } };
+
+  const candidates: string[] = [];
+  if (isHttpUrl(explicit)) candidates.push(explicit);
+  try {
+    const preview = await runPreview(url || explicit);
+    for (const img of preview.images ?? []) {
+      if (typeof img === "string" && isHttpUrl(img) && !candidates.includes(img))
+        candidates.push(img);
+    }
+  } catch {
+    // extractor failure is non-fatal when an explicit imageUrl was given
+  }
+  if (candidates.length === 0)
+    return { status: 422, data: { error: "No image candidates found for that link." } };
+
+  for (const candidate of candidates.slice(0, 4)) {
+    const img = await downloadImage(candidate);
+    if ("error" in img) {
+      console.warn("link-import upload-image skip:", img.error);
+      continue;
+    }
+    const path = `${crypto.randomUUID()}-linkimport.${img.ext}`;
+    const { error: upErr } = await client.storage.from("product-images").upload(path, img.bytes, {
+      contentType: img.contentType,
+      upsert: false,
+    });
+    if (!upErr) {
+      return {
+        status: 200,
+        data: { imageUrl: `${supabaseUrl}/storage/v1/object/public/product-images/${path}` },
+      };
+    }
+    console.warn("link-import upload-image storage skip:", upErr.message);
+  }
+  return { status: 502, data: { error: "Could not download or store the image." } };
+}
+
 async function runCreate(body: Record<string, unknown>, client: ReturnType<typeof createClient>) {
   const url = String(body?.url || "");
   const overrides = (
@@ -748,6 +803,11 @@ serve(async (req) => {
 
     if (action === "create") {
       const result = await runCreate(body as Record<string, unknown>, client);
+      return json(result.data, result.status);
+    }
+
+    if (action === "upload-image") {
+      const result = await runUploadImage(body as Record<string, unknown>, client);
       return json(result.data, result.status);
     }
 
