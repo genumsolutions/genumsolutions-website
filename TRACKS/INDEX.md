@@ -240,3 +240,23 @@ payment-esewa) plus a fatal `single()` destructure in site-content — fixed,
 deployed, live-verified.
 
 **Gates:** tsc 0 · vitest 118/118 · build green.
+
+## 2026-09-24 — R7 scheduled UX regression
+
+**New `ux-schedule.yml`:** cron 02:10 + 14:10 UTC (plus manual dispatch) runs
+both browser harnesses against **production** on ubuntu-latest with Chrome for
+Testing (stable). `ux-audit.mjs` now exits 1 on hard findings (load errors,
+HTTP ≥ 400, horizontal overflow, console/page errors, broken images); soft
+findings (tap targets, text clip) are reported without failing.
+`ux-purchase-flow.mjs` grew 7 assert steps + order-row verification + full
+self-cleanup (probe order 204 / probe user 200) driven by the new
+`SUPABASE_SERVICE_ROLE_KEY` repo secret. Failure runs upload screenshots +
+JSON report artifacts (14-day retention).
+
+**Bug caught by the harness on its first local run:** signed-out `/account`
+fired `/api/orders` unconditionally → 401 console error on every guest visit.
+`AccountPanel` now probes `/api/auth/session` first; guests render the auth
+panel immediately. Verified 0 hard issues against a local build, then live.
+
+**First CI run:** green — 30 loads / 0 hard issues, purchase flow 7/7,
+cleanup verified. Run 35992965169.
