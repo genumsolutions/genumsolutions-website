@@ -1,0 +1,78 @@
+# ux-schedule.yml — scheduled human-flow regression against PRODUCTION.
+#
+# Runs the two browser harnesses on a cron (plus manual dispatch):
+#   • scripts/ux-audit.mjs        — 15 public pages × phone+desktop:
+#     console/page errors, HTTP ≥ 400, broken images, horizontal overflow,
+#     tap-target + text-clip counts. Hard failures → red run.
+#   • scripts/ux-purchase-flow.mjs — signup → build list → checkout → COD
+#     → success → order row verified. Self-cleans its probe order + user
+#     (needs SUPABASE_SERVICE_ROLE_KEY repo secret).
+#
+# On failure the screenshots + JSON report are uploaded as artifacts so the
+# breakage can be seen without re-running anything.
+name: UX Schedule
+
+on:
+  schedule:
+    # 02:10 and 14:10 UTC daily — off the hour to dodge peak cron contention.
+    - cron: "10 2 * * *"
+    - cron: "10 14 * * *"
+  workflow_dispatch: {} # manual "Run workflow" button
+
+concurrency:
+  group: ux-schedule
+  cancel-in-progress: true
+
+jobs:
+  production-ux:
+    name: Production UX regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      BASE_URL: https://genumsolutions-website.vercel.app
+      # Cleanup + order-row verification in the purchase flow (read/inserts
+      # are done by the public API; the key is only used to DELETE probe rows).
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # ubuntu-latest ships Chromium, but pin Chrome for Stable so the audit
+      # sees what real users see.
+      - name: Install Chrome for Testing (stable)
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+          install-chromedriver: false
+
+      - name: Export CHROME_PATH
+        run: |
+          CHROME_BIN="$(find "$HOME" /opt /usr/bin -maxdepth 6 -type f \( -name chrome -o -name google-chrome \) 2>/dev/null | head -1)"
+          if [ -z "$CHROME_BIN" ]; then CHROME_BIN="$(which google-chrome || which chromium || which chromium-browser)"; fi
+          echo "CHROME_PATH=$CHROME_BIN" >> "$GITHUB_ENV"
+          echo "Using Chrome: $CHROME_BIN"
+
+      - name: Page crawl (15 pages × phone + desktop)
+        run: node scripts/ux-audit.mjs
+
+      - name: Purchase flow (signup → checkout → COD → verify → cleanup)
+        run: node scripts/ux-purchase-flow.mjs
+
+      - name: Upload failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ux-audit-artifacts
+          path: |
+            ux-audit-shots/
+          retention-days: 14
+          if-no-files-found: ignore

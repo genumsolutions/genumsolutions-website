@@ -57,16 +57,36 @@ export default function AccountPanel() {
   const [profileSaved, setProfileSaved] = useState(false);
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/customer/me")
-        .then((response) => response.json())
-        .then((data) => setCustomer(data.customer)),
-      fetch("/api/orders")
-        .then((response) => (response.ok ? response.json() : { orders: [] }))
-        .then((data) => setOrders(data.orders || [])),
-    ])
-      .catch(() => undefined)
-      .finally(() => setLoaded(true));
+    // R6 fix: probe the session first — /api/orders 401s for guests, which
+    // spammed the browser console on every signed-out /account visit (and
+    // failed the scheduled UX audit's console-error check). Guests render the
+    // auth panel immediately instead.
+    let active = true;
+    fetch("/api/auth/session")
+      .then((response) => response.json())
+      .then((data) => {
+        if (!active) return null;
+        if (!data.user) {
+          setLoaded(true);
+          return null;
+        }
+        return Promise.all([
+          fetch("/api/customer/me")
+            .then((response) => response.json())
+            .then((me) => setCustomer(me.customer)),
+          fetch("/api/orders")
+            .then((response) => (response.ok ? response.json() : { orders: [] }))
+            .then((orders) => setOrders(orders.orders || [])),
+        ]).finally(() => {
+          if (active) setLoaded(true);
+        });
+      })
+      .catch(() => {
+        if (active) setLoaded(true);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   async function logout() {

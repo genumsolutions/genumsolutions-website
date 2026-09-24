@@ -1,4 +1,4 @@
-// ux-audit.mjs — human-flow audit of the LIVE website (2026-09-24).
+// ux-audit.mjs — human-flow audit of the LIVE website.
 //
 // Drives Chrome through every public page like a person would: loads the
 // page, follows above-the-fold links, and at TWO viewports (360x800 phone,
@@ -10,14 +10,50 @@
 //   • tap targets < 36px (buttons/links), counted
 //   • full-page screenshot per page per viewport into ux-audit-shots/
 //
-// NOT a pass/fail gate — it prints a findings table for the audit doc.
+// Exit codes (CI-friendly): 0 = clean, 1 = hard failures found (load errors,
+// HTTP >= 400, horizontal overflow, console/page errors, broken images).
+// Soft findings (small tap targets, text clipping) are reported but never
+// fail the run — they need human judgment to avoid false positives.
+//
+// Env: BASE_URL (default: production), UX_AUDIT_SOFT=1 also fails on softs.
 // Run:  node scripts/ux-audit.mjs
 import puppeteer from "puppeteer-core";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { existsSync } from "node:fs";
 
-const CHROME = "C:/Program Files/Google/Chrome/Application/chrome.exe";
-const BASE = "https://genumsolutions-website.vercel.app";
+const BASE = process.env.BASE_URL || "https://genumsolutions-website.vercel.app";
 const OUT = "ux-audit-shots";
+
+// Cross-platform Chrome/Chromium discovery (Windows/macOS/Linux + CI).
+function findChrome() {
+  if (process.env.CHROME_PATH && existsSync(process.env.CHROME_PATH))
+    return process.env.CHROME_PATH;
+  const candidates =
+    process.platform === "win32"
+      ? [
+          "C:/Program Files/Google/Chrome/Application/chrome.exe",
+          "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe",
+          process.env.LOCALAPPDATA
+            ? process.env.LOCALAPPDATA + "/Google/Chrome/Application/chrome.exe"
+            : null,
+        ]
+      : process.platform === "darwin"
+        ? [
+            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+            "/Applications/Chromium.app/Contents/MacOS/Chromium",
+          ]
+        : [
+            "/usr/bin/google-chrome",
+            "/usr/bin/google-chrome-stable",
+            "/usr/bin/chromium",
+            "/usr/bin/chromium-browser",
+            "/snap/bin/chromium",
+          ];
+  for (const c of candidates) if (c && existsSync(c)) return c;
+  // puppeteer's bundled browser as a last resort (downloads on install when
+  // PUPPETEER_SKIP_DOWNLOAD is unset)
+  return puppeteer.executablePath();
+}
 
 const PAGES = [
   "/",
@@ -42,10 +78,11 @@ const VIEWPORTS = [
   { name: "desktop", width: 1440, height: 900 },
 ];
 
+rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });
 
 const browser = await puppeteer.launch({
-  executablePath: CHROME,
+  executablePath: findChrome(),
   headless: "new",
   args: ["--no-sandbox", "--disable-dev-shm-usage"],
 });
@@ -124,17 +161,35 @@ for (const vp of VIEWPORTS) {
 await browser.close();
 writeFileSync(`${OUT}/ux-audit-report.json`, JSON.stringify(report, null, 2));
 
-// summary
+// summary + CI exit code
+let hard = 0;
+let soft = 0;
+const softOnly = [];
 console.log("\n=== SUMMARY (issues only) ===");
 for (const r of report) {
-  const probs = [];
-  if (r.error) probs.push("LOAD-ERROR");
-  if (r.httpStatus && r.httpStatus >= 400) probs.push(`HTTP-${r.httpStatus}`);
-  if (r.dom?.overflow) probs.push("H-OVERFLOW");
-  if (r.dom?.brokenImgs) probs.push(`BROKEN-IMGS(${r.dom.brokenImgs})`);
-  if (r.dom?.textOverflow > 8) probs.push(`TEXT-CLIP(${r.dom.textOverflow})`);
+  const hardProbs = [];
+  const softProbs = [];
+  if (r.error) hardProbs.push("LOAD-ERROR");
+  if (r.httpStatus && r.httpStatus >= 400) hardProbs.push(`HTTP-${r.httpStatus}`);
+  if (r.dom?.overflow) hardProbs.push("H-OVERFLOW");
+  if (r.dom?.brokenImgs) hardProbs.push(`BROKEN-IMGS(${r.dom.brokenImgs})`);
   if (r.console?.some((c) => c.startsWith("pageerror") || c.startsWith("error")))
-    probs.push("CONSOLE-ERR");
-  if (probs.length) console.log(`${r.viewport} ${r.path}: ${probs.join(" ")}`);
+    hardProbs.push("CONSOLE-ERR");
+  if (r.dom?.smallTargets) softProbs.push(`SMALL-TARGETS(${r.dom.smallTargets})`);
+  if ((r.dom?.textOverflow ?? 0) > 8) softProbs.push(`TEXT-CLIP(${r.dom.textOverflow})`);
+  hard += hardProbs.length;
+  if (softProbs.length) {
+    soft += softProbs.length;
+    softOnly.push(`${r.viewport} ${r.path}: ${softProbs.join(" ")}`);
+  }
+  if (hardProbs.length) console.log(`${r.viewport} ${r.path}: ${hardProbs.join(" ")}`);
 }
-console.log("\nFull report + screenshots in", OUT);
+if (softOnly.length && process.env.UX_AUDIT_SOFT) {
+  console.log("\n=== SOFT (need human judgment; fail only with UX_AUDIT_SOFT=1) ===");
+  for (const s of softOnly) console.log(s);
+}
+console.log(
+  `\n${report.length} page loads checked · ${hard} hard issue(s) · ${soft} soft finding(s)`,
+);
+console.log("Full report + screenshots in", OUT);
+process.exit(hard > 0 ? 1 : 0);
