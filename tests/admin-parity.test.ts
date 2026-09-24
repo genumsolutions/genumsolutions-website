@@ -10,6 +10,8 @@ import { resolve } from "node:path";
 // Change both + both tests together.
 // =====================================================================
 
+// U-23 (2026-09-24): grouped tab order (owner decision) — store rows first,
+// then editorial, people, finance, activity, settings.
 const ADMIN_TABS = [
   "Dashboard",
   "Orders",
@@ -17,11 +19,11 @@ const ADMIN_TABS = [
   "Projects",
   "Services",
   "Journal",
+  "Content",
   "Users",
   "Messages",
   "Finance",
   "Activity",
-  "Content",
   "Settings",
 ];
 

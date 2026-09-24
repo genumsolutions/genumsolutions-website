@@ -17,7 +17,7 @@ import {
 import { tabActive, tabBase, tabInactive } from "../lib/styles";
 import { isAdminRole } from "../lib/roles";
 import type { Product } from "../lib/content-store";
-import { TABS } from "./admin/admin-types";
+import { TABS, ADMIN_TAB_GROUPS } from "./admin/admin-types";
 import type { Tab } from "./admin/admin-types";
 import AdminDashboard from "./admin/AdminDashboard";
 import AdminOrders from "./admin/AdminOrders";
@@ -126,24 +126,40 @@ export default function AdminPanel({ initialProducts, currentRole }: Props) {
         aria-label="Admin sections"
         className="-mx-5 flex flex-wrap items-center gap-x-6 gap-y-1 border-b border-line px-5 pb-1 lg:mx-0 lg:px-0"
       >
-        {TABS.map((name, i) => {
-          const Icon = TAB_ICONS[name];
+        {ADMIN_TAB_GROUPS.map((group, gi) => {
+          const firstTabIndex = TABS.findIndex((t) => t === group.tabs[0]);
           return (
-            <button
-              key={name}
-              role="tab"
-              id={`tab-${name.toLowerCase()}`}
-              aria-selected={tab === name}
-              aria-controls={`panel-${name.toLowerCase()}`}
-              onClick={() => {
-                setTab(name);
-                setVisited((prev) => new Set(prev).add(i));
-              }}
-              className={`${tabBase} text-[13px] ${tab === name ? tabActive : tabInactive}`}
+            <div
+              key={group.label}
+              className={`flex items-center ${gi > 0 ? "border-l border-line pl-5" : ""}`}
             >
-              <Icon size={15} aria-hidden="true" />
-              {name}
-            </button>
+              {gi > 0 ? (
+                <span className="mr-5 hidden text-[10px] font-black uppercase tracking-[0.18em] text-muted sm:block">
+                  {group.label}
+                </span>
+              ) : null}
+              {group.tabs.map((name) => {
+                const i = firstTabIndex + group.tabs.indexOf(name);
+                const Icon = TAB_ICONS[name];
+                return (
+                  <button
+                    key={name}
+                    role="tab"
+                    id={`tab-${name.toLowerCase()}`}
+                    aria-selected={tab === name}
+                    aria-controls={`panel-${name.toLowerCase()}`}
+                    onClick={() => {
+                      setTab(name);
+                      setVisited((prev) => new Set(prev).add(i));
+                    }}
+                    className={`${tabBase} text-[13px] ${tab === name ? tabActive : tabInactive}`}
+                  >
+                    <Icon size={15} aria-hidden="true" />
+                    {name}
+                  </button>
+                );
+              })}
+            </div>
           );
         })}
       </div>

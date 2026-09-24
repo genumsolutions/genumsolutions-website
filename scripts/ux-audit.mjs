@@ -99,12 +99,9 @@ for (const vp of VIEWPORTS) {
     if (msg.type() === "error" || msg.type() === "warning")
       consoleIssues.push(`${msg.type()}: ${msg.text().slice(0, 160)}`);
   });
-  page.on("pageerror", (err) =>
-    consoleIssues.push(`pageerror: ${String(err).slice(0, 160)}`),
-  );
+  page.on("pageerror", (err) => consoleIssues.push(`pageerror: ${String(err).slice(0, 160)}`));
   page.on("response", (res) => {
-    if (res.status() >= 400)
-      consoleIssues.push(`HTTP ${res.status()}: ${res.url().slice(0, 120)}`);
+    if (res.status() >= 400) consoleIssues.push(`HTTP ${res.status()}: ${res.url().slice(0, 120)}`);
   });
 
   for (const path of PAGES) {
@@ -123,19 +120,19 @@ for (const vp of VIEWPORTS) {
       // broken images + overflow + tap targets, evaluated in the page
       findings.dom = await page.evaluate(() => {
         const brokenImgs = [...document.querySelectorAll("img")].filter(
-          (i) => i.complete && i.naturalWidth === 0,
+          (i) => i.complete && i.naturalWidth === 0
         ).length;
-        const overflow =
-          document.documentElement.scrollWidth > window.innerWidth + 2;
-        const smallTargets = [...document.querySelectorAll("a,button")].filter(
-          (el) => {
-            const r = el.getBoundingClientRect();
-            if (r.width === 0 || r.height === 0) return false;
-            return r.height < 36 && r.width < 120;
-          },
-        ).length;
+        const overflow = document.documentElement.scrollWidth > window.innerWidth + 2;
+        const smallTargets = [...document.querySelectorAll("a,button")].filter((el) => {
+          const r = el.getBoundingClientRect();
+          if (r.width === 0 || r.height === 0) return false;
+          return r.height < 36 && r.width < 120;
+        }).length;
         const textOverflow = [...document.querySelectorAll("h1,h2,h3,p,span")].filter(
-          (el) => el.scrollWidth > el.clientWidth + 4 && getComputedStyle(el).overflow !== "hidden" && el.clientWidth > 0,
+          (el) =>
+            el.scrollWidth > el.clientWidth + 4 &&
+            getComputedStyle(el).overflow !== "hidden" &&
+            el.clientWidth > 0
         ).length;
         return { brokenImgs, overflow, smallTargets, textOverflow };
       });
@@ -189,7 +186,7 @@ if (softOnly.length && process.env.UX_AUDIT_SOFT) {
   for (const s of softOnly) console.log(s);
 }
 console.log(
-  `\n${report.length} page loads checked · ${hard} hard issue(s) · ${soft} soft finding(s)`,
+  `\n${report.length} page loads checked · ${hard} hard issue(s) · ${soft} soft finding(s)`
 );
 console.log("Full report + screenshots in", OUT);
 process.exit(hard > 0 ? 1 : 0);

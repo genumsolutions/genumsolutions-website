@@ -39,7 +39,7 @@ for (const line of readFileSync(".env.local", "utf8").split("\n")) {
 const service = createClient(
   env.NEXT_PUBLIC_SUPABASE_URL || env.SUPABASE_URL,
   env.SUPABASE_SERVICE_ROLE_KEY,
-  { auth: { persistSession: false } },
+  { auth: { persistSession: false } }
 );
 
 const results = [];
@@ -97,7 +97,7 @@ try {
   assert(
     "extract yields a foreign image URL (the old bug's input)",
     Boolean(foreign),
-    `imgs=${images.length}`,
+    `imgs=${images.length}`
   );
 
   // 3. Save exactly like AdminProducts' "Save product" does.
@@ -116,26 +116,21 @@ try {
   assert("staff PUT save (200)", put.status === 200, `status ${put.status}`);
 
   // 4. The stored row must carry a STORAGE image URL now.
-  const { data: rows } = await service
-    .from("products")
-    .select("image_url")
-    .eq("id", PROBE_ID);
+  const { data: rows } = await service.from("products").select("image_url").eq("id", PROBE_ID);
   const stored = rows?.[0]?.image_url ?? "";
   const isStorage =
     /^https:\/\/[a-z0-9]+\.supabase\.co\/storage\/v1\/object\/public\/product-images\//.test(
-      stored,
+      stored
     );
   assert("stored image_url is a product-images storage URL", isStorage, stored.slice(0, 72));
 
   // 5. next/image optimizer serves it.
   if (isStorage) {
-    const opt = await fetch(
-      `${BASE}/_next/image?url=${encodeURIComponent(stored)}&w=640&q=75`,
-    );
+    const opt = await fetch(`${BASE}/_next/image?url=${encodeURIComponent(stored)}&w=640&q=75`);
     assert(
       "next/image optimizer serves the stored image",
       opt.status === 200 && (opt.headers.get("content-type") || "").startsWith("image/"),
-      `status ${opt.status} type ${opt.headers.get("content-type")}`,
+      `status ${opt.status} type ${opt.headers.get("content-type")}`
     );
   }
 
@@ -146,7 +141,7 @@ try {
   assert(
     "public /api/products carries the storage image",
     Boolean(pubRow?.image) && pubRow.image.includes("/storage/v1/object/public/product-images/"),
-    pubRow?.image ? pubRow.image.slice(0, 72) : "row not found",
+    pubRow?.image ? pubRow.image.slice(0, 72) : "row not found"
   );
 } catch (e) {
   assert("THREW", false, e.message);

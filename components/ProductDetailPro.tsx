@@ -4,10 +4,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowUpRight, Check } from "lucide-react";
-import { RoboticArm } from "./Robotics3D";
+import { galleryImages, relatedProducts, type Product } from "../lib/catalog";
 import { useCart } from "./cart-provider";
-import { relatedProducts, type Product } from "../lib/catalog";
 import { recordProductView } from "../lib/recently-viewed";
+import ProductCard from "./ProductCard";
 
 // C3 (2026-09-23): "Related products" row on the detail page. The full list
 // is passed down from the server page; the row renders client-side after
@@ -21,9 +21,14 @@ export default function ProductDetailPro({
 }) {
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
+  const [activeImage, setActiveImage] = useState(0);
   const { add } = useCart();
   const isQuote = product.productType === "Project package" || product.stock === 0;
   const related = relatedProducts(allProducts, product);
+  const images = galleryImages(product);
+
+  // U-23 (2026-09-24): reset the gallery position if the product changes.
+  useEffect(() => setActiveImage(0), [product.id]);
 
   // C3: record this view (localStorage, best-effort) once per mount.
   useEffect(() => {
@@ -61,15 +66,41 @@ export default function ProductDetailPro({
           <ArrowLeft size={15} aria-hidden="true" /> Back to the shop
         </Link>
         <div className="mt-6 grid gap-8 sm:mt-8 sm:gap-10 lg:grid-cols-[.9fr_1.1fr] lg:items-start">
-          <div className="relative z-0 aspect-square overflow-hidden rounded-2xl bg-ink sm:rounded-3xl">
-            <Image
-              src={product.image || "/placeholder.jpg"}
-              alt={product.name}
-              fill
-              priority
-              className="object-cover"
-            />
-            <RoboticArm />
+          <div>
+            <div className="relative z-0 aspect-square overflow-hidden rounded-2xl bg-white ring-1 ring-line sm:rounded-3xl">
+              <Image
+                src={images[activeImage] || "/placeholder.jpg"}
+                alt={`${product.name} photo ${activeImage + 1}`}
+                fill
+                priority
+                sizes="(max-width: 1024px) 100vw, 40vw"
+                className="object-contain"
+              />
+            </div>
+            {images.length > 1 && (
+              <div className="mt-3 flex flex-wrap gap-2" role="tablist" aria-label="Product photos">
+                {images.map((src, i) => (
+                  <button
+                    key={src}
+                    role="tab"
+                    aria-selected={i === activeImage}
+                    aria-label={`Show photo ${i + 1} of ${product.name}`}
+                    onClick={() => setActiveImage(i)}
+                    className={`relative h-16 w-16 overflow-hidden rounded-xl ring-2 transition sm:h-20 sm:w-20 ${
+                      i === activeImage ? "ring-navy" : "ring-transparent hover:ring-line"
+                    }`}
+                  >
+                    <Image
+                      src={src || "/placeholder.jpg"}
+                      alt=""
+                      fill
+                      sizes="80px"
+                      className="object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <div>
             <p className="text-xs font-black uppercase tracking-[.24em] text-navy">
@@ -81,6 +112,28 @@ export default function ProductDetailPro({
             <p className="mt-4 max-w-xl text-base leading-7 text-muted sm:mt-5 sm:text-lg">
               {product.description}
             </p>
+            {product.importMeta?.sourceSite || product.documentationUrl ? (
+              <p className="mt-3 max-w-xl text-xs leading-5 text-muted">
+                Source:{" "}
+                {product.documentationUrl ? (
+                  <>
+                    <a
+                      href={product.documentationUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-bold text-navy underline decoration-line underline-offset-2 transition hover:text-navy-dark"
+                    >
+                      {product.importMeta?.sourceSite || "Original"}
+                    </a>
+                    {product.importMeta?.creator
+                      ? ` · ${String(product.importMeta.creator).slice(0, 40)}`
+                      : ""}
+                  </>
+                ) : (
+                  product.importMeta?.sourceSite
+                )}
+              </p>
+            ) : null}
             <div className="mt-7 flex flex-wrap items-baseline gap-3">
               <span className="font-display text-3xl font-bold">{product.priceLabel}</span>
               <span className="text-sm text-muted">
@@ -226,33 +279,7 @@ export default function ProductDetailPro({
             </p>
             <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
               {related.map((item) => (
-                <Link
-                  key={item.id}
-                  href={`/products/${item.id}`}
-                  className="group overflow-hidden rounded-2xl border border-line bg-white shadow-sm transition hover:shadow-md"
-                  aria-label={`View ${item.name}`}
-                >
-                  <span className="relative block h-28 overflow-hidden bg-ink">
-                    <Image
-                      src={item.image || "/placeholder.jpg"}
-                      alt={item.name}
-                      fill
-                      sizes="(max-width: 640px) 50vw, 25vw"
-                      className="object-cover transition duration-500 group-hover:scale-105"
-                    />
-                  </span>
-                  <span className="block p-3">
-                    <span className="block truncate text-xs font-black uppercase tracking-widest text-navy">
-                      {item.category}
-                    </span>
-                    <span className="mt-1 block truncate text-sm font-bold text-ink">
-                      {item.name}
-                    </span>
-                    <span className="mt-1 block text-sm font-display font-bold text-ink">
-                      {item.priceLabel}
-                    </span>
-                  </span>
-                </Link>
+                <ProductCard key={item.id} product={item} compact showCta={false} />
               ))}
             </div>
           </div>

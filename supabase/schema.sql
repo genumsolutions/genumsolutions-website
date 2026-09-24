@@ -123,10 +123,14 @@ create table if not exists public.products (
   badge text,
   supplier text,
   image_url text,
+  gallery text[] not null default '{}',
+  import_meta jsonb not null default '{}'::jsonb,
   sort_order integer not null default 1000,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+alter table public.products add column if not exists gallery text[] not null default '{}';
+alter table public.products add column if not exists import_meta jsonb not null default '{}'::jsonb;
 alter table public.products add column if not exists inventory_type text not null default 'Catalog';
 alter table public.products add column if not exists active boolean not null default true;
 alter table public.products add column if not exists project_overview text not null default '';
@@ -921,6 +925,115 @@ update public.products set car_mode_id = 'website-client' where id = 'website-cl
 update public.products set car_mode_id = 'website-server' where id = 'website-server-basic';
 update public.products set car_mode_id = 'path-follow' where id = 'path-follow-basic';
 update public.products set car_mode_id = 'rf-manual' where id = 'rf-manual-basic';
+
+-- ===== PROJECT ROWS RESTORE (owner decision 2026-09-24, P4) =====
+-- The U-13 inventory rewrite dropped all 'Project package' rows. Re-add ONLY
+-- the 5 workspace-root firmware projects (Genum_* folders, completed in code).
+-- Idempotent: re-running refreshes the rows and re-applies car_mode_id.
+insert into public.products (
+  id, name, category, product_type, inventory_type, price, price_label, stock,
+  description, note, source_folder, estimated_duration, project_overview,
+  objectives, materials_required, learning_outcomes, build_steps, control_methods,
+  prerequisites, deliverables, car_mode_id, sort_order
+) values
+(
+  '4wd4m-basic',
+  'Wireless 4WD Car',
+  'Robot Cars', 'Project package', 'Catalog', 0, 'Request quote', 0,
+  'Modular ESP32 4WD car. Bluetooth-SPP drive (4WD4M) plus a WiFi web-server + app drive (ESP_SER), an SH1106 OLED dashboard and a failsafe that stops the motors after 2 s of command silence. Wi-Fi provisioning happens over Bluetooth (WIFICFG).',
+  '4WD car driven by the GENUM app, website or the car-served web page.',
+  'Genum_WIRELESS_CAR', '2–3 hours',
+  'A complete 4WD robot-car platform built on the ESP32: Bluetooth SPP drive, a car-hosted responsive web page for WiFi drive, an OLED status dashboard, a 9-mode fleet registry and NVS-persisted Wi-Fi credentials.',
+  '["Bluetooth-serial drive (4WD4M)","WiFi web-server + app drive (ESP_SER)","Wi-Fi provisioning over Bluetooth","Automatic AP fallback (WirelessCar_Wifi)","Failsafe motor stop after 2 s of command silence"]',
+  '["ESP32 Dev Module","L298N motor driver","4 × BO/brushed motors","1.3 inch SH1106 OLED (I2C)","Li-ion battery pack"]',
+  '["Skid-steer (differential) drive kinematics","ESP32 Bluetooth + WiFi coexistence","WebSockets server + static web page","NVS persistence (mode, speed, router list)","Failsafe and watchdog design"]',
+  '["Wire the L298N, OLED and mode switch per Config.h","Build with arduino-cli (PartitionScheme=huge_app required)","Flash at 115200 baud and pair via Bluetooth","Drive from the app (4WD4M) or the car web page (ESP_SER)","Provision Wi-Fi over Bluetooth (WIFICFG) for networking"]',
+  '["Bluetooth SPP app (4WD4M)","Car-hosted web page + WebSockets (ESP_SER)"]',
+  '["Arduino Core for ESP32 (3.3.x)","WebSockets 2.7.2","U8g2 (SH1106 OLED)"]',
+  '["Genum_WIRELESS_CAR source tree with Config.h pins","Wiring reference + flashing metadata","storyboard.md OLED spec"]',
+  '4wd4m', 1
+),
+(
+  '2wd1m-basic',
+  '2WD1M Car',
+  'Robot Cars', 'Project package', 'Catalog', 0, 'Request quote', 0,
+  'Two-wheel car with a steering servo (2WD1M), driven over Bluetooth SPP by the hand-held ESP32 remote or app. Signed SPD (±255) controls the rear drive motor and SERVO (0..180) steers.',
+  '2WD car with one drive motor plus a steering servo.',
+  'Genum_2WD1M_CAR', '2 hours',
+  'A compact two-wheel + servo car firmware for the ESP32 with Bluetooth Classic SPP drive, an OLED dashboard and fleet mode-registry support for the 2WD1M control mode.',
+  '["Signed-speed drive (SPD ±255)","Servo steering (SERVO 0..180, centre 90)","Bluetooth Classic SPP slave","Fleet mode registry + COMING SOON frames","Boot state restore (mode + speed)"]',
+  '["ESP32 Dev Module","L298N motor driver","1 × BO/brushed rear motor","1 × steering servo","1.3 inch SH1106 OLED (I2C)"]',
+  '["Signed-speed motor control","Servo steering geometry (centre 90)","Bluetooth SPP pairing (PIN 1234)","Boot splash + OLED dashboard"]',
+  '["Wire the L298N, servo and OLED per Config.h","Build with arduino-cli at default partition","Flash and pair via Bluetooth (PIN 1234)","Drive with the ESP REMOTE or app in 2WD1M mode"]',
+  '["ESP REMOTE two-joystick (2WD1M)","Bluetooth SPP app"]',
+  '["Arduino Core for ESP32 (3.3.x)","U8g2 (SH1106 OLED)"]',
+  '["Genum_2WD1M_CAR source tree","Wiring reference + build metadata"]',
+  '2wd1m', 2
+),
+(
+  'self-balancing-basic',
+  'Self-Balancing Car',
+  'Robot Cars', 'Project package', 'Catalog', 0, 'Request quote', 0,
+  'Two-wheeled self-balancing robot on the ESP32 with an MPU6050 IMU, runtime-tunable PID control, Bluetooth command/telemetry and an SH1106 OLED. Balances autonomously in AUTO mode.',
+  'Self-balancing two-wheel bot with live PID tuning.',
+  'Genum_SELF_BALANCE_CAR', '2–3 hours',
+  'A modular ESP32 self-balancing robot: MPU6050 + complementary filter, PID control tunable at runtime, Bluetooth telemetry (Kp/Ki/Kd/OUT/OFF), OLED status UI and a failsafe motor stop.',
+  '["Autonomous balancing (MPU6050 + complementary filter)","Runtime PID tuning with persistent storage","Bluetooth telemetry + legacy PID commands","OLED status + telemetry UI","Failsafe motor stop on comms loss"]',
+  '["ESP32 Dev Module","L298N H-bridge","2 × DC motors","MPU6050 IMU (I2C)","1.3 inch SH1106 OLED (I2C)","Pushbutton (mode switch)"]',
+  '["PID control + complementary filtering","IMU reading over I2C","Runtime tuning via Bluetooth tokens","Singleton persistence layer (NVS/EEPROM)","Non-blocking main loop"]',
+  '["Wire I2C plus motor driver per Config.h defaults","Build with arduino-cli at default partition","Flash, then pair via Bluetooth (PIN 1234)","Balance and tune Kp/Ki/Kd/OUT/OFF live from the app or remote"]',
+  '["ESP REMOTE (PID calibration)","Bluetooth SPP app (AUTO drive)"]',
+  '["Arduino Core for ESP32 (3.3.x)","U8g2 (SH1106 OLED)","MPU6050 (I2C, Wire)"]',
+  '["Genum_SELF_BALANCE_CAR source tree","Wiring reference (pin map in Config.h)"]',
+  'self-balancing', 3
+),
+(
+  'esp32-remote',
+  'ESP32 Remote Controller',
+  'Robot Cars', 'Project package', 'Catalog', 0, 'Request quote', 0,
+  'Bluetooth (SPP master) hand-held remote for the GENUM car fleet: two joysticks, an SH1106 OLED, mode switching, joystick calibration, telemetry parsing and a coalescing command queue with safe-stop on disconnect.',
+  'Hand-held ESP32 remote that drives the 2WD1M, self-balancing and wireless cars.',
+  'Genum_REMOTE_ESP32', '2 hours',
+  'The fleet remote controller firmware: dual-joystick drive input, OLED menus (greeting, discovery, dashboard, tuning), saved-network cache and always-on OTA so later updates are wireless.',
+  '["Dual-joystick drive + steering input","OLED UI: discovery, dashboard, tuning screens","Mode switching incl. 2WD1M + AUTO calibration","Joystick calibration + EEPROM state","Safe-stop on disconnect + OTA updates"]',
+  '["ESP32 Dev Module","2 × analog joysticks","2 × pushbuttons + joystick click","1.3 inch SH1106 OLED (I2C)"]',
+  '["Bluetooth SPP master pairing","Coalescing command queue","OLED menu state-machine","NVS/EEPROM persistence","ArduinoOTA delivery"]',
+  '["Build with PartitionScheme=min_spiffs","Flash once over USB (115200)","Pair to a GENUM car (PIN 1234)","Deliver later updates over the air (ESP32_Remote_OTA)"]',
+  '["ESP REMOTE hand-held (2WD1M / self-balancing / wireless)"]',
+  '["Arduino Core for ESP32 (3.3.x)","U8g2 (SH1106 OLED)"]',
+  '["Genum_REMOTE_ESP32 source tree","Run sheets for device rounds 7–13"]',
+  NULL, 4
+),
+(
+  'smart-dustbin',
+  'Smart Dustbin',
+  'Robot Cars', 'Project package', 'Catalog', 0, 'Request quote', 0,
+  'Autonomous smart dustbin: ESP32 + HC-SR04 ultrasonic + continuous servo. Approach detection opens the lid, open/close timing is tuned by constants, and the usage count persists across power cycles. Standalone IoT device.',
+  'Hands-free lid that opens on approach, with persisted usage count.',
+  'Genum_SMART_DUSTBIN', '1–2 hours',
+  'A single self-contained ESP32 sketch that senses an approaching hand or object with an ultrasonic sensor and opens the bin lid with a continuous servo, keeping a power-cycle-safe usage counter.',
+  '["Ultrasonic approach detection (HC-SR04)","Servo lid open/close on approach","Tunable open/close timing constants","Usage count persisted via Preferences","Single self-contained sketch, no radio"]',
+  '["ESP32 Dev Module","HC-SR04 ultrasonic sensor","Continuous rotation servo","Battery/power for the servo"]',
+  '["Ultrasonic ranging (TRIG/ECHO GPIO)","Servo PWM control","Preferences-backed counters","Simple state machine"]',
+  '["Wire ultrasonic (TRIG 5, ECHO 18) and servo (signal 23)","Build with arduino-cli at default partition","Flash over USB and power on","Tune open/close timing in the sketch constants"]',
+  '["None — standalone IoT device"]',
+  '["Arduino Core for ESP32 (3.3.x)"]',
+  '["Genum_SMART_DUSTBIN source tree","Wiring reference (pin table)"]',
+  NULL, 5
+)
+on conflict (id) do update set
+  name = excluded.name, category = excluded.category,
+  product_type = excluded.product_type, inventory_type = excluded.inventory_type,
+  price = excluded.price, price_label = excluded.price_label, stock = excluded.stock,
+  description = excluded.description, note = excluded.note,
+  source_folder = excluded.source_folder,
+  estimated_duration = excluded.estimated_duration,
+  project_overview = excluded.project_overview,
+  objectives = excluded.objectives, materials_required = excluded.materials_required,
+  learning_outcomes = excluded.learning_outcomes, build_steps = excluded.build_steps,
+  control_methods = excluded.control_methods, prerequisites = excluded.prerequisites,
+  deliverables = excluded.deliverables, car_mode_id = excluded.car_mode_id,
+  sort_order = excluded.sort_order, updated_at = now();
 
 -- Fix drone products: move from 'Pre-packaged Kits' to 'Drones & Aerial'
 -- so they map to the 'drones' controller category instead of 'robocar'.

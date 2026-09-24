@@ -191,6 +191,9 @@ export default function AdminProducts({
         category: p.categoryHint || current.category,
         description: p.description || current.description,
         image: p.images?.[0] || current.image,
+        // U-23 (2026-09-24): seed the FULL gallery from the extracted images
+        // so every photo is kept ("last link sticks"), not just the cover.
+        gallery: (p.images || []).slice(0, 8),
         specs: p.specs || current.specs,
         price: current.price || Number(p.extra?.price ?? 0) || 0,
         priceLabel: current.priceLabel || "Request quote",
@@ -198,7 +201,7 @@ export default function AdminProducts({
       }));
       setExtracted({
         provider: p.provider,
-        images: (p.images || []).slice(0, 4),
+        images: (p.images || []).slice(0, 8),
         fields: (p.specs?.filter(Boolean) || []).length,
       });
       setMessage(
@@ -461,6 +464,50 @@ export default function AdminProducts({
                     {uploading ? "Uploading..." : "Upload"}
                   </button>
                 </div>
+              </div>
+              <div className="min-w-0 sm:col-span-2">
+                <p className="text-sm font-bold">
+                  Gallery — one image URL per line{" "}
+                  <span className="font-normal text-muted">
+                    (first is the cover if no image set; storage URLs are kept as-is on save)
+                  </span>
+                </p>
+                <textarea
+                  value={Array.isArray(product.gallery) ? product.gallery.join("\n") : ""}
+                  onChange={(e) =>
+                    updateProduct(
+                      "gallery",
+                      e.target.value
+                        .split("\n")
+                        .map((line) => line.trim())
+                        .filter(Boolean)
+                        .slice(0, 8)
+                    )
+                  }
+                  rows={4}
+                  placeholder={"https://...\nhttps://..."}
+                  aria-label="Product gallery image URLs"
+                  className={`mt-2 w-full ${inputClass} font-mono text-xs`}
+                />
+                {Array.isArray(product.gallery) && product.gallery.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {product.gallery.map((src, i) => (
+                      <div
+                        key={`${src}-${i}`}
+                        className="relative h-14 w-14 overflow-hidden rounded border border-line bg-mist"
+                      >
+                        <Image
+                          src={src}
+                          alt={`Gallery ${i + 1}`}
+                          width={56}
+                          height={56}
+                          unoptimized
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
             <SaveBar>

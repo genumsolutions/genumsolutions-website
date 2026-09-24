@@ -30,7 +30,7 @@ export default async function SiteFooter() {
   // with the bundled copy as fallback - edits in the DB show here on both clients.
   const company = await getCompany();
   const cols =
-    "grid grid-cols-2 gap-x-5 gap-y-7 px-5 py-8 sm:gap-10 sm:py-12 lg:grid-cols-[1.5fr_1fr_1fr_1.2fr] lg:px-8";
+    "grid grid-cols-2 gap-x-6 gap-y-9 px-5 py-8 sm:gap-10 sm:py-12 lg:grid-cols-[1.5fr_1fr_1fr_1.3fr] lg:px-8";
   const heading = "text-[11px] font-black uppercase tracking-[.2em] text-white/30";
 
   return (
@@ -124,10 +124,9 @@ export default async function SiteFooter() {
           </ul>
         </nav>
 
-        {/* Contact & payments — W2b (F3): on phones this block leads
-            (brand blurb first, then contact/newsletter), desktop keeps the
-            source-order last column via lg:order-3. */}
-        <div className="col-span-2 order-first text-sm text-white/60 lg:order-none lg:col-span-1">
+        {/* Get in touch — W2b (F3): fills the full row on phones (brand first,
+            then nav columns, then contact), desktop spans the last column. */}
+        <div className="col-span-2 text-sm text-white/60 lg:col-span-1">
           <h2 className={heading}>Get in touch</h2>
           <address className="mt-4 space-y-2 not-italic">
             <p>{company.address}</p>

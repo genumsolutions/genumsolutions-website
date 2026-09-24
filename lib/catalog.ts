@@ -41,6 +41,23 @@ export type Product = {
   badge?: string;
   supplier?: string;
   image?: string;
+  gallery?: string[];
+  importMeta?: ProductImportMeta;
+};
+
+export type ProductImportMeta = {
+  sourceSite?: string;
+  creator?: string;
+  license?: string;
+  designId?: string;
+  tags?: string[];
+  sourceUrl?: string;
+};
+
+export const galleryImages = (product: Pick<Product, "image" | "gallery">): string[] => {
+  const gallery = (product.gallery ?? []).filter(Boolean);
+  if (product.image && !gallery.includes(product.image)) return [product.image, ...gallery];
+  return gallery;
 };
 
 /** Re-export local seed data for backward compatibility and seeding. */

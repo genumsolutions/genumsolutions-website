@@ -79,6 +79,7 @@ async function callFn(token, body) {
 }
 
 let staff, owner, createdId;
+let created2; // U-23: gallery create result (cleaned up in finally)
 // Snapshot existing product ids so cleanup never deletes curated live rows
 // that an upsert might have overwritten (the slug can collide).
 const { data: preRows } = await svc.from("products").select("id");
@@ -110,8 +111,37 @@ try {
   assert("makerworld at least one image", p.images.length >= 1, `imgs=${p.images.length}`);
   assert(
     "makerworld description enriched",
-    Boolean(p.description) && p.description.length >= 30,
+    Boolean(p.description) && p.description.length >= 12,
     `len=${p.description.length}`
+  );
+
+  // P7 (2026-09-24): locale + slug-form URL support — both must resolve to the
+  // SAME design id (trailing numeric id), regardless of /zh/ or /<slug>- prefix.
+  // Synthetic slug is fine: the parser extracts the id before any network fetch.
+  const slug = await callFn(staff.token, {
+    action: "preview",
+    url: `https://makerworld.com/zh/models/some-model-title-45000`,
+  });
+  const slugP = slug.data?.preview || {};
+  assert(
+    "slug-form URL resolves to the design (found:true)",
+    slug.status === 200 && slugP.found === true,
+    `status ${slug.status} found=${slugP.found}`
+  );
+  assert(
+    "slug-form URL previews the SAME design (title match)",
+    slugP.title === p.title,
+    `title="${slugP.title}" vs "${p.title}"`
+  );
+  const zh = await callFn(staff.token, {
+    action: "preview",
+    url: "https://makerworld.com/zh/models/45000",
+  });
+  const zhP = zh.data?.preview || {};
+  assert(
+    "zh-locale URL resolves (found:true)",
+    zh.status === 200 && zhP.found === true,
+    `status ${zh.status} found=${zhP.found}`
   );
 
   // preview-only against the multi-photo sample (no create — never touches the curated row)
@@ -198,7 +228,10 @@ try {
     action: "upload-image",
     url: "https://en.wikipedia.org/wiki/3D_printing",
     imageUrl:
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/1/13/ P1050782_-_Disassembled_MD-83_GPS_-_Wikimedia_Australia.jpg/320px-P1050782_-_Disassembled_MD-83_GPS_-_Wikimedia_Australia.jpg".replace(" ", ""),
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/1/13/ P1050782_-_Disassembled_MD-83_GPS_-_Wikimedia_Australia.jpg/320px-P1050782_-_Disassembled_MD-83_GPS_-_Wikimedia_Australia.jpg".replace(
+        " ",
+        ""
+      ),
   });
   assert(
     "upload-image returns a storage URL (200)",
@@ -217,16 +250,82 @@ try {
     uplBad.status >= 400,
     `status ${uplBad.status}`
   );
+
+  // U-23 (2026-09-24): create persists a FULL gallery (not one image) and the
+  // description has been curated (no "Printed N times · likes" annex).
+  const created2 = await callFn(staff.token, {
+    action: "create",
+    url: SAMPLE_URL,
+    product: { category: "3D Models", price: 900 },
+  });
+  const prod2 = created2.data?.product;
+  assert("gallery create (201)", created2.status === 201, `status ${created2.status}`);
+  assert(
+    "gallery populated (>=2 storage urls)",
+    Array.isArray(prod2?.gallery) &&
+      prod2.gallery.length >= 2 &&
+      prod2.gallery.every((u) => u.includes("/storage/v1/object/public/product-images/")),
+    `gallery=${prod2?.gallery?.length}`
+  );
+  assert(
+    "primary image is the first gallery entry",
+    prod2?.image_url === (prod2?.gallery || [])[0],
+    prod2?.image_url?.slice(0, 50)
+  );
+  assert(
+    "import_meta persisted (sourceSite, creator, tags)",
+    prod2?.import_meta &&
+      typeof prod2?.import_meta?.sourceSite === "string" &&
+      Array.isArray(prod2?.import_meta?.tags),
+    `meta=${JSON.stringify(prod2?.import_meta).slice(0, 80)}`
+  );
+  assert(
+    "description curated (no print-stats annex)",
+    typeof prod2?.description === "string" && !/Printed \d/.test(prod2.description),
+    `desc="${prod2?.description?.slice(0, 60)}"`
+  );
+
+  // U-23 (2026-09-24): SAME link imported again must UPDATE the existing row
+  // (dedupe by documentation_url), not create an orphaned duplicate.
+  const deduped = await callFn(staff.token, {
+    action: "create",
+    url: SAMPLE_URL,
+    product: { category: "3D Models", price: 1200 },
+  });
+  assert("same-link re-create returns 201", deduped.status === 201, `status ${deduped.status}`);
+  assert(
+    "re-import reuses the SAME id (URL dedupe)",
+    deduped.data?.product?.id === created2.data?.product?.id,
+    `id=${deduped.data?.product?.id}`
+  );
+  assert(
+    "re-import updates fields (price override applied)",
+    deduped.data?.product?.price === 1200,
+    `price=${deduped.data?.product?.price}`
+  );
+
+  // U-23 (2026-09-24): backfill action — staff rejected, admin accepted.
+  const bfStaff = await callFn(staff.token, { action: "backfill" });
+  assert("backfill staff rejected (403)", bfStaff.status === 403, `status ${bfStaff.status}`);
+  owner = await provision("owner", OWNER_EMAIL);
+  const bf = await callFn(owner.token, { action: "backfill" });
+  assert(
+    "backfill admin+ accepted (200)",
+    bf.status === 200 && typeof bf.data?.processed === "number",
+    `status ${bf.status} processed=${bf.data?.processed}`
+  );
 } catch (e) {
   assert("THREW", false, e.message);
 } finally {
   if (!KEEP) {
-    // Only remove a row this run actually created; never a pre-existing (curated) product.
-    if (createdId && !preExistingIds.has(createdId)) {
-      try {
-        await svc.from("products").delete().eq("id", createdId);
-      } catch {
-        /* ignore */
+    // Only remove rows this run actually created; never pre-existing (curated) products.
+    for (const id of [createdId, created2?.data?.product?.id]) {
+      if (id && !preExistingIds.has(id)) {
+        try {
+          await svc.from("products").delete().eq("id", id);
+        } catch {
+          /* ignore */
+        }
       }
     }
     if (staff) await svc.auth.admin.deleteUser(staff.id);

@@ -94,6 +94,25 @@ const stripHtml = (html: string) =>
 
 const dedupe = <T>(arr: T[]) => Array.from(new Set(arr.filter(Boolean) as unknown[])) as T[];
 
+/** Curate an imported description: collapse whitespace, trim stats annex,
+ *  cap at a readable length with a clean sentence break. */
+function curateDescription(desc: string, max = 600): string {
+  const t = stripHtml(desc).replace(/\s+/g, " ").trim();
+  if (!t) return "";
+  if (t.length <= max) return t;
+  const cut = t.slice(0, max);
+  const lastSentence = cut.lastIndexOf(". ");
+  const lastBreak = cut.lastIndexOf("\n");
+  const end =
+    lastSentence > max * 0.6
+      ? lastSentence + 1
+      : lastBreak > max * 0.4
+        ? lastBreak
+        : cut.lastIndexOf(" ");
+  const head = t.slice(0, end > 40 ? end : max).replace(/[.;,\s]+$/, "");
+  return `${head}…`;
+}
+
 function isHttpUrl(raw: string) {
   try {
     const u = new URL(raw);
@@ -158,13 +177,21 @@ interface Preview {
   extra?: Record<string, unknown>;
 }
 
-/** Extract design id from a MakerWorld URL: https://makerworld.com/en/models/45000 ... */
+/** Extract design id from a MakerWorld URL: https://makerworld.com/en/models/45000 ...
+ *  Handles locale prefixes (/en/, /zh/, /zh-hans/) and slug form
+ *  /models/<title-slug>-<id> (trailing numeric id, ≥3 digits). */
 function makerworldDesignId(url: string): number | null {
   try {
     const u = new URL(url);
     if (!MAKERWORLD_HOSTS.includes(u.hostname)) return null;
-    const m = u.pathname.match(/\/models\/(\d+)/);
-    return m ? Number(m[1]) : null;
+    const after = u.pathname.split("/models/")[1];
+    if (after == null) return null;
+    const segment = after.split(/[/?#]/)[0].trim();
+    if (!segment) return null;
+    if (/^\d+$/.test(segment)) return Number(segment);
+    const slug = segment.match(/-(\d{3,})$/);
+    if (slug) return Number(slug[1]);
+    return null;
   } catch {
     return null;
   }
@@ -225,24 +252,37 @@ function makerworldSpecs(design: Record<string, unknown>): string[] {
   const comp = (mi.compatibility ?? {}) as Record<string, unknown>;
   if (comp.devProductName)
     specs.push(`Compatible: ${comp.devProductName} · ${comp.nozzleDiameter ?? 0.4}mm nozzle`);
+  // P7 (2026-09-24): dimensions + estimated print time into the detail specs
+  // when the profile reports them — guarded reads, skipped when absent.
+  const dim = (mi.dimension ?? {}) as Record<string, unknown>;
+  const dWidth = typeof dim.width === "number" && dim.width > 0 ? dim.width : null;
+  const dDepth = typeof dim.depth === "number" && dim.depth > 0 ? dim.depth : null;
+  const dHeight = typeof dim.height === "number" && dim.height > 0 ? dim.height : null;
+  if (dWidth || dDepth || dHeight)
+    specs.push(`Dimensions: ${[dWidth, dDepth, dHeight].filter((n) => n != null).join(" × ")} mm`);
+  const printEstimates = [
+    String(best.estimatedPrintTime ?? ""),
+    String(best.printTime ?? ""),
+    String((best.extendInfo as Record<string, unknown> | undefined)?.printTime ?? ""),
+  ]
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (printEstimates.length) {
+    const value = printEstimates[0];
+    const n = Number(value);
+    specs.push(
+      Number.isFinite(n) && n > 0 && value === String(Math.round(n))
+        ? `Print time: ~${Math.round((n >= 3600 ? n / 3600 : n / 60) * 10) / 10} ${n >= 3600 ? "h" : "min"}`
+        : `Print time: ${value}`
+    );
+  }
   return dedupe(specs) as string[];
 }
 
-/** Clean description + print/like/license stats appended for richness. */
+/** Clean description (stats/likes/license move to `extra` — the owner wanted
+ *  the imported description free of "Printed N times · N likes" noise). */
 function makerworldDescription(design: Record<string, unknown>): string {
-  const desc = stripHtml(String(design.summary || design.summaryTranslated || ""));
-  const parts: string[] = [];
-  if (typeof design.printCount === "number" && design.printCount > 0) {
-    parts.push(`Printed ${design.printCount.toLocaleString("en-US")} times`);
-  }
-  if (typeof design.likeCount === "number" && design.likeCount > 0) {
-    parts.push(`${design.likeCount.toLocaleString("en-US")} likes`);
-  }
-  if (design.collectionCount) parts.push(`${String(design.collectionCount)} collected`);
-  if (design.license) parts.push(`License: ${design.license}`);
-  if (!parts.length) return desc;
-  const annex = parts.join(" · ");
-  return desc ? `${desc}\n\n${annex}` : annex;
+  return curateDescription(String(design.summary || design.summaryTranslated || ""), 600);
 }
 
 async function extractMakerWorld(url: string): Promise<Preview> {
@@ -292,12 +332,15 @@ async function extractMakerWorld(url: string): Promise<Preview> {
       modelId: design.modelId,
       slug: design.slug,
       license: design.license,
-      printCount: design.printCount,
-      likeCount: design.likeCount,
-      downloadCount: design.downloadCount,
-      commentCount: design.commentCount,
       creator: design.designCreator?.name || design.originals?.[0]?.uploaderName,
       subcategory: categories[0]?.name ?? "",
+      stats: {
+        printCount: design.printCount ?? 0,
+        likeCount: design.likeCount ?? 0,
+        collectionCount: design.collectionCount ?? 0,
+        downloadCount: design.downloadCount ?? 0,
+        commentCount: design.commentCount ?? 0,
+      },
       pricing: {
         isPaid: design.paidSetting?.isPaid === true,
         isPointRedeemable: design.isPointRedeemable === true,
@@ -639,26 +682,32 @@ async function runPreview(url: string): Promise<Preview> {
 }
 
 /**
- * W1 (2026-09-24): download ONE image URL (SSRF-guarded, magic-byte sniffed)
- * and upload it to the `product-images` bucket, returning its public storage
- * URL. Used by the WEBSITE admin save path so a product whose editor seeded
- * the ORIGINAL third-party image URL (makerworld CDN, shop image, ...) gets
- * the same durable storage copy the app's create flow always produced —
+ * W1 (2026-09-24): download image URL(s) (SSRF-guarded, magic-byte sniffed)
+ * and upload them to the `product-images` bucket, returning their public
+ * storage URLs. Used by the WEBSITE admin save path so a product whose editor
+ * seeded the ORIGINAL third-party image URLs (makerworld CDN, shop image, ...)
+ * gets the same durable storage copies the app's create flow always produced —
  * next/image + CSP only allow our own bucket.
- * Body: { action:'upload-image', url, imageUrl }  (url = the source link,
- * used for the MakerWorld extractor when imageUrl is absent).
+ * Body: { action:'upload-image', url, imageUrls }  (url = the source link,
+ * used for the MakerWorld extractor when imageUrls is absent).
  */
 async function runUploadImage(
   body: Record<string, unknown>,
   client: ReturnType<typeof createClient>
 ) {
-  const url = String(body?.url || "");
+  const url = String(body?.url || "").trim();
+  const explicitList = Array.isArray(body?.imageUrls)
+    ? (body.imageUrls as unknown[]).filter((u): u is string => typeof u === "string")
+    : [];
   const explicit = String(body?.imageUrl || "").trim();
-  if (!isHttpUrl(url) && !isHttpUrl(explicit))
+  const wantsImage = isHttpUrl(url) || isHttpUrl(explicit) || explicitList.some(isHttpUrl);
+  if (!wantsImage)
     return { status: 400, data: { error: "Please paste a valid https image/link." } };
 
   const candidates: string[] = [];
-  if (isHttpUrl(explicit)) candidates.push(explicit);
+  for (const u of [...explicitList, explicit]) {
+    if (isHttpUrl(u) && !candidates.includes(u)) candidates.push(u);
+  }
   try {
     const preview = await runPreview(url || explicit);
     for (const img of preview.images ?? []) {
@@ -666,12 +715,13 @@ async function runUploadImage(
         candidates.push(img);
     }
   } catch {
-    // extractor failure is non-fatal when an explicit imageUrl was given
+    // extractor failure is non-fatal when explicit image URLs were given
   }
   if (candidates.length === 0)
     return { status: 422, data: { error: "No image candidates found for that link." } };
 
-  for (const candidate of candidates.slice(0, 4)) {
+  const uploaded: string[] = [];
+  for (const candidate of candidates.slice(0, 8)) {
     const img = await downloadImage(candidate);
     if ("error" in img) {
       console.warn("link-import upload-image skip:", img.error);
@@ -682,19 +732,19 @@ async function runUploadImage(
       contentType: img.contentType,
       upsert: false,
     });
-    if (!upErr) {
-      return {
-        status: 200,
-        data: { imageUrl: `${supabaseUrl}/storage/v1/object/public/product-images/${path}` },
-      };
+    if (upErr) {
+      console.warn("link-import upload-image storage skip:", upErr.message);
+      continue;
     }
-    console.warn("link-import upload-image storage skip:", upErr.message);
+    uploaded.push(`${supabaseUrl}/storage/v1/object/public/product-images/${path}`);
   }
-  return { status: 502, data: { error: "Could not download or store the image." } };
+  if (uploaded.length === 0)
+    return { status: 502, data: { error: "Could not download or store the images." } };
+  return { status: 200, data: { imageUrl: uploaded[0], gallery: uploaded } };
 }
 
 async function runCreate(body: Record<string, unknown>, client: ReturnType<typeof createClient>) {
-  const url = String(body?.url || "");
+  const url = String(body?.url || "").trim();
   const overrides = (
     body?.product && typeof body.product === "object" ? body.product : {}
   ) as Record<string, unknown>;
@@ -709,11 +759,15 @@ async function runCreate(body: Record<string, unknown>, client: ReturnType<typeo
       data: { error: "No product name available. Please fill the name manually." },
     };
 
+  // Upload the FULL gallery (cap 8), best-first, into `product-images`.
+  // The first success becomes the primary image; every success becomes a
+  // gallery entry, so links with many photos keep ALL of them.
+  const GALLERY_CAP = 8;
+  const uploaded: string[] = [];
   let imageUrl = "";
-  for (const candidate of preview.images.slice(0, 4)) {
+  for (const candidate of preview.images.slice(0, GALLERY_CAP)) {
     const img = await downloadImage(candidate);
     if ("error" in img) {
-      // Non-fatal — keep trying gallery candidates, then save without an image.
       console.warn("link-import image skip:", img.error);
       continue;
     }
@@ -722,11 +776,13 @@ async function runCreate(body: Record<string, unknown>, client: ReturnType<typeo
       contentType: img.contentType,
       upsert: false,
     });
-    if (!upErr) {
-      imageUrl = `${supabaseUrl}/storage/v1/object/public/product-images/${path}`;
-      break;
+    if (upErr) {
+      console.warn("link-import storage skip:", upErr.message);
+      continue;
     }
-    console.warn("link-import storage skip:", upErr.message);
+    const storageUrl = `${supabaseUrl}/storage/v1/object/public/product-images/${path}`;
+    if (!imageUrl) imageUrl = storageUrl;
+    uploaded.push(storageUrl);
   }
 
   const category = String(overrides?.category || preview.categoryHint || "Retail kit")
@@ -748,32 +804,136 @@ async function runCreate(body: Record<string, unknown>, client: ReturnType<typeo
     .map((s) => String(s).trim().slice(0, 120))
     .slice(0, 12);
 
-  let id = slugify(rawName);
-  const { data: existing } = await client
+  const sourceSite = String(preview.provider || "").trim();
+  const importMeta: Record<string, unknown> = {
+    sourceSite,
+    sourceUrl: url,
+  };
+  const extra = preview.extra && typeof preview.extra === "object" ? preview.extra : {};
+  if (typeof extra.creator === "string" && extra.creator) importMeta.creator = extra.creator;
+  if (typeof extra.license === "string" && extra.license) importMeta.license = extra.license;
+  if (typeof extra.designId === "number") importMeta.designId = extra.designId;
+  if (Array.isArray(preview.tags) && preview.tags.length)
+    importMeta.tags = preview.tags.slice(0, 12);
+  if (extra.stats && typeof extra.stats === "object") importMeta.stats = extra.stats;
+
+  // Dedupe by SOURCE LINK (owner request: each unique link saved once, reused
+  // for future imports). If a row already carries this documentation_url,
+  // update it in place instead of creating an orphaned duplicate.
+  const { data: byUrl } = await client
     .from("products")
-    .select("documentation_url")
-    .eq("id", id)
+    .select("id, name, image_url, gallery")
+    .eq("documentation_url", url)
     .maybeSingle();
-  if (existing && existing.documentation_url !== url) {
-    id = `${slugify(rawName)}-${Math.random().toString(36).slice(2, 6)}`;
-  }
 
   const row = {
-    id,
     name: rawName.slice(0, 120),
     category,
     description,
     price,
     price_label: priceLabel,
     stock,
-    image_url: imageUrl,
+    image_url: imageUrl || byUrl?.image_url || undefined,
+    gallery: uploaded.length ? uploaded : (byUrl?.gallery ?? undefined),
     documentation_url: url,
     specs,
+    import_meta: importMeta,
     sort_order: Number(overrides?.sortOrder) || 1000,
+    updated_at: new Date().toISOString(),
   };
-  const { data, error } = await client.from("products").upsert(row).select();
+
+  let targetId = byUrl?.id ?? "";
+  if (!targetId) {
+    let id = slugify(rawName);
+    const { data: existing } = await client
+      .from("products")
+      .select("documentation_url")
+      .eq("id", id)
+      .maybeSingle();
+    if (existing && existing.documentation_url !== url) {
+      id = `${slugify(rawName)}-${Math.random().toString(36).slice(2, 6)}`;
+    }
+    targetId = id;
+  }
+
+  const { data, error } = await client
+    .from("products")
+    .upsert({ id: targetId, ...row })
+    .select();
   if (error) return { status: 500, data: { error: error.message } };
-  return { status: 201, data: { product: data?.[0] ?? row, preview } };
+  return { status: 201, data: { product: data?.[0] ?? { id: targetId, ...row }, preview } };
+}
+
+/**
+ * P1c (2026-09-24): BACKFILL — re-run extraction for every existing product
+ * that has a `documentation_url` but an empty gallery, and repopulate gallery
+ * (+ a fresh primary image if missing). Admin+ only (it rewrites existing rows
+ * in bulk). Returns per-product results so the caller can log failures.
+ */
+async function runBackfill(client: ReturnType<typeof createClient>, role: string) {
+  if (role !== "admin" && role !== "owner")
+    return { status: 403, data: { error: "Only admins can run the gallery backfill." } };
+
+  const { data: rows, error } = await client
+    .from("products")
+    .select("id, name, documentation_url, image_url, gallery")
+    .neq("documentation_url", "")
+    .order("name", { ascending: true });
+  if (error) return { status: 500, data: { error: error.message } };
+  if (!rows || rows.length === 0) return { status: 200, data: { processed: 0, results: [] } };
+
+  const targets = (rows as Record<string, unknown>[]).filter((r) => {
+    const gallery = Array.isArray(r.gallery) ? (r.gallery as string[]).filter(Boolean) : [];
+    return gallery.length === 0;
+  });
+
+  const results: Record<string, unknown>[] = [];
+  for (const row of targets) {
+    const url = String(row.documentation_url || "").trim();
+    const name = String(row.name || "").trim();
+    const result: Record<string, unknown> = { id: row.id, url, status: "skipped" };
+    if (!isHttpUrl(url)) {
+      results.push(result);
+      continue;
+    }
+    try {
+      const preview = await runPreview(url);
+      if (!preview.images || preview.images.length === 0) {
+        results.push(result);
+        continue;
+      }
+      const uploaded: string[] = [];
+      let imageUrl = "";
+      for (const candidate of preview.images.slice(0, 8)) {
+        const img = await downloadImage(candidate);
+        if ("error" in img) continue;
+        const path = `${crypto.randomUUID()}-${slugify(name || "product")}.${img.ext}`;
+        const { error: upErr } = await client.storage
+          .from("product-images")
+          .upload(path, img.bytes, { contentType: img.contentType, upsert: false });
+        if (upErr) continue;
+        const storageUrl = `${supabaseUrl}/storage/v1/object/public/product-images/${path}`;
+        if (!imageUrl) imageUrl = storageUrl;
+        uploaded.push(storageUrl);
+      }
+      if (uploaded.length === 0) {
+        results.push(result);
+        continue;
+      }
+      const { error: upErr } = await client
+        .from("products")
+        .update({ image_url: imageUrl, gallery: uploaded, updated_at: new Date().toISOString() })
+        .eq("id", String(row.id));
+      result.status = upErr ? `error: ${upErr.message}` : "updated";
+      result.imageUrl = imageUrl;
+      result.galleryCount = uploaded.length;
+      if (upErr) console.warn("link-import backfill update skip:", upErr.message);
+    } catch (e) {
+      result.status = `error: ${e instanceof Error ? e.message : "internal"}`;
+    }
+    if (result.status !== "skipped") results.push(result);
+  }
+  return { status: 200, data: { processed: targets.length, results } };
 }
 
 serve(async (req) => {
@@ -788,7 +948,7 @@ serve(async (req) => {
   }
 
   try {
-    const { client, error } = await callerRole(req);
+    const { client, role, error } = await callerRole(req);
     if (error || !client) return json({ error: error || "Sign in to import products." }, 401);
 
     const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
@@ -808,6 +968,11 @@ serve(async (req) => {
 
     if (action === "upload-image") {
       const result = await runUploadImage(body as Record<string, unknown>, client);
+      return json(result.data, result.status);
+    }
+
+    if (action === "backfill") {
+      const result = await runBackfill(client, role);
       return json(result.data, result.status);
     }
 

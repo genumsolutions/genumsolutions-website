@@ -4,6 +4,7 @@ import {
   applyScope,
   filterProducts,
   formatNPR,
+  galleryImages,
   inStockOnly,
   isSortOption,
   paginate,
@@ -316,5 +317,42 @@ describe("applyScope", () => {
 
   it("narrows to project packages only", () => {
     expect(applyScope(all, "projects").map((p) => p.id)).toEqual(["project"]);
+  });
+});
+
+describe("galleryImages (U-23)", () => {
+  const base = makeProducts(1)[0] as Product;
+
+  it("prepends the cover when it is not already in the gallery", () => {
+    const p: Product = {
+      ...base,
+      image: "cover.jpg",
+      gallery: ["a.jpg", "b.jpg"],
+    };
+    expect(galleryImages(p)).toEqual(["cover.jpg", "a.jpg", "b.jpg"]);
+  });
+
+  it("keeps the gallery order when the cover is already the lead entry", () => {
+    const p: Product = {
+      ...base,
+      image: "cover.jpg",
+      gallery: ["cover.jpg", "a.jpg"],
+    };
+    expect(galleryImages(p)).toEqual(["cover.jpg", "a.jpg"]);
+  });
+
+  it("uses the gallery alone when there is no cover", () => {
+    const p: Product = { ...base, image: "", gallery: ["a.jpg", "b.jpg"] };
+    expect(galleryImages(p)).toEqual(["a.jpg", "b.jpg"]);
+  });
+
+  it("falls back to the cover image only", () => {
+    const p: Product = { ...base, image: "cover.jpg", gallery: [] };
+    expect(galleryImages(p)).toEqual(["cover.jpg"]);
+  });
+
+  it("returns an empty array with no images at all", () => {
+    const p: Product = { ...base, image: "", gallery: undefined };
+    expect(galleryImages(p)).toEqual([]);
   });
 });

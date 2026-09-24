@@ -7,7 +7,9 @@ export const PAGE_SIZE = 10;
 export const STATUSES = ["pending", "paid", "fulfilled", "cancelled"] as const;
 
 // Tab ORDER mirrors the app's AdminScreen exactly (guide/ARCHITECTURE.md B-6 —
-// app is the reference order; pinned by tests/admin-parity.test.ts).
+// app is the reference order; pinned by tests/admin-parity.test.ts). U-23
+// (2026-09-24): grouped order — store rows first, then editorial, people,
+// finance, activity, settings.
 export const TABS = [
   "Dashboard",
   "Orders",
@@ -15,14 +17,29 @@ export const TABS = [
   "Projects",
   "Services",
   "Journal",
+  "Content",
   "Users",
   "Messages",
   "Finance",
   "Activity",
-  "Content",
   "Settings",
 ] as const;
 export type Tab = (typeof TABS)[number];
+
+// U-23 (2026-09-24): admin tab sub-groups (owner order decision) — rendered
+// as separators on the web tab strip; app mirrors the flat TABS order.
+export const ADMIN_TAB_GROUPS: { label: string; tabs: readonly Tab[] }[] = [
+  { label: "Store", tabs: ["Dashboard", "Orders", "Products", "Projects", "Services"] },
+  { label: "Editorial", tabs: ["Journal", "Content"] },
+  { label: "People", tabs: ["Users", "Messages"] },
+  { label: "Finance", tabs: ["Finance"] },
+  { label: "Activity", tabs: ["Activity"] },
+  { label: "Settings", tabs: ["Settings"] },
+];
+
+export const TAB_GROUP_OF: Record<Tab, string> = Object.fromEntries(
+  ADMIN_TAB_GROUPS.flatMap((g) => g.tabs.map((tab) => [tab, g.label]))
+) as Record<Tab, string>;
 
 export type Order = {
   id: string;
@@ -129,6 +146,8 @@ export const emptyProduct: Product = {
   delivery: "Ships in 1-2 working days",
   color: "from-[#dce8ff] to-[#7e9ff2]",
   image: "",
+  gallery: [],
+  importMeta: {},
 };
 
 export const emptyService: Service = {

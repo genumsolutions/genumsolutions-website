@@ -1,10 +1,8 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Check, ChevronDown, Search } from "lucide-react";
+import { ChevronDown, Search } from "lucide-react";
 import type { Product, SortOption } from "../lib/catalog";
 import {
   applyScope,
@@ -21,8 +19,8 @@ import {
   withinPrice,
 } from "../lib/catalog";
 import { loadRecentlyViewed } from "../lib/recently-viewed";
-import { getProductMedia } from "../lib/product-media";
 import { useCart } from "./cart-provider";
+import ProductCard from "./ProductCard";
 
 export default function ProductCatalog({
   scope = "components",
@@ -52,8 +50,7 @@ export default function ProductCatalog({
   const [maxPrice, setMaxPrice] = useState(initialMaxPrice);
   const [inStock, setInStock] = useState(initialInStock);
   const [page, setPage] = useState(Math.max(1, initialPage));
-  const [addedId, setAddedId] = useState<string | null>(null);
-  const { add, count, hydrated } = useCart();
+  const { count, hydrated } = useCart();
   // C3 (2026-09-23): "Recently viewed" strip. Empty on the server and filled
   // after mount (localStorage) — so SSR output is deterministic and private
   // mode just hides the row.
@@ -62,12 +59,6 @@ export default function ProductCatalog({
   useEffect(() => {
     setRecent(resolveRecentlyViewed(products, loadRecentlyViewed()));
   }, [products]);
-
-  useEffect(() => {
-    if (!addedId) return;
-    const timer = window.setTimeout(() => setAddedId(null), 1600);
-    return () => window.clearTimeout(timer);
-  }, [addedId]);
 
   const scopedProducts = useMemo(
     () => applyScope(products, scope).filter((product) => product.active !== false),
@@ -159,16 +150,6 @@ export default function ProductCatalog({
     const next = page + 1;
     setPage(next);
     syncUrl({ page: next });
-  }
-
-  function addToCart(productId: string) {
-    const product = products.find((item) => item.id === productId);
-    if (!product || product.stock === 0 || product.productType === "Project package") {
-      window.location.href = `/products/${productId}`;
-      return;
-    }
-    add(productId, 1);
-    setAddedId(productId);
   }
 
   return (
@@ -278,35 +259,9 @@ export default function ProductCatalog({
         <div className="mt-8 border-b border-line pb-6">
           <p className="text-xs font-black uppercase tracking-[.24em] text-navy">Recently viewed</p>
           <div className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-4">
-            {recent.slice(0, 4).map((item) => {
-              const media = item.image
-                ? { src: item.image, alt: item.name }
-                : getProductMedia(item.category);
-              return (
-                <Link
-                  key={item.id}
-                  href={`/products/${item.id}`}
-                  className="group overflow-hidden rounded-2xl border border-line bg-white shadow-sm transition hover:shadow-md"
-                  aria-label={`View ${item.name}`}
-                >
-                  <span className="relative block h-28 overflow-hidden bg-ink">
-                    <Image
-                      src={media.src}
-                      alt={media.alt}
-                      fill
-                      sizes="(max-width: 640px) 50vw, 25vw"
-                      className="object-cover transition duration-500 group-hover:scale-105"
-                    />
-                  </span>
-                  <span className="block p-3">
-                    <span className="block truncate text-sm font-bold text-ink">{item.name}</span>
-                    <span className="mt-1 block text-sm font-display font-bold text-ink">
-                      {item.priceLabel}
-                    </span>
-                  </span>
-                </Link>
-              );
-            })}
+            {recent.slice(0, 4).map((item) => (
+              <ProductCard key={item.id} product={item} compact showCta={false} />
+            ))}
           </div>
         </div>
       )}
@@ -332,75 +287,9 @@ export default function ProductCatalog({
             )}
           </div>
         )}
-        {items.map((product) => {
-          const media = product.image
-            ? { src: product.image, alt: product.name }
-            : getProductMedia(product.category);
-          const quoteOnly = product.stock === 0 || product.productType === "Project package";
-
-          return (
-            <article
-              key={product.id}
-              className="flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-sm"
-            >
-              <Link
-                href={`/products/${product.id}`}
-                aria-label={`View ${product.name}`}
-                className="relative block h-48 overflow-hidden bg-ink"
-              >
-                <Image
-                  src={media.src}
-                  alt={media.alt}
-                  fill
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                  className="object-cover transition duration-500 hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-ink/70 to-transparent" />
-                <span className="absolute bottom-3 left-4 max-w-[calc(100%-2rem)] truncate text-xs font-black uppercase tracking-widest text-white">
-                  {product.category}
-                </span>
-              </Link>
-              <div className="flex flex-1 flex-col p-5">
-                <p className="truncate text-xs font-black uppercase tracking-widest text-navy">
-                  {product.badge || product.productType}
-                </p>
-                <h2 className="mt-2 line-clamp-2 font-display text-xl font-bold leading-snug">
-                  {product.name}
-                </h2>
-                <p className="mt-2 line-clamp-2 flex-1 text-sm leading-6 text-muted">
-                  {product.note || product.description?.split(". ")[0]}
-                </p>
-                <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-                  <strong className="font-display text-lg">{product.priceLabel}</strong>
-                  {quoteOnly ? (
-                    <Link
-                      href={`/products/${product.id}`}
-                      className="rounded-full bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark"
-                      aria-label={`View details for ${product.name}`}
-                    >
-                      View details
-                    </Link>
-                  ) : (
-                    <button
-                      onClick={() => addToCart(product.id)}
-                      className={`rounded-full px-4 py-2 text-xs font-black text-white transition ${addedId === product.id ? "bg-emerald-600" : "bg-navy hover:bg-navy-dark"}`}
-                      aria-label={`${addedId === product.id ? "Added" : "Add"} ${product.name} to build list`}
-                      aria-live="polite"
-                    >
-                      {addedId === product.id ? (
-                        <span className="inline-flex items-center gap-1.5">
-                          <Check size={13} aria-hidden="true" /> Added
-                        </span>
-                      ) : (
-                        "Add"
-                      )}
-                    </button>
-                  )}
-                </div>
-              </div>
-            </article>
-          );
-        })}
+        {items.map((product) => (
+          <ProductCard key={product.id} product={product} />
+        ))}
       </div>
 
       {hasMore && (

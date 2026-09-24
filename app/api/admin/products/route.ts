@@ -109,7 +109,7 @@ export async function PUT(request: Request) {
           body: JSON.stringify({
             action: "upload-image",
             url: sourceUrl || rawImage,
-            imageUrl: rawImage,
+            imageUrls: [rawImage],
           }),
         });
         const result = (await edgeResponse.json().catch(() => ({}))) as {
@@ -127,6 +127,64 @@ export async function PUT(request: Request) {
       } catch (e) {
         console.warn("admin product image persist failed:", e);
         product.image = "";
+      }
+    }
+
+    // U-23 (2026-09-24) — gallery parity: every gallery entry that is still a
+    // foreign URL gets uploaded to the bucket too (same upload-image path,
+    // now array-aware), so multi-photo rows keep working under next/image CSP.
+    if (Array.isArray(product.gallery)) {
+      const foreign = product.gallery.filter(
+        (src: unknown): src is string =>
+          typeof src === "string" && !isStorageImage(src) && src.trim() !== ""
+      );
+      if (foreign.length > 0) {
+        try {
+          const sourceUrl = String(product.documentationUrl || body?.linkImportUrl || "");
+          const origin = new URL(request.url).origin;
+          const edgeResponse = await fetch(`${origin}/api/admin/link-import`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(request.headers.get("authorization")
+                ? { authorization: request.headers.get("authorization") as string }
+                : request.headers.get("cookie")
+                  ? { "x-forwarded-authorization": "" }
+                  : {}),
+              ...(request.headers.get("cookie")
+                ? { cookie: request.headers.get("cookie") as string }
+                : {}),
+            },
+            body: JSON.stringify({
+              action: "upload-image",
+              url: sourceUrl || foreign[0],
+              imageUrls: foreign,
+            }),
+          });
+          const result = (await edgeResponse.json().catch(() => ({}))) as {
+            imageUrl?: string;
+            gallery?: string[];
+            error?: string;
+          };
+          if (edgeResponse.ok && Array.isArray(result.gallery) && result.gallery.length > 0) {
+            const byUrl = new Map<string, string>();
+            let i = 0;
+            for (const f of foreign) byUrl.set(f, result.gallery[i++] ?? f);
+            const nextGallery = (product.gallery ?? []).map((src) => {
+              const value = typeof src === "string" ? src : "";
+              return byUrl.has(value) ? (byUrl.get(value) as string) : value;
+            });
+            product.gallery = nextGallery.filter(
+              (value): value is string => typeof value === "string"
+            );
+            // Keep the cover in sync when the lead gallery entry was repaired.
+            if (!product.image && product.gallery[0]) product.image = product.gallery[0];
+          }
+        } catch (e) {
+          // Non-fatal: keep the foreign URLs; the catalog/thumbnails degrade
+          // to the category placeholder for those entries.
+          console.warn("admin product gallery persist failed:", e);
+        }
       }
     }
 

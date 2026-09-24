@@ -21,7 +21,12 @@
 //        yes: DELETE /api/admin/products/:id     -> 200
 //        no:  DELETE /api/admin/users            -> 403 (owner-only)
 //   5. Customer check — customer on ANY admin route -> 401.
-//   6. Cleans EVERYTHING up (touched product rows + bot settings + users)
+//   6. Owner checks (P9, 2026-09-24) — owner has FULL access, incl. user
+//      deletion, using a disposable owner account (not the real one):
+//        yes: DELETE /api/admin/users            -> 200 (deletes the customer)
+//        yes: DELETE /api/admin/products/:id     -> 200
+//        yes: PATCH /api/admin/users role            -> 200
+//   7. Cleans EVERYTHING up (touched product rows + bot settings + users)
 //      unless E2E_KEEP=1.
 //
 // Run:  node scripts/staff-access-e2e.mjs
@@ -55,8 +60,10 @@ const rand = Math.random().toString(36).slice(2, 10);
 const CUST_EMAIL = `staff-e2e-cust-${rand}@genumtest.invalid`;
 const STAFF_EMAIL = `staff-e2e-staff-${rand}@genumtest.invalid`;
 const ADMIN_EMAIL = `staff-e2e-admin-${rand}@genumtest.invalid`;
+const OWNER_EMAIL = `staff-e2e-owner-${rand}@genumtest.invalid`;
 const PASSWORD = "Xk9!" + rand + "Zq";
 const PROBE_ID = `staff-access-probe-${rand}`;
+const PROBE2_ID = `staff-access-probe2-${rand}`;
 
 const service = createClient(
   env.NEXT_PUBLIC_SUPABASE_URL || env.SUPABASE_URL,
@@ -66,8 +73,9 @@ const service = createClient(
   }
 );
 
-let custId, staffId, adminId, browser, page;
+let custId, staffId, adminId, ownerId, browser, page;
 const results = [];
+const deletedUsers = new Set();
 const assert = (name, ok, detail = "") => {
   results.push({ name, ok });
   console.log(`${ok ? "PASS" : "FAIL"}  ${name}${detail ? " — " + detail : ""}`);
@@ -149,8 +157,23 @@ try {
     .eq("id", staffId);
   assert("service-role provisioning (staff)", !provErr, provErr?.message);
   await service.from("profiles").update({ role: "admin" }).eq("id", adminId);
+
+  // P9 (2026-09-24): a disposable OWNER user to exercise the top of the role
+  // ladder (user deletion is owner-only) without touching the real account.
+  const ou = await service.auth.admin.createUser({
+    email: OWNER_EMAIL,
+    password: PASSWORD,
+    email_confirm: true,
+  });
+  if (ou.error) throw new Error("createUser(owner): " + ou.error.message);
+  ownerId = ou.data.user.id;
+  const { error: ownerProvErr } = await service
+    .from("profiles")
+    .update({ role: "owner" })
+    .eq("id", ownerId);
+  assert("service-role provisioning (owner)", !ownerProvErr, ownerProvErr?.message);
   console.log(
-    `test users:\n  customer: ${CUST_EMAIL}\n  staff:    ${STAFF_EMAIL}\n  admin:    ${ADMIN_EMAIL}`
+    `test users:\n  customer: ${CUST_EMAIL}\n  staff:    ${STAFF_EMAIL}\n  admin:    ${ADMIN_EMAIL}\n  owner:    ${OWNER_EMAIL}`
   );
 
   browser = await puppeteer.launch({
@@ -335,6 +358,68 @@ try {
     custUsers.status === 401,
     `HTTP ${custUsers.status}`
   );
+
+  // ---- 6. OWNER (P9, 2026-09-24): full access, incl. user deletion ----------
+  await signOut();
+  const ownerLogin = await signIn(OWNER_EMAIL, PASSWORD);
+  assert("owner sign-in via /api/auth/login (200)", ownerLogin === 200, `HTTP ${ownerLogin}`);
+
+  const ownerProduct = await api("PUT", "/api/admin/products", {
+    id: PROBE2_ID,
+    name: "Owner Access Probe",
+    category: "Controllers & Boards",
+    price: 1,
+    priceLabel: "NPR 1",
+    sku: PROBE2_ID,
+    productType: "Retail kit",
+    description: "temporary e2e row",
+    specs: [],
+    stock: 0,
+    delivery: "N/A",
+    image: "",
+    badge: null,
+    active: false,
+    sortOrder: 9999,
+  });
+  assert(
+    "owner PUT /api/admin/products (create probe, 200)",
+    ownerProduct.status === 200,
+    `HTTP ${ownerProduct.status}`
+  );
+
+  const ownerDeleteProduct = await api("DELETE", `/api/admin/products?id=${PROBE2_ID}`);
+  assert(
+    "owner DELETE /api/admin/products?id= (probe removed, 200)",
+    ownerDeleteProduct.status === 200,
+    `HTTP ${ownerDeleteProduct.status}`
+  );
+
+  const ownerRoleChange = await api("PATCH", "/api/admin/users", {
+    userId: adminId,
+    role: "staff",
+  });
+  assert(
+    "owner PATCH /api/admin/users role-change (200)",
+    ownerRoleChange.status === 200,
+    `HTTP ${ownerRoleChange.status}`
+  );
+
+  // Owner deletes the disposable CUSTOMER — the check admin could not do.
+  const ownerDeleteUser = await api("DELETE", "/api/admin/users", { userId: custId });
+  assert(
+    "owner DELETE /api/admin/users (customer removed, 200)",
+    ownerDeleteUser.status === 200,
+    `HTTP ${ownerDeleteUser.status}`
+  );
+  if (ownerDeleteUser.status === 200) {
+    const { data: after } = await service.auth.admin.getUserById(custId);
+    assert(
+      "deleted customer no longer exists in auth",
+      !after?.user,
+      after?.user ? "user still present" : "user gone"
+    );
+    deletedUsers.add(custId);
+  }
 } catch (err) {
   assert("harness completed without crash", false, String(err).slice(0, 300));
 } finally {
@@ -343,15 +428,20 @@ try {
   if (!KEEP) {
     await service.from("products").delete().eq("sku", PROBE_ID);
     await service.from("products").delete().eq("id", PROBE_ID);
-    for (const uid of [custId, staffId, adminId].filter(Boolean)) {
+    await service.from("products").delete().eq("sku", PROBE2_ID);
+    await service.from("products").delete().eq("id", PROBE2_ID);
+    for (const uid of [custId, staffId, adminId, ownerId].filter(Boolean)) {
       await service.from("robot_user_settings").delete().eq("user_id", uid);
     }
-    for (const uid of [custId, staffId, adminId].filter(Boolean)) {
+    for (const uid of [custId, staffId, adminId, ownerId].filter(Boolean)) {
+      if (deletedUsers.has(uid)) continue;
       const { error } = await service.auth.admin.deleteUser(uid);
       assert(`cleanup: user ${uid.slice(0, 8)} removed`, !error, error?.message);
     }
   } else {
-    console.log(`E2E_KEEP=1 — kept users ${CUST_EMAIL} / ${STAFF_EMAIL} / ${ADMIN_EMAIL}`);
+    console.log(
+      `E2E_KEEP=1 — kept users ${CUST_EMAIL} / ${STAFF_EMAIL} / ${ADMIN_EMAIL} / ${OWNER_EMAIL}`
+    );
   }
   const failed = results.filter((r) => !r.ok);
   console.log(
