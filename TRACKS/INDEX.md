@@ -388,3 +388,50 @@ QUEUED (needs owner go; backup-first, batch, throttle):
 
 WRITE-UP: E:\GENUM SOLUTIONS PVT LTD\Project\genumsolutions-app\TRACKS\
 next notes in repo trackers; audit scripts live in Temp (read-only, re-runnable).
+
+## U-31 (2026-09-25): Supabase storage cleanup EXECUTED (owner-authorized) — 2,210 MB -> 266 MB
+
+Owner authorized the queued cleanup. Backup-first, dry-run-first, batched,
+storage-API deletes (service role) so real blobs were removed, not just
+storage.objects metadata. Nothing else in the DB was touched.
+
+STORAGE — the actual cause of the limit email (free tier 1 GB cap):
+
+- app-releases: 44 -> 5 objects, 1,576 MB -> 162 MB (freed ~1,414 MB).
+  Deleted 39 superseded APKs (all <= 3.2.2). KEEP-SET (must not delete):
+  `release.json` (manifest), `genum-solutions-3.2.5.apk` (current, named in
+  manifest.apkUrl), `genum-solutions-latest.apk` (manifest.latestApkUrl), plus
+  3.2.4 + 3.2.3 kept as rollback. No device can be pointed at a deleted APK:
+  the manifest only ever advertises latest/current.
+  Verified post-delete: 3.2.5 + latest serve HTTP 200 (42,817,354 bytes),
+  release.json HTTP 200 (622 bytes), live manifest still version 3.2.5 /
+  version_code 58. UpdateService checkForUpdate() path unaffected.
+- product-images: 329 -> 72 objects, 634 MB -> 104 MB (freed ~530 MB).
+  Deleted 257 confirmed orphans (import residue: repeated UUID-copies of
+  `the-clockwork-cog-...png`, many `linkimport.*` re-imports, 13x
+  `magura-mt5-piston-rings.png`). Safety: cross-table scan of all 144
+  text/json/array columns in public found ONLY `products.gallery` +
+  `products.image_url` reference this bucket (no other table does), and a
+  fresh re-verify immediately before delete protected 0 (0 names became
+  referenced). 8-object download sample after delete: 8/8 OK.
+
+DATA — page_views needs NO retention (correcting U-30's open item):
+
+- 16,229 rows, 2,840 kB total, all rows dated and ALL within
+  2026-08-25..2026-09-25 (analytics is ~1 month old) => nothing is stale, no
+  prune performed (correct call: it was never a storage driver).
+- `created_at` confirmed `timestamptz NOT NULL DEFAULT now()` on live DB —
+  already correct and matching supabase/schema.sql. No analytics bug. (A
+  mid-task misread of an empty `created_at < cutoff` result set as "all rows
+  NULL" was caught and retracted before any destructive step; the one ALTER
+  SET DEFAULT issued was a no-op.)
+
+Backups (pre-delete inventories, re-runnable scripts in Temp):
+app-releases-backup.json, app-releases-deleted.json,
+product-images-orphans.json, product-images-deleted.json; scripts
+prune-releases.mjs / prune-images.mjs / image-orphans.mjs / image-refscan.mjs.
+
+RECOMMEND NEXT: watch the Supabase Usage tab to confirm the storage warning
+clears; add an app-releases "keep last N" prune step to the release-upload
+path so 1.5 GB does not silently rebuild; then the queued perf batch (ISR
+force-dynamic removal) and the admin dashboard uplift.
