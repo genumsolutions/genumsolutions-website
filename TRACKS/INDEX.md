@@ -435,3 +435,37 @@ RECOMMEND NEXT: watch the Supabase Usage tab to confirm the storage warning
 clears; add an app-releases "keep last N" prune step to the release-upload
 path so 1.5 GB does not silently rebuild; then the queued perf batch (ISR
 force-dynamic removal) and the admin dashboard uplift.
+
+## U-32 (2026-09-25) — CORRECTION to the queued ISR item (read-only finding, no code changed)
+
+U-29 item 1 said "swap public marketing routes to ISR/revalidate (300s)" by
+removing `export const dynamic = "force-dynamic"`. That alone is a NO-OP. Do
+not do it as written — verified:
+
+- The data layer opts back into dynamic rendering regardless of route config:
+  `unstable_noStore()` is called in `lib/content-store.ts:154`,
+  `lib/journal-store.ts:15,41` and `lib/programs-store.ts:21,71,96`. Any route
+  that calls those is dynamic even with the route segment left alone.
+- There are ZERO `revalidatePath` / `revalidateTag` calls in the whole repo
+  (verified by search). So the pages are dynamic specifically because admin
+  edits must show up immediately; that is the only thing keeping the admin UX
+  instant today.
+- `git log -S` shows `unstable_noStore` arrived with the "read DB-first"
+  features (ef7bc39 programs, 84fca76 journal, 3040ced admin journal,
+  7041136 projects) — i.e. as a defensive default when pages moved from static
+  to DB reads, not as a considered perf decision. Meanwhile `app/layout.tsx:22-26`
+  documents the OPPOSITE intent: "revalidate in the background so an edit in
+  the company_info table appears site-wide within ~5 minutes without a
+  redeploy". So the data layer contradicts the documented design.
+- ALSO: `app/products/page.tsx` reads `searchParams`, so it is dynamic by
+  nature — removing its `force-dynamic` gains nothing. Real ISR candidates are
+  the other 7 public routes (home, journal, services, projects, 3d-printing,
+  app, products/[slug]). `app/admin` + `app/account` must KEEP force-dynamic
+  (session-scoped).
+
+Correct shape of this work, if/when it is done: remove `unstable_noStore()`
+from the PUBLIC read paths AND add `revalidatePath(...)` to every admin
+mutation route in the same change, so admin edits stay instant while public
+pages get 5-minute ISR. Doing the first half alone silently regresses admin
+edits to a 5-minute delay. Owner chose to prioritize the admin dashboard
+uplift instead; this note is here so the tradeoff is not rediscovered later.
