@@ -272,3 +272,32 @@ verified subscribed + deleted (4). Consent checkbox must be ticked via its
 LABEL click — React ignores synthetic `checked` writes (harness lesson).
 Second dispatch run green: 13/13 + crawl 0 hard, all cleanups 204/200
 (run 35999078054). Failure notifications (Slack/email) deferred by owner.
+
+## U-25 audit (2026-09-25) �?" today's work: both-repo industrial cleanup
+
+Read-only audits of BOTH repos are done and their findings are the source of
+truth for today's sessions. Highlights (full per-item lists live in the
+sub-agent reports + this day's commits):
+
+**Website (genumsolutions-website) �?" audits found marker DEAD exports to cut:**
+lib/orders.ts:34 getCurrentUserOrThrow, :124 findOrderByRef
+lib/services.ts:65 getService; lib/catalog.ts:71 findProduct, :68 products
+re-export; lib/quotation-catalog.ts:3 quotationItems (superseded by U-13)
+Two dead ternaries in components/ProductCard.tsx (44-45 compact, 66-68 p-3/p-3)
+@�?" already committed in a9dd8b5 (2026-09-25).
+Marker + SiteHeader STALE: sessions fetch per pathname, checkout double fetch,
+/api/products in client, ProductCard lists not memoized (PERF).
+
+**App (genumsolutions-app/mobile):**
+DEAD components: AppUpdateCard.tsx, tools/Joystick.tsx (0 imports)
+DEAD+DUP admin fns in orderService.ts (196/208/220/232) duplicating
+adminService.ts 394/403/522/531 �?" remove the dup set, keep the live one.
+settingsService orphans 58/93/104/141/147; dead env EXPO_PUBLIC_* refs.
+
+**Today's order (hermetic safety + �?¥44px + square-card parity kept):**
+
+1. ProductCard parity reconciliation across both repos (web a9dd8b5 done)
+2. Cut website DEAD exports (tsc+prettier+harness gate per batch)
+3. App: Joystick/AppUpdateCard removal + admin-fn dup dedupe
+4. Re-verify harness still 40/40 (edge) + opt-in proxy pass stays SKIP-able
+5. Commit+push per repo, update this ledger each step.
