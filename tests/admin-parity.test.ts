@@ -10,22 +10,11 @@ import { resolve } from "node:path";
 // Change both + both tests together.
 // =====================================================================
 
-// U-23 (2026-09-24): grouped tab order (owner decision) — store rows first,
-// then editorial, people, finance, activity, settings.
-const ADMIN_TABS = [
-  "Dashboard",
-  "Orders",
-  "Products",
-  "Projects",
-  "Services",
-  "Journal",
-  "Content",
-  "Users",
-  "Messages",
-  "Finance",
-  "Activity",
-  "Settings",
-];
+// U-37 (2026-09-25): 12→6 tabs, group names removed.
+// Order mirrors the app's AdminScreen exactly (guide/ARCHITECTURE.md B-6).
+// Merged: Dashboard+Activity · Orders+Finance · Products+Projects ·
+// Services+Journal+Content · Users+Messages+Robots · Settings.
+const ADMIN_TABS = ["Dashboard", "Orders", "Catalog", "Content", "Users", "Settings"];
 
 function readAdminTypesSource(): string {
   const local = resolve(__dirname, "../components/admin/admin-types.ts");
@@ -40,7 +29,7 @@ function readAdminTypesSource(): string {
 }
 
 describe("admin tab inventory (website <-> app mirror, B-6)", () => {
-  it("declares the 12 canonical tabs in admin-types.ts", () => {
+  it("declares the 6 canonical tabs in admin-types.ts", () => {
     const source = readAdminTypesSource();
     expect(source, "admin-types.ts not found").not.toBe("");
     const match = source.match(/export const TABS = \[([^\]]+)\] as const/);

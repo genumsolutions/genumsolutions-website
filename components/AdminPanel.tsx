@@ -2,50 +2,39 @@
 
 import { useEffect, useState } from "react";
 import {
-  Activity,
-  BookOpen,
-  FileText,
   LayoutDashboard,
-  MessageSquare,
-  Package,
-  Settings as SettingsIcon,
   ShoppingBag,
+  Package,
+  FileText,
   Users,
-  Wallet,
-  Wrench,
+  Settings as SettingsIcon,
 } from "lucide-react";
 import { tabActive, tabBase, tabInactive } from "../lib/styles";
 import { isAdminRole } from "../lib/roles";
 import type { Product } from "../lib/content-store";
-import { TABS, ADMIN_TAB_GROUPS } from "./admin/admin-types";
+import { TABS } from "./admin/admin-types";
 import type { Tab } from "./admin/admin-types";
 import AdminDashboard from "./admin/AdminDashboard";
+import AdminActivity from "./admin/AdminActivity";
 import AdminOrders from "./admin/AdminOrders";
+import AdminFinance from "./admin/AdminFinance";
 import AdminProducts from "./admin/AdminProducts";
+import AdminProjectPackages from "./admin/AdminProjectPackages";
 import AdminServices from "./admin/AdminServices";
 import AdminJournal from "./admin/AdminJournal";
-import AdminMessages from "./admin/AdminMessages";
-import AdminFinance from "./admin/AdminFinance";
-import AdminUsers from "./admin/AdminUsers";
-import AdminActivity from "./admin/AdminActivity";
-import AdminProjectPackages from "./admin/AdminProjectPackages";
 import AdminContent from "./admin/AdminContent";
+import AdminUsers from "./admin/AdminUsers";
+import AdminMessages from "./admin/AdminMessages";
 import AdminSettings from "./admin/AdminSettings";
 
 type Props = { initialProducts: Product[]; currentRole: "staff" | "admin" | "owner" };
 
 const TAB_ICONS = {
   Dashboard: LayoutDashboard,
-  Products: Package,
-  Services: Wrench,
-  Journal: BookOpen,
   Orders: ShoppingBag,
-  Finance: Wallet,
-  Users: Users,
-  Messages: MessageSquare,
-  Activity: Activity,
-  Projects: Package,
+  Catalog: Package,
   Content: FileText,
+  Users: Users,
   Settings: SettingsIcon,
 } as const;
 
@@ -55,15 +44,9 @@ export default function AdminPanel({ initialProducts, currentRole }: Props) {
   const [message, setMessage] = useState("");
   const [visited, setVisited] = useState<Set<number>>(() => new Set([0]));
 
-  // Staff can run every panel but not perform deletions; owner additionally
-  // gets the Users-hosted account deletion controls.
   const canDelete = isAdminRole(currentRole);
-
   const tabIndex = TABS.indexOf(tab);
 
-  // Lazy-mount panels: keep the active panel and its immediate neighbours
-  // mounted so left/right swiping always lands on already-rendered content,
-  // without firing every panel's fetch on first load.
   useEffect(() => {
     setVisited((prev) => {
       const next = new Set(prev);
@@ -77,43 +60,51 @@ export default function AdminPanel({ initialProducts, currentRole }: Props) {
   function renderPanel(t: Tab) {
     switch (t) {
       case "Dashboard":
-        return <AdminDashboard />;
+        return (
+          <>
+            <AdminDashboard />
+            <AdminActivity />
+          </>
+        );
       case "Orders":
-        return <AdminOrders canDelete={canDelete} />;
-      case "Products":
         return (
-          <AdminProducts
-            products={products}
-            onProductsChange={setProducts}
-            setMessage={setMessage}
-            canDelete={canDelete}
-          />
+          <>
+            <AdminOrders canDelete={canDelete} />
+            <AdminFinance />
+          </>
         );
-      case "Services":
-        return <AdminServices setMessage={setMessage} canDelete={canDelete} />;
-      case "Journal":
-        return <AdminJournal setMessage={setMessage} canDelete={canDelete} />;
-      case "Messages":
-        return <AdminMessages setMessage={setMessage} canDelete={canDelete} />;
-      case "Finance":
-        return <AdminFinance />;
-      case "Users":
+      case "Catalog":
         return (
-          <AdminUsers setMessage={setMessage} canDelete={canDelete} currentRole={currentRole} />
-        );
-      case "Activity":
-        return <AdminActivity />;
-      case "Projects":
-        return (
-          <AdminProjectPackages
-            products={products}
-            onProductsChange={setProducts}
-            setMessage={setMessage}
-            canDelete={canDelete}
-          />
+          <>
+            <AdminProducts
+              products={products}
+              onProductsChange={setProducts}
+              setMessage={setMessage}
+              canDelete={canDelete}
+            />
+            <AdminProjectPackages
+              products={products}
+              onProductsChange={setProducts}
+              setMessage={setMessage}
+              canDelete={canDelete}
+            />
+          </>
         );
       case "Content":
-        return <AdminContent setMessage={setMessage} canDelete={canDelete} />;
+        return (
+          <>
+            <AdminServices setMessage={setMessage} canDelete={canDelete} />
+            <AdminJournal setMessage={setMessage} canDelete={canDelete} />
+            <AdminContent setMessage={setMessage} canDelete={canDelete} />
+          </>
+        );
+      case "Users":
+        return (
+          <>
+            <AdminUsers setMessage={setMessage} canDelete={canDelete} currentRole={currentRole} />
+            <AdminMessages setMessage={setMessage} canDelete={canDelete} />
+          </>
+        );
       case "Settings":
         return <AdminSettings setMessage={setMessage} canDelete={canDelete} />;
     }
@@ -126,40 +117,24 @@ export default function AdminPanel({ initialProducts, currentRole }: Props) {
         aria-label="Admin sections"
         className="-mx-5 flex flex-wrap items-center gap-x-6 gap-y-1 border-b border-line px-5 pb-1 lg:mx-0 lg:px-0"
       >
-        {ADMIN_TAB_GROUPS.map((group, gi) => {
-          const firstTabIndex = TABS.findIndex((t) => t === group.tabs[0]);
+        {TABS.map((name, i) => {
+          const Icon = TAB_ICONS[name];
           return (
-            <div
-              key={group.label}
-              className={`flex items-center ${gi > 0 ? "border-l border-line pl-5" : ""}`}
+            <button
+              key={name}
+              role="tab"
+              id={`tab-${name.toLowerCase()}`}
+              aria-selected={tab === name}
+              aria-controls={`panel-${name.toLowerCase()}`}
+              onClick={() => {
+                setTab(name);
+                setVisited((prev) => new Set(prev).add(i));
+              }}
+              className={`${tabBase} text-[13px] ${tab === name ? tabActive : tabInactive}`}
             >
-              {gi > 0 ? (
-                <span className="mr-5 hidden text-[10px] font-black uppercase tracking-[0.18em] text-muted sm:block">
-                  {group.label}
-                </span>
-              ) : null}
-              {group.tabs.map((name) => {
-                const i = firstTabIndex + group.tabs.indexOf(name);
-                const Icon = TAB_ICONS[name];
-                return (
-                  <button
-                    key={name}
-                    role="tab"
-                    id={`tab-${name.toLowerCase()}`}
-                    aria-selected={tab === name}
-                    aria-controls={`panel-${name.toLowerCase()}`}
-                    onClick={() => {
-                      setTab(name);
-                      setVisited((prev) => new Set(prev).add(i));
-                    }}
-                    className={`${tabBase} text-[13px] ${tab === name ? tabActive : tabInactive}`}
-                  >
-                    <Icon size={15} aria-hidden="true" />
-                    {name}
-                  </button>
-                );
-              })}
-            </div>
+              <Icon size={15} aria-hidden="true" />
+              {name}
+            </button>
           );
         })}
       </div>
@@ -173,7 +148,7 @@ export default function AdminPanel({ initialProducts, currentRole }: Props) {
         </p>
       )}
 
-      {/* Swipeable track: panels translate horizontally in sync with the tab strip */}
+      {/* Swipeable track: 6 panels translate horizontally in sync */}
       <div className="overflow-hidden">
         <div
           className="flex transition-transform duration-300 ease-out"
