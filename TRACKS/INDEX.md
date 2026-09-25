@@ -301,3 +301,45 @@ settingsService orphans 58/93/104/141/147; dead env EXPO_PUBLIC_* refs.
 3. App: Joystick/AppUpdateCard removal + admin-fn dup dedupe
 4. Re-verify harness still 40/40 (edge) + opt-in proxy pass stays SKIP-able
 5. Commit+push per repo, update this ledger each step.
+
+## U-29 (2026-09-25) — "things we will be doing today" (perf/flicker follow-up queue)
+
+Both repos were deep-audited (read-only, file:line-anchored). Already LANDED
+and pushed this session (headers below):
+
+- U-24 (both repos, d0246e1 web / 76a2327 app): near-square tight ProductCard,
+  whole-image square tray — card parity established.
+- U-25 (web, a9dd8b5): ProductCatalog dead-ternary removed; verify-link-import
+  harness finished + 40/40 x2 live (edge path), hermetic-skip proxy stanza.
+- U-26 (web, 45e2f7c... app? see below): NO — U-26 landed on the APP as
+  one-flight catalog cache (mobile repo 45e2f7c? verify in app repo). Web
+  45e2f7c is the app-side. See TRACKS/INDEX + app TRACKS/NEXT-SESSION for the
+  authoritative two-side ledger.
+- U-27 (both repos): 300ms keystroke settle — per-keystroke syncUrl/URL storm
+  removed on BOTH catalog implementations (web ProductCatalog settled-query URL
+  sync; app productService debounce).
+- U-28 (web, 47d2364): ProductCatalog dead `effectiveQuery` const removed;
+  prettier+tsc clean; pushed.
+
+REMAINS FOR TODAY (in order):
+
+1. WEB — first-load/lag: this site is force-dynamic on every marketing route
+   (unstable_noStore in lib stores) → no ISR/prerender, 1-6 Supabase round
+   trips every page. Queued: swap public marketing routes to ISR/revalidate
+   (300s) + unstable_cache on the catalog/company stores (pattern already
+   proven in lib/company-store.ts).
+2. WEB — flicker: SiteHeader/HeaderSession double `/api/auth/session` fetch
+   per route change; CartProvider sessions fetch on every mount. Queued:
+   one-flight session fetch shared at layout level.
+3. WEB + APP — mount-refresh skeleton flash (loading.tsx skeletons + card
+   grids are force-dynamic) → covered by #1 once static/ISR.
+4. APP — HomeScreen gates whole screen behind 4 parallel fetches; CartScreen
+   empty-state flash + full catalog on every focus. Queued: progressive
+   section render + cart empty-gate.
+5. PARITY — both repos' data layer now share the exact verified Supabase
+   tables; next: combine shared catalog + schema doc into one cross-repo
+   anchor (deliver single-source-of-truth TRACKS entry).
+
+Gates after each batch: prettier + tsc --noEmit + repo lint + (web) the
+40/40 link-import harness + image-cache check. Commit per U-note, push per
+repo. Hermetic by default (never depends on a running server).
