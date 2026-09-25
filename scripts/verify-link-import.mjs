@@ -68,13 +68,38 @@ async function provision(role, email) {
     password: PASSWORD,
   });
   if (signInError) throw signInError;
-  return { id: uid, token: sess.session.access_token };
+  const s = sess.session;
+  return { id: uid, token: s.access_token, refreshToken: s.refresh_token };
 }
 
 async function callFn(token, body) {
   const res = await fetch(FN, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  let data = null;
+  try {
+    data = await res.json();
+  } catch {
+    /* ignore */
+  }
+  return { status: res.status, data };
+}
+
+// U-35 (2026-09-25): call the website proxy route (/api/admin/link-import)
+// exactly like the admin UI does, so the full Next cookie session is
+// exercised rather than the raw edge function endpoint. The proxy
+// reads the session from the sb-access / sb-refresh cookies (not the
+// Bearer header) before forwarding the caller's access_token to the
+// edge function.
+async function callUrl(proxy, token, refreshToken, body) {
+  const res = await fetch(proxy, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Cookie: `sb-access=${token}; sb-refresh=${refreshToken}`,
+    },
     body: JSON.stringify(body),
   });
   let data = null;
@@ -356,12 +381,12 @@ try {
     });
     assert("proxy rejects garbage token (401)", pBad.status === 401, `status ${pBad.status}`);
 
-    const pStaff = await callUrl(PROXY_URL, staff.token, {
+    const pStaff = await callUrl(PROXY_URL, staff.token, staff.refreshToken, {
       action: "preview",
       url: SAMPLE_URL,
     });
     assert(
-      "proxy honours staff Bearer (edge staff+ check)",
+      "proxy honours staff session (edge staff+ check)",
       pStaff.status === 200,
       `status ${pStaff.status}`
     );
