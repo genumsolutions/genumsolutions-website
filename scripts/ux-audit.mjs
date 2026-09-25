@@ -134,6 +134,18 @@ for (const vp of VIEWPORTS) {
           if (r.width === 0 || r.height === 0) return false;
           return r.height < 36 && r.width < 120;
         }).length;
+        const smallSamples = [...document.querySelectorAll("a,button")]
+          .filter((el) => {
+            const r = el.getBoundingClientRect();
+            if (r.width === 0 || r.height === 0) return false;
+            return r.height < 36 && r.width < 120;
+          })
+          .slice(0, 10)
+          .map((el) => {
+            const r = el.getBoundingClientRect();
+            const label = (el.getAttribute("aria-label") || el.textContent || "").trim().split(/\s+/).slice(0, 5).join(" ");
+            return `${el.nodeName.toLowerCase()}.${String(el.className).slice(0, 46)} (${Math.round(r.height)}×${Math.round(r.width)}) "${label}"`;
+          });
         const textOverflow = [...document.querySelectorAll("h1,h2,h3,p,span")].filter(
           (el) =>
             el.scrollWidth > el.clientWidth + 4 &&
@@ -214,6 +226,7 @@ for (const vp of VIEWPORTS) {
           brokenImgs,
           overflow,
           smallTargets,
+          smallSamples,
           textOverflow,
           contrastLowCount: low.length,
           contrastLowChecked: checked,
@@ -257,6 +270,7 @@ for (const r of report) {
   if (r.console?.some((c) => c.startsWith("pageerror") || c.startsWith("error")))
     hardProbs.push("CONSOLE-ERR");
   if (r.dom?.smallTargets) softProbs.push(`SMALL-TARGETS(${r.dom.smallTargets})`);
+  if (r.dom?.smallSamples?.length) softProbs.push(...r.dom.smallSamples.map((s) => `   .. ${s}`));
   if ((r.dom?.textOverflow ?? 0) > 8) softProbs.push(`TEXT-CLIP(${r.dom.textOverflow})`);
   if (r.dom?.contrastLowCount) {
     softProbs.push(`LOW-CONTRAST(${r.dom.contrastLowCount})`);
