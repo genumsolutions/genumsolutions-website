@@ -1,10 +1,11 @@
 import Link from "next/link";
 import Image from "next/image";
 import type { Metadata } from "next";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ArrowUpRight } from "lucide-react";
 import PageShell from "../components/PageShell";
 import { getProductMedia } from "../lib/product-media";
 import { getTrainingPrograms, getPilotCosts, getCurriculumHighlights } from "../lib/programs-store";
+import { getManagedProducts } from "../lib/content-store";
 import { getSiteContent } from "../lib/content-store";
 
 export const dynamic = "force-dynamic";
@@ -69,16 +70,44 @@ const stats = [
   ["7-day", "Component replacement"],
 ];
 
+// U-38e (2026-09-25): the home page only mentioned 3D printing as one text
+// card in the services grid (owner snag A1). Mirrors the /3d-printing offers
+// so the vertical is a first-class section on the home page.
+const printingOffers = [
+  {
+    title: "Prototype printing",
+    text: "Turn a CAD file into a physical test part, enclosure, or teaching model.",
+  },
+  {
+    title: "Design for print",
+    text: "Geometry, tolerances, supports, and orientation reviewed before material is wasted.",
+  },
+  {
+    title: "Small-batch parts",
+    text: "Repeatable runs for fixtures, replacement parts, classroom sets, and maker products.",
+  },
+];
+
 export default async function HomePage() {
   const heroMedia = getProductMedia("Robotics");
   // Training programs, curriculum highlights, and pilot costing all render
   // from the shared DB tables (the SAME source the app's Home screen reads)
   // with the bundled lists as fallback — one company story on both surfaces.
-  const [trainingPrograms, pilotCosts, curriculum] = await Promise.all([
+  // U-38e: printing models come from the same "3D Models" catalog rows the
+  // /3d-printing page shows, so the home strip never drifts from the vertical.
+  const [trainingPrograms, pilotCosts, curriculum, printModels] = await Promise.all([
     getTrainingPrograms(),
     getPilotCosts(),
     getCurriculumHighlights(),
+    getManagedProducts()
+      .then((products) =>
+        products.filter(
+          (p) => p.category?.trim().toLowerCase() === "3d models" && p.active !== false
+        )
+      )
+      .catch(() => []),
   ]);
+  const printShowcase = printModels.slice(0, 4);
 
   return (
     <PageShell>
@@ -186,9 +215,102 @@ export default async function HomePage() {
         </section>
 
         <section
-          aria-labelledby="training-heading"
+          aria-labelledby="printing-heading"
           className="border-y border-line bg-mist py-12 lg:py-20"
         >
+          <div className="mx-auto max-w-7xl px-5 lg:px-8">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[.24em] text-navy">
+                  3D & 2D printing · new vertical
+                </p>
+                <h2
+                  id="printing-heading"
+                  className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl"
+                >
+                  From a sketch to a thing you can hold.
+                </h2>
+                <p className="mt-3 max-w-xl text-sm leading-6 text-slate-600">
+                  Print-to-order fabrication for makers, students, product teams, and classrooms.
+                  Start with a file, a reference object, or a rough idea.
+                </p>
+              </div>
+              <Link
+                href="/3d-printing"
+                className="inline-flex items-center gap-1.5 text-sm font-bold text-navy underline decoration-gold decoration-2 underline-offset-4 transition hover:text-navy-dark"
+              >
+                Visit printing services <ArrowRight size={15} aria-hidden="true" />
+              </Link>
+            </div>
+
+            <div className="mt-8 grid gap-4 sm:grid-cols-3">
+              {printingOffers.map((offer) => (
+                <div
+                  key={offer.title}
+                  className="rounded-2xl border border-line bg-white p-5 sm:p-6"
+                >
+                  <h3 className="font-display text-base font-bold leading-snug">{offer.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">{offer.text}</p>
+                </div>
+              ))}
+            </div>
+
+            {printShowcase.length > 0 && (
+              <div className="mt-8">
+                <h3 className="font-display text-lg font-bold">Models we print</h3>
+                <ul className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+                  {printShowcase.map((model) => {
+                    const media = model.image ?? getProductMedia(model.category).src;
+                    return (
+                      <li key={model.id}>
+                        <Link
+                          href={`/products/${model.id}`}
+                          className="group block overflow-hidden rounded-2xl border border-line bg-white transition hover:-translate-y-0.5 hover:border-navy hover:shadow-lg"
+                        >
+                          <span className="relative block aspect-square bg-mist">
+                            {model.image ? (
+                              <Image
+                                src={media}
+                                alt={model.name}
+                                fill
+                                sizes="(max-width: 640px) 50vw, 25vw"
+                                className="object-contain transition duration-500 group-hover:scale-105"
+                              />
+                            ) : null}
+                          </span>
+                          <span className="block p-3">
+                            <span className="line-clamp-1 block font-display text-xs font-bold text-ink">
+                              {model.name}
+                            </span>
+                            <span className="mt-1 flex items-center justify-between gap-2">
+                              <span className="text-xs font-bold text-navy">
+                                {model.priceLabel}
+                              </span>
+                              <ArrowUpRight
+                                size={13}
+                                aria-hidden="true"
+                                className="text-slate-400 transition group-hover:text-navy"
+                              />
+                            </span>
+                          </span>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+
+            <Link
+              href="/contact"
+              className="mt-8 inline-flex h-12 items-center gap-2 rounded-full bg-navy px-6 text-sm font-black text-white transition hover:bg-navy-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
+            >
+              Send a file for a print review <ArrowRight size={15} aria-hidden="true" />
+            </Link>
+          </div>
+        </section>
+
+        <section aria-labelledby="training-heading" className="py-12 lg:py-20">
           <div className="mx-auto max-w-7xl px-5 lg:px-8">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
@@ -268,53 +390,98 @@ export default async function HomePage() {
                 </div>
               </div>
             )}
-            {pilotCosts.length > 0 && (
-              <div className="mt-10">
-                <h3 className="font-display text-lg font-bold">Illustrative pilot costing</h3>
-                {/* W2b (F1): the 6-column costing table clipped at 360px —
-                    scroll it on phones instead. */}
-                <div className="mt-4 overflow-x-auto rounded-2xl border border-line bg-white">
-                  <table className="w-full min-w-[420px] text-left text-sm">
-                    <caption className="sr-only">Illustrative pilot program running costs</caption>
-                    <thead>
-                      <tr className="border-b border-line bg-mist text-[10px] uppercase tracking-wide text-slate-500">
-                        <th scope="col" className="px-5 py-3 font-bold">
-                          Item
-                        </th>
-                        <th scope="col" className="px-5 py-3 font-bold">
-                          Cost
-                        </th>
-                        <th scope="col" className="hidden px-5 py-3 font-bold sm:table-cell">
-                          Notes
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-line">
-                      {pilotCosts.map((line) => (
-                        <tr key={line.item}>
-                          <th scope="row" className="px-5 py-3 font-semibold text-ink">
-                            {line.item}
-                          </th>
-                          <td className="px-5 py-3 font-mono text-xs text-ink">{line.cost}</td>
-                          <td className="hidden px-5 py-3 text-xs leading-5 text-slate-600 sm:table-cell">
-                            {line.note}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  <p className="border-t border-line bg-mist px-5 py-2.5 text-[10px] text-slate-500">
-                    Illustrative figures — final pilot quotes are customised per school.
-                  </p>
-                </div>
-              </div>
-            )}
             <Link
               href="/services"
-              className="mt-7 inline-flex h-12 items-center gap-2 rounded-full bg-gold px-6 text-sm font-black text-ink transition hover:bg-gold-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+              className="mt-7 inline-flex h-12 items-center gap-2 rounded-full bg-navy px-6 text-sm font-black text-white transition hover:bg-navy-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
             >
               See all services & training <ArrowRight size={15} aria-hidden="true" />
             </Link>
+          </div>
+        </section>
+
+        <section
+          aria-labelledby="pilots-heading"
+          className="border-y border-line bg-mist py-12 lg:py-20"
+        >
+          <div className="mx-auto max-w-7xl px-5 lg:px-8">
+            <div className="grid gap-8 lg:grid-cols-[.9fr_1.1fr] lg:gap-12">
+              <div className="min-w-0">
+                <p className="text-xs font-black uppercase tracking-[.24em] text-navy">
+                  Illustrative pilot costing
+                </p>
+                <h2
+                  id="pilots-heading"
+                  className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl"
+                >
+                  A transparent starting point for a school proposal.
+                </h2>
+                <p className="mt-4 text-sm leading-6 text-slate-600">
+                  The source proposal models a three-classroom pilot with 30 kits. These figures are
+                  illustrative, shown in NPR for planning, and confirmed after scope, taxes,
+                  delivery, and local procurement review.
+                </p>
+                {pilotCosts.length > 0 && (
+                  <div className="mt-6 flex flex-wrap items-center gap-3">
+                    <Link
+                      href="/services#pilots"
+                      className="inline-flex h-12 items-center gap-2 rounded-full bg-gold px-6 text-sm font-black text-ink transition hover:bg-gold-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+                    >
+                      Request a school proposal <ArrowRight size={15} aria-hidden="true" />
+                    </Link>
+                    <Link
+                      href="/contact"
+                      className="inline-flex h-12 items-center rounded-full border border-line bg-white px-6 text-sm font-black text-ink transition hover:border-navy hover:text-navy focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
+                    >
+                      Talk to us
+                    </Link>
+                  </div>
+                )}
+              </div>
+              {pilotCosts.length > 0 && (
+                <div className="min-w-0">
+                  <div className="rounded-2xl border border-line bg-white">
+                    {/* W2b (F1): the costing table clips at 360px — scroll it on
+                        phones instead of truncating rows. */}
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[420px] text-left text-sm">
+                        <caption className="sr-only">
+                          Illustrative pilot program running costs
+                        </caption>
+                        <thead>
+                          <tr className="border-b border-line bg-mist text-[10px] uppercase tracking-wide text-slate-500">
+                            <th scope="col" className="px-5 py-3 font-bold">
+                              Item
+                            </th>
+                            <th scope="col" className="px-5 py-3 font-bold">
+                              Cost
+                            </th>
+                            <th scope="col" className="hidden px-5 py-3 font-bold sm:table-cell">
+                              Notes
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-line">
+                          {pilotCosts.map((line) => (
+                            <tr key={line.item}>
+                              <th scope="row" className="px-5 py-3 font-semibold text-ink">
+                                {line.item}
+                              </th>
+                              <td className="px-5 py-3 font-mono text-xs text-ink">{line.cost}</td>
+                              <td className="hidden px-5 py-3 text-xs leading-5 text-slate-600 sm:table-cell">
+                                {line.note}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <p className="border-t border-line bg-mist px-5 py-2.5 text-[10px] text-slate-500">
+                      Illustrative figures — final pilot quotes are customised per school.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </section>
 
