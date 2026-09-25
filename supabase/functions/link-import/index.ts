@@ -520,13 +520,18 @@ function printablesModelId(url: string): string | null {
 }
 
 function printablesImages(data: Record<string, unknown>): string[] {
+  // U-39 (2026-09-26): Printables' GraphQL returns filePath as a BARE-relative
+  // path ("media/prints/…" — no leading slash, no host). The old code only
+  // re-based "//"- and "/"-prefixed values, so every image fell through to
+  // isHttpUrl(bare path) = false and the gallery was ALWAYS empty. Re-base
+  // bare-relative paths onto the media CDN too.
   const toUrl = (v: unknown): string | null => {
     if (typeof v !== "string" || !v) return null;
     const abs = v.startsWith("//")
       ? `https:${v}`
-      : v.startsWith("/")
-        ? `${PRINTABLES_MEDIA}${v.replace(/^\/+/, "")}`
-        : v;
+      : v.startsWith("http")
+        ? v
+        : `${PRINTABLES_MEDIA}${v.replace(/^\/+/, "")}`;
     return isHttpUrl(abs) ? abs : null;
   };
   const cover = toUrl((data.image as Record<string, unknown> | null)?.filePath);
@@ -627,10 +632,45 @@ async function extractPrintables(url: string): Promise<Preview> {
   };
 }
 
+// ---------------- Thingiverse (U-39, 2026-09-26): known-unsupported ----------------
+// www.thingiverse.com is a client-rendered SPA: the HTML shell carries ONLY the
+// site-level og tags (verified live — no model title/description/image), the
+// public API requires an OAuth token (401 without one), and the CDN blocks
+// non-browser fetches (403). There is nothing to extract without a scraping
+// service, so this extractor returns a HONEST not-found with the reason.
+// Attempt rows still record provider='thingiverse' (outcome provider-empty)
+// so demand is visible in link_import_attempts.
+const THINGIVERSE_HOSTS = ["thingiverse.com"];
+
+async function extractThingiverse(url: string): Promise<Preview> {
+  const thingId = url.match(/thing:(\d+)/)?.[1] ?? "";
+  return {
+    found: false,
+    provider: "thingiverse",
+    sourceUrl: url,
+    title: "",
+    description: "",
+    tags: [],
+    images: [],
+    categoryHint: "3D Models",
+    extra: {
+      thingId,
+      reason:
+        "Thingiverse blocks automated reads (their API needs an OAuth token, their pages are client-rendered). Copy the model name/images manually for now.",
+    },
+  };
+}
+
 /** The registry itself — ordered, first match wins. */
 const PROVIDERS: ProviderDef[] = [
   { id: "makerworld", label: "MakerWorld", hosts: MAKERWORLD_HOSTS, extract: extractMakerWorld },
   { id: "printables", label: "Printables", hosts: PRINTABLES_HOSTS, extract: extractPrintables },
+  {
+    id: "thingiverse",
+    label: "Thingiverse",
+    hosts: THINGIVERSE_HOSTS,
+    extract: extractThingiverse,
+  },
 ];
 
 // ---------------- Generic OpenGraph + JSON-LD extractor ----------------
