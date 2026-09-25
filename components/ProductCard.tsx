@@ -40,11 +40,11 @@ export default function ProductCard({
   }, [added]);
 
   return (
-        <div className="flex flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-sm transition hover:shadow-md">
-       <Link
+    <div className="flex flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-sm transition hover:shadow-md">
+      <Link
         href={`/products/${product.id}`}
         aria-label={`View ${product.name}`}
-        // U-24 (2026-09-24): whole-image card (owner: "like the app") â€” the
+        // U-24 (2026-09-24): whole-image card (owner: "like the app") — the
         // media box shows the FULL photo on a light tray like the native card;
         // no dark gradient, no caption text on the image.
         className={`relative block overflow-hidden bg-mist ${compact ? "aspect-[4/3]" : "aspect-square"}`}
@@ -127,5 +127,6 @@ export default function ProductCard({
             ))}
         </div>
       </div>
+    </div>
   );
 }
