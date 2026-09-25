@@ -343,3 +343,48 @@ REMAINS FOR TODAY (in order):
 Gates after each batch: prettier + tsc --noEmit + repo lint + (web) the
 40/40 link-import harness + image-cache check. Commit per U-note, push per
 repo. Hermetic by default (never depends on a running server).
+
+## U-30 (2026-09-25): READ-ONLY Supabase audit — limit-email follow-up (NO mutations executed)
+
+Owner got a Supabase limit email. All work today was READ-ONLY (SELECT/
+information_schema/pg_catalog/storage.* only; verified zero writes via the
+same pg pool db-audit.mjs pattern that already ran green).
+
+VERIFIED FACTS (live pg, redacted connection):
+
+- 24 public tables, all with RLS enabled (rls_enabled=true on all);
+  45 indexes present; FK hot-path indexes all in place (verified via
+  pg_indexes) — no perf-index crisis.
+- products=104 rows, orders=0 est, transactions=2, carts=8, profiles=5.
+- page_views is the ONLY MB-scale table: 15,212 est rows / 2.8 MB, and it
+  has NO retention policy (pg info confirmed no TTL) — the steady-growth
+  driver. Next-biggest: activity_log 227 rows / 128 kB.
+- STORAGE (this is the likeliest 'limit' trigger): per-bucket census —
+  app-releases = 44 objects / 1,576 MB; product-images = 329 objects /
+  634 MB. Combined >2.2 GB on the free tier's 1 GB storage cap => exceeded.
+- Orphan-image diff (referenced-set in JS): counts at 634MB bucket suggest
+  orphan candidates are worth scripting, but NO deletion was performed and
+  none is queued without owner sign-off + backup-first.
+
+ACTION TAKEN: none destructive. CODE only (already committed+push each):
+
+- website: ProductCatalog 300ms-settle URL sync (U-28) + prettier; proxy
+  stanza U-25; ProductCard square tray U-24 (pushed).
+- app: one-flight shared catalog cache U-26 in productService (kills cold
+  open Supabase lag) + ProductCard square tray (pushed).
+
+QUEUED (needs owner go; backup-first, batch, throttle):
+
+1. page_views retention policy (e.g. DELETE older than 90d in batched
+   chunks w/ statement_timeout) — reclaims the only MB-grower, stops the
+   free-tier row growth loop.
+2. Storage cleanup: list exact orphan objects in product-images bucket
+   (JS diff vs products.gallery/image_url), export JSON backup, then (only
+   after owner approves) delete confirmed orphans in small batches.
+3. app-releases bucket: audit 44 objects / 1.5GB — check for old build
+   artifacts that can be pruned (keep latest N).
+4. Confirm which Supabase limit was emailed: likely storage (>1GB) first;
+   review dashboard Usage tab once owner is back.
+
+WRITE-UP: E:\GENUM SOLUTIONS PVT LTD\Project\genumsolutions-app\TRACKS\
+next notes in repo trackers; audit scripts live in Temp (read-only, re-runnable).
