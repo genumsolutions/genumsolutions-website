@@ -32,6 +32,11 @@ const STAFF_EMAIL = `link-import-probe-staff-${rand}@genumtest.invalid`;
 const OWNER_EMAIL = `link-import-probe-owner-${rand}@genumtest.invalid`;
 const PASSWORD = "Xk9!" + rand + "Zq";
 const MAKERWORLD_URL = process.env.LINK_IMPORT_URL || "https://makerworld.com/en/models/45000";
+// U-39 (2026-09-26): the canonical SHARE form is /models/<ID>-<slug> — pin it
+// so the leading-id parse can never regress.
+const MAKERWORLD_SLUG_URL =
+  process.env.LINK_IMPORT_SLUG_URL ||
+  "https://makerworld.com/en/models/45000-magura-mt5-piston-rings";
 // U-25 (2026-09-25): optional live pass through the Next cookie proxy the
 // website ADMIN actually calls (/api/admin/link-import), not just the edge
 // function directly. When unset, the proxy stanza is SKIPPED (default keeps
@@ -152,23 +157,35 @@ try {
     `len=${p.description.length}`
   );
 
-  // P7 (2026-09-24): locale + slug-form URL support — both must resolve to the
-  // SAME design id (trailing numeric id), regardless of /zh/ or /<slug>- prefix.
-  // Synthetic slug is fine: the parser extracts the id before any network fetch.
+  // U-39 (2026-09-26): the REAL share form is /models/<ID>-<slug> (ID LEADS).
+  // The old synthetic "some-model-title-45000" (trailing id) accidentally
+  // passed while real share links failed — pin the real shape now.
   const slug = await callFn(staff.token, {
     action: "preview",
-    url: `https://makerworld.com/zh/models/some-model-title-45000`,
+    url: MAKERWORLD_SLUG_URL,
   });
   const slugP = slug.data?.preview || {};
   assert(
-    "slug-form URL resolves to the design (found:true)",
+    "share-slug URL /models/<ID>-<slug> resolves (found:true)",
     slug.status === 200 && slugP.found === true,
     `status ${slug.status} found=${slugP.found}`
   );
   assert(
-    "slug-form URL previews the SAME design (title match)",
+    "share-slug URL previews the SAME design (title match)",
     slugP.title === p.title,
     `title="${slugP.title}" vs "${p.title}"`
+  );
+  // Keep the old synthetic case too: a trailing numeric tail should NOT break
+  // the leading-id parse (the leading branch fires first and wins).
+  const legacySlug = await callFn(staff.token, {
+    action: "preview",
+    url: "https://makerworld.com/zh/models/45000-some-model-title",
+  });
+  const legacyP = legacySlug.data?.preview || {};
+  assert(
+    "legacy trailing-slug form still resolves (leading id wins)",
+    legacySlug.status === 200 && legacyP.found === true,
+    `status ${legacySlug.status} found=${legacyP.found}`
   );
   const zh = await callFn(staff.token, {
     action: "preview",
@@ -345,7 +362,10 @@ try {
   const bfStaff = await callFn(staff.token, { action: "backfill" });
   assert("backfill staff rejected (403)", bfStaff.status === 403, `status ${bfStaff.status}`);
   owner = await provision("owner", OWNER_EMAIL);
-  const bf = await callFn(owner.token, { action: "backfill" });
+  // U-39 (2026-09-26): bounded batch. The catalog outgrew the edge runtime's
+  // 150s idle limit for a FULL backfill (every target row does live network
+  // fetches), so the harness proves the RBAC gate with a tiny limit instead.
+  const bf = await callFn(owner.token, { action: "backfill", limit: 1 });
   assert(
     "backfill admin+ accepted (200)",
     bf.status === 200 && typeof bf.data?.processed === "number",

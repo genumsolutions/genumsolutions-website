@@ -221,10 +221,11 @@ export interface MakerWorldSpecEntry {
 }
 
 /** Extract design id from a MakerWorld URL: https://makerworld.com/en/models/45000 ...
- *  Handles locale prefixes (/en/, /zh/, /zh-hans/), the slug form
- *  /models/<title-slug>-<id> (trailing numeric id, ≥3 digits), and the
- *  query form /en/models?designId=45000 (U-35: previously fell through to the
- *  generic scraper, which yields nothing because MakerWorld is a JS SPA). */
+ *  Handles locale prefixes (/en/, /zh/, /zh-hans/), the canonical share form
+ *  /models/<ID>-<title-slug> (the numeric ID LEADS the slug — U-39 fix: the old
+ *  trailing-id regex never matched, so every slug-form share link fell through
+ *  to the generic scraper, which only gets Cloudflare's 'Just a moment...'
+ *  shell), and the query form /en/models?designId=45000. */
 function makerworldDesignId(url: string): number | null {
   try {
     const u = new URL(url);
@@ -238,9 +239,11 @@ function makerworldDesignId(url: string): number | null {
     if (after == null) return null;
     const segment = after.split(/[/?#]/)[0].trim();
     if (!segment) return null;
+    // Plain numeric: /models/45000
     if (/^\d+$/.test(segment)) return Number(segment);
-    const slug = segment.match(/-(\d{3,})$/);
-    if (slug) return Number(slug[1]);
+    // Slug form: /models/45000-magura-mt5-piston-rings — the ID LEADS.
+    const leading = segment.match(/^(\d{3,})/);
+    if (leading) return Number(leading[1]);
     return null;
   } catch {
     return null;
@@ -1331,7 +1334,7 @@ async function runCreate(body: Record<string, unknown>, client: ReturnType<typeo
  * (+ a fresh primary image if missing). Admin+ only (it rewrites existing rows
  * in bulk). Returns per-product results so the caller can log failures.
  */
-async function runBackfill(client: ReturnType<typeof createClient>, role: string) {
+async function runBackfill(client: ReturnType<typeof createClient>, role: string, limit = 0) {
   if (role !== "admin" && role !== "owner")
     return { status: 403, data: { error: "Only admins can run the gallery backfill." } };
 
@@ -1347,9 +1350,11 @@ async function runBackfill(client: ReturnType<typeof createClient>, role: string
     const gallery = Array.isArray(r.gallery) ? (r.gallery as string[]).filter(Boolean) : [];
     return gallery.length === 0;
   });
+  // Optional batch bound (see the backfill call site): 0 = no limit.
+  const bounded = limit > 0 ? targets.slice(0, limit) : targets;
 
   const results: Record<string, unknown>[] = [];
-  for (const row of targets) {
+  for (const row of bounded) {
     const url = String(row.documentation_url || "").trim();
     const name = String(row.name || "").trim();
     const result: Record<string, unknown> = { id: row.id, url, status: "skipped" };
@@ -1394,7 +1399,10 @@ async function runBackfill(client: ReturnType<typeof createClient>, role: string
     }
     if (result.status !== "skipped") results.push(result);
   }
-  return { status: 200, data: { processed: targets.length, results } };
+  return {
+    status: 200,
+    data: { processed: bounded.length, totalTargets: targets.length, results },
+  };
 }
 
 serve(async (req) => {
@@ -1449,7 +1457,15 @@ serve(async (req) => {
     }
 
     if (action === "backfill") {
-      const result = await runBackfill(client, role);
+      // U-39 (2026-09-26): optional { limit: n } bounds the batch. The catalog
+      // outgrew the edge runtime's 150s idle limit (every target row does live
+      // network fetches), so full runs now time out at the gateway. The admin
+      // UI sends no limit (full backfill, run repeatedly — already-updated rows
+      // are skipped) while the E2E harness sends a tiny limit to prove the RBAC
+      // gate without the timeout.
+      const rawLimit = Number((body as Record<string, unknown>)?.limit ?? 0);
+      const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.floor(rawLimit) : 0;
+      const result = await runBackfill(client, role, limit);
       return json(result.data, result.status);
     }
 
