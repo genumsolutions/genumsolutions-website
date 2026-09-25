@@ -153,7 +153,7 @@ export default function ProductCatalog({
   }
 
   return (
-    <section className="mx-auto max-w-7xl px-5 py-10 sm:py-12 lg:px-8 lg:py-16">
+      <section className="mx-auto max-w-7xl px-5 py-8 sm:py-10 lg:px-8 lg:py-12">
       <div className="border-b border-line pb-5 sm:pb-6">
         <label className="flex min-h-[52px] items-center gap-3 rounded-full border border-line bg-white px-5 text-muted shadow-sm focus-within:border-navy sm:w-full sm:max-w-md">
           <Search size={18} aria-hidden="true" />
@@ -256,7 +256,7 @@ export default function ProductCatalog({
       </div>
 
       {recent.length > 0 && (
-        <div className="mt-8 border-b border-line pb-6">
+        <div className="mt-4 border-b border-line pb-4">
           <p className="text-xs font-black uppercase tracking-[.24em] text-navy">Recently viewed</p>
           <div className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-4">
             {recent.slice(0, 4).map((item) => (
@@ -266,7 +266,7 @@ export default function ProductCatalog({
         </div>
       )}
 
-      <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {items.length === 0 && (
           <div className="col-span-full border-t-2 border-ink bg-white p-10 text-center">
             <p className="font-display text-xl font-bold">No products found</p>

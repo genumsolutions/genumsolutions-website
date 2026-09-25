@@ -40,10 +40,8 @@ export default function ProductCard({
   }, [added]);
 
   return (
-    <article
-      className={`flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-sm transition hover:shadow-md`}
-    >
-      <Link
+        <div className="flex flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-sm transition hover:shadow-md">
+       <Link
         href={`/products/${product.id}`}
         aria-label={`View ${product.name}`}
         // U-24 (2026-09-24): whole-image card (owner: "like the app") â€” the
@@ -63,13 +61,13 @@ export default function ProductCard({
           className="object-contain transition duration-500 hover:scale-105"
         />
       </Link>
-      <div className={`flex flex-1 flex-col ${compact ? "p-3" : "p-3"}`}>
+      <div className="flex flex-1 flex-col p-2">
         <p className="truncate text-xs font-black uppercase tracking-widest text-navy">
           {typeLabel || product.badge || product.productType}
         </p>
         <h2
-          className={`mt-1.5 font-display font-bold leading-snug ${
-            compact ? "line-clamp-2 text-base" : "line-clamp-2 text-base"
+          className={`mt-1 font-display font-bold leading-snug ${
+            compact ? "line-clamp-2 text-xs" : "line-clamp-2 text-xs"
           }`}
         >
           {product.name}
@@ -99,13 +97,13 @@ export default function ProductCard({
             ))}
           </div>
         )}
-        <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2.5">
-          <strong className="font-display text-lg">{product.priceLabel}</strong>
+        <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2.5">
+          <strong className="font-display text-sm">{product.priceLabel}</strong>
           {showCta &&
             (quoteOnly ? (
               <Link
                 href={`/products/${product.id}`}
-                className="inline-flex min-h-11 items-center rounded-full bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
+                className="inline-flex min-h-9 items-center rounded-full bg-navy px-3 py-1.5 text-xs font-black text-white transition hover:bg-navy-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
                 aria-label={`View details for ${product.name}`}
               >
                 View details
@@ -116,7 +114,7 @@ export default function ProductCard({
                   add(product.id, 1);
                   setAdded(true);
                 }}
-                className={`inline-flex min-h-11 items-center rounded-full px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy ${
+                className={`inline-flex min-h-9 items-center rounded-full px-3 py-1.5 text-xs font-black text-white transition hover:bg-navy-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy ${
                   added ? "bg-emerald-600" : "bg-navy"
                 }`}
                 aria-label={addAriaLabel ?? `Add ${product.name} to build list`}
@@ -129,6 +127,5 @@ export default function ProductCard({
             ))}
         </div>
       </div>
-    </article>
   );
 }

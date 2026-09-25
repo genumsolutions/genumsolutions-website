@@ -9,7 +9,7 @@ export default function PageIntro({
 }) {
   return (
     <section className="border-b border-line bg-mist">
-      <div className="mx-auto max-w-7xl px-5 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-24">
+      <div className="mx-auto max-w-7xl px-5 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-14">
         <div className="max-w-3xl">
           <p className="text-xs font-black uppercase tracking-[.24em] text-navy">{eyebrow}</p>
           <h1 className="mt-3 font-display text-3xl font-bold leading-[1.1] tracking-[-.04em] text-ink sm:text-4xl lg:text-5xl">

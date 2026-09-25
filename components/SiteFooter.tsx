@@ -30,7 +30,7 @@ export default async function SiteFooter() {
   // with the bundled copy as fallback - edits in the DB show here on both clients.
   const company = await getCompany();
   const cols =
-    "grid grid-cols-2 gap-x-6 gap-y-9 px-5 py-8 sm:gap-10 sm:py-12 lg:grid-cols-[1.5fr_1fr_1fr_1.3fr] lg:px-8";
+    "grid grid-cols-2 gap-x-6 gap-y-6 px-5 py-6 sm:gap-8 sm:py-8 lg:grid-cols-[1.5fr_1fr_1fr_1.3fr] lg:px-8";
   const heading = "text-[11px] font-black uppercase tracking-[.2em] text-white/30";
 
   return (
