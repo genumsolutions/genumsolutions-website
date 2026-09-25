@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import { inputClass } from "../../lib/styles";
+import { productIdFromTitle } from "../../lib/product-slug";
 import type { Product } from "./admin-types";
 import { emptyProduct, fields, PAGE_SIZE } from "./admin-types";
 import {
@@ -47,9 +48,30 @@ export default function AdminProducts({
   const fileInput = useRef<HTMLInputElement>(null);
   const linkInput = useRef<HTMLInputElement>(null);
 
+  // U-35 (2026-09-25): owner asked to keep track of the new sources staff try
+  // pasting. The edge function logs every preview; this surfaces the ones we
+  // could NOT read, so the next provider gets added on evidence.
+  const [demand, setDemand] = useState<{ host: string; attempts: number; lastSeen: string }[]>([]);
+
   useEffect(() => {
     setProductPage(1);
   }, [query, category]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/admin/import-attempts?limit=25")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return;
+        setDemand(Array.isArray(data.demand) ? data.demand : []);
+      })
+      .catch(() => {
+        // Telemetry is best-effort; a failure here must never block importing.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const categories = Array.from(new Set(products.map((item) => item.category).filter(Boolean)));
   const filteredProducts = products.filter(
@@ -78,7 +100,10 @@ export default function AdminProducts({
     setBusy(true);
     const payload = {
       ...product,
-      id: product.id.trim().toLowerCase().replace(/\s+/g, "-"),
+      // U-35 (2026-09-25): route the manual id through the same slugifier the
+      // extractor uses so a hand-typed non-latin id can never reach the API as
+      // an empty primary key.
+      id: productIdFromTitle(product.id),
       price: Number(product.price),
       stock: Number(product.stock),
       specs:
@@ -171,6 +196,14 @@ export default function AdminProducts({
     setImporting(true);
     setMessage("");
     try {
+      // Fire-and-forget refresh of the "sources staff are trying" strip so the
+      // attempt just logged shows up without a manual reload.
+      fetch("/api/admin/import-attempts?limit=25")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (data && Array.isArray(data.demand)) setDemand(data.demand);
+        })
+        .catch(() => {});
       const response = await fetch("/api/admin/link-import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -182,6 +215,7 @@ export default function AdminProducts({
         return;
       }
       const p = result.preview;
+      const canonical = typeof p?.extra?.canonical === "string" ? p.extra.canonical : url;
       if (!p?.found) {
         setProduct((current) => ({
           ...current,
@@ -191,18 +225,27 @@ export default function AdminProducts({
           image: current.image || p?.images?.[0] || "",
         }));
         setExtracted(null);
-        setMessage("No details found for that page — fill the fields manually, then save.");
+        // U-35 (2026-09-25): the edge function now reports WHY it came back
+        // empty (unknown source vs. provider reachable-but-blank) and which
+        // providers do exist, so the admin is never left guessing.
+        const supported = Array.isArray(p?.extra?.supported)
+          ? (p.extra.supported as string[]).slice(0, 6)
+          : [];
+        const known = supported.length ? ` We read: ${supported.join(", ")}.` : "";
+        setMessage(
+          `Nothing usable at ${new URL(url).hostname}.${
+            p?.extra?.outcome === "provider-error"
+              ? " The source site answered, but it blocked us (some sites block scrapers)."
+              : " Fill the fields manually, then save."
+          }${known}`
+        );
         return;
       }
       setProduct((current) => ({
         ...current,
-        id: p.title
-          ? String(p.title)
-              .toLowerCase()
-              .replace(/[^a-z0-9]+/g, "-")
-              .replace(/^-+|-+$/g, "")
-              .slice(0, 60)
-          : current.id,
+        // U-35 (2026-09-25): the shared slugifier with its fallback, so a
+        // non-latin title yields "untitled-product" instead of a blank id.
+        id: p.title ? productIdFromTitle(p.title) : current.id,
         name: p.title,
         category: p.categoryHint || current.category,
         description: p.description || current.description,
@@ -213,16 +256,19 @@ export default function AdminProducts({
         specs: p.specs || current.specs,
         price: current.price || Number(p.extra?.price ?? 0) || 0,
         priceLabel: current.priceLabel || "Request quote",
-        documentationUrl: url,
+        // U-35: store the provider's canonical permalink, not the tracking /
+        // share URL the staff member happened to paste.
+        documentationUrl: canonical,
         // U-24 (2026-09-24): carry the source credit + canonical specs into
         // import_meta so the "Design & source" block and the organized
         // "Specifications" section render on the published page.
         importMeta: {
           sourceSite: p.provider,
-          sourceUrl: url,
+          sourceUrl: canonical,
           ...(p.extra?.creator ? { creator: String(p.extra.creator) } : {}),
           ...(p.extra?.license ? { license: String(p.extra.license) } : {}),
           ...(typeof p.extra?.designId === "number" ? { designId: p.extra.designId } : {}),
+          ...(typeof p.extra?.modelId === "number" ? { modelId: p.extra.modelId } : {}),
           ...(p.extra?.subcategory ? { subcategory: String(p.extra.subcategory) } : {}),
           ...(Array.isArray(p.tags) && p.tags.length ? { tags: p.tags.slice(0, 12) } : {}),
           ...(Array.isArray(p.structuredSpecs) && p.structuredSpecs.length
@@ -239,6 +285,11 @@ export default function AdminProducts({
       setMessage(
         `Extracted ${p.provider} details — review the fields in the editor below, then click "Save product".`
       );
+    } catch (error) {
+      // U-35 (2026-09-25): this try had a `finally` but no `catch`, so a network
+      // drop or a thrown parser left the import card spinning with no message.
+      console.error("link preview failed", error);
+      setMessage("Could not reach the import service — check your connection and try again.");
     } finally {
       setImporting(false);
     }
@@ -254,7 +305,25 @@ export default function AdminProducts({
       >
         <section aria-label="Product list" className={panelListSection}>
           <PanelCard>
-            <h2 className={panelTitle}>Products ({filteredProducts.length})</h2>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className={panelTitle}>Products ({filteredProducts.length})</h2>
+              {/* U-35 (2026-09-25): "Add product" used to live only inside the
+                  SaveBar, which is hidden until a product already has an id —
+                  so the one action that creates a product was invisible. */}
+              <button
+                type="button"
+                onClick={() => {
+                  setProduct(emptyProduct);
+                  setExtracted(null);
+                  document
+                    .getElementById("product-editor")
+                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+                className="shrink-0 border border-gold px-3 py-1.5 text-xs font-bold text-gold transition hover:bg-gold hover:text-ink"
+              >
+                + Add product
+              </button>
+            </div>
             <div className="mt-3 flex flex-col gap-2 sm:flex-row">
               <input
                 value={query}
@@ -335,9 +404,11 @@ export default function AdminProducts({
           <form onSubmit={previewLink} className={`${editorCard} mb-6`}>
             <h2 className={editorCardTitle}>Import a product by link</h2>
             <p className="mt-1 text-sm text-muted">
-              Paste any product page (e.g. a MakerWorld model, an Amazon or shop listing). Click{" "}
-              <strong>Extract details</strong> to pull the title, description, specs and images into
-              the editor below — then fine-tune and click <strong>Save product</strong>.
+              Paste a product page and click <strong>Extract details</strong> to pull the title,
+              description, specs and images into the editor below — then fine-tune and click{" "}
+              <strong>Save product</strong>. Details are read from <strong>MakerWorld</strong> and{" "}
+              <strong>Printables</strong>; any other link is still saved, but you fill the fields
+              yourself.
             </p>
             <div className="mt-4 flex flex-col gap-2 sm:flex-row">
               <input
@@ -387,6 +458,19 @@ export default function AdminProducts({
                       : "; review the fields in the editor below, then click Save product"}
                     .
                   </span>
+                </p>
+              </div>
+            )}
+            {demand.length > 0 && (
+              <div className="mt-3 rounded border border-line bg-navy/[0.03] p-3">
+                <p className="text-xs leading-snug text-muted">
+                  <strong className="text-ink">Not readable yet:</strong> staff have pasted{" "}
+                  {demand
+                    .slice(0, 3)
+                    .map((d) => d.host)
+                    .join(", ")}
+                  {demand.length > 3 ? ` and ${demand.length - 3} more source(s)` : ""}. Tell us and
+                  we will add it — the product still saves, you just fill the fields by hand.
                 </p>
               </div>
             )}

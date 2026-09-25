@@ -144,9 +144,43 @@ function isPublicHttpsUrl(raw: string): boolean {
   }
 }
 
+// ---------------- Provider registry (U-35, 2026-09-25) ----------------
+// ONE table of supported sources. Adding a provider is a single entry here —
+// no changes to runPreview, no changes to the admin UI, and every attempt
+// (supported or not) is recorded in `link_import_attempts` so the owner can
+// see which sources staff are actually pasting.
+export interface ProviderDef {
+  /** stable id, also written to link_import_attempts.provider */
+  id: string;
+  /** human label shown in the admin "source" pill */
+  label: string;
+  /** apex hostnames; any subdomain of these also matches */
+  hosts: string[];
+  extract: (url: string) => Promise<Preview>;
+}
+
+/** Host matches if it equals an entry or is a subdomain of it. */
+function hostMatches(hostname: string, hosts: string[]): boolean {
+  const h = hostname.toLowerCase();
+  return hosts.some((entry) => h === entry || h.endsWith(`.${entry}`));
+}
+
+/** Resolve a pasted URL to a provider, or null when unknown. */
+function providerFor(rawUrl: string): ProviderDef | null {
+  let u: URL;
+  try {
+    u = new URL(rawUrl);
+  } catch {
+    return null;
+  }
+  return PROVIDERS.find((p) => hostMatches(u.hostname, p.hosts)) ?? null;
+}
+
 // ---------------- MakerWorld / Bambu Lab extractor ----------------
 const BAMBU_DESIGN_API = "https://api.bambulab.com/v1/design-service/design";
-const MAKERWORLD_HOSTS = ["makerworld.com", "makerworld.com.cn", "www.makerworld.com"];
+// Apex hosts only — providerFor() also matches every subdomain, so
+// www.makerworld.com.cn and makerworld.eu style variants resolve too.
+const MAKERWORLD_HOSTS = ["makerworld.com", "makerworld.com.cn"];
 
 async function fetchBambuDesign(designId: number) {
   const res = await fetch(`${BAMBU_DESIGN_API}/${designId}`, {
@@ -187,12 +221,19 @@ export interface MakerWorldSpecEntry {
 }
 
 /** Extract design id from a MakerWorld URL: https://makerworld.com/en/models/45000 ...
- *  Handles locale prefixes (/en/, /zh/, /zh-hans/) and slug form
- *  /models/<title-slug>-<id> (trailing numeric id, ≥3 digits). */
+ *  Handles locale prefixes (/en/, /zh/, /zh-hans/), the slug form
+ *  /models/<title-slug>-<id> (trailing numeric id, ≥3 digits), and the
+ *  query form /en/models?designId=45000 (U-35: previously fell through to the
+ *  generic scraper, which yields nothing because MakerWorld is a JS SPA). */
 function makerworldDesignId(url: string): number | null {
   try {
     const u = new URL(url);
-    if (!MAKERWORLD_HOSTS.includes(u.hostname)) return null;
+    if (!hostMatches(u.hostname, MAKERWORLD_HOSTS)) return null;
+    // Query form: ?designId=123 or ?id=123
+    for (const key of ["designId", "id", "modelId"]) {
+      const raw = u.searchParams.get(key);
+      if (raw && /^\d{3,}$/.test(raw.trim())) return Number(raw.trim());
+    }
     const after = u.pathname.split("/models/")[1];
     if (after == null) return null;
     const segment = after.split(/[/?#]/)[0].trim();
@@ -437,6 +478,160 @@ async function extractMakerWorld(url: string): Promise<Preview> {
     },
   };
 }
+
+// ---------------- Printables extractor (U-35, 2026-09-25) ----------------
+// printables.com hard-blocks plain HTML scrapes (HTTP 403 for every browser-UA
+// request, verified live), so the only working path is the public GraphQL API
+// at api.printables.com/graphql/. Images live on the media.printables.com CDN
+// and the API returns a RELATIVE `filePath`, so they are re-based here.
+const PRINTABLES_GRAPHQL = "https://api.printables.com/graphql/";
+const PRINTABLES_MEDIA = "https://media.printables.com/";
+const PRINTABLES_HOSTS = ["printables.com"];
+
+const PRINTABLES_QUERY = `query PrintById($id: ID!) {
+  print(id: $id) {
+    id
+    name
+    slug
+    description
+    user { publicUsername }
+    license { name }
+    tags { name }
+    image { filePath }
+    images { id filePath }
+    downloadCount
+  }
+}`;
+
+/** Extract the model id from a printables URL: /model/863119-headphone-holder */
+function printablesModelId(url: string): string | null {
+  try {
+    const u = new URL(url);
+    if (!hostMatches(u.hostname, PRINTABLES_HOSTS)) return null;
+    const after = u.pathname.split("/model/")[1];
+    if (after == null) return null;
+    const segment = after.split(/[/?#]/)[0].trim();
+    if (!segment) return null;
+    const id = segment.match(/^(\d{2,})/);
+    return id ? id[1] : null;
+  } catch {
+    return null;
+  }
+}
+
+function printablesImages(data: Record<string, unknown>): string[] {
+  const toUrl = (v: unknown): string | null => {
+    if (typeof v !== "string" || !v) return null;
+    const abs = v.startsWith("//")
+      ? `https:${v}`
+      : v.startsWith("/")
+        ? `${PRINTABLES_MEDIA}${v.replace(/^\/+/, "")}`
+        : v;
+    return isHttpUrl(abs) ? abs : null;
+  };
+  const cover = toUrl((data.image as Record<string, unknown> | null)?.filePath);
+  const list = Array.isArray(data.images) ? (data.images as Record<string, unknown>[]) : [];
+  const rest = list.map((i) => toUrl(i.filePath)).filter((u): u is string => u != null);
+  return dedupe([cover, ...rest].filter((u): u is string => u != null));
+}
+
+/** Strip the HTML subset printables puts in model descriptions. */
+function printablesDescription(raw: string): string {
+  return raw
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|li|h[1-6])>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+async function extractPrintables(url: string): Promise<Preview> {
+  const miss: Preview = {
+    found: false,
+    provider: "printables",
+    sourceUrl: url,
+    title: "",
+    description: "",
+    tags: [],
+    images: [],
+    categoryHint: "3D Models",
+  };
+  const modelId = printablesModelId(url);
+  if (!modelId) return miss;
+
+  const res = await fetch(PRINTABLES_GRAPHQL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json", "User-Agent": UA },
+    body: JSON.stringify({ query: PRINTABLES_QUERY, variables: { id: modelId } }),
+  });
+  if (!res.ok) return { ...miss, extra: { modelId, httpStatus: res.status } };
+
+  let payload: { data?: { print?: Record<string, unknown> | null }; errors?: unknown };
+  try {
+    payload = (await res.json()) as typeof payload;
+  } catch {
+    return { ...miss, extra: { modelId } };
+  }
+  const model = payload.data?.print;
+  const name = String(model?.name ?? "").trim();
+  if (!model || !name)
+    return { ...miss, extra: { modelId, graphqlErrors: payload.errors ?? null } };
+
+  const tags = Array.isArray(model.tags)
+    ? (model.tags as Record<string, unknown>[]).map((t) => String(t?.name ?? "")).filter(Boolean)
+    : [];
+  const description = curateDescription(printablesDescription(String(model.description ?? "")));
+  const images = printablesImages(model);
+  const creator = String(
+    (model.user as Record<string, unknown> | null)?.publicUsername ?? ""
+  ).trim();
+  const license = String((model.license as Record<string, unknown> | null)?.name ?? "").trim();
+  const slug = String(model.slug ?? "").trim();
+  const canonical = `https://www.printables.com/model/${modelId}${slug ? `-${slug}` : ""}`;
+
+  const specs: string[] = [];
+  if (license) specs.push(`License: ${license}`);
+  if (creator) specs.push(`Designer: ${creator}`);
+  const downloads = Number(model.downloadCount ?? 0);
+  if (Number.isFinite(downloads) && downloads > 0) specs.push(`Downloads: ${downloads}`);
+
+  return {
+    found: true,
+    provider: "Printables",
+    sourceUrl: canonical,
+    title: name,
+    description,
+    tags: dedupe(tags).slice(0, 12),
+    images,
+    categoryHint: "3D Models",
+    specs,
+    structuredSpecs: specs.map((line) => {
+      const at = line.indexOf(": ");
+      return { key: line.slice(0, at), value: line.slice(at + 2) };
+    }),
+    extra: {
+      modelId,
+      slug,
+      license,
+      creator,
+      subcategory: tags[0] ?? "",
+      canonical,
+      stats: { downloadCount: downloads },
+    },
+  };
+}
+
+/** The registry itself — ordered, first match wins. */
+const PROVIDERS: ProviderDef[] = [
+  { id: "makerworld", label: "MakerWorld", hosts: MAKERWORLD_HOSTS, extract: extractMakerWorld },
+  { id: "printables", label: "Printables", hosts: PRINTABLES_HOSTS, extract: extractPrintables },
+];
 
 // ---------------- Generic OpenGraph + JSON-LD extractor ----------------
 const readMeta = (html: string, prop: string): string => {
@@ -763,10 +958,104 @@ async function downloadImage(
 }
 
 // ---------------- Main handlers ----------------
-async function runPreview(url: string): Promise<Preview> {
-  const id = makerworldDesignId(url);
-  const preview = id ? await extractMakerWorld(url) : await extractGeneric(url);
-  return preview;
+
+/** Reason text for the admin, so a failure is never a silent dead end. */
+export type AttemptOutcome = "extracted" | "provider-empty" | "provider-error" | "no-provider";
+
+/**
+ * U-35 (2026-09-25): resolve the provider, try it, and ALWAYS fall back to the
+ * generic OpenGraph/JSON-LD scraper on the same URL. Previously a recognised
+ * provider that returned nothing produced a bare "found: false" with no
+ * fallback, no try/catch and no diagnostics — which is what the owner saw as
+ * "extract details is not working".
+ */
+async function runPreview(url: string, client?: ReturnType<typeof createClient>): Promise<Preview> {
+  const provider = providerFor(url);
+  let primary: Preview | null = null;
+  let outcome: AttemptOutcome = "no-provider";
+  let errorText = "";
+
+  if (provider) {
+    outcome = "provider-empty";
+    try {
+      primary = await provider.extract(url);
+      if (primary.found) outcome = "extracted";
+    } catch (error) {
+      outcome = "provider-error";
+      errorText = error instanceof Error ? error.message : String(error);
+      console.error(`link-import ${provider.id} extract failed:`, error);
+    }
+  }
+
+  if (outcome !== "extracted") {
+    // Fall back to generic scraping for the SAME url, whatever the outcome was.
+    try {
+      const generic = await extractGeneric(url);
+      if (generic.found) {
+        const note = provider
+          ? `${generic.provider} fallback (${provider.label} ${outcome})`
+          : generic.provider;
+        return {
+          ...generic,
+          provider: note,
+          extra: { ...(generic.extra ?? {}), attemptedProvider: provider?.id ?? null },
+        };
+      }
+    } catch (error) {
+      console.error("link-import generic fallback failed:", error);
+    }
+  }
+
+  const result: Preview = primary ?? {
+    found: false,
+    provider: provider?.id ?? "generic",
+    sourceUrl: url,
+    title: "",
+    description: "",
+    tags: [],
+    images: [],
+    categoryHint: "",
+  };
+  // Surface a human reason on the not-found path so the admin can say WHY.
+  if (!result.found) {
+    result.extra = {
+      ...(result.extra ?? {}),
+      outcome,
+      ...(errorText ? { error: errorText.slice(0, 200) } : {}),
+      supported: PROVIDERS.map((p) => ({ id: p.id, label: p.label, hosts: p.hosts })),
+    };
+  }
+  void recordAttempt(client, url, provider, outcome, errorText);
+  return result;
+}
+
+/** U-35: best-effort telemetry so the owner can see which sources staff try. */
+async function recordAttempt(
+  client: ReturnType<typeof createClient> | undefined,
+  url: string,
+  provider: ProviderDef | null,
+  outcome: AttemptOutcome,
+  errorText: string
+) {
+  if (!client) return;
+  let host = "";
+  try {
+    host = new URL(url).hostname;
+  } catch {
+    return;
+  }
+  try {
+    await client.from("link_import_attempts").insert({
+      host,
+      provider: provider?.id ?? null,
+      provider_label: provider?.label ?? null,
+      outcome,
+      error: errorText ? errorText.slice(0, 300) : null,
+    });
+  } catch (error) {
+    // Telemetry must never break extraction.
+    console.error("link-import attempt log failed:", error);
+  }
 }
 
 /**
@@ -797,7 +1086,7 @@ async function runUploadImage(
     if (isHttpUrl(u) && !candidates.includes(u)) candidates.push(u);
   }
   try {
-    const preview = await runPreview(url || explicit);
+    const preview = await runPreview(url || explicit, client);
     for (const img of preview.images ?? []) {
       if (typeof img === "string" && isHttpUrl(img) && !candidates.includes(img))
         candidates.push(img);
@@ -855,7 +1144,7 @@ async function runCreate(body: Record<string, unknown>, client: ReturnType<typeo
     categoryHint: "",
   };
   try {
-    preview = await runPreview(url);
+    preview = await runPreview(url, client);
   } catch {
     // preview failure is non-fatal when the admin supplied explicit fields
   }
@@ -1029,7 +1318,7 @@ async function runBackfill(client: ReturnType<typeof createClient>, role: string
       continue;
     }
     try {
-      const preview = await runPreview(url);
+      const preview = await runPreview(url, client);
       if (!preview.images || preview.images.length === 0) {
         results.push(result);
         continue;
@@ -1089,8 +1378,24 @@ serve(async (req) => {
 
     if (action === "preview") {
       if (!isHttpUrl(url)) return json({ error: "Please paste a valid https product link." }, 400);
-      const preview = await runPreview(url);
-      return json({ preview });
+      // U-35: a provider/network failure must come back as a readable message,
+      // never as an opaque 500 that the admin UI used to swallow silently.
+      try {
+        const preview = await runPreview(url, client);
+        return json({ preview });
+      } catch (error) {
+        console.error("link-import preview failed:", error);
+        return json(
+          {
+            error:
+              error instanceof Error
+                ? `Could not read that page: ${error.message}`
+                : "Could not read that page.",
+            preview: null,
+          },
+          502
+        );
+      }
     }
 
     if (action === "create") {

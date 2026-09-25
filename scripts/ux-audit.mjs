@@ -143,7 +143,11 @@ for (const vp of VIEWPORTS) {
           .slice(0, 10)
           .map((el) => {
             const r = el.getBoundingClientRect();
-            const label = (el.getAttribute("aria-label") || el.textContent || "").trim().split(/\s+/).slice(0, 5).join(" ");
+            const label = (el.getAttribute("aria-label") || el.textContent || "")
+              .trim()
+              .split(/\s+/)
+              .slice(0, 5)
+              .join(" ");
             return `${el.nodeName.toLowerCase()}.${String(el.className).slice(0, 46)} (${Math.round(r.height)}×${Math.round(r.width)}) "${label}"`;
           });
         const textOverflow = [...document.querySelectorAll("h1,h2,h3,p,span")].filter(

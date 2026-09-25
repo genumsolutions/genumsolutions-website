@@ -1326,3 +1326,38 @@ revoke all on function public.restore_order_stock(uuid, text) from anon;
 grant execute on function public.restore_order_stock(uuid, text) to service_role;
 grant execute on function public.restore_order_stock(uuid, text) to authenticated;
 
+-- ---------------------------------------------------------------------------
+-- U-35 (2026-09-25): link-import attempt log
+--
+-- Owner: "don't keep track of any new providers submitted by the users too."
+-- Every /api/admin/link-import `preview` records the pasted host, which
+-- registered provider resolved it (NULL = unknown source), and the outcome, so
+-- the owner can see which sources staff are actually trying and add the next
+-- provider to the edge function's PROVIDERS registry on evidence rather than
+-- on a support ticket.
+--
+-- Written ONLY by the `link-import` edge function through its service-role
+-- client, so RLS is enabled with no policies: anon/authenticated get nothing,
+-- staff read it through app/api/admin/import-attempts (service role).
+-- ---------------------------------------------------------------------------
+create table if not exists public.link_import_attempts (
+  id bigint generated always as identity primary key,
+  host text not null,
+  provider text,
+  provider_label text,
+  outcome text not null,
+  error text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists link_import_attempts_created_idx
+  on public.link_import_attempts (created_at desc);
+
+create index if not exists link_import_attempts_host_idx
+  on public.link_import_attempts (host);
+
+alter table public.link_import_attempts enable row level security;
+
+comment on table public.link_import_attempts is
+  'U-35: every link-import preview attempt (host, resolved provider, outcome). Service-role write from the link-import edge function; staff read via /api/admin/import-attempts. Lets the owner see which sources staff paste so new providers can be added on evidence.';
+
