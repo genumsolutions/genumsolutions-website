@@ -333,7 +333,7 @@ export default function AdminProjectPackages({
         role="tabpanel"
         id="panel-project-packages"
         aria-labelledby="tab-project-packages"
-        className="mt-8 grid min-w-0 gap-8 xl:grid-cols-[1fr_1.3fr]"
+        className="mt-4 grid min-w-0 gap-4 xl:grid-cols-[1fr_1.3fr]"
       >
         <section aria-label="Project package list" className="min-w-0 space-y-6">
           <div className="min-w-0 border-t-2 border-ink bg-white p-6">

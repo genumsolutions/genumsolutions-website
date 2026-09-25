@@ -45,7 +45,7 @@ export default function AdminActivity() {
       id="panel-activity"
       aria-labelledby="tab-activity"
       aria-label="Activity log"
-      className="mt-8 space-y-4"
+      className="mt-4 space-y-4"
     >
       <PanelCard>
         <h2 className={panelTitle}>Activity</h2>
@@ -60,7 +60,7 @@ export default function AdminActivity() {
             {activities.map((entry) => (
               <li
                 key={entry.id}
-                className="flex items-start gap-3 border border-line bg-white px-4 py-3"
+                className="flex items-start gap-3 border border-line bg-white px-3 py-2"
               >
                 <span
                   className={`mt-0.5 inline-block h-2 w-2 shrink-0 rounded-full ${entry.action.includes("deleted") ? "bg-red-500" : entry.action.includes("saved") ? "bg-emerald-500" : entry.action.includes("status") ? "bg-amber-500" : "bg-navy"}`}

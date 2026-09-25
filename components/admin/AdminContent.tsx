@@ -60,7 +60,7 @@ export default function AdminContent({ setMessage, canDelete }: Props) {
   }
 
   return (
-    <div role="tabpanel" id="panel-content" aria-labelledby="tab-content" className="mt-8">
+    <div role="tabpanel" id="panel-content" aria-labelledby="tab-content" className="mt-4">
       <PanelCard>
         <h2 className={editorCardTitle}>Homepage content</h2>
         {!loaded ? (

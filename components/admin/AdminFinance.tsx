@@ -23,7 +23,7 @@ export default function AdminFinance() {
       id="panel-finance"
       aria-labelledby="tab-finance"
       aria-label="Finance overview"
-      className="mt-8 space-y-6"
+      className="mt-4 space-y-6"
     >
       <PanelCard>
         <h2 className={panelTitle}>Finance &amp; Transactions</h2>
@@ -72,7 +72,7 @@ export default function AdminFinance() {
               { key: "cancelled", label: "Cancelled", count: stats.cancelledOrders },
             ].map(({ key, label, count }) => {
               return (
-                <div key={key} className="rounded border border-line px-4 py-3 text-center">
+                <div key={key} className="rounded border border-line px-3 py-2 text-center">
                   <p className="text-xs font-black uppercase tracking-widest text-slate-400">
                     {label}
                   </p>

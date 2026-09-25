@@ -79,9 +79,9 @@ export function focusEditor(id: string) {
 // these in one place keeps every panel looking consistent.
 // ---------------------------------------------------------------
 
-export const panelCard = "min-w-0 border-t-2 border-ink bg-white p-6";
-export const panelListSection = "min-w-0 space-y-6";
-export const editorCard = "min-w-0 overflow-hidden border-t-2 border-ink bg-white p-6";
+export const panelCard = "min-w-0 border-t-2 border-ink bg-white p-4";
+export const panelListSection = "min-w-0 space-y-4";
+export const editorCard = "min-w-0 overflow-hidden border-t-2 border-ink bg-white p-4";
 export const editorCardTitle = "font-display text-2xl font-bold text-ink";
 export const panelTitle = "font-display text-xl font-bold text-ink";
 

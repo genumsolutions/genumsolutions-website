@@ -82,7 +82,7 @@ export default function AdminSettings({ setMessage, canDelete: _canDelete }: Pro
   }
 
   return (
-    <div role="tabpanel" id="panel-settings" aria-labelledby="tab-settings" className="mt-8">
+    <div role="tabpanel" id="panel-settings" aria-labelledby="tab-settings" className="mt-4">
       <PanelCard>
         <h2 className={editorCardTitle}>Company information</h2>
         {!loaded ? (

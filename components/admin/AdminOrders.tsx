@@ -82,7 +82,7 @@ export default function AdminOrders({ canDelete }: { canDelete: boolean }) {
       id="panel-orders"
       aria-labelledby="tab-orders"
       aria-label="Customer orders"
-      className="mt-8 space-y-4"
+      className="mt-4 space-y-4"
     >
       <div className="flex flex-col gap-3 border-t-2 border-ink bg-white p-6 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
         <h2 className="font-display text-xl font-bold">Customer orders</h2>

@@ -2,7 +2,7 @@ import type { Product } from "../../lib/content-store";
 
 export type { Product };
 
-export const PAGE_SIZE = 10;
+export const PAGE_SIZE = 20;
 
 export const STATUSES = ["pending", "paid", "fulfilled", "cancelled"] as const;
 

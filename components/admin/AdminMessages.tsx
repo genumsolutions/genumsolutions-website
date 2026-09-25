@@ -111,7 +111,7 @@ export default function AdminMessages({ setMessage: _setMessage, canDelete }: Pr
       id="panel-messages"
       aria-labelledby="tab-messages"
       aria-label="Customer messages"
-      className="mt-8 space-y-4"
+      className="mt-4 space-y-4"
     >
       <div className="flex flex-col gap-3 border-t-2 border-ink bg-white p-6 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
         <h2 className={panelTitle}>Messages</h2>

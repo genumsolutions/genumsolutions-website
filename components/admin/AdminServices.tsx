@@ -102,7 +102,7 @@ export default function AdminServices({ setMessage, canDelete }: Props) {
         role="tabpanel"
         id="panel-services"
         aria-labelledby="tab-services"
-        className="mt-8 grid min-w-0 gap-8 xl:grid-cols-[1fr_1.3fr]"
+        className="mt-4 grid min-w-0 gap-4 xl:grid-cols-[1fr_1.3fr]"
       >
         <section aria-label="Service list" className={panelListSection}>
           <PanelCard>

@@ -301,7 +301,7 @@ export default function AdminProducts({
         role="tabpanel"
         id="panel-products"
         aria-labelledby="tab-products"
-        className="mt-8 grid min-w-0 gap-8 xl:grid-cols-[1fr_1.3fr]"
+        className="mt-4 grid min-w-0 gap-4 xl:grid-cols-[1fr_1.3fr]"
       >
         <section aria-label="Product list" className={panelListSection}>
           <PanelCard>
