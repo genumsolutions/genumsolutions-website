@@ -32,6 +32,14 @@ const STAFF_EMAIL = `link-import-probe-staff-${rand}@genumtest.invalid`;
 const OWNER_EMAIL = `link-import-probe-owner-${rand}@genumtest.invalid`;
 const PASSWORD = "Xk9!" + rand + "Zq";
 const MAKERWORLD_URL = process.env.LINK_IMPORT_URL || "https://makerworld.com/en/models/45000";
+// U-25 (2026-09-25): optional live pass through the Next cookie proxy the
+// website ADMIN actually calls (/api/admin/link-import), not just the edge
+// function directly. When unset, the proxy stanza is SKIPPED (default keeps
+// the harness hermetic). Set it to the running site, e.g.
+//   $env:LINK_IMPORT_PROXY_URL="http://localhost:3000/api/admin/link-import"
+// and the same checks run through the staff cookie session exactly like the
+// admin "Extract details" button does.
+const PROXY_URL = process.env.LINK_IMPORT_PROXY_URL || "";
 // Multi-photo design (one of the live sample links) — preview ONLY so a
 // create never touches the curated row. Proves gallery + specs extraction.
 const SAMPLE_URL = "https://makerworld.com/en/models/559102";
@@ -318,6 +326,48 @@ try {
     bf.status === 200 && typeof bf.data?.processed === "number",
     `status ${bf.status} processed=${bf.data?.processed}`
   );
+
+  // U-25 (2026-09-25): OPT-IN live pass through the actual Next cookie proxy
+  // the website ADMIN calls (/api/admin/link-import), instead of only the edge
+  // function directly. Hermetic by default: when LINK_IMPORT_PROXY_URL is
+  // unset this stanza is SKIPPED (keeps CI green with no running server).
+  //
+  // When enabled (a local/next dev server is up with a staff-capable DB), it
+  // wires the same fail-closed guarantees:
+  //   - anonymous + garbage-token calls are rejected with 401 (the cookie
+  //     session gate in the route fires, NOT the edge's Bearer check)
+  //   - a staff Bearer token IS honored (edge does its own staff+ JWT check,
+  //     and the proxy forwards the caller's access_token as Bearer)
+  // Run: $env:LINK_IMPORT_PROXY_URL="http://localhost:3000/api/admin/link-import"
+  //      node scripts/verify-link-import.mjs
+  if (PROXY_URL) {
+    console.log(`\n--- proxy pass (${PROXY_URL}) ---`);
+    const pAnon = await fetch(PROXY_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "preview", url: SAMPLE_URL }),
+    });
+    assert("proxy rejects anonymous (401)", pAnon.status === 401, `status ${pAnon.status}`);
+
+    const pBad = await fetch(PROXY_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer not-a-token" },
+      body: JSON.stringify({ action: "preview", url: SAMPLE_URL }),
+    });
+    assert("proxy rejects garbage token (401)", pBad.status === 401, `status ${pBad.status}`);
+
+    const pStaff = await callUrl(PROXY_URL, staff.token, {
+      action: "preview",
+      url: SAMPLE_URL,
+    });
+    assert(
+      "proxy honours staff Bearer (edge staff+ check)",
+      pStaff.status === 200,
+      `status ${pStaff.status}`
+    );
+  } else {
+    console.log("\n--- proxy pass SKIPPED (set LINK_IMPORT_PROXY_URL to run) ---");
+  }
 } catch (e) {
   assert("THREW", false, e.message);
 } finally {

@@ -41,9 +41,7 @@ export default function ProductCard({
 
   return (
     <article
-      className={`flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-sm transition hover:shadow-md ${
-        compact ? "" : ""
-      }`}
+      className={`flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-sm transition hover:shadow-md`}
     >
       <Link
         href={`/products/${product.id}`}
