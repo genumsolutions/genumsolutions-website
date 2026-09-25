@@ -187,14 +187,14 @@ export default function CheckoutPage() {
           <div className="flex shrink-0 items-center gap-2.5 whitespace-nowrap sm:gap-5">
             <Link
               href="/products"
-              className="text-xs font-bold text-navy hover:underline sm:text-sm"
+              className="inline-flex min-h-9 items-center text-xs font-bold text-navy hover:underline sm:text-sm"
             >
               Continue shopping
             </Link>
             {account && (
               <Link
                 href="/account"
-                className="text-xs font-bold text-navy hover:underline sm:text-sm"
+                className="inline-flex min-h-9 items-center text-xs font-bold text-navy hover:underline sm:text-sm"
               >
                 My account
               </Link>
