@@ -126,7 +126,7 @@ export default async function PrintingPage() {
                       <strong className="font-display text-lg text-ink">{model.priceLabel}</strong>
                       <Link
                         href={`/products/${model.id}`}
-                        className="inline-flex items-center gap-1 rounded-full bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark"
+                        className="inline-flex min-h-9 items-center gap-1 rounded-full bg-navy px-4 text-xs font-black leading-none text-white transition hover:bg-navy-dark"
                         aria-label={`View ${model.name}`}
                       >
                         View <ArrowUpRight size={14} aria-hidden="true" />

@@ -75,7 +75,7 @@ export default function OpenTools() {
             key={group}
             onClick={() => setFilter(group)}
             aria-pressed={filter === group}
-            className={`rounded-full px-4 py-2 text-xs font-bold transition ${filter === group ? "bg-navy text-white" : "border border-line bg-white text-muted hover:border-navy hover:text-navy"}`}
+            className={`min-h-9 rounded-full px-4 py-2 text-xs font-bold transition ${filter === group ? "bg-navy text-white" : "border border-line bg-white text-muted hover:border-navy hover:text-navy"}`}
           >
             {group}
           </button>
