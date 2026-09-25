@@ -148,7 +148,14 @@ export default function AdminPanel({ initialProducts, currentRole }: Props) {
         </p>
       )}
 
-      {/* Swipeable track: 6 panels translate horizontally in sync */}
+      {/* Swipeable track: 6 panels translate horizontally in sync.
+          U-42 (2026-09-26): only the ACTIVE panel participates in layout
+          (`hidden` on the rest) — the old always-rendered flex row made the
+          track height = the TALLEST mounted neighbour, so a short tab
+          (Settings) scrolled past into a big blank strip left by a tall
+          neighbour (Catalog). Sibling content stays mounted in the DOM for
+          state survival (inputs, scroll positions) but no longer dictates
+          height; the visible tab ends where ITS content ends. */}
       <div className="overflow-hidden">
         <div
           className="flex transition-transform duration-300 ease-out"
@@ -160,7 +167,8 @@ export default function AdminPanel({ initialProducts, currentRole }: Props) {
               role="tabpanel"
               id={`panel-${name.toLowerCase()}`}
               aria-labelledby={`tab-${name.toLowerCase()}`}
-              className="w-full shrink-0"
+              aria-hidden={tabIndex !== i}
+              className={`w-full shrink-0 ${tabIndex === i ? "" : "hidden"}`}
             >
               {visited.has(i) ? renderPanel(name) : null}
             </div>

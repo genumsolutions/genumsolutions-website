@@ -25,7 +25,9 @@ export default async function AdminPage() {
   ]);
   if (!admin || !role) redirect("/login");
   return (
-    <main className="min-h-screen bg-mist">
+    // U-42: no min-h-screen — the mist background ends with the content
+    // instead of stretching to the viewport below short tabs.
+    <main className="min-h-0 bg-mist">
       <header className="border-b border-line bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-5 lg:px-8">
           <div>
