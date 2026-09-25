@@ -47,7 +47,7 @@ export default function IotRemote() {
               role="tab"
               aria-selected={active}
               onClick={() => setSlug(c.slug)}
-              className={`rounded-full px-4 py-2 text-xs font-bold transition ${
+              className={`min-h-9 rounded-full px-4 py-2 text-xs font-bold transition ${
                 active
                   ? "bg-navy text-white"
                   : "border border-line bg-white text-muted hover:border-navy hover:text-navy"
