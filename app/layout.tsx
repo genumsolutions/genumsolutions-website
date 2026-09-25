@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Sora } from "next/font/google";
+import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import OrganizationJsonLd from "../components/OrganizationJsonLd";
 import WebSiteJsonLd from "../components/WebSiteJsonLd";
 import { CartProvider } from "../components/cart-provider";
@@ -11,7 +11,7 @@ import { inlineThemeAttributeValue } from "../lib/theme";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const sora = Sora({ subsets: ["latin"], variable: "--font-sora" });
+const plusJakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-plus-jakarta-sans" });
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -87,7 +87,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             (no flash of the wrong theme). Must stay in sync with lib/theme.ts. */}
         <script dangerouslySetInnerHTML={{ __html: inlineThemeAttributeValue() }} />
       </head>
-      <body className={`${inter.variable} ${sora.variable}`}>
+      <body className={`${inter.variable} ${plusJakarta.variable}`}>
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-navy focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-white"
