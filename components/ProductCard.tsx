@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import Image from "next/image";
@@ -12,7 +12,7 @@ import { useCart } from "./cart-provider";
 // U-23 (2026-09-24): single shared product card used across the catalog,
 // projects, related-products rows and recently-viewed. Image-led with a
 // taller media box, gallery-aware cover (first gallery entry when the lead
-// changes), 2 spec chips, and ≥44px touch-friendly CTAs.
+// changes), 2 spec chips, and â‰¥44px touch-friendly CTAs.
 export default function ProductCard({
   product,
   compact = false,
@@ -48,7 +48,7 @@ export default function ProductCard({
       <Link
         href={`/products/${product.id}`}
         aria-label={`View ${product.name}`}
-        // U-24 (2026-09-24): whole-image card (owner: "like the app") — the
+        // U-24 (2026-09-24): whole-image card (owner: "like the app") â€” the
         // media box shows the FULL photo on a light tray like the native card;
         // no dark gradient, no caption text on the image.
         className={`relative block overflow-hidden bg-mist ${compact ? "aspect-[4/3]" : "aspect-square"}`}
@@ -65,47 +65,43 @@ export default function ProductCard({
           className="object-contain transition duration-500 hover:scale-105"
         />
       </Link>
-      <div className={`flex flex-1 flex-col ${compact ? "p-3" : "p-5"}`}>
+      <div className={`flex flex-1 flex-col ${compact ? "p-3" : "p-3"}`}>
         <p className="truncate text-xs font-black uppercase tracking-widest text-navy">
           {typeLabel || product.badge || product.productType}
         </p>
         <h2
-          className={`mt-2 font-display font-bold leading-snug ${
-            compact ? "line-clamp-2 text-base" : "line-clamp-2 text-xl"
+          className={`mt-1.5 font-display font-bold leading-snug ${
+            compact ? "line-clamp-2 text-base" : "line-clamp-2 text-base"
           }`}
         >
           {product.name}
         </h2>
-        {!compact && product.importMeta?.creator ? (
+        {!compact &&
+        product.importMeta?.creator &&
+        (product.importMeta.creator as string).trim() ? (
           <p
-            className="mt-1 truncate text-[11px] font-semibold text-muted"
-            title={String(product.importMeta.creator)}
+            className="mt-0.5 truncate text-[10px] font-semibold text-muted"
+            title={`Design: ${String(product.importMeta.creator)}${
+              product.importMeta.license ? ` · ${String(product.importMeta.license)}` : ""
+            }`}
           >
             Design: {String(product.importMeta.creator)}
-            {product.importMeta.license ? ` · ${String(product.importMeta.license)}` : ""}
           </p>
         ) : null}
-        {!compact && (
-          <>
-            <p className="mt-2 line-clamp-2 flex-1 text-sm leading-6 text-muted">
-              {product.note || product.description?.split(". ")[0]}
-            </p>
-            {chips.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {chips.map((chip) => (
-                  <span
-                    key={chip}
-                    className="inline-block max-w-full truncate rounded-full border border-line bg-mist px-2.5 py-1 text-[11px] font-bold text-muted"
-                    title={chip}
-                  >
-                    {chip}
-                  </span>
-                ))}
-              </div>
-            )}
-          </>
+        {!compact && chips.length > 0 && (
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            {chips.map((chip) => (
+              <span
+                key={chip}
+                className="inline-block max-w-full truncate rounded-full border border-line bg-mist px-1.5 py-0.5 text-[10px] font-bold text-muted"
+                title={chip}
+              >
+                {chip}
+              </span>
+            ))}
+          </div>
         )}
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2.5">
           <strong className="font-display text-lg">{product.priceLabel}</strong>
           {showCta &&
             (quoteOnly ? (
