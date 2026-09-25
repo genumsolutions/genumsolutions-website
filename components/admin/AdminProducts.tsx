@@ -131,6 +131,11 @@ export default function AdminProducts({
         )
       );
       setProduct(emptyProduct);
+      // U-39b (2026-09-26): the last import link stuck in the field with its
+      // "Extracted ✓" banner after saving — clear both so the next import
+      // starts fresh (the saved product keeps its own documentation_url).
+      setLinkUrl("");
+      setExtracted(null);
       setMessage("Product saved.");
     } catch (error) {
       console.error("save failed", error);
@@ -544,14 +549,25 @@ export default function AdminProducts({
                 <p className="text-sm font-bold">Product image</p>
                 <div className="mt-2 flex min-w-0 flex-wrap items-center gap-3">
                   {product.image && (
-                    <Image
-                      src={product.image}
-                      alt={product.name || "Product preview"}
-                      width={64}
-                      height={64}
-                      unoptimized
-                      className="shrink-0 rounded object-cover"
-                    />
+                    <div className="relative h-16 w-16 shrink-0">
+                      <Image
+                        src={product.image}
+                        alt={product.name || "Product preview"}
+                        width={64}
+                        height={64}
+                        unoptimized
+                        className="h-16 w-16 rounded object-cover"
+                      />
+                      {/* U-39b: remove the cover (clears the URL field below). */}
+                      <button
+                        type="button"
+                        onClick={() => updateProduct("image", "")}
+                        aria-label="Remove product image"
+                        className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full border border-line bg-white text-[10px] font-black leading-none text-ink shadow-sm transition hover:border-red-500 hover:text-red-600"
+                      >
+                        ×
+                      </button>
+                    </div>
                   )}
                   <input
                     value={product.image || ""}
@@ -620,6 +636,21 @@ export default function AdminProducts({
                           unoptimized
                           className="h-full w-full object-cover"
                         />
+                        {/* U-39b (2026-09-26): per-image remove button so staff
+                            can drop unwanted extraction photos before saving. */}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            updateProduct(
+                              "gallery",
+                              (product.gallery as string[]).filter((_, j) => j !== i)
+                            )
+                          }
+                          aria-label={`Remove gallery image ${i + 1}`}
+                          className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full border border-line bg-white text-[10px] font-black leading-none text-ink shadow-sm transition hover:border-red-500 hover:text-red-600"
+                        >
+                          ×
+                        </button>
                       </div>
                     ))}
                   </div>
