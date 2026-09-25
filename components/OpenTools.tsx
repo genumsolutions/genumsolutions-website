@@ -96,7 +96,7 @@ export default function OpenTools() {
               href={tool.href}
               target="_blank"
               rel="noreferrer"
-              className="mt-6 inline-block text-sm font-bold text-navy underline decoration-gold decoration-2 underline-offset-4 transition hover:text-navy-dark"
+              className="mt-6 inline-flex min-h-9 items-center text-sm font-bold text-navy underline decoration-gold decoration-2 underline-offset-4 transition hover:text-navy-dark"
             >
               Open tool ↗
             </a>
