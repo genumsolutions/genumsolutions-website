@@ -66,6 +66,7 @@ const DIM_SAFE = new Set([
   "border-slate-700",
   "ring-slate-700", // outlines on those dark panels
   "text-red-300", // C4 footer opt-in error text — sits on the ink footer panel (dark in both themes)
+  "border-red-500", // U-39b gallery remove-× hover ring — sits on a WHITE chip (bg-card) in both themes; hover-only affordance, not surface color
 ]);
 
 function classNamesIn(source: string): string[] {
