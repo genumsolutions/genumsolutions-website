@@ -41,6 +41,7 @@ type Item = {
   id: string;
   name: string;
   category: string;
+  project_category?: string;
   price: number;
   sku: string;
   note: string;
@@ -54,6 +55,7 @@ const mk = (item: Item, index: number): Product => ({
   id: item.id,
   name: item.name,
   category: item.category,
+  project_category: item.project_category,
   price: item.price,
   priceLabel: `NPR ${item.price.toLocaleString("en-IN")}`,
   sku: item.sku,

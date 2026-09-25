@@ -23,6 +23,7 @@ type ProductRow = {
   id: string;
   name: string;
   category: string;
+  project_category: string | null;
   price: number;
   price_label: string | null;
   sku: string | null;
@@ -63,6 +64,7 @@ function rowToProduct(row: ProductRow): Product {
     id: row.id,
     name: row.name,
     category: row.category,
+    project_category: row.project_category || undefined,
     price: row.price ?? 0,
     priceLabel:
       row.price_label || (row.price ? `NPR ${row.price.toLocaleString("en-IN")}` : "Request quote"),
@@ -111,6 +113,7 @@ export function productToRow(product: Product) {
     id: product.id,
     name: product.name,
     category: product.category,
+    project_category: product.project_category ?? null,
     price: Math.max(0, Math.round(Number(product.price) || 0)),
     price_label: product.priceLabel,
     sku: product.sku,

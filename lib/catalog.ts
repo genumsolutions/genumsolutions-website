@@ -10,6 +10,7 @@ export type Product = {
   id: string;
   name: string;
   category: string;
+  project_category?: string;
   price: number;
   priceLabel: string;
   sku: string;
@@ -116,9 +117,11 @@ export function inStockOnly(list: Product[], only: boolean): Product[] {
 
 // Narrow a product list by catalog scope. "components" is everything except
 // robot cars, pre-packaged kits and project packages; "cars" is robot cars
-// only; "projects" is project packages only.
+// only (matched by project_category so the general category field stays
+// "Robot Cars" and the /products components scope still excludes them);
+// "projects" is project packages only.
 export function applyScope(all: Product[], scope: string): Product[] {
-  if (scope === "cars") return all.filter((p) => p.category === "Robot Cars");
+  if (scope === "cars") return all.filter((p) => p.project_category === "Robo Car");
   if (scope === "projects") return all.filter((p) => p.productType === "Project package");
   return all.filter(
     (p) =>

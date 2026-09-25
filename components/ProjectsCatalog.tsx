@@ -3,38 +3,58 @@
 import { useState, useMemo } from "react";
 import { ChevronDown, Search } from "lucide-react";
 import type { Product } from "../lib/catalog";
-import { filterProducts, paginate, PAGE_SIZE } from "../lib/catalog";
+import { paginate, PAGE_SIZE } from "../lib/catalog";
 import { useCart } from "./cart-provider";
 import { tabActive, tabBase, tabInactive } from "../lib/styles";
 import ProductCard from "./ProductCard";
 
 type ProjectTab = "packages" | "robot-cars";
 
-export default function ProjectsCatalog({ products = [] }: { products?: Product[] }) {
+export type ProjectCategoryEntry = {
+  id: string;
+  name: string;
+  productCount: number;
+};
+
+export default function ProjectsCatalog({
+  products = [],
+  categories = [],
+}: {
+  products?: Product[];
+  categories?: ProjectCategoryEntry[];
+}) {
   const [tab, setTab] = useState<ProjectTab>("packages");
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("All");
   const [page, setPage] = useState(1);
   const { hydrated, count } = useCart();
 
-  const packageProducts = useMemo(() => {
-    return products.filter((p) => p.productType === "Project package" && p.active !== false);
-  }, [products]);
+  const robotCars = useMemo(
+    () =>
+      products.filter(
+        (p) =>
+          p.productType === "Project package" &&
+          p.project_category === "Robo Car" &&
+          p.active !== false
+      ),
+    [products]
+  );
 
-  const robotCarProducts = useMemo(() => {
-    return products.filter((p) => p.category === "Robot Cars" && p.active !== false);
-  }, [products]);
+  const otherPackages = useMemo(
+    () =>
+      products.filter(
+        (p) =>
+          p.productType === "Project package" &&
+          p.project_category !== "Robo Car" &&
+          p.active !== false
+      ),
+    [products]
+  );
 
-  const activeProducts = tab === "packages" ? packageProducts : robotCarProducts;
-
-  const categories = useMemo(() => {
-    const present: string[] = [];
-    for (const p of activeProducts) if (!present.includes(p.category)) present.push(p.category);
-    return present;
-  }, [activeProducts]);
+  const activeProducts = tab === "packages" ? otherPackages : robotCars;
 
   const filtered = useMemo(
-    () => filterProducts(activeProducts, category, query),
+    () => filterProductsByProjectCategory(activeProducts, category, query),
     [activeProducts, category, query]
   );
 
@@ -47,6 +67,14 @@ export default function ProjectsCatalog({ products = [] }: { products?: Product[
     setPage(1);
   }
 
+  const categoryOptions = useMemo(() => {
+    const present = new Set(filtered.map((p) => p.project_category).filter(Boolean));
+    return categories.map((c) => ({
+      ...c,
+      comingSoon: !present.has(c.id) && c.productCount === 0,
+    }));
+  }, [categories, filtered]);
+
   return (
     <section className="mx-auto max-w-7xl px-5 py-10 sm:py-12 lg:px-8 lg:py-16">
       <div
@@ -55,11 +83,11 @@ export default function ProjectsCatalog({ products = [] }: { products?: Product[
         className="flex gap-x-5 border-b border-line sm:gap-x-7"
       >
         {[
-          { key: "packages" as const, label: "Project Packages", count: packageProducts.length },
+          { key: "packages" as const, label: "Project Packages", count: otherPackages.length },
           {
             key: "robot-cars" as const,
             label: "Robot Car Projects",
-            count: robotCarProducts.length,
+            count: robotCars.length,
           },
         ].map((item) => (
           <button
@@ -101,10 +129,10 @@ export default function ProjectsCatalog({ products = [] }: { products?: Product[
         </div>
       </div>
 
-      {categories.length > 1 && (
+      {categoryOptions.length > 0 && (
         <div className="mt-4">
           <label className="flex min-h-[44px] w-full items-center gap-2 rounded-full border border-line bg-white px-4 text-sm font-bold text-muted shadow-sm sm:w-64">
-            <span className="sr-only">Filter by category</span>
+            <span className="sr-only">Filter projects by category</span>
             <select
               value={category}
               onChange={(e) => {
@@ -115,9 +143,11 @@ export default function ProjectsCatalog({ products = [] }: { products?: Product[
               className="w-full bg-transparent py-2 text-sm font-bold outline-none"
             >
               <option value="All">All categories ({filtered.length})</option>
-              {categories.map((item) => (
-                <option key={item} value={item}>
-                  {item} ({filterProducts(activeProducts, item, query).length})
+              {categoryOptions.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name} (
+                  {filterProductsByProjectCategory(activeProducts, item.id, query).length})
+                  {item.comingSoon ? " — coming soon" : ""}
                 </option>
               ))}
             </select>
@@ -172,4 +202,17 @@ export default function ProjectsCatalog({ products = [] }: { products?: Product[
       )}
     </section>
   );
+}
+
+function filterProductsByProjectCategory(
+  list: Product[],
+  category: string,
+  query: string
+): Product[] {
+  const needle = query.trim().toLowerCase();
+  return list.filter((p) => {
+    if (category !== "All" && p.project_category !== category) return false;
+    if (!needle) return true;
+    return `${p.name} ${p.note} ${p.description}`.toLowerCase().includes(needle);
+  });
 }

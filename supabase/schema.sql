@@ -92,6 +92,7 @@ create table if not exists public.products (
   id text primary key,
   name text not null,
   category text not null,
+  project_category text,
   price integer not null default 0,
   price_label text not null default 'Request quote',
   sku text not null default '',
@@ -146,7 +147,41 @@ alter table public.products add column if not exists source_folder text not null
 alter table public.products add column if not exists documentation_url text not null default '';
 alter table public.products add column if not exists video_url text not null default '';
 alter table public.products add column if not exists maintenance_notes text not null default '';
+alter table public.products add column if not exists project_category text;
 create index if not exists products_category_idx on public.products(category);
+create index if not exists products_project_category_idx on public.products(project_category);
+
+-- ===== PROJECT CATEGORY ROWS (owner decision 2026-09-25, U-36) =====
+-- Remote Controller and Smart Dustbin are the two single-item project
+-- categories alongside Robo Car. Inserted here so the website's
+-- project_categories store can read all 7 categories from the DB.
+insert into public.project_categories (id, name, icon, car_type, hardware, capabilities, capability_labels, capability_notes, car_mode_ids, sort_order) values
+('remote-controller', 'Remote Controller', 'radio', null,
+  '[{"name":"ESP32","role":"controller"},{"name":"NRF24L01","role":"radio"},{"name":"Joystick module","role":"input"}]',
+  '["relay","sensor","slider"]',
+  '{"relay":"Channel switch","sensor":"Battery & signal readout","slider":"Throttle / steer curve"}',
+  '{"relay":"Toggle output channels","sensor":"Read battery voltage and RSSI","slider":"Adjust throttle curve or steering trim"}',
+  '[]',
+  6)
+on conflict (id) do update set
+  name = excluded.name, icon = excluded.icon, car_type = excluded.car_type,
+  hardware = excluded.hardware, capabilities = excluded.capabilities,
+  capability_labels = excluded.capability_labels, capability_notes = excluded.capability_notes,
+  car_mode_ids = excluded.car_mode_ids, sort_order = excluded.sort_order, updated_at = now();
+
+insert into public.project_categories (id, name, icon, car_type, hardware, capabilities, capability_labels, capability_notes, car_mode_ids, sort_order) values
+('smart-dustbin', 'Smart Dustbin', 'broom', null,
+  '[{"name":"ESP32","role":"controller"},{"name":"Ultrasonic sensor","role":"debris detection"},{"name":"Servo","role":"lid actuator"},{"name":"Relay","role":"compactor switch"}]',
+  '["relay","sensor","slider"]',
+  '{"relay":"Compactor motor","sensor":"Debris level","slider":"Emptying schedule"}',
+  '{"relay":"Drive the compactor motor on/off","sensor":"Report bin fill level","slider":"Set the auto-empty interval"}',
+  '[]',
+  7)
+on conflict (id) do update set
+  name = excluded.name, icon = excluded.icon, car_type = excluded.car_type,
+  hardware = excluded.hardware, capabilities = excluded.capabilities,
+  capability_labels = excluded.capability_labels, capability_notes = excluded.capability_notes,
+  car_mode_ids = excluded.car_mode_ids, sort_order = excluded.sort_order, updated_at = now();
 
 -- ===== SITE CONTENT (single row) =====
 create table if not exists public.site_content (
@@ -925,6 +960,14 @@ update public.products set car_mode_id = 'website-client' where id = 'website-cl
 update public.products set car_mode_id = 'website-server' where id = 'website-server-basic';
 update public.products set car_mode_id = 'path-follow' where id = 'path-follow-basic';
 update public.products set car_mode_id = 'rf-manual' where id = 'rf-manual-basic';
+
+-- ===== PROJECT CATEGORY (owner decision 2026-09-25, U-36) =====
+-- project_category is the project-specific classification (separate
+-- from category which keeps all 5 packages in "Robot Cars" so the
+-- /products components scope still excludes them).
+update public.products set project_category = 'Robo Car' where id in ('2wd1m-basic', '4wd4m-basic', 'self-balancing-basic');
+update public.products set project_category = 'Remote Controller' where id = 'esp32-remote';
+update public.products set project_category = 'Smart Dustbin' where id = 'smart-dustbin';
 
 -- ===== PROJECT ROWS RESTORE (owner decision 2026-09-24, P4) =====
 -- The U-13 inventory rewrite dropped all 'Project package' rows. Re-add ONLY

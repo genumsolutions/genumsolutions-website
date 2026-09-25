@@ -5,6 +5,7 @@ import PageIntro from "../../components/PageIntro";
 import PageShell from "../../components/PageShell";
 import ProjectsCatalog from "../../components/ProjectsCatalog";
 import { getManagedProducts } from "../../lib/content-store";
+import { getProjectCategories } from "../../lib/project-categories-store";
 
 export const metadata: Metadata = {
   title: "Projects",
@@ -16,6 +17,12 @@ export const dynamic = "force-dynamic";
 
 export default async function ProjectsPage() {
   const products = await getManagedProducts();
+  const categories = await getProjectCategories();
+  const categoryEntries = categories.map((c) => ({
+    id: c.id,
+    name: c.name,
+    productCount: 0,
+  }));
   return (
     <PageShell>
       <PageIntro
@@ -32,7 +39,7 @@ export default async function ProjectsPage() {
           <ArrowRight size={15} aria-hidden="true" />
         </Link>
       </div>
-      <ProjectsCatalog products={products} />
+      <ProjectsCatalog products={products} categories={categoryEntries} />
     </PageShell>
   );
 }

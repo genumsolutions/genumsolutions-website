@@ -302,7 +302,12 @@ describe("filterProducts", () => {
 describe("applyScope", () => {
   const base = makeProducts(2);
   const base0 = base[0] as Product;
-  const car: Product = { ...base0, id: "car", category: "Robot Cars" };
+  const car: Product = {
+    ...base0,
+    id: "car",
+    category: "Robot Cars",
+    project_category: "Robo Car",
+  };
   const kit: Product = { ...base0, id: "kit", category: "Pre-packaged Kits" };
   const project: Product = { ...base0, id: "project", productType: "Project package" };
   const all: Product[] = [...base, car, kit, project];
