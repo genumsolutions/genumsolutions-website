@@ -319,6 +319,9 @@ export default function AdminProducts({
                 type="button"
                 onClick={() => {
                   setProduct(emptyProduct);
+                  // U-39b fix (2026-09-26): a fresh product must also drop the
+                  // last import link, not just its "Extracted ✓" banner.
+                  setLinkUrl("");
                   setExtracted(null);
                   document
                     .getElementById("product-editor")
@@ -624,9 +627,12 @@ export default function AdminProducts({
                 {Array.isArray(product.gallery) && product.gallery.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-2">
                     {product.gallery.map((src, i) => (
+                      // U-39b fix (2026-09-26): no overflow-hidden on this box —
+                      // it clipped the -top/-right × button out of view, so
+                      // staff saw no way to remove an extraction photo.
                       <div
                         key={`${src}-${i}`}
-                        className="relative h-14 w-14 overflow-hidden rounded border border-line bg-mist"
+                        className="relative h-14 w-14 rounded border border-line bg-mist"
                       >
                         <Image
                           src={src}
@@ -634,7 +640,7 @@ export default function AdminProducts({
                           width={56}
                           height={56}
                           unoptimized
-                          className="h-full w-full object-cover"
+                          className="h-full w-full rounded object-cover"
                         />
                         {/* U-39b (2026-09-26): per-image remove button so staff
                             can drop unwanted extraction photos before saving. */}
@@ -668,7 +674,13 @@ export default function AdminProducts({
               {product.id && (
                 <button
                   type="button"
-                  onClick={() => setProduct(emptyProduct)}
+                  onClick={() => {
+                    // U-39b fix (2026-09-26): "New product" resets the whole
+                    // editor — including the sticky import link + banner.
+                    setProduct(emptyProduct);
+                    setLinkUrl("");
+                    setExtracted(null);
+                  }}
                   className="border border-line px-5 py-3 text-sm font-black text-ink transition hover:border-navy"
                 >
                   New product
