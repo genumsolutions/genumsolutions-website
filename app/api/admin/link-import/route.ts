@@ -16,6 +16,7 @@
 import { NextResponse } from "next/server";
 import { isStaffRequest } from "../../../../lib/admin";
 import { createClient } from "../../../../lib/supabase/server";
+import { revalidateProducts } from "../../../../lib/revalidate";
 
 const EDGE_BASE = `${process.env.NEXT_PUBLIC_SUPABASE_URL!.replace(/\/$/, "")}/functions/v1`;
 
@@ -41,6 +42,10 @@ export async function POST(request: Request) {
     const data = (await res.json().catch(() => null)) ?? {};
     if (!res.ok) {
       return NextResponse.json({ error: data.error || "Import failed." }, { status: res.status });
+    }
+    if (body.action === "create") {
+      const id = typeof data.product?.id === "string" ? data.product.id : undefined;
+      revalidateProducts(id);
     }
     return NextResponse.json(data);
   } catch (error) {

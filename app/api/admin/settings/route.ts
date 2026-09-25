@@ -11,6 +11,7 @@ import {
   deleteCurriculumHighlight,
 } from "../../../../lib/settings-store";
 import { logActivity } from "../../../../lib/activity";
+import { revalidateCompany, revalidatePrograms } from "../../../../lib/revalidate";
 
 export async function GET() {
   if (!(await isStaffRequest()))
@@ -59,6 +60,7 @@ export async function PUT(request: Request) {
           youtubeUrl: c.youtubeUrl ?? "",
         });
         await logActivity({ action: "company.saved", entityType: "company_info", entityId: "1" });
+        revalidateCompany();
         return NextResponse.json({ ok: true });
       }
       case "training": {
@@ -84,6 +86,7 @@ export async function PUT(request: Request) {
           active: p.active !== false,
           sortOrder: Math.max(0, Math.round(Number(p.sortOrder) || 0)),
         });
+        revalidatePrograms();
         return NextResponse.json({ ok: true, id: (p.id ?? "").trim() || slugify(p.title) });
       }
       case "pilot": {
@@ -106,6 +109,7 @@ export async function PUT(request: Request) {
           active: l.active !== false,
           sortOrder: Math.max(0, Math.round(Number(l.sortOrder) || 0)),
         });
+        revalidatePrograms();
         return NextResponse.json({ ok: true, id });
       }
       case "curriculum": {
@@ -126,6 +130,7 @@ export async function PUT(request: Request) {
           active: h.active !== false,
           sortOrder: Math.max(0, Math.round(Number(h.sortOrder) || 0)),
         });
+        revalidatePrograms();
         return NextResponse.json({ ok: true, id });
       }
       default:
@@ -174,6 +179,7 @@ export async function DELETE(request: Request) {
         return NextResponse.json({ error: "Unknown settings action." }, { status: 400 });
     }
 
+    revalidatePrograms();
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("Admin settings delete failed", error);

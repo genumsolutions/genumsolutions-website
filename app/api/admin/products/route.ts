@@ -8,6 +8,7 @@ import {
 } from "../../../../lib/content-store";
 import { logActivity } from "../../../../lib/activity";
 import { isStorageImage } from "../../../../lib/product-image";
+import { revalidateProducts } from "../../../../lib/revalidate";
 
 export async function GET(request: Request) {
   if (!(await isStaffRequest()))
@@ -195,6 +196,7 @@ export async function PUT(request: Request) {
       entityId: product.id,
       details: { name: product.name },
     });
+    revalidateProducts(product.id);
     return NextResponse.json({ ok: true, product });
   } catch (error) {
     console.error("Product save failed", error);
@@ -215,6 +217,7 @@ export async function DELETE(request: Request) {
     if (!id) return NextResponse.json({ error: "Product id is required." }, { status: 400 });
     await deleteProduct(id);
     await logActivity({ action: "product.deleted", entityType: "product", entityId: id });
+    revalidateProducts(id);
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("Product deletion failed", error);

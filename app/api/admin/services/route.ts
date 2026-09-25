@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { isAdminRequest, isStaffRequest } from "../../../../lib/admin";
 import { listServices, saveService, deleteService } from "../../../../lib/services";
 import { logActivity } from "../../../../lib/activity";
+import { revalidateServices } from "../../../../lib/revalidate";
 
 export async function GET() {
   if (!(await isStaffRequest()))
@@ -42,6 +43,7 @@ export async function PUT(request: Request) {
     entityId: service.id,
     details: { name: service.name },
   });
+  revalidateServices();
   return NextResponse.json({ ok: true, service });
 }
 
@@ -54,5 +56,6 @@ export async function DELETE(request: Request) {
 
   const ok = await deleteService(id);
   if (ok) await logActivity({ action: "service.deleted", entityType: "service", entityId: id });
+  if (ok) revalidateServices();
   return NextResponse.json({ ok });
 }

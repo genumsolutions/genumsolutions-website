@@ -7,6 +7,7 @@ import {
   saveJournalPost,
 } from "../../../../lib/journal-store";
 import type { ManagedJournalPost } from "../../../../lib/journal-store";
+import { revalidateJournal } from "../../../../lib/revalidate";
 
 export async function GET(request: Request) {
   if (!(await isStaffRequest()))
@@ -66,6 +67,7 @@ async function save(request: Request) {
       entityId: id,
       details: { title: post.title },
     });
+    revalidateJournal();
     return NextResponse.json({ ok: true, post });
   } catch (error) {
     console.error("Journal save failed", error);
@@ -81,6 +83,7 @@ export async function DELETE(request: Request) {
     if (!id) return NextResponse.json({ error: "Journal post id is required." }, { status: 400 });
     await deleteJournalPost(id);
     await logActivity({ action: "journal.deleted", entityType: "journal_posts", entityId: id });
+    revalidateJournal();
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("Journal deletion failed", error);

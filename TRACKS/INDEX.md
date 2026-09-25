@@ -469,3 +469,46 @@ mutation route in the same change, so admin edits stay instant while public
 pages get 5-minute ISR. Doing the first half alone silently regresses admin
 edits to a 5-minute delay. Owner chose to prioritize the admin dashboard
 uplift instead; this note is here so the tradeoff is not rediscovered later.
+
+## U-33 (2026-09-25) � on-demand revalidation plumbing (admin edits stay instant under ISR)
+
+Prerequisite for the U-32 ISR work, landed WITHOUT changing any render mode, so
+it is inert today and load-bearing the moment public routes go ISR.
+
+NEW `lib/revalidate.ts` � one helper per content noun, wrapping `revalidatePath`
+in a `safe()` that try/catches each path (a throw must never fail an
+already-successful save, and one bad path must not skip the rest):
+
+- `revalidateProducts(id?)` -> `/`, `/products`, `/3d-printing`, `/projects` (+ `/products/<id>`)
+- `revalidateServices()` -> `/services`
+- `revalidatePrograms()` -> `/`, `/services` (training / pilot / curriculum)
+- `revalidateHomeContent()` -> `/` (site_content)
+- `revalidateJournal()` -> `/journal`
+- `revalidateCompany()` -> `revalidatePath("/", "layout")` (company_info feeds
+  layout metadata on EVERY page, so this is deliberately layout-wide)
+
+Wired after the write succeeds in: products PUT/DELETE, services PUT/DELETE,
+journal PUT/DELETE, content PUT, settings PUT (all 4 actions) + settings DELETE,
+and link-import POST on `action === "create"` only (preview must not bust caches).
+
+The map was derived by tracing every public page's store imports, not guessed:
+`/` = site_content + programs + product media; `/products`, `/products/[slug]`,
+`/projects`, `/3d-printing` = products; `/services` = services + programs;
+`/journal` = journal_posts; `company_info` = root layout. `robo_car_modes` is
+DELIBERATELY absent � `/tools` renders the static `ROBOCAR_MODES` catalog, only
+the app reads that table (asserted by a test so nobody wires it in blind).
+
+Gates: `tsc --noEmit` 0 - vitest **133/133** (new `tests/revalidate.test.ts`
+10 assertions incl. the layout-wide company call, the no-/tools rule, and both
+throw-resilience cases) - prettier clean on every touched file.
+
+KNOWN LIMITATION (documented deliberately): app-side admin writes go straight
+to the `admin-products` / `link-import` edge functions, so they cannot trigger
+website revalidation. Under ISR those would lag up to the 300s window. Closing
+that needs a DB webhook (pg_net) calling the revalidation endpoint - not built,
+because it is only needed once ISR actually ships.
+
+Side note: `scripts/ux-audit.mjs` is unformatted at HEAD and NOT prettier-ignored,
+so `prettier --check .` is red for a pre-existing reason. No CI gate runs it
+(only the pre-commit lint-staged on staged files), which is why it went unnoticed.
+Left untouched to keep this commit scoped; run `npx prettier --write scripts/ux-audit.mjs` to clear it.

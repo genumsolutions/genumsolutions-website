@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { isStaffRequest } from "../../../../lib/admin";
 import { getSiteContent, saveSiteContent } from "../../../../lib/content-store";
 import { logActivity } from "../../../../lib/activity";
+import { revalidateHomeContent } from "../../../../lib/revalidate";
 
 export async function GET() {
   if (!(await isStaffRequest()))
@@ -17,5 +18,6 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Homepage title and body are required." }, { status: 400 });
   await saveSiteContent({ homeTitle: String(body.homeTitle), homeBody: String(body.homeBody) });
   await logActivity({ action: "content.saved", entityType: "site_content", entityId: "home" });
+  revalidateHomeContent();
   return NextResponse.json({ ok: true });
 }
