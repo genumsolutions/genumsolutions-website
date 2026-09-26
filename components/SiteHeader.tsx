@@ -94,11 +94,10 @@ export default function SiteHeader() {
   // U-47v4: menu close behaviors — Escape (desktop-hybrid), Android BACK
   // button (history popstate guard: opening pushes a history entry, closing
   // pops it so the hardware back closes the menu instead of leaving the
-  // page), outside-tap via the viewport scrim, and tap on the scrim also
-  // fires popstate? No — scrim click closes without history churn; the
-  // cleanup unwinds the sentinel. The stale body scroll-lock was removed:
-  // the popover must scroll WITH the sticky header (owner: "list should
-  // stick on the screen along with the top bar").
+  // page), outside-tap via the viewport scrim. The stale body scroll-lock
+  // was removed: the popover must scroll WITH the sticky header.
+  // U-47v6: the sentinel is NEVER unwound via history.back() — see the
+  // effect below (reactive back raced and canceled menu-item navigation).
   useEffect(() => {
     if (!open) return;
     function onKeyDown(event: KeyboardEvent) {
@@ -108,18 +107,27 @@ export default function SiteHeader() {
       }
     }
     function onPopState() {
-      // Hardware back / browser back: consume the sentinel and close.
       setOpen(false);
     }
-    // Push a sentinel entry; back => popstate => close (and the sentinel
-    // is consumed). Closing by any other path also unwinds the sentinel.
+    // Push a sentinel entry; hardware back => popstate => close (the
+    // sentinel is consumed by that back).
     window.history.pushState({ genumMenu: true }, "");
     document.addEventListener("keydown", onKeyDown);
     window.addEventListener("popstate", onPopState);
+    // U-47v6 (owner: menu items stopped navigating to their pages): the
+    // previous cleanup called history.back() to unwind the sentinel, but
+    // that ASYNC navigation raced the menu item's own navigation — the
+    // sentinel's back won and canceled the link's push, so every menu tap
+    // landed back on the same page (Android Chrome). Fix: NEVER call
+    // history.back() reactively. A popstate fired while the current state
+    // is our sentinel is the hardware back (close; sentinel consumed); a
+    // popstate arriving after the state has already changed is a real
+    // navigation (close without touching history). A sentinel left behind
+    // (user navigated by some path that didn't fire our cleanup) is
+    // harmless: one extra back press returns to this page.
     return () => {
       document.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("popstate", onPopState);
-      if (window.history.state?.genumMenu) window.history.back();
     };
   }, [open]);
 

@@ -122,13 +122,13 @@ export default async function HomePage() {
   const printShowcase = printModels.slice(0, 4);
   // U-46: hero carousel slides — the newest 3D prints + electronic products
   // (already fetched above for the strips; no extra DB round-trip).
-  const heroProducts = [...printModels.slice(0, 2), ...featuredElectronic.slice(0, 2)];
+  // U-47v6 (owner: 3D residue in the landing-page product displays):
+  // BOTH the hero carousel and the shelf strip are ELECTRONIC-ONLY now —
+  // 3D models keep their own "Models we print" showcase further down.
+  const heroProducts = featuredElectronic.slice(0, 4);
   // U-47 (owner, ecommerce-style home): an in-stock products strip right
-  // under the hero — mixed 3D + electronic, photo-led, straight to the page.
-  const bestSellers = [
-    ...printModels.filter((p) => Boolean(p.image)).slice(0, 4),
-    ...featuredElectronic.slice(0, 4),
-  ].slice(0, 8);
+  // under the hero — photo-led, straight to the page.
+  const bestSellers = featuredElectronic.slice(0, 8);
 
   return (
     <PageShell>
@@ -497,42 +497,25 @@ export default async function HomePage() {
               {pilotCosts.length > 0 && (
                 <div className="min-w-0">
                   <div className="rounded-2xl border border-line bg-white">
-                    {/* W2b (F1): the costing table clips at 360px — scroll it on
-                        phones instead of truncating rows. */}
-                    <div className="overflow-x-auto">
-                      <table className="w-full min-w-[420px] text-left text-sm">
-                        <caption className="sr-only">
-                          Illustrative pilot program running costs
-                        </caption>
-                        <thead>
-                          <tr className="border-b border-line bg-mist text-[10px] uppercase tracking-wide text-slate-500">
-                            <th scope="col" className="px-5 py-3 font-bold">
-                              Item
-                            </th>
-                            <th scope="col" className="px-5 py-3 font-bold">
-                              Cost
-                            </th>
-                            <th scope="col" className="hidden px-5 py-3 font-bold sm:table-cell">
-                              Notes
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-line">
-                          {pilotCosts.map((line) => (
-                            <tr key={line.item}>
-                              <th scope="row" className="px-5 py-3 font-semibold text-ink">
-                                {line.item}
-                              </th>
-                              <td className="px-5 py-3 font-mono text-xs text-ink">{line.cost}</td>
-                              <td className="hidden px-5 py-3 text-xs leading-5 text-slate-600 sm:table-cell">
-                                {line.note}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                    <p className="border-t border-line bg-mist px-5 py-2.5 text-[10px] text-slate-500">
+                    {/* U-47v6 (owner: the price column overflowed the right
+                        border on phones and the mono font read weird): the
+                        fixed 420px table is replaced by a wrap-proof list —
+                        item + cost share a row (cost never clipped), notes
+                        sit under each row on every screen size. */}
+                    <ul className="divide-y divide-line">
+                      {pilotCosts.map((line) => (
+                        <li key={line.item} className="px-4 py-3 sm:px-5">
+                          <div className="flex items-baseline justify-between gap-3">
+                            <span className="min-w-0 text-sm font-semibold text-ink">
+                              {line.item}
+                            </span>
+                            <span className="shrink-0 text-sm font-bold text-ink">{line.cost}</span>
+                          </div>
+                          <p className="mt-0.5 text-xs leading-5 text-slate-600">{line.note}</p>
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="border-t border-line bg-mist px-4 py-2.5 text-[10px] text-slate-500 sm:px-5">
                       Illustrative figures — final pilot quotes are customised per school.
                     </p>
                   </div>

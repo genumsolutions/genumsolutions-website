@@ -363,7 +363,12 @@ export default function AdminUsers({ setMessage, canDelete, currentRole }: Props
           <ul className="space-y-3">
             {userData.users.map((user) => (
               <li key={user.id} className="border border-line bg-white p-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
+                {/* U-47v6 (owner: the Delete button was pushed past the right
+                    edge on phones and unclickable): info and actions stack
+                    vertically on mobile — the action cluster takes its own
+                    full-width wrapping row instead of squeezing beside the
+                    identity column. sm+ keeps the side-by-side layout. */}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-bold">
                       {user.name || "—"}{" "}
@@ -392,7 +397,7 @@ export default function AdminUsers({ setMessage, canDelete, currentRole }: Props
                       </span>
                     </span>
                   </div>
-                  <span className="flex shrink-0 flex-wrap gap-2">
+                  <span className="flex w-full flex-wrap gap-2 sm:w-auto">
                     <select
                       value={user.role === "owner" ? "owner" : user.role}
                       onChange={(e) =>
