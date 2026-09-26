@@ -6,6 +6,7 @@ import PageShell from "../../components/PageShell";
 import ProjectsCatalog from "../../components/ProjectsCatalog";
 import { getManagedProducts } from "../../lib/content-store";
 import { getProjectCategories } from "../../lib/project-categories-store";
+import { applyScope } from "../../lib/catalog";
 
 export const metadata: Metadata = {
   title: "Projects",
@@ -16,7 +17,12 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function ProjectsPage() {
-  const products = await getManagedProducts();
+  // U-47v4 (deep-check finding, same as /products): the WHOLE catalog used
+  // to cross the server/client boundary — the RSC flight payload shipped
+  // every 3D-model and electronics row to /projects hidden inside
+  // ProjectsCatalog's props. Scope SERVER-SIDE (applyScope keeps Project
+  // packages; the includeKits path re-adds Pre-packaged Kits client-side).
+  const products = applyScope(await getManagedProducts(), "projects");
   const categories = await getProjectCategories();
   const categoryEntries = categories.map((c) => ({
     id: c.id,

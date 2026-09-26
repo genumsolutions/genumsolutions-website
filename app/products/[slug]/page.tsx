@@ -5,6 +5,7 @@ import ProductJsonLd from "../../../components/ProductJsonLd";
 import BreadcrumbListJsonLd from "../../../components/BreadcrumbListJsonLd";
 import PageShell from "../../../components/PageShell";
 import { getManagedProducts } from "../../../lib/content-store";
+import { applyScope } from "../../../lib/catalog";
 
 export function generateStaticParams() {
   return [];
@@ -34,7 +35,12 @@ export async function generateMetadata({
 }
 
 export default async function ProductPage({ params }: { params: { slug: string } }) {
-  const products = await getManagedProducts();
+  // U-47v4 (deep-check finding): ProductDetailPro's allProducts prop (used
+  // for the related-products row and bundle rows) previously received the
+  // WHOLE catalog, leaking 3D-model and project rows into this route's RSC
+  // payload. Scope SERVER-SIDE to the Electronic Products catalog — the
+  // related row then stays within the same scope it is browsed from.
+  const products = applyScope(await getManagedProducts(), "components");
   const product = products.find((item) => item.id === params.slug);
   if (!product) notFound();
   return (

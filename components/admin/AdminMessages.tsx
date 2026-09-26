@@ -153,7 +153,9 @@ export default function AdminMessages({ setMessage: _setMessage, canDelete }: Pr
                     </p>
                     <p className="mt-1 text-xs text-slate-400">{formatTimestamp(msg.created_at)}</p>
                   </div>
-                  <div className="flex shrink-0 items-center gap-2">
+                  {/* U-47v4: wrap like the other admin rows so buttons stay
+                      inside 320-360px viewports. */}
+                  <div className="flex flex-wrap items-center gap-2">
                     {msg.status === "new" && (
                       <button
                         onClick={() => markReplied(msg.id)}

@@ -32,6 +32,17 @@ type Order = {
   createdAt: string;
 };
 
+type Habits = {
+  viewed_count: number;
+  search_count: number;
+  cart_adds: number;
+  orders_placed: number;
+  last_viewed_at: string | null;
+  last_search_at: string | null;
+  last_cart_at: string | null;
+  last_order_at: string | null;
+};
+
 const statusStyles: Record<string, string> = {
   pending: "bg-amber-100 text-amber-800",
   paid: "bg-emerald-100 text-emerald-800",
@@ -51,6 +62,7 @@ function SectionCard({ title, id, children }: { title: string; id?: string; chil
 export default function AccountPanel() {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [habits, setHabits] = useState<Habits | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState("");
   const { clear } = useCart();
@@ -78,6 +90,12 @@ export default function AccountPanel() {
           fetch("/api/orders")
             .then((response) => (response.ok ? response.json() : { orders: [] }))
             .then((orders) => setOrders(orders.orders || [])),
+          // U-47v4: activity counters (fire-and-forget — the block hides
+          // itself when the fetch fails, the page must never break).
+          fetch("/api/habits")
+            .then((response) => (response.ok ? response.json() : null))
+            .then((data) => setHabits(data?.habits ?? null))
+            .catch(() => undefined),
         ]).finally(() => {
           if (active) setLoaded(true);
         });
@@ -197,6 +215,38 @@ export default function AccountPanel() {
         </div>
 
         <MyCollection />
+
+        {/* U-47v4: "Your activity" — the habit counters the site has been
+            silently recording since v2 (views, searches, cart adds, orders).
+            Hidden entirely when counters are all zero or the fetch failed. */}
+        {habits &&
+          (habits.viewed_count > 0 ||
+            habits.search_count > 0 ||
+            habits.cart_adds > 0 ||
+            habits.orders_placed > 0) && (
+            <SectionCard title="Your activity">
+              <p className="mt-2 text-sm text-slate-600">
+                A private tally of how you use GENUM — only you can see this.
+              </p>
+              <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {(
+                  [
+                    { label: "Products viewed", count: habits.viewed_count },
+                    { label: "Searches", count: habits.search_count },
+                    { label: "Cart adds", count: habits.cart_adds },
+                    { label: "Orders placed", count: habits.orders_placed },
+                  ] as const
+                ).map(({ label, count }) => (
+                  <div key={label} className="rounded-xl border border-line bg-mist/60 px-4 py-3">
+                    <dt className="text-[11px] font-black uppercase tracking-wide text-muted">
+                      {label}
+                    </dt>
+                    <dd className="mt-1 font-display text-2xl font-bold text-ink">{count}</dd>
+                  </div>
+                ))}
+              </dl>
+            </SectionCard>
+          )}
 
         <PushNotificationSettings />
 

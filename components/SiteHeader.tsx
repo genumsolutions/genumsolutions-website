@@ -91,10 +91,14 @@ export default function SiteHeader() {
     setOpen(false);
   }, [pathname]);
 
-  // U-47 (owner): the mobile nav is an APP-STYLE LEFT SLIDE-IN DRAWER —
-  // full-height panel from the left (like the native app), dim scrim behind,
-  // Escape/outside-tap/scroll-lock handling. The 2-per-row tap grid was
-  // cramped on small phones (owner report).
+  // U-47v4: menu close behaviors — Escape (desktop-hybrid), Android BACK
+  // button (history popstate guard: opening pushes a history entry, closing
+  // pops it so the hardware back closes the menu instead of leaving the
+  // page), outside-tap via the viewport scrim, and tap on the scrim also
+  // fires popstate? No — scrim click closes without history churn; the
+  // cleanup unwinds the sentinel. The stale body scroll-lock was removed:
+  // the popover must scroll WITH the sticky header (owner: "list should
+  // stick on the screen along with the top bar").
   useEffect(() => {
     if (!open) return;
     function onKeyDown(event: KeyboardEvent) {
@@ -103,11 +107,19 @@ export default function SiteHeader() {
         menuButtonRef.current?.focus();
       }
     }
+    function onPopState() {
+      // Hardware back / browser back: consume the sentinel and close.
+      setOpen(false);
+    }
+    // Push a sentinel entry; back => popstate => close (and the sentinel
+    // is consumed). Closing by any other path also unwinds the sentinel.
+    window.history.pushState({ genumMenu: true }, "");
     document.addEventListener("keydown", onKeyDown);
-    document.body.style.overflow = "hidden";
+    window.addEventListener("popstate", onPopState);
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = "";
+      window.removeEventListener("popstate", onPopState);
+      if (window.history.state?.genumMenu) window.history.back();
     };
   }, [open]);
 
@@ -119,173 +131,185 @@ export default function SiteHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-line bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-5 sm:gap-4 sm:py-3.5 lg:px-8">
-        <Link
-          href="/"
-          className="group flex min-w-0 items-center gap-3"
-          aria-label="GENUM SOLUTIONS home"
-        >
-          <span className="relative block h-11 w-11 shrink-0 overflow-hidden rounded-full bg-white shadow-card ring-1 ring-line transition group-hover:ring-navy/40 sm:h-14 sm:w-14">
-            <Image
-              src="/logo.png"
-              alt="GENUM SOLUTIONS stamp"
-              width={112}
-              height={112}
-              className="h-full w-full object-contain"
-              priority
-            />
-          </span>
-          {/* Wordmark is hidden on the very narrowest screens (and the wide
-              tracked tagline below sm) so the fixed-width action buttons on
-              the right never overflow off the viewport on small phones. */}
-          <span aria-hidden="true" className="hidden h-10 w-px bg-line sm:block" />
-          <span className="hidden min-w-0 leading-none min-[340px]:block">
-            <strong className="block truncate font-display text-lg font-bold tracking-tight text-ink sm:text-[22px]">
-              GENUM
-            </strong>
-            <span className="mt-1 hidden text-[9px] font-bold uppercase tracking-[0.32em] text-navy sm:block sm:text-[10px]">
-              Solutions Pvt.&thinsp;Ltd.
-            </span>
-          </span>
-        </Link>
-
-        <nav aria-label="Primary" className="hidden items-center gap-1 text-sm text-ink/60 lg:flex">
-          {nav.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={linkClass(item.href)}
-              aria-current={isActive(pathname ?? "", item.href) ? "page" : undefined}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-
-        <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
-          <HeaderSession />
-          <button
-            onClick={cycleTheme}
-            aria-label={`Theme: ${preference}. Click to change.`}
-            title={`Theme: ${preference} — click for ${nextThemePreference(preference)}`}
-            className="relative flex h-10 w-10 items-center justify-center rounded-full border border-line bg-white text-muted transition hover:border-navy hover:text-navy sm:h-9 sm:w-9"
-          >
-            {/* W-6 2-way cycle: light ⇄ dim (owner decision 2026-09-22 —
-                System removed; legacy 'system' stored values resolve to dim). */}
-            {preference === "light" ? (
-              <Sun size={16} aria-hidden="true" />
-            ) : (
-              <Moon size={16} aria-hidden="true" />
-            )}
-          </button>
-          <Link
-            href="/checkout"
-            aria-label={
-              hydrated && count > 0
-                ? `Open checkout, ${count} item${count === 1 ? "" : "s"}`
-                : "Open checkout"
-            }
-            className="relative flex h-10 w-10 items-center justify-center rounded-full bg-ink text-white transition hover:bg-navy sm:h-9 sm:w-9"
-          >
-            <ShoppingBag size={16} aria-hidden="true" />
-            {hydrated && count > 0 && (
-              <span
-                aria-hidden="true"
-                className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-gold px-1 text-[10px] font-black text-ink"
-              >
-                {count}
-              </span>
-            )}
-          </Link>
-          <button
-            ref={menuButtonRef}
-            onClick={() => setOpen(!open)}
-            aria-expanded={open}
-            aria-controls="mobile-navigation"
-            aria-label={open ? "Close navigation menu" : "Open navigation menu"}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-white text-ink transition hover:border-navy hover:text-navy sm:h-9 sm:w-9 lg:hidden"
-          >
-            {open ? <X size={18} aria-hidden="true" /> : <Menu size={18} aria-hidden="true" />}
-          </button>
-        </div>
-      </div>
-
-      {/* U-47v3 (owner): the menu is a COMPACT TOP-RIGHT POPOVER — not a
-          full-height drawer. It anchors BELOW the menu icon (the header row
-          is 64px tall on phones), sized to its CONTENT (max-height caps it
-          at the real available viewport via dvh), 44px tap rows, rounded
-          corners. Translucent backdrop-blur background so page color shows
-          through and the light scrim keeps page context visible. */}
-      <div
-        id="mobile-navigation"
-        ref={mobileNavRef}
-        aria-hidden={!open}
-        className={`fixed inset-0 z-50 lg:hidden ${open ? "" : "pointer-events-none"}`}
-      >
+    <>
+      {/* U-47v4 fix: the scrim must be a viewport-wide tap-catcher but it
+        CANNOT live inside <header> — backdrop-blur on the header makes it
+        the containing block for fixed descendants, so a fixed scrim there
+        only covered the header bar itself and outside-tap never fired.
+        Rendered as a sibling below the header (z-40 < header z-50) and
+        only while open. */}
+      {open && (
         <div
+          aria-hidden="true"
           onClick={() => setOpen(false)}
-          className={`absolute inset-0 bg-ink/40 transition-opacity duration-200 ${
-            open ? "opacity-100" : "opacity-0"
-          }`}
+          className="fixed inset-0 z-40 bg-ink/40 lg:hidden"
         />
-        <nav
-          aria-label="Mobile"
-          className={`absolute right-2 top-[calc(env(safe-area-inset-top,0px)+64px)] w-56 overflow-hidden rounded-2xl border border-line bg-white/80 shadow-2xl backdrop-blur-xl transition-all duration-200 ease-out origin-top-right ${
-            open ? "translate-y-0 scale-100 opacity-100" : "-translate-y-2 scale-95 opacity-0"
-          }`}
-          style={{ maxHeight: "calc(100dvh - 80px)" }}
-        >
-          <ul className="overflow-y-auto py-1.5 text-sm">
-            {nav.map((item) => {
-              const active = isActive(pathname ?? "", item.href);
-              return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    onClick={() => setOpen(false)}
-                    className={`mx-1.5 flex h-11 items-center rounded-lg px-3 font-semibold backdrop-blur-none transition ${
-                      active ? "bg-navy text-white" : "bg-white/60 text-ink hover:bg-mist"
-                    }`}
-                    aria-current={active ? "page" : undefined}
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-          <div className="border-t border-line p-2">
-            {user ? (
-              <div className="space-y-1">
-                <Link
-                  href="/account"
-                  onClick={() => setOpen(false)}
-                  className="flex h-11 items-center justify-center rounded-lg border border-navy bg-white/60 px-3 text-sm font-bold text-navy hover:bg-navy-light"
-                >
-                  <User size={14} aria-hidden="true" className="mr-2" />
-                  My Account
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="flex h-11 w-full items-center justify-center rounded-lg border border-red-200 bg-white/60 px-3 text-sm font-bold text-red-600 hover:bg-red-50"
-                >
-                  <LogOut size={14} aria-hidden="true" className="mr-2" />
-                  Log out
-                </button>
-              </div>
-            ) : (
+      )}
+      <header className="sticky top-0 z-50 border-b border-line bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-5 sm:gap-4 sm:py-3.5 lg:px-8">
+          <Link
+            href="/"
+            className="group flex min-w-0 items-center gap-3"
+            aria-label="GENUM SOLUTIONS home"
+          >
+            <span className="relative block h-11 w-11 shrink-0 overflow-hidden rounded-full bg-white shadow-card ring-1 ring-line transition group-hover:ring-navy/40 sm:h-14 sm:w-14">
+              <Image
+                src="/logo.png"
+                alt="GENUM SOLUTIONS stamp"
+                width={112}
+                height={112}
+                className="h-full w-full object-contain"
+                priority
+              />
+            </span>
+            {/* U-47v4 (owner: "Solutions Pvt. Ltd." missing on mobile): the
+              wordmark now shows on ALL sizes — 'GENUM' always, tagline also
+              always visible (progressively sized 320px→sm, truncate guard).
+              min-w-0 + shrink keeps the fixed-width action cluster safe. */}
+            <span aria-hidden="true" className="hidden h-10 w-px bg-line sm:block" />
+            <span className="min-w-0 leading-none">
+              <strong className="block truncate font-display text-lg font-bold tracking-tight text-ink sm:text-[22px]">
+                GENUM
+              </strong>
+              <span className="mt-1 block truncate text-[8px] font-bold uppercase tracking-[0.18em] text-navy min-[380px]:text-[9px] min-[380px]:tracking-[0.26em] sm:text-[10px] sm:tracking-[0.32em]">
+                Solutions Pvt.&thinsp;Ltd.
+              </span>
+            </span>
+          </Link>
+
+          <nav
+            aria-label="Primary"
+            className="hidden items-center gap-1 text-sm text-ink/60 lg:flex"
+          >
+            {nav.map((item) => (
               <Link
-                href="/login"
-                onClick={() => setOpen(false)}
-                className="flex h-11 items-center justify-center rounded-lg bg-navy px-3 text-sm font-bold text-white hover:bg-navy-dark"
+                key={item.href}
+                href={item.href}
+                className={linkClass(item.href)}
+                aria-current={isActive(pathname ?? "", item.href) ? "page" : undefined}
               >
-                Sign in
+                {item.label}
               </Link>
-            )}
+            ))}
+          </nav>
+
+          <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
+            <HeaderSession />
+            <button
+              onClick={cycleTheme}
+              aria-label={`Theme: ${preference}. Click to change.`}
+              title={`Theme: ${preference} — click for ${nextThemePreference(preference)}`}
+              className="relative flex h-10 w-10 items-center justify-center rounded-full border border-line bg-white text-muted transition hover:border-navy hover:text-navy sm:h-9 sm:w-9"
+            >
+              {/* W-6 2-way cycle: light ⇄ dim (owner decision 2026-09-22 —
+                System removed; legacy 'system' stored values resolve to dim). */}
+              {preference === "light" ? (
+                <Sun size={16} aria-hidden="true" />
+              ) : (
+                <Moon size={16} aria-hidden="true" />
+              )}
+            </button>
+            <Link
+              href="/checkout"
+              aria-label={
+                hydrated && count > 0
+                  ? `Open checkout, ${count} item${count === 1 ? "" : "s"}`
+                  : "Open checkout"
+              }
+              className="relative flex h-10 w-10 items-center justify-center rounded-full bg-ink text-white transition hover:bg-navy sm:h-9 sm:w-9"
+            >
+              <ShoppingBag size={16} aria-hidden="true" />
+              {hydrated && count > 0 && (
+                <span
+                  aria-hidden="true"
+                  className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-gold px-1 text-[10px] font-black text-ink"
+                >
+                  {count}
+                </span>
+              )}
+            </Link>
+            <button
+              ref={menuButtonRef}
+              onClick={() => setOpen(!open)}
+              aria-expanded={open}
+              aria-controls="mobile-navigation"
+              aria-label={open ? "Close navigation menu" : "Open navigation menu"}
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-white text-ink transition hover:border-navy hover:text-navy sm:h-9 sm:w-9 lg:hidden"
+            >
+              {open ? <X size={18} aria-hidden="true" /> : <Menu size={18} aria-hidden="true" />}
+            </button>
           </div>
-        </nav>
-      </div>
-    </header>
+        </div>{" "}
+        {/* U-47v4 (owner): the popover must STICK with the sticky header —
+          so it lives INSIDE the <header> flow positioned absolute to it
+          (the header is sticky top-0, absolute children ride along). The
+          viewport scrim lives OUTSIDE the header (see fragment above).
+          Outside-tap closes (scrim), Android back closes (popstate),
+          Escape closes. */}
+        <div
+          id="mobile-navigation"
+          ref={mobileNavRef}
+          aria-hidden={!open}
+          className={`absolute inset-x-0 top-full z-50 lg:hidden ${open ? "" : "pointer-events-none"}`}
+        >
+          <nav
+            aria-label="Mobile"
+            className={`absolute right-2 w-56 overflow-hidden rounded-2xl border border-line bg-white/80 shadow-2xl backdrop-blur-xl transition-all duration-200 ease-out origin-top-right ${
+              open ? "translate-y-2 scale-100 opacity-100" : "-translate-y-2 scale-95 opacity-0"
+            }`}
+            style={{ maxHeight: "calc(100dvh - 96px)" }}
+          >
+            <ul className="overflow-y-auto py-1.5 text-sm">
+              {nav.map((item) => {
+                const active = isActive(pathname ?? "", item.href);
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      onClick={() => setOpen(false)}
+                      className={`mx-1.5 flex h-11 items-center rounded-lg px-3 font-semibold backdrop-blur-none transition ${
+                        active ? "bg-navy text-white" : "bg-white text-ink hover:bg-mist"
+                      }`}
+                      aria-current={active ? "page" : undefined}
+                    >
+                      {item.label}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="border-t border-line p-2">
+              {user ? (
+                <div className="space-y-1">
+                  <Link
+                    href="/account"
+                    onClick={() => setOpen(false)}
+                    className="flex h-11 items-center justify-center rounded-lg border border-navy bg-white px-3 text-sm font-bold text-navy hover:bg-navy-light"
+                  >
+                    <User size={14} aria-hidden="true" className="mr-2" />
+                    My Account
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="flex h-11 w-full items-center justify-center rounded-lg border border-red-200 bg-white px-3 text-sm font-bold text-red-600 hover:bg-red-50"
+                  >
+                    <LogOut size={14} aria-hidden="true" className="mr-2" />
+                    Log out
+                  </button>
+                </div>
+              ) : (
+                <Link
+                  href="/login"
+                  onClick={() => setOpen(false)}
+                  className="flex h-11 items-center justify-center rounded-lg bg-navy px-3 text-sm font-bold text-white hover:bg-navy-dark"
+                >
+                  Sign in
+                </Link>
+              )}
+            </div>
+          </nav>
+        </div>
+      </header>
+    </>
   );
 }

@@ -144,7 +144,10 @@ export default function AdminOrders({ canDelete }: { canDelete: boolean }) {
                       {order.provider} · {formatTimestamp(order.createdAt)}
                     </p>
                   </div>
-                  <div className="flex shrink-0 items-center gap-2">
+                  {/* U-47v4 (owner: admin buttons overflow mobile): wrap the
+                      action cluster instead of shrink-0 — select + Details +
+                      Delete overflowed 320-360px viewports. */}
+                  <div className="flex flex-wrap items-center gap-2">
                     <select
                       value={order.status}
                       onChange={(e) => setOrderStatus(order.id, e.target.value)}
