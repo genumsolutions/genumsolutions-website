@@ -321,7 +321,14 @@ describe("applyScope", () => {
   });
 
   it("narrows to project packages only", () => {
-    expect(applyScope(all, "projects").map((p) => p.id)).toEqual(["project"]);
+    // U-44 (owner): Pre-packaged Kits ride the Projects scope too.
+    expect(applyScope(all, "projects").map((p) => p.id)).toEqual(["kit", "project"]);
+  });
+
+  it("excludes 3D Models from components and lists them under models (U-44)", () => {
+    const model: Product = { ...base0, id: "m1", category: "3D Models" };
+    expect(applyScope([...all, model], "components").map((p) => p.id)).toEqual(["p1", "p2"]);
+    expect(applyScope([...all, model], "models").map((p) => p.id)).toEqual(["m1"]);
   });
 });
 

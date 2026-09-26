@@ -6,11 +6,22 @@ export const PAGE_SIZE = 20;
 
 export const STATUSES = ["pending", "paid", "fulfilled", "cancelled"] as const;
 
-// U-37 (2026-09-25): 12→6 tabs, group names removed.
-// Order mirrors the app's AdminScreen exactly (guide/ARCHITECTURE.md B-6).
-// Merged: Dashboard+Activity · Orders+Finance · Products+Projects ·
-// Services+Journal+Content · Users+Messages+Robots · Settings.
-export const TABS = ["Dashboard", "Orders", "Catalog", "Content", "Users", "Settings"] as const;
+// U-44 (2026-09-26, owner): the single Catalog tab becomes THREE tabs so the
+// admin mirrors the customer storefront exactly:
+//   "Electronic Products" → /products   "3D Products" → /3d-printing
+//   "Projects" → /projects (+ Pre-packaged Kits)
+// Order mirrors the app's AdminScreen (guide/ARCHITECTURE.md B-6). Each tab
+// carries its OWN import section, preset to its catalog (no cross-tab drift).
+export const TABS = [
+  "Dashboard",
+  "Orders",
+  "Electronic Products",
+  "3D Products",
+  "Projects",
+  "Content",
+  "Users",
+  "Settings",
+] as const;
 export type Tab = (typeof TABS)[number];
 
 export const TAB_GROUP_OF: Record<Tab, string> = Object.fromEntries(

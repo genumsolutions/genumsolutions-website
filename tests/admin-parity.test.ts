@@ -14,7 +14,19 @@ import { resolve } from "node:path";
 // Order mirrors the app's AdminScreen exactly (guide/ARCHITECTURE.md B-6).
 // Merged: Dashboard+Activity · Orders+Finance · Products+Projects ·
 // Services+Journal+Content · Users+Messages+Robots · Settings.
-const ADMIN_TABS = ["Dashboard", "Orders", "Catalog", "Content", "Users", "Settings"];
+// U-44 (2026-09-26): Catalog split into three catalog tabs mirroring the
+// customer storefront — Electronic Products (/products), 3D Products
+// (/3d-printing), Projects (/projects).
+const ADMIN_TABS = [
+  "Dashboard",
+  "Orders",
+  "Electronic Products",
+  "3D Products",
+  "Projects",
+  "Content",
+  "Users",
+  "Settings",
+];
 
 function readAdminTypesSource(): string {
   const local = resolve(__dirname, "../components/admin/admin-types.ts");

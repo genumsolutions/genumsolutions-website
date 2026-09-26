@@ -71,7 +71,7 @@ export const products: Product[] = localProducts;
 export const formatNPR = (value: number) => `NPR ${value.toLocaleString("en-IN")}`;
 export const findProduct = (slug: string) => products.find((product) => product.id === slug);
 
-export const PAGE_SIZE = 12;
+export const PAGE_SIZE = 20;
 
 // ===== C2 (2026-09-23): sort + price/stock filters (shared by /products UI,
 // the products API, and mirrored 1:1 by the app's Shop screen) =====
@@ -115,17 +115,26 @@ export function inStockOnly(list: Product[], only: boolean): Product[] {
   return only ? list.filter((p) => p.stock > 0) : list;
 }
 
-// Narrow a product list by catalog scope. "components" is everything except
-// robot cars, pre-packaged kits and project packages; "cars" is robot cars
-// only (matched by project_category so the general category field stays
-// "Robot Cars" and the /products components scope still excludes them);
-// "projects" is project packages only.
+// Narrow a product list by catalog scope. The three customer catalogs are
+// DISJOINT (U-44, owner 2026-09-26): "components" (Electronic Products) is
+// everything except robot cars / pre-packaged kits / project packages AND 3D
+// Models (3D prints live ONLY on /3d-printing); "models" is the 3D-store
+// scope (category "3D Models"); "cars" is robot cars only; "projects" is
+// project packages PLUS Pre-packaged Kits (owner: kits display on the
+// projects page). The general category field stays "Robot Cars" for cars and
+// kits — load-bearing for the admin project window — never repurpose it.
 export function applyScope(all: Product[], scope: string): Product[] {
+  if (scope === "models")
+    return all.filter((p) => p.category?.trim().toLowerCase() === "3d models");
   if (scope === "cars") return all.filter((p) => p.project_category === "Robo Car");
-  if (scope === "projects") return all.filter((p) => p.productType === "Project package");
+  if (scope === "projects")
+    return all.filter(
+      (p) => p.productType === "Project package" || p.category === "Pre-packaged Kits"
+    );
   return all.filter(
     (p) =>
       !["Robot Cars", "Pre-packaged Kits"].includes(p.category) &&
+      p.category?.trim().toLowerCase() !== "3d models" &&
       p.productType !== "Project package"
   );
 }

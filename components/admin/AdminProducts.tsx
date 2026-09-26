@@ -1,10 +1,11 @@
 "use client";
 
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import { inputClass } from "../../lib/styles";
 import { productIdFromTitle } from "../../lib/product-slug";
+import { applyScope } from "../../lib/catalog";
 import type { Product } from "./admin-types";
 import { emptyProduct, fields, PAGE_SIZE } from "./admin-types";
 import {
@@ -19,6 +20,8 @@ import {
 } from "./admin-helpers";
 
 type Props = {
+  /** Which catalog this tab manages — drives list scope, import default, and copy. */
+  kind: "electronic" | "models";
   products: Product[];
   onProductsChange: (updater: (prev: Product[]) => Product[]) => void;
   setMessage: (msg: string) => void;
@@ -26,12 +29,23 @@ type Props = {
 };
 
 export default function AdminProducts({
+  kind,
   products,
   onProductsChange,
   setMessage,
   canDelete,
 }: Props) {
-  const [product, setProduct] = useState<Product>(emptyProduct);
+  // U-44: each tab is its own catalog with its OWN import section preset to
+  // that catalog — an import started here lands here.
+  const isModels = kind === "models";
+  const tabScope = isModels ? "models" : "electronic";
+  const tabLabel = isModels ? "3D Products" : "Electronic Products";
+  const defaultCategory = isModels ? "3D Models" : "Controllers & Boards";
+  const scopeFilter = useCallback((p: Product) => applyScope([p], tabScope).length > 0, [tabScope]);
+  const [product, setProduct] = useState<Product>(() => ({
+    ...emptyProduct,
+    category: defaultCategory,
+  }));
   const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("All");
@@ -73,8 +87,11 @@ export default function AdminProducts({
     };
   }, []);
 
-  const categories = Array.from(new Set(products.map((item) => item.category).filter(Boolean)));
-  const filteredProducts = products.filter(
+  const catalogProducts = useMemo(() => products.filter(scopeFilter), [products, scopeFilter]);
+  const categories = Array.from(
+    new Set(catalogProducts.map((item) => item.category).filter(Boolean))
+  );
+  const filteredProducts = catalogProducts.filter(
     (item) =>
       (category === "All" || item.category === category) &&
       `${item.name} ${item.sku} ${item.id} ${item.category}`
@@ -130,7 +147,7 @@ export default function AdminProducts({
           a.name.localeCompare(b.name)
         )
       );
-      setProduct(emptyProduct);
+      setProduct({ ...emptyProduct, category: defaultCategory });
       // U-39b (2026-09-26): the last import link stuck in the field with its
       // "Extracted ✓" banner after saving — clear both so the next import
       // starts fresh (the saved product keeps its own documentation_url).
@@ -221,11 +238,18 @@ export default function AdminProducts({
       }
       const p = result.preview;
       const canonical = typeof p?.extra?.canonical === "string" ? p.extra.canonical : url;
+      // U-44: the destination is THIS tab. A category hint that belongs to a
+      // different catalog (e.g. a MakerWorld car hinting "Robot Cars" while
+      // importing into Electronic Products) is re-homed to the tab's default.
+      const hint = String(p?.categoryHint || "").trim();
+      const hintInScope =
+        Boolean(hint) && applyScope([{ ...emptyProduct, category: hint }], tabScope).length > 0;
+      const seededCategory = hintInScope ? hint : defaultCategory;
       if (!p?.found) {
         setProduct((current) => ({
           ...current,
           name: current.name || p?.title || "",
-          category: current.category || p?.categoryHint || "",
+          category: current.category || seededCategory,
           description: current.description || p?.description || "",
           image: current.image || p?.images?.[0] || "",
         }));
@@ -252,7 +276,11 @@ export default function AdminProducts({
         // non-latin title yields "untitled-product" instead of a blank id.
         id: p.title ? productIdFromTitle(p.title) : current.id,
         name: p.title,
-        category: p.categoryHint || current.category,
+        // U-44: imports land in THIS tab's catalog — never in a project
+        // family (that was the invisible-row bug this round killed).
+        category: seededCategory,
+        productType: "Retail kit",
+        project_category: undefined,
         description: p.description || current.description,
         image: p.images?.[0] || current.image,
         // U-23 (2026-09-24): seed the FULL gallery from the extracted images
@@ -304,21 +332,23 @@ export default function AdminProducts({
     <>
       <div
         role="tabpanel"
-        id="panel-products"
-        aria-labelledby="tab-products"
+        id={`panel-${kind === "models" ? "models" : "electronic"}`}
+        aria-labelledby={`tab-${kind === "models" ? "models" : "electronic"}`}
         className="mt-4 grid min-w-0 gap-4 xl:grid-cols-[1fr_1.3fr]"
       >
-        <section aria-label="Product list" className={panelListSection}>
+        <section aria-label={`${tabLabel} list`} className={panelListSection}>
           <PanelCard>
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className={panelTitle}>Products ({filteredProducts.length})</h2>
+              <h2 className={panelTitle}>
+                {tabLabel} ({filteredProducts.length})
+              </h2>
               {/* U-35 (2026-09-25): "Add product" used to live only inside the
                   SaveBar, which is hidden until a product already has an id —
                   so the one action that creates a product was invisible. */}
               <button
                 type="button"
                 onClick={() => {
-                  setProduct(emptyProduct);
+                  setProduct({ ...emptyProduct, category: defaultCategory });
                   // U-39b fix (2026-09-26): a fresh product must also drop the
                   // last import link, not just its "Extracted ✓" banner.
                   setLinkUrl("");
@@ -371,7 +401,7 @@ export default function AdminProducts({
                       onClick={() => {
                         setProduct(item);
                         document
-                          .getElementById("product-editor")
+                          .getElementById(kind === "models" ? "models-editor" : "product-editor")
                           ?.scrollIntoView({ behavior: "smooth" });
                       }}
                       className="text-xs font-bold text-navy underline"
@@ -402,21 +432,28 @@ export default function AdminProducts({
                 </div>
               ))}
               {shownProducts.length === 0 && (
-                <EmptyState>No products match &ldquo;{query}&rdquo;.</EmptyState>
+                <EmptyState>
+                  No {tabLabel.toLowerCase()} match &ldquo;{query}&rdquo;.
+                </EmptyState>
               )}
             </div>
             <Pager page={productPage} totalPages={totalPages} onPage={setProductPage} />
           </PanelCard>
         </section>
-        <section id="product-editor" aria-label="Product editor" className="min-w-0">
+        <section
+          id={kind === "models" ? "models-editor" : "product-editor"}
+          aria-label="Product editor"
+          className="min-w-0"
+        >
           <form onSubmit={previewLink} className={`${editorCard} mb-6`}>
-            <h2 className={editorCardTitle}>Import a product by link</h2>
+            <h2 className={editorCardTitle}>Import into {tabLabel} by link</h2>
             <p className="mt-1 text-sm text-muted">
-              Paste a product page and click <strong>Extract details</strong> to pull the title,
-              description, specs and images into the editor below — then fine-tune and click{" "}
-              <strong>Save product</strong>. Details are read from <strong>MakerWorld</strong> and{" "}
-              <strong>Printables</strong>; any other link is still saved, but you fill the fields
-              yourself.
+              Everything extracted here is saved as a <strong>{tabLabel}</strong> item — it appears
+              on the {isModels ? "/3d-printing" : "/products"} page for customers. Paste a product
+              page, click <strong>Extract details</strong>, review the title, description, specs and
+              images below, then click <strong>Save product</strong>. Details are read from{" "}
+              <strong>MakerWorld</strong> and <strong>Printables</strong>; any other link is still
+              saved, but you fill the fields yourself.
             </p>
             <div className="mt-4 flex flex-col gap-2 sm:flex-row">
               <input
@@ -677,7 +714,7 @@ export default function AdminProducts({
                   onClick={() => {
                     // U-39b fix (2026-09-26): "New product" resets the whole
                     // editor — including the sticky import link + banner.
-                    setProduct(emptyProduct);
+                    setProduct({ ...emptyProduct, category: defaultCategory });
                     setLinkUrl("");
                     setExtracted(null);
                   }}

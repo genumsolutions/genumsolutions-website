@@ -39,7 +39,7 @@ export default async function ProjectsPage() {
           <ArrowRight size={15} aria-hidden="true" />
         </Link>
       </div>
-      <ProjectsCatalog products={products} categories={categoryEntries} />
+      <ProjectsCatalog products={products} categories={categoryEntries} includeKits />
     </PageShell>
   );
 }

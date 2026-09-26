@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   ShoppingBag,
+  Cpu,
+  Box,
   Package,
   FileText,
   Users,
@@ -29,10 +31,15 @@ import AdminSettings from "./admin/AdminSettings";
 
 type Props = { initialProducts: Product[]; currentRole: "staff" | "admin" | "owner" };
 
+// U-44: tab ids must be URL/DOM-safe — "Electronic Products" → "electronic-products".
+const panelId = (name: string) => name.toLowerCase().replace(/\s+/g, "-");
+
 const TAB_ICONS = {
   Dashboard: LayoutDashboard,
   Orders: ShoppingBag,
-  Catalog: Package,
+  "Electronic Products": Cpu,
+  "3D Products": Box,
+  Projects: Package,
   Content: FileText,
   Users: Users,
   Settings: SettingsIcon,
@@ -73,22 +80,34 @@ export default function AdminPanel({ initialProducts, currentRole }: Props) {
             <AdminFinance />
           </>
         );
-      case "Catalog":
+      case "Electronic Products":
         return (
-          <>
-            <AdminProducts
-              products={products}
-              onProductsChange={setProducts}
-              setMessage={setMessage}
-              canDelete={canDelete}
-            />
-            <AdminProjectPackages
-              products={products}
-              onProductsChange={setProducts}
-              setMessage={setMessage}
-              canDelete={canDelete}
-            />
-          </>
+          <AdminProducts
+            kind="electronic"
+            products={products}
+            onProductsChange={setProducts}
+            setMessage={setMessage}
+            canDelete={canDelete}
+          />
+        );
+      case "3D Products":
+        return (
+          <AdminProducts
+            kind="models"
+            products={products}
+            onProductsChange={setProducts}
+            setMessage={setMessage}
+            canDelete={canDelete}
+          />
+        );
+      case "Projects":
+        return (
+          <AdminProjectPackages
+            products={products}
+            onProductsChange={setProducts}
+            setMessage={setMessage}
+            canDelete={canDelete}
+          />
         );
       case "Content":
         return (
@@ -123,9 +142,9 @@ export default function AdminPanel({ initialProducts, currentRole }: Props) {
             <button
               key={name}
               role="tab"
-              id={`tab-${name.toLowerCase()}`}
+              id={`tab-${panelId(name)}`}
               aria-selected={tab === name}
-              aria-controls={`panel-${name.toLowerCase()}`}
+              aria-controls={`panel-${panelId(name)}`}
               onClick={() => {
                 setTab(name);
                 setVisited((prev) => new Set(prev).add(i));
@@ -164,8 +183,8 @@ export default function AdminPanel({ initialProducts, currentRole }: Props) {
             <div
               key={name}
               role="tabpanel"
-              id={`panel-${name.toLowerCase()}`}
-              aria-labelledby={`tab-${name.toLowerCase()}`}
+              id={`panel-${panelId(name)}`}
+              aria-labelledby={`tab-${panelId(name)}`}
               aria-hidden={tabIndex !== i}
               className={`w-full shrink-0 ${tabIndex === i ? "" : "h-0 overflow-hidden"}`}
             >

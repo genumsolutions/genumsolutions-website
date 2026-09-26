@@ -19,9 +19,12 @@ export type ProjectCategoryEntry = {
 export default function ProjectsCatalog({
   products = [],
   categories = [],
+  includeKits = false,
 }: {
   products?: Product[];
   categories?: ProjectCategoryEntry[];
+  /** U-44 (owner): Pre-packaged Kits display on the projects page. */
+  includeKits?: boolean;
 }) {
   const [tab, setTab] = useState<ProjectTab>("packages");
   const [query, setQuery] = useState("");
@@ -42,13 +45,13 @@ export default function ProjectsCatalog({
 
   const otherPackages = useMemo(
     () =>
-      products.filter(
-        (p) =>
-          p.productType === "Project package" &&
-          p.project_category !== "Robo Car" &&
-          p.active !== false
-      ),
-    [products]
+      products.filter((p) => {
+        if (p.active === false) return false;
+        // U-44: Pre-packaged Kits ride the packages tab (owner decision).
+        if (includeKits && p.category === "Pre-packaged Kits") return true;
+        return p.productType === "Project package" && p.project_category !== "Robo Car";
+      }),
+    [products, includeKits]
   );
 
   const activeProducts = tab === "packages" ? otherPackages : robotCars;

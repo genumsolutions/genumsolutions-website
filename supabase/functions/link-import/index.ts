@@ -1243,9 +1243,34 @@ async function runCreate(body: Record<string, unknown>, client: ReturnType<typeo
     uploaded.push(storageUrl);
   }
 
-  const category = String(overrides?.category || preview.categoryHint || "Retail kit")
+  // U-44 (2026-09-26): import DESTINATION — the caller picks "Products"
+  // (default, the shop path) or "Project Packages" BEFORE importing, so a row
+  // can never strand in the admin-only "Robot Cars" window again. That limbo
+  // came from category='Robot Cars' + product_type='Retail kit': admins saw
+  // the row in their Projects panel, customers saw it NOWHERE (the shop
+  // excludes the category; Projects requires product_type 'Project package').
+  const destRaw = String(overrides?.destinationType || overrides?.productType || "").trim();
+  const toProjects = destRaw === "Project package" || destRaw === "Project Packages";
+  let category = String(overrides?.category || preview.categoryHint || "Retail kit")
     .trim()
     .slice(0, 80);
+  // Backstop: the project-family categories are for robot-car builds — an
+  // ordinary product import must not claim one even when the extractor's
+  // category hint (or a stale editor field) suggests it. MakerWorld hints
+  // "Robot Cars" for printed RC-car models, which is exactly how the three
+  // stranded rows were born; they re-home to 3D Models.
+  if (!toProjects && /^(robot cars|pre-packaged kits)$/i.test(category)) {
+    const hint = String(preview.categoryHint || "").trim();
+    category = hint && !/^(robot cars|pre-packaged kits)$/i.test(hint) ? hint : "3D Models";
+  }
+  const productType = toProjects ? "Project package" : "Retail kit";
+  // Explicit project_category override wins (e.g. "Remote Controller");
+  // otherwise project imports default to the Robo Car family.
+  const overridePcat =
+    typeof overrides?.projectCategory === "string" && overrides.projectCategory.trim()
+      ? overrides.projectCategory.trim().slice(0, 80)
+      : "";
+  const projectCategory = overridePcat || (toProjects ? "Robo Car" : null);
   const description = String(overrides?.description || preview.description || "")
     .trim()
     .slice(0, 4000);
@@ -1293,6 +1318,10 @@ async function runCreate(body: Record<string, unknown>, client: ReturnType<typeo
   const row = {
     name: rawName.slice(0, 120),
     category,
+    // U-44: persist the destination so both clients group the row the same
+    // way from the moment it is created (see the limbo note above).
+    product_type: productType,
+    project_category: projectCategory,
     description,
     price,
     price_label: priceLabel,
