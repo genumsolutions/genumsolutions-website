@@ -10,6 +10,7 @@ import { initials } from "../lib/identity";
 import { inputClass } from "../lib/styles";
 import { signOut } from "../lib/auth";
 import { useCart } from "./cart-provider";
+import MyCollection from "./MyCollection";
 
 type Customer = {
   id: string;
@@ -194,6 +195,8 @@ export default function AccountPanel() {
             </span>
           </Link>
         </div>
+
+        <MyCollection />
 
         <PushNotificationSettings />
 

@@ -248,7 +248,7 @@ export default function ProductCatalog({
         </div>
       </div>
 
-      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
         {items.length === 0 && (
           <div className="col-span-full border-t-2 border-ink bg-white p-10 text-center">
             <p className="font-display text-xl font-bold">No products found</p>

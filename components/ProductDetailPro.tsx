@@ -393,7 +393,7 @@ export default function ProductDetailPro({
                   >
                     ×{qty}
                   </span>
-                  <ProductCard product={item} compact showCta={false} />
+                  <ProductCard product={item} />
                 </div>
               ))}
             </div>
@@ -406,7 +406,7 @@ export default function ProductDetailPro({
             </p>
             <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
               {usedInProjects.map((item) => (
-                <ProductCard key={item.id} product={item} compact showCta={false} />
+                <ProductCard key={item.id} product={item} />
               ))}
             </div>
           </div>
@@ -419,7 +419,7 @@ export default function ProductDetailPro({
             </p>
             <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
               {related.map((item) => (
-                <ProductCard key={item.id} product={item} compact showCta={false} />
+                <ProductCard key={item.id} product={item} />
               ))}
             </div>
           </div>

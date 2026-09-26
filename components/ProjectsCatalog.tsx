@@ -5,10 +5,7 @@ import { ChevronDown, Search } from "lucide-react";
 import type { Product } from "../lib/catalog";
 import { paginate, PAGE_SIZE } from "../lib/catalog";
 import { useCart } from "./cart-provider";
-import { tabActive, tabBase, tabInactive } from "../lib/styles";
 import ProductCard from "./ProductCard";
-
-type ProjectTab = "packages" | "robot-cars";
 
 export type ProjectCategoryEntry = {
   id: string;
@@ -16,6 +13,11 @@ export type ProjectCategoryEntry = {
   productCount: number;
 };
 
+// U-47 (2026-09-27, owner): ONE unified projects grid — no more Packages /
+// Robot-Cars tabs. Every project package displays as a card; the category
+// selector filters by the SIX owner-named categories (Robo Car, Smart Home,
+// Smart Farm, Smart City, Smart Dustbin, Aerial Drones) read from
+// project_categories in the DB. Empty categories show as coming soon.
 export default function ProjectsCatalog({
   products = [],
   categories = [],
@@ -26,97 +28,56 @@ export default function ProjectsCatalog({
   /** U-44 (owner): Pre-packaged Kits display on the projects page. */
   includeKits?: boolean;
 }) {
-  const [tab, setTab] = useState<ProjectTab>("packages");
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("All");
   const [page, setPage] = useState(1);
-  const { hydrated, count } = useCart();
+  const { count } = useCart();
 
-  const robotCars = useMemo(
-    () =>
-      products.filter(
-        (p) =>
-          p.productType === "Project package" &&
-          p.project_category === "Robo Car" &&
-          p.active !== false
-      ),
-    [products]
-  );
-
-  const otherPackages = useMemo(
+  const allProjects = useMemo(
     () =>
       products.filter((p) => {
         if (p.active === false) return false;
-        // U-44: Pre-packaged Kits ride the packages tab (owner decision).
+        // U-44: Pre-packaged Kits ride the projects page (owner decision).
         if (includeKits && p.category === "Pre-packaged Kits") return true;
-        return p.productType === "Project package" && p.project_category !== "Robo Car";
+        return p.productType === "Project package";
       }),
     [products, includeKits]
   );
 
-  const activeProducts = tab === "packages" ? otherPackages : robotCars;
-
-  const filtered = useMemo(
-    () => filterProductsByProjectCategory(activeProducts, category, query),
-    [activeProducts, category, query]
-  );
+  const filtered = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return allProjects.filter((p) => {
+      if (category !== "All" && p.project_category !== category) return false;
+      if (!needle) return true;
+      return `${p.name} ${p.note} ${p.description}`.toLowerCase().includes(needle);
+    });
+  }, [allProjects, category, query]);
 
   const { items, totalPages, hasMore } = useMemo(() => paginate(filtered, page), [filtered, page]);
 
-  function changeTab(next: ProjectTab) {
-    setTab(next);
-    setQuery("");
-    setCategory("All");
-    setPage(1);
-  }
-
   const categoryOptions = useMemo(() => {
-    const present = new Set(filtered.map((p) => p.project_category).filter(Boolean));
+    // project_category stores the category NAME ("Robo Car", "Smart
+    // Dustbin", …) — match on name, the store's rows carry the same names.
+    const present = new Set(allProjects.map((p) => p.project_category).filter(Boolean));
     return categories.map((c) => ({
       ...c,
-      comingSoon: !present.has(c.id) && c.productCount === 0,
+      comingSoon: !present.has(c.name) && c.productCount === 0,
     }));
-  }, [categories, filtered]);
+  }, [categories, allProjects]);
 
   return (
     <section className="mx-auto max-w-7xl px-5 py-10 sm:py-12 lg:px-8 lg:py-16">
-      <div
-        role="tablist"
-        aria-label="Project sections"
-        className="flex gap-x-5 border-b border-line sm:gap-x-7"
-      >
-        {[
-          { key: "packages" as const, label: "Project Packages", count: otherPackages.length },
-          {
-            key: "robot-cars" as const,
-            label: "Robot Car Projects",
-            count: robotCars.length,
-          },
-        ].map((item) => (
-          <button
-            key={item.key}
-            role="tab"
-            aria-selected={tab === item.key}
-            onClick={() => changeTab(item.key)}
-            className={`${tabBase} ${tab === item.key ? tabActive : tabInactive}`}
-          >
-            {item.label}
-            <span
-              className={`rounded-full px-1.5 py-0.5 text-[10px] font-black ${tab === item.key ? "bg-navy-light text-navy" : "bg-mist text-muted"}`}
-            >
-              {item.count}
-            </span>
-          </button>
-        ))}
-      </div>
-      <div className="mt-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <label className="flex w-full max-w-xs items-center gap-3 rounded-full border border-line bg-white px-4 py-2 text-sm text-muted">
           <Search size={15} aria-hidden="true" />
           <input
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setPage(1);
+            }}
             className="w-full bg-transparent outline-none placeholder:text-muted"
-            placeholder="Search this section"
+            placeholder="Search projects"
             aria-label="Search projects"
           />
         </label>
@@ -125,13 +86,12 @@ export default function ProjectsCatalog({
             {filtered.length} listing{filtered.length === 1 ? "" : "s"}
           </span>
           <span aria-live="polite" className="font-bold text-navy">
-            {hydrated && count > 0
-              ? `${count} item${count === 1 ? "" : "s"} in build list`
-              : "Quote by scope"}
+            {count > 0 ? `${count} item${count === 1 ? "" : "s"} in build list` : "Quote by scope"}
           </span>
         </div>
       </div>
 
+      {/* Category selector — the SIX canonical project categories. */}
       {categoryOptions.length > 0 && (
         <div className="mt-4">
           <label className="flex min-h-[44px] w-full items-center gap-2 rounded-full border border-line bg-white px-4 text-sm font-bold text-muted shadow-sm sm:w-64">
@@ -147,9 +107,8 @@ export default function ProjectsCatalog({
             >
               <option value="All">All categories ({filtered.length})</option>
               {categoryOptions.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name} (
-                  {filterProductsByProjectCategory(activeProducts, item.id, query).length})
+                <option key={item.id} value={item.name}>
+                  {item.name} ({allProjects.filter((p) => p.project_category === item.name).length})
                   {item.comingSoon ? " — coming soon" : ""}
                 </option>
               ))}
@@ -158,24 +117,10 @@ export default function ProjectsCatalog({
         </div>
       )}
 
-      {tab === "packages" && (
-        <p className="mt-4 text-sm leading-6 text-slate-500">
-          Named teaching and automation projects organized by scope.
-        </p>
-      )}
-      {tab === "robot-cars" && (
-        <p className="mt-4 text-sm leading-6 text-slate-500">
-          Assembled robot-car projects separated from components and materials.
-        </p>
-      )}
-
-      <div className="mt-5 grid gap-5 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {/* 2 per row on phones (owner: match the app), up to 5 at xl. */}
+      <div className="mt-5 grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {items.map((product) => (
-          <ProductCard
-            key={product.id}
-            product={product}
-            typeLabel={tab === "robot-cars" ? "Robot Car" : undefined}
-          />
+          <ProductCard key={product.id} product={product} />
         ))}
         {filtered.length === 0 && (
           <p className="col-span-full py-8 text-center text-sm text-slate-500">
@@ -205,17 +150,4 @@ export default function ProjectsCatalog({
       )}
     </section>
   );
-}
-
-function filterProductsByProjectCategory(
-  list: Product[],
-  category: string,
-  query: string
-): Product[] {
-  const needle = query.trim().toLowerCase();
-  return list.filter((p) => {
-    if (category !== "All" && p.project_category !== category) return false;
-    if (!needle) return true;
-    return `${p.name} ${p.note} ${p.description}`.toLowerCase().includes(needle);
-  });
 }

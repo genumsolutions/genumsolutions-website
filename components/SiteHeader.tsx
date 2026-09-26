@@ -22,7 +22,7 @@ const nav = [
   { label: "Services", href: "/services" },
   { label: "Products", href: "/products" },
   { label: "Projects", href: "/projects" },
-  { label: "Tools", href: "/tools" },
+  { label: "Control Panel", href: "/tools" },
   { label: "3D Printing", href: "/3d-printing" },
   { label: "Journal", href: "/journal" },
   { label: "Contact", href: "/contact" },
@@ -91,6 +91,10 @@ export default function SiteHeader() {
     setOpen(false);
   }, [pathname]);
 
+  // U-47 (owner): the mobile nav is an APP-STYLE LEFT SLIDE-IN DRAWER —
+  // full-height panel from the left (like the native app), dim scrim behind,
+  // Escape/outside-tap/scroll-lock handling. The 2-per-row tap grid was
+  // cramped on small phones (owner report).
   useEffect(() => {
     if (!open) return;
     function onKeyDown(event: KeyboardEvent) {
@@ -99,18 +103,11 @@ export default function SiteHeader() {
         menuButtonRef.current?.focus();
       }
     }
-    function onClickOutside(event: MouseEvent) {
-      if (
-        !mobileNavRef.current?.contains(event.target as Node) &&
-        !menuButtonRef.current?.contains(event.target as Node)
-      )
-        setOpen(false);
-    }
     document.addEventListener("keydown", onKeyDown);
-    document.addEventListener("mousedown", onClickOutside);
+    document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      document.removeEventListener("mousedown", onClickOutside);
+      document.body.style.overflow = "";
     };
   }, [open]);
 
@@ -214,68 +211,88 @@ export default function SiteHeader() {
         </div>
       </div>
 
+      {/* U-47: app-style left drawer — scrim + full-height panel sliding
+          from the LEFT edge (translate-x), one nav item per row, 48px taps. */}
       <div
         id="mobile-navigation"
         ref={mobileNavRef}
-        className="absolute inset-x-0 top-full z-50 lg:hidden"
+        aria-hidden={!open}
+        className={`fixed inset-0 z-50 lg:hidden ${open ? "" : "pointer-events-none"}`}
       >
-        {open && (
-          <nav
-            aria-label="Mobile"
-            className="max-h-[70vh] overflow-y-auto border-t border-line bg-white px-4 py-4 shadow-xl sm:px-5 animate-fade-in-up"
-          >
-            <p className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-[.28em] text-navy">
-              <span className="inline-block h-2 w-2 rounded-full bg-gold" aria-hidden="true" />{" "}
-              Navigate
+        {/* Scrim */}
+        <div
+          onClick={() => setOpen(false)}
+          className={`absolute inset-0 bg-ink/60 transition-opacity duration-300 ${
+            open ? "opacity-100" : "opacity-0"
+          }`}
+        />
+        <nav
+          aria-label="Mobile"
+          className={`absolute inset-y-0 left-0 flex w-[82vw] max-w-xs flex-col overflow-y-auto bg-white shadow-2xl transition-transform duration-300 ease-out ${
+            open ? "translate-x-0" : "-translate-x-full"
+          }`}
+        >
+          <div className="flex items-center justify-between border-b border-line px-5 py-4">
+            <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[.28em] text-navy">
+              <span className="inline-block h-2 w-2 rounded-full bg-gold" aria-hidden="true" /> Menu
             </p>
-            <ul className="grid grid-cols-2 gap-1.5 text-sm">
-              {nav.map((item) => {
-                const active = isActive(pathname ?? "", item.href);
-                return (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      onClick={() => setOpen(false)}
-                      className={`flex h-12 items-center rounded-lg px-3 font-semibold transition ${active ? "bg-navy text-white" : "text-ink hover:bg-mist"}`}
-                      aria-current={active ? "page" : undefined}
-                    >
-                      {item.label}
-                    </Link>
-                  </li>
-                );
-              })}
-              <li className="col-span-2 mt-1 border-t border-line pt-2">
-                {user ? (
-                  <div className="grid grid-cols-2 gap-1.5">
-                    <Link
-                      href="/account"
-                      onClick={() => setOpen(false)}
-                      className="flex h-12 items-center justify-center rounded-lg border border-navy bg-white px-3 font-bold text-navy hover:bg-navy-light"
-                    >
-                      <User size={14} aria-hidden="true" className="mr-2" />
-                      My Account
-                    </Link>
-                    <button
-                      onClick={handleLogout}
-                      className="flex h-12 items-center justify-center rounded-lg border border-red-200 bg-white px-3 font-bold text-red-600 hover:bg-red-50"
-                    >
-                      <LogOut size={14} aria-hidden="true" className="mr-2" />
-                      Log out
-                    </button>
-                  </div>
-                ) : (
+            <button
+              onClick={() => setOpen(false)}
+              aria-label="Close navigation menu"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-line text-ink transition hover:border-navy hover:text-navy"
+            >
+              <X size={18} aria-hidden="true" />
+            </button>
+          </div>
+          <ul className="flex-1 px-3 py-3 text-sm">
+            {nav.map((item) => {
+              const active = isActive(pathname ?? "", item.href);
+              return (
+                <li key={item.href}>
                   <Link
-                    href="/login"
+                    href={item.href}
                     onClick={() => setOpen(false)}
-                    className="flex h-12 items-center justify-center rounded-lg bg-navy px-3 font-bold text-white hover:bg-navy-dark"
+                    className={`flex h-12 items-center rounded-xl px-4 font-semibold transition ${
+                      active ? "bg-navy text-white" : "text-ink hover:bg-mist"
+                    }`}
+                    aria-current={active ? "page" : undefined}
                   >
-                    Sign in
+                    {item.label}
                   </Link>
-                )}
-              </li>
-            </ul>
-          </nav>
-        )}
+                </li>
+              );
+            })}
+          </ul>
+          <div className="border-t border-line p-4">
+            {user ? (
+              <div className="space-y-2">
+                <Link
+                  href="/account"
+                  onClick={() => setOpen(false)}
+                  className="flex h-12 items-center justify-center rounded-xl border border-navy bg-white px-3 font-bold text-navy hover:bg-navy-light"
+                >
+                  <User size={14} aria-hidden="true" className="mr-2" />
+                  My Account
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="flex h-12 w-full items-center justify-center rounded-xl border border-red-200 bg-white px-3 font-bold text-red-600 hover:bg-red-50"
+                >
+                  <LogOut size={14} aria-hidden="true" className="mr-2" />
+                  Log out
+                </button>
+              </div>
+            ) : (
+              <Link
+                href="/login"
+                onClick={() => setOpen(false)}
+                className="flex h-12 items-center justify-center rounded-xl bg-navy px-3 font-bold text-white hover:bg-navy-dark"
+              >
+                Sign in
+              </Link>
+            )}
+          </div>
+        </nav>
       </div>
     </header>
   );

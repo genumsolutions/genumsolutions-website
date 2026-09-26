@@ -1,132 +1,67 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useState } from "react";
-import { Check } from "lucide-react";
+import { Heart } from "lucide-react";
 import type { Product } from "../lib/catalog";
 import { galleryImages } from "../lib/catalog";
 import { getProductMedia } from "../lib/product-media";
-import { useCart } from "./cart-provider";
+import { useCollection } from "./collection-provider";
 
-// U-23 (2026-09-24): single shared product card used across the catalog,
-// projects, related-products rows and recently-viewed. Image-led with a
-// taller media box, gallery-aware cover (first gallery entry when the lead
-// changes), 2 spec chips, and â‰¥44px touch-friendly CTAs.
-export default function ProductCard({
-  product,
-  compact = false,
-  showCta = true,
-  typeLabel,
-  addAriaLabel,
-}: {
-  product: Product;
-  compact?: boolean;
-  showCta?: boolean;
-  typeLabel?: string;
-  addAriaLabel?: string;
-}) {
-  const { add } = useCart();
-  const [added, setAdded] = useState(false);
-  const quoteOnly = product.stock === 0 || product.productType === "Project package";
+// U-47 (2026-09-27) owner redesign: the whole card IS the link — bare
+// minimum (square photo, name, price), tight spacing, no badge/chips/CTA.
+// Details live on the product page. Grid parents control columns: 2 per
+// row on phones (owner: "just like the mobile app") up to 5 at xl.
+// The heart toggles the user collection (stopPropagation keeps the tap
+// from also navigating).
+export default function ProductCard({ product }: { product: Product }) {
   const fallbackMedia = getProductMedia(product.category);
   const media = galleryImages(product)[0] ?? fallbackMedia.src;
-  const chips = (product.specs ?? []).slice(0, 2);
-
-  useEffect(() => {
-    if (!added) return;
-    const timer = window.setTimeout(() => setAdded(false), 2000);
-    return () => window.clearTimeout(timer);
-  }, [added]);
+  const { has, toggle } = useCollection();
+  const saved = has(product.id);
 
   return (
-    <div className="flex flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-sm transition hover:shadow-md">
+    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-sm transition hover:shadow-md">
       <Link
         href={`/products/${product.id}`}
-        aria-label={`View ${product.name}`}
-        // U-24 (2026-09-24): whole-image card (owner: "like the app") — the
-        // media box shows the FULL photo on a light tray like the native card;
-        // no dark gradient, no caption text on the image.
-        className={`relative block overflow-hidden bg-mist ${compact ? "aspect-[4/3]" : "aspect-square"}`}
+        aria-label={`Open ${product.name}`}
+        className="relative block aspect-square w-full overflow-hidden bg-mist"
       >
         <Image
           src={media}
           alt={product.name}
           fill
-          sizes={
-            compact
-              ? "(max-width: 640px) 50vw, 25vw"
-              : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-          }
-          className="object-contain transition duration-500 hover:scale-105"
+          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+          className="object-contain transition duration-500 group-hover:scale-105"
         />
       </Link>
-      <div className="flex flex-1 flex-col p-2">
-        <p className="truncate text-xs font-black uppercase tracking-widest text-navy">
-          {typeLabel || product.badge || product.productType}
-        </p>
-        <h2
-          className={`mt-1 font-display font-bold leading-snug ${
-            compact ? "line-clamp-2 text-xs" : "line-clamp-2 text-xs"
-          }`}
-        >
+      <Link
+        href={`/products/${product.id}`}
+        aria-label={`Open ${product.name}`}
+        className="block px-2 pb-2 pt-1.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
+      >
+        <span className="block truncate text-[13px] font-bold leading-tight text-ink">
           {product.name}
-        </h2>
-        {!compact &&
-        product.importMeta?.creator &&
-        (product.importMeta.creator as string).trim() ? (
-          <p
-            className="mt-0.5 truncate text-[10px] font-semibold text-muted"
-            title={`Design: ${String(product.importMeta.creator)}${
-              product.importMeta.license ? ` · ${String(product.importMeta.license)}` : ""
-            }`}
-          >
-            Design: {String(product.importMeta.creator)}
-          </p>
-        ) : null}
-        {!compact && chips.length > 0 && (
-          <div className="mt-1.5 flex flex-wrap gap-1">
-            {chips.map((chip) => (
-              <span
-                key={chip}
-                className="inline-block max-w-full truncate rounded-full border border-line bg-mist px-1.5 py-0.5 text-[10px] font-bold text-muted"
-                title={chip}
-              >
-                {chip}
-              </span>
-            ))}
-          </div>
-        )}
-        <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2.5">
-          <strong className="font-display text-sm">{product.priceLabel}</strong>
-          {showCta &&
-            (quoteOnly ? (
-              <Link
-                href={`/products/${product.id}`}
-                className="inline-flex min-h-9 items-center rounded-full bg-navy px-3 py-1.5 text-xs font-black text-white transition hover:bg-navy-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
-                aria-label={`View details for ${product.name}`}
-              >
-                View details
-              </Link>
-            ) : (
-              <button
-                onClick={() => {
-                  add(product.id, 1);
-                  setAdded(true);
-                }}
-                className={`inline-flex min-h-9 items-center rounded-full px-3 py-1.5 text-xs font-black text-white transition hover:bg-navy-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy ${
-                  added ? "bg-emerald-600" : "bg-navy"
-                }`}
-                aria-label={addAriaLabel ?? `Add ${product.name} to build list`}
-                aria-live="polite"
-              >
-                <span className="inline-flex items-center gap-1.5">
-                  <Check size={13} aria-hidden="true" /> {added ? "Added" : "Add"}
-                </span>
-              </button>
-            ))}
-        </div>
-      </div>
+        </span>
+        <span className="mt-0.5 block text-xs font-black text-navy">{product.priceLabel}</span>
+      </Link>
+      <button
+        type="button"
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          void toggle(product.id);
+        }}
+        aria-pressed={saved}
+        aria-label={
+          saved ? `Remove ${product.name} from collection` : `Save ${product.name} to collection`
+        }
+        className={`absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 shadow-sm transition hover:scale-110 ${
+          saved ? "text-red-500" : "text-slate-400 hover:text-navy"
+        }`}
+      >
+        <Heart size={16} fill={saved ? "currentColor" : "none"} aria-hidden="true" />
+      </button>
     </div>
   );
 }

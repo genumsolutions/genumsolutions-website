@@ -61,9 +61,9 @@ export default function ModelsCatalog({ products = [] }: { products?: Product[] 
         </span>
       </div>
 
-      <div className="mt-5 grid gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+      <div className="mt-5 grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {items.map((product) => (
-          <ProductCard key={product.id} product={product} typeLabel="3D Print" />
+          <ProductCard key={product.id} product={product} />
         ))}
         {filtered.length === 0 && (
           <p className="col-span-full py-8 text-center text-sm text-slate-500">

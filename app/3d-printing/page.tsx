@@ -46,17 +46,23 @@ async function getModels() {
   }
 }
 
+// U-47 (2026-09-27, owner): the CATALOG leads — products display first,
+// the print-service copy (offers, workflow, CTA) moves below the grid.
 export default async function PrintingPage() {
   const models = await getModels();
   return (
     <PageShell>
       <PageIntro
-        eyebrow="3D printing · new vertical"
-        title="From a sketch to a thing you can hold."
-        body="GENUM is adding print-to-order fabrication for Nepal makers, students, product teams, and classrooms. Start with a file, a reference object, or a rough idea."
+        eyebrow="3D Products"
+        title="Printed on demand, from a file you already have."
+        body="Popular community models we can print on demand — and a full print service when you need more than a model."
       />
 
-      <section className="mx-auto max-w-7xl px-5 py-10 sm:py-14 lg:px-8">
+      <section className="mx-auto max-w-7xl px-5 py-8 lg:px-8" aria-label="3D Products catalogue">
+        <ModelsCatalog products={models} />
+      </section>
+
+      <section className="mx-auto max-w-7xl px-5 pb-8 lg:px-8">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {offers.map((offer) => (
             <ArticleCard
@@ -69,31 +75,10 @@ export default async function PrintingPage() {
             />
           ))}
         </div>
+      </section>
 
-        <section
-          className="mt-12 border-t border-line pt-8 sm:mt-14 sm:pt-10"
-          aria-label="3D Products catalogue"
-        >
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[.24em] text-navy">
-                Print-to-order catalogue
-              </p>
-              <h2 className="mt-2 font-display text-2xl font-bold sm:text-3xl">
-                3D Products — printed on demand.
-              </h2>
-            </div>
-            <p className="max-w-md text-sm leading-6 text-muted">
-              Popular community models we can print on demand. Want something else? Send us the link
-              - we price it and print it.
-            </p>
-          </div>
-          <div className="mt-6">
-            <ModelsCatalog products={models} />
-          </div>
-        </section>
-
-        <div className="mt-10 grid gap-6 border-y border-line py-8 sm:mt-12 sm:gap-8 sm:py-10 lg:grid-cols-[.8fr_1.2fr]">
+      <div className="mx-auto max-w-7xl px-5 lg:px-8">
+        <div className="grid gap-6 border-y border-line py-8 sm:gap-8 lg:grid-cols-[.8fr_1.2fr]">
           <div>
             <p className="text-xs font-black uppercase tracking-[.24em] text-navy">The workflow</p>
             <h2 className="mt-3 font-display text-2xl font-bold sm:text-3xl">
@@ -144,7 +129,7 @@ export default async function PrintingPage() {
             Request a print review <ArrowUpRight size={14} aria-hidden="true" />
           </Link>
         </div>
-      </section>
+      </div>
     </PageShell>
   );
 }

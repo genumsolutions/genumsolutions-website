@@ -46,7 +46,8 @@ export const PROJECT_CATEGORIES: ProjectCategory[] = [
   },
   {
     slug: "home-automation",
-    name: "Home Automation",
+    // U-47 (owner): renamed from "Home Automation" — slug kept for routing.
+    name: "Smart Home",
     tagline: "Flip relays, switches, and read sensors around the home.",
     description:
       "Control lights, fans, relays, and sensors using ESP32/ESP8266 - toggle outputs and read temperature, humidity, and motion locally or over the network.",
@@ -73,12 +74,33 @@ export const PROJECT_CATEGORIES: ProjectCategory[] = [
   },
   {
     slug: "drones",
-    name: "Drones & Aerial",
+    // U-47 (owner): renamed to match the projects-page category.
+    name: "Aerial Drones",
     tagline: "Flight-controller and telemetry builds.",
     description:
       "Flight-controller setup, motor/ESC integration, and telemetry links to the ground station.",
     hardware: ["ESP32 / STM32", "Flight cameras", "ESC + brushless motors", "GPS & IMU"],
     capabilities: ["sensor", "slider"],
+  },
+  // U-47 (owner, 2026-09-27): the two single-project categories join the
+  // Control Panel so every category has a remote window (mirrors the app).
+  {
+    slug: "smart-dustbin",
+    name: "Smart Dustbin",
+    tagline: "Open the lid, watch the fill level.",
+    description:
+      "Ultrasonic lid control, fill-level telemetry, and compactor switching - toggle outputs and read the bin's sensors.",
+    hardware: ["ESP32", "Ultrasonic sensor", "Servo lid", "Relay compactor"],
+    capabilities: ["relay", "sensor", "slider"],
+  },
+  {
+    slug: "remote-controller",
+    name: "Remote Controller",
+    tagline: "The ESP32 hand-held, mirrored on screen.",
+    description:
+      "Battery and signal readouts, output channels, and throttle/steer curves for the hand-held unit.",
+    hardware: ["ESP32", "NRF24L01", "Joystick module"],
+    capabilities: ["relay", "sensor", "slider"],
   },
 ];
 

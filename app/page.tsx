@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
 import PageShell from "../components/PageShell";
 import HeroCarousel from "../components/HeroCarousel";
+import ProductCard from "../components/ProductCard";
 import { getProductMedia } from "../lib/product-media";
 import { getTrainingPrograms, getPilotCosts, getCurriculumHighlights } from "../lib/programs-store";
 import { getManagedProducts } from "../lib/content-store";
@@ -122,6 +123,12 @@ export default async function HomePage() {
   // U-46: hero carousel slides — the newest 3D prints + electronic products
   // (already fetched above for the strips; no extra DB round-trip).
   const heroProducts = [...printModels.slice(0, 2), ...featuredElectronic.slice(0, 2)];
+  // U-47 (owner, ecommerce-style home): an in-stock products strip right
+  // under the hero — mixed 3D + electronic, photo-led, straight to the page.
+  const bestSellers = [
+    ...printModels.filter((p) => Boolean(p.image)).slice(0, 4),
+    ...featuredElectronic.slice(0, 4),
+  ].slice(0, 8);
 
   return (
     <PageShell>
@@ -169,6 +176,57 @@ export default async function HomePage() {
             <HeroCarousel products={heroProducts} />
           </div>
         </section>
+
+        {/* U-47: shop-first strip — the products, immediately. */}
+        {bestSellers.length > 0 && (
+          <section
+            aria-labelledby="bestsellers-heading"
+            className="border-b border-line bg-white py-12 lg:py-16"
+          >
+            <div className="mx-auto max-w-7xl px-5 lg:px-8">
+              <div className="flex flex-wrap items-end justify-between gap-4">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[.24em] text-navy">
+                    In stock now
+                  </p>
+                  <h2
+                    id="bestsellers-heading"
+                    className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl"
+                  >
+                    Shop what&apos;s on the shelf.
+                  </h2>
+                </div>
+                <Link
+                  href="/products"
+                  className="inline-flex items-center gap-1.5 text-sm font-bold text-navy underline decoration-gold decoration-2 underline-offset-4 transition hover:text-navy-dark"
+                >
+                  All electronic products <ArrowRight size={15} aria-hidden="true" />
+                </Link>
+              </div>
+              <ul className="mt-8 grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
+                {bestSellers.map((model) => (
+                  <li key={model.id}>
+                    <ProductCard product={model} />
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Link
+                  href="/3d-printing"
+                  className="text-sm font-bold text-navy underline decoration-gold decoration-2 underline-offset-4 hover:text-navy-dark"
+                >
+                  Browse 3D prints
+                </Link>
+                <Link
+                  href="/projects"
+                  className="text-sm font-bold text-navy underline decoration-gold decoration-2 underline-offset-4 hover:text-navy-dark"
+                >
+                  Browse projects
+                </Link>
+              </div>
+            </div>
+          </section>
+        )}
 
         <section
           aria-labelledby="services-heading"

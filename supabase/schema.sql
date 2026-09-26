@@ -1551,3 +1551,112 @@ $$;
 
 comment on function public.save_project_components(text, jsonb) is
   'U-45 Phase 2: staff+ gated replace-all save for the app admin Projects linker (website parity with PUT /api/admin/project-components).';
+
+-- ===== U-47 (2026-09-27): CATALOG RE-HOME + PROJECT TAXONOMY (owner) =====
+-- Owner round: electronic/3D rows that landed in the wrong category move to
+-- their own shelves; Projects become SIX owner-named categories (Robo Car
+-- with its 3 car types, Smart Home, Smart Farm, Smart City, Smart Dustbin,
+-- Aerial Drones) — one unified grid + category filter on web and app.
+
+-- Three Retail-kit rows were mis-homed under 'Controllers & Boards' by an
+-- import preset; they are mechanical/motor parts, not controllers.
+update public.products set category = 'Mechanical Parts'
+  where id = '4dof-wooden-robotic-arm-kit' and category = 'Controllers & Boards';
+update public.products set category = 'Motors & Motion'
+  where id in ('bo-motor-wheel-big', 'omni-wheel-48mm-l-r-pair')
+    and category = 'Controllers & Boards';
+
+-- Smart Dustbin was the only project row without its project_category.
+update public.products set project_category = 'Smart Dustbin'
+  where id = 'smart-dustbin'
+    and product_type = 'Project package'
+    and (project_category is null or project_category = '');
+
+-- The SIX canonical project categories (owner names, verbatim intent).
+-- 'Smart Home' is the renamed Home Automation (slug stays 'home-automation'
+-- so remote/control-panel routing and stored references keep working).
+insert into public.project_categories (id, name, icon, car_type, hardware, capabilities, capability_labels, capability_notes, car_mode_ids, sort_order) values
+('home-automation', 'Smart Home', 'home', null,
+  '[{"name":"ESP32 / ESP8266","role":"controller"},{"name":"Relay modules","role":"outputs"},{"name":"DHT / BME sensors","role":"environment"},{"name":"IR & motion","role":"detection"}]',
+  '["relay","sensor","slider"]',
+  '{"relay":"Channel switch","sensor":"Live readout","slider":"Level / threshold"}',
+  '{"relay":"Toggle lights, fans, and appliance channels","sensor":"Read temperature, humidity, motion","slider":"Set dimmer or threshold levels"}',
+  '[]',
+  2)
+on conflict (id) do update set
+  name = excluded.name, icon = excluded.icon,
+  hardware = excluded.hardware, capabilities = excluded.capabilities,
+  capability_labels = excluded.capability_labels, capability_notes = excluded.capability_notes,
+  sort_order = excluded.sort_order, updated_at = now();
+
+insert into public.project_categories (id, name, icon, car_type, hardware, capabilities, capability_labels, capability_notes, car_mode_ids, sort_order) values
+('smart-farm', 'Smart Farm', 'activity', null,
+  '[{"name":"ESP32","role":"controller"},{"name":"Soil moisture","role":"sensor"},{"name":"Water pump / solenoid","role":"actuator"},{"name":"Relay","role":"power"}]',
+  '["relay","sensor","slider"]',
+  '{"relay":"Pump / valve switch","sensor":"Soil & weather readout","slider":"Watering threshold"}',
+  '{"relay":"Drive pumps and solenoid valves","sensor":"Read soil moisture and weather","slider":"Set the auto-watering threshold"}',
+  '[]',
+  3)
+on conflict (id) do update set
+  name = excluded.name, icon = excluded.icon,
+  hardware = excluded.hardware, capabilities = excluded.capabilities,
+  capability_labels = excluded.capability_labels, capability_notes = excluded.capability_notes,
+  sort_order = excluded.sort_order, updated_at = now();
+
+insert into public.project_categories (id, name, icon, car_type, hardware, capabilities, capability_labels, capability_notes, car_mode_ids, sort_order) values
+('smart-city', 'Smart City', 'map-pin', null,
+  '[{"name":"ESP32","role":"controller"},{"name":"Sensors","role":"street telemetry"},{"name":"Relay","role":"streetlights"}]',
+  '["relay","sensor","slider"]',
+  '{"relay":"Streetlight / signal switch","sensor":"City telemetry","slider":"Light / timing level"}',
+  '{"relay":"Toggle streetlights and signals","sensor":"Read city sensor telemetry","slider":"Set lighting or timing levels"}',
+  '[]',
+  4)
+on conflict (id) do update set
+  name = excluded.name, icon = excluded.icon,
+  hardware = excluded.hardware, capabilities = excluded.capabilities,
+  capability_labels = excluded.capability_labels, capability_notes = excluded.capability_notes,
+  sort_order = excluded.sort_order, updated_at = now();
+
+-- Drones: the 'drones' category row already exists (established slug used
+-- by remote/control-panel routing); rename it to the owner's wording.
+-- (An 'aerial-drones' duplicate briefly existed from the first apply of
+-- this round — delete it idempotently; 'drones' is the canonical slug.)
+delete from public.project_categories where id = 'aerial-drones';
+update public.project_categories set name = 'Aerial Drones', icon = 'navigation',
+  hardware = '[{"name":"Flight controller","role":"stabilization"},{"name":"Brushless motors","role":"lift"},{"name":"ESC","role":"motor drive"},{"name":"Camera / gimbal","role":"payload"}]'::jsonb,
+  capabilities = '["relay","sensor","slider"]'::jsonb,
+  capability_labels = '{"relay":"Aux channel (lights / drop)","sensor":"Altitude & battery","slider":"Throttle / gimbal"}'::jsonb,
+  capability_notes = '{"relay":"Toggle aux channels (LED, payload drop)","sensor":"Read altitude and battery","slider":"Throttle curve or gimbal pan/tilt"}'::jsonb,
+  sort_order = 6, updated_at = now()
+  where id = 'drones';
+
+-- ===== U-47: USER COLLECTION (owner: per-user saved cards across products,
+-- projects, and services; shown on the user profile) =====
+-- RLS-owned: members read/write only their own rows; the anon key cannot
+-- see them. item_kind distinguishes products (incl. project packages —
+-- they are products rows) from services; item_id matches the source table.
+create table if not exists public.user_collection (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  item_id text not null,
+  item_kind text not null default 'product' check (item_kind in ('product', 'service')),
+  created_at timestamptz not null default now(),
+  primary key (user_id, item_id, item_kind)
+);
+
+alter table public.user_collection enable row level security;
+
+drop policy if exists "own collection select" on public.user_collection;
+create policy "own collection select"
+  on public.user_collection for select using (auth.uid() = user_id);
+drop policy if exists "own collection insert" on public.user_collection;
+create policy "own collection insert"
+  on public.user_collection for insert with check (auth.uid() = user_id);
+drop policy if exists "own collection delete" on public.user_collection;
+create policy "own collection delete"
+  on public.user_collection for delete using (auth.uid() = user_id);
+
+create index if not exists user_collection_user_idx
+  on public.user_collection (user_id, item_kind, created_at);
+
+comment on table public.user_collection is
+  'U-47: per-user saved cards (products/projects/services). Heart on any card toggles a row; the profile page lists the collection. RLS: own rows only.';

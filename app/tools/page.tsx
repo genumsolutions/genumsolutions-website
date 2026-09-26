@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import PageIntro from "../../components/PageIntro";
 import PageShell from "../../components/PageShell";
 import IotRemote from "../../components/IotRemote";
 import RoboticsFleet from "../../components/RoboticsFleet";
@@ -9,9 +8,9 @@ import { getManagedProducts } from "../../lib/content-store";
 import { applyScope } from "../../lib/catalog";
 
 export const metadata: Metadata = {
-  title: "Tools",
+  title: "Control Panel",
   description:
-    "Free and open-source tools for designing, simulating, programming, and documenting robotics and fabrication work. Includes the Control Panel.",
+    "Free and open-source tools for designing, simulating, programming, and documenting robotics and fabrication work. The Control Panel for your devices.",
 };
 
 export const dynamic = "force-dynamic";
@@ -30,12 +29,8 @@ export default async function ToolsPage() {
 
   return (
     <PageShell>
-      <PageIntro
-        eyebrow="Tools · open source"
-        title="Useful tools for the next build."
-        body="A practical directory for designing, simulating, programming, and documenting robotics and fabrication work."
-      />
-      {/* IoT & Remote Controller section - embedded in tools page */}
+      {/* U-47 (owner): the page IS the Control Panel — one heading, no
+          doubled "Tools" intro above the panel's own title. */}
       <IotRemote />
 
       {/* Fleet catalogue - mirrors the app's Remote screen fleet (W-5);

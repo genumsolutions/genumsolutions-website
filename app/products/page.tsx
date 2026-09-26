@@ -50,7 +50,7 @@ export default async function ProductsPage({
       <PageIntro
         eyebrow="Electronic Products"
         title="Choose the part, then build."
-        body="Browse controllers, motors, sensors, communication modules, displays, power, mechanical parts, connectors, and tools. 3D prints live on the 3D printing page; project packages and kits on the projects page."
+        body="Controllers, motors, sensors, displays, power, and tools — every part is a tap away."
       />
       <ProductCatalog
         scope="components"
