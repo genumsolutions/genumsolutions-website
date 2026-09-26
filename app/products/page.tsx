@@ -4,7 +4,7 @@ import PageIntro from "../../components/PageIntro";
 import PageShell from "../../components/PageShell";
 import ProductCatalog from "../../components/ProductCatalog";
 import { getManagedProducts } from "../../lib/content-store";
-import { isSortOption } from "../../lib/catalog";
+import { applyScope, isSortOption } from "../../lib/catalog";
 
 export const metadata: Metadata = {
   title: "Products",
@@ -26,7 +26,16 @@ export default async function ProductsPage({
     inStock?: string;
   };
 }) {
-  const products = await getManagedProducts();
+  // U-47v3 (deep-check finding): the page previously handed the WHOLE
+  // catalog to the client component and scoped it in the browser — the RSC
+  // flight payload then shipped all 49 3D-model rows to /products (hidden,
+  // but visible to any view-source / API consumer, and the source of the
+  // owner's "database still mixes 3D" reports on cached/payload-reading
+  // clients). Scope SERVER-SIDE so this route only ever receives the
+  // Electronic Products rows.
+  const products = applyScope(await getManagedProducts(), "components").filter(
+    (p) => p.active !== false
+  );
 
   const initialPage = Math.max(1, Number(searchParams?.page) || 1);
   const initialQuery = String(searchParams?.q || "");
