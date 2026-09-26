@@ -211,46 +211,32 @@ export default function SiteHeader() {
         </div>
       </div>
 
-      {/* U-47v2 (owner): the drawer drops from the TOP-RIGHT — the same
-          corner the menu button sits in — and its height is measured from
-          the REAL available viewport (100dvh minus the header) so it never
-          overflows under browser chrome on small phones. One nav item per
-          row, 48px taps. */}
+      {/* U-47v3 (owner): the menu is a COMPACT TOP-RIGHT POPOVER — not a
+          full-height drawer. It anchors BELOW the menu icon (the header row
+          is 64px tall on phones), sized to its CONTENT (max-height caps it
+          at the real available viewport via dvh), 44px tap rows, rounded
+          corners. Translucent backdrop-blur background so page color shows
+          through and the light scrim keeps page context visible. */}
       <div
         id="mobile-navigation"
         ref={mobileNavRef}
         aria-hidden={!open}
         className={`fixed inset-0 z-50 lg:hidden ${open ? "" : "pointer-events-none"}`}
       >
-        {/* Scrim */}
         <div
           onClick={() => setOpen(false)}
-          className={`absolute inset-0 bg-ink/60 transition-opacity duration-300 ${
+          className={`absolute inset-0 bg-ink/40 transition-opacity duration-200 ${
             open ? "opacity-100" : "opacity-0"
           }`}
         />
         <nav
           aria-label="Mobile"
-          className={`absolute right-0 top-0 flex w-[82vw] max-w-xs flex-col overflow-y-auto bg-white shadow-2xl transition-all duration-300 ease-out ${
-            open
-              ? "translate-x-0 translate-y-0 opacity-100"
-              : "-translate-x-2 -translate-y-full opacity-0"
+          className={`absolute right-2 top-[calc(env(safe-area-inset-top,0px)+64px)] w-56 overflow-hidden rounded-2xl border border-line bg-white/80 shadow-2xl backdrop-blur-xl transition-all duration-200 ease-out origin-top-right ${
+            open ? "translate-y-0 scale-100 opacity-100" : "-translate-y-2 scale-95 opacity-0"
           }`}
-          style={{ height: "calc(100dvh - 0px)" }}
+          style={{ maxHeight: "calc(100dvh - 80px)" }}
         >
-          <div className="flex items-center justify-between border-b border-line px-5 py-4">
-            <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[.28em] text-navy">
-              <span className="inline-block h-2 w-2 rounded-full bg-gold" aria-hidden="true" /> Menu
-            </p>
-            <button
-              onClick={() => setOpen(false)}
-              aria-label="Close navigation menu"
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-line text-ink transition hover:border-navy hover:text-navy"
-            >
-              <X size={18} aria-hidden="true" />
-            </button>
-          </div>
-          <ul className="flex-1 px-3 py-3 text-sm">
+          <ul className="overflow-y-auto py-1.5 text-sm">
             {nav.map((item) => {
               const active = isActive(pathname ?? "", item.href);
               return (
@@ -258,8 +244,8 @@ export default function SiteHeader() {
                   <Link
                     href={item.href}
                     onClick={() => setOpen(false)}
-                    className={`flex h-12 items-center rounded-xl px-4 font-semibold transition ${
-                      active ? "bg-navy text-white" : "text-ink hover:bg-mist"
+                    className={`mx-1.5 flex h-11 items-center rounded-lg px-3 font-semibold backdrop-blur-none transition ${
+                      active ? "bg-navy text-white" : "bg-white/60 text-ink hover:bg-mist"
                     }`}
                     aria-current={active ? "page" : undefined}
                   >
@@ -269,20 +255,20 @@ export default function SiteHeader() {
               );
             })}
           </ul>
-          <div className="border-t border-line p-4">
+          <div className="border-t border-line p-2">
             {user ? (
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Link
                   href="/account"
                   onClick={() => setOpen(false)}
-                  className="flex h-12 items-center justify-center rounded-xl border border-navy bg-white px-3 font-bold text-navy hover:bg-navy-light"
+                  className="flex h-11 items-center justify-center rounded-lg border border-navy bg-white/60 px-3 text-sm font-bold text-navy hover:bg-navy-light"
                 >
                   <User size={14} aria-hidden="true" className="mr-2" />
                   My Account
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className="flex h-12 w-full items-center justify-center rounded-xl border border-red-200 bg-white px-3 font-bold text-red-600 hover:bg-red-50"
+                  className="flex h-11 w-full items-center justify-center rounded-lg border border-red-200 bg-white/60 px-3 text-sm font-bold text-red-600 hover:bg-red-50"
                 >
                   <LogOut size={14} aria-hidden="true" className="mr-2" />
                   Log out
@@ -292,7 +278,7 @@ export default function SiteHeader() {
               <Link
                 href="/login"
                 onClick={() => setOpen(false)}
-                className="flex h-12 items-center justify-center rounded-xl bg-navy px-3 font-bold text-white hover:bg-navy-dark"
+                className="flex h-11 items-center justify-center rounded-lg bg-navy px-3 text-sm font-bold text-white hover:bg-navy-dark"
               >
                 Sign in
               </Link>

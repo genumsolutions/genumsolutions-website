@@ -229,49 +229,6 @@ export default async function HomePage() {
         )}
 
         <section
-          aria-labelledby="services-heading"
-          className="mx-auto max-w-7xl px-5 py-12 lg:px-8 lg:py-20"
-        >
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[.24em] text-navy">
-                What GENUM does
-              </p>
-              <h2
-                id="services-heading"
-                className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl lg:text-4xl"
-              >
-                A practical build partner.
-              </h2>
-            </div>
-            <Link
-              href="/services"
-              className="inline-flex items-center gap-1.5 text-sm font-bold text-navy underline decoration-gold decoration-2 underline-offset-4 transition hover:text-navy-dark"
-            >
-              View all services <ArrowRight size={15} aria-hidden="true" />
-            </Link>
-          </div>
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {services.map((service) => (
-              <article
-                key={service.title}
-                className="flex flex-col rounded-2xl border border-line bg-white p-5 transition hover:-translate-y-0.5 hover:border-navy hover:shadow-lg sm:p-6"
-              >
-                <h3 className="font-display text-lg font-bold leading-snug">{service.title}</h3>
-                <p className="mt-2 flex-1 text-sm leading-6 text-slate-600">{service.body}</p>
-                <Link
-                  href={service.href}
-                  className="mt-4 inline-flex items-center gap-1.5 text-sm font-black text-navy transition hover:gap-2.5"
-                  aria-label={`${service.cta}: ${service.title}`}
-                >
-                  {service.cta} <ArrowRight size={14} aria-hidden="true" />
-                </Link>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section
           aria-labelledby="printing-heading"
           className="border-y border-line bg-mist py-12 lg:py-20"
         >
@@ -364,6 +321,49 @@ export default async function HomePage() {
             >
               Send a file for a print review <ArrowRight size={15} aria-hidden="true" />
             </Link>
+          </div>
+        </section>
+
+        <section
+          aria-labelledby="services-heading"
+          className="mx-auto max-w-7xl px-5 py-12 lg:px-8 lg:py-20"
+        >
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[.24em] text-navy">
+                What GENUM does
+              </p>
+              <h2
+                id="services-heading"
+                className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl lg:text-4xl"
+              >
+                A practical build partner.
+              </h2>
+            </div>
+            <Link
+              href="/services"
+              className="inline-flex items-center gap-1.5 text-sm font-bold text-navy underline decoration-gold decoration-2 underline-offset-4 transition hover:text-navy-dark"
+            >
+              View all services <ArrowRight size={15} aria-hidden="true" />
+            </Link>
+          </div>
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {services.map((service) => (
+              <article
+                key={service.title}
+                className="flex flex-col rounded-2xl border border-line bg-white p-5 transition hover:-translate-y-0.5 hover:border-navy hover:shadow-lg sm:p-6"
+              >
+                <h3 className="font-display text-lg font-bold leading-snug">{service.title}</h3>
+                <p className="mt-2 flex-1 text-sm leading-6 text-slate-600">{service.body}</p>
+                <Link
+                  href={service.href}
+                  className="mt-4 inline-flex items-center gap-1.5 text-sm font-black text-navy transition hover:gap-2.5"
+                  aria-label={`${service.cta}: ${service.title}`}
+                >
+                  {service.cta} <ArrowRight size={14} aria-hidden="true" />
+                </Link>
+              </article>
+            ))}
           </div>
         </section>
 
