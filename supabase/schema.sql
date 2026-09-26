@@ -1404,3 +1404,35 @@ alter table public.link_import_attempts enable row level security;
 comment on table public.link_import_attempts is
   'U-35: every link-import preview attempt (host, resolved provider, outcome). Service-role write from the link-import edge function; staff read via /api/admin/import-attempts. Lets the owner see which sources staff paste so new providers can be added on evidence.';
 
+
+-- ===== PROJECT COMPONENTS (U-45, 2026-09-26) =====
+-- Machine link between project packages and the Electronic Products catalog:
+-- a project row lists the catalog components its build needs, with quantity.
+-- Both columns reference products (product_type='Project package' on one
+-- side; the components catalog on the other). Deleting a product cascades
+-- its links. Public read (the detail pages render the lists); writes go
+-- through the admin API with the service role (staff+ gate) — no client
+-- write policies, exactly like products.
+create table if not exists public.project_components (
+  project_id text not null references public.products(id) on delete cascade,
+  product_id text not null references public.products(id) on delete cascade,
+  quantity integer not null default 1,
+  sort_order integer not null default 100,
+  created_at timestamptz not null default now(),
+  primary key (project_id, product_id)
+);
+
+alter table public.project_components enable row level security;
+
+drop policy if exists "public read project_components" on public.project_components;
+create policy "public read project_components"
+  on public.project_components for select using (true);
+
+create index if not exists project_components_project_idx
+  on public.project_components (project_id, sort_order);
+
+create index if not exists project_components_product_idx
+  on public.project_components (product_id);
+
+comment on table public.project_components is
+  'U-45: project package -> Electronic Product component links (quantity-aware). Staff-managed via the admin Projects tab linker, which pre-fills suggestions from materials_required via lib/project-components.ts.';

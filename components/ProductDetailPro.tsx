@@ -43,6 +43,43 @@ export default function ProductDetailPro({
   // U-23 (2026-09-24): reset the gallery position if the product changes.
   useEffect(() => setActiveImage(0), [product.id]);
 
+  // U-45: project↔component links for THIS product. For a project: the
+  // catalog components it needs (with qty). For a component: the projects
+  // that use it. Fetched client-side (staff-managed join table; empty → the
+  // sections vanish, never render as a stub).
+  const [componentRows, setComponentRows] = useState<{ productId: string; quantity: number }[]>([]);
+  const [usedInRows, setUsedInRows] = useState<{ projectId: string }[]>([]);
+  useEffect(() => {
+    let active = true;
+    if (product.productType === "Project package") {
+      fetch(`/api/admin/project-components?projectId=${encodeURIComponent(product.id)}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          if (active && d) setComponentRows(d.components ?? []);
+        })
+        .catch(() => undefined);
+    } else {
+      fetch(`/api/project-usage?productId=${encodeURIComponent(product.id)}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          if (active && d) setUsedInRows(d.projects ?? []);
+        })
+        .catch(() => undefined);
+    }
+    return () => {
+      active = false;
+    };
+  }, [product.id, product.productType]);
+  const componentProducts = componentRows
+    .map((row) => ({
+      qty: row.quantity,
+      product: allProducts.find((p) => p.id === row.productId && p.active !== false),
+    }))
+    .filter((entry): entry is { qty: number; product: Product } => Boolean(entry.product));
+  const usedInProjects = usedInRows
+    .map((row) => allProducts.find((p) => p.id === row.projectId && p.active !== false))
+    .filter((p): p is Product => Boolean(p));
+
   // C3: record this view (localStorage, best-effort) once per mount.
   useEffect(() => {
     recordProductView(product.id);
@@ -230,31 +267,40 @@ export default function ProductDetailPro({
           </div>
         </div>
 
-        <div className="mt-10 grid gap-4 border-y border-line py-6 sm:grid-cols-2">
-          <div>
-            <p className="text-xs font-black uppercase tracking-widest text-navy">Audience</p>
-            <p className="mt-2 text-sm leading-6 text-muted">{product.audience}</p>
-            <p className="mt-2 text-sm leading-6 text-muted">{product.difficulty}</p>
-          </div>
-          <div>
-            <p className="text-xs font-black uppercase tracking-widest text-navy">Warranty</p>
-            <p className="mt-2 text-sm leading-6 text-muted">{product.warranty}</p>
-          </div>
-        </div>
-
-        <div className="mt-10 grid gap-4 border-t-2 border-line py-6 sm:grid-cols-2">
-          <div>
-            <p className="text-xs font-black uppercase tracking-widest text-navy">Color</p>
-            <p className="mt-2 text-sm leading-6 text-muted">
-              {product.color
-                ? product.color.replace(/from-\[.*?\]\s*to-\[.*?\]/, "Standard finish")
-                : "Standard finish"}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs font-black uppercase tracking-widest text-navy">Delivery</p>
-            <p className="mt-2 text-sm leading-6 text-muted">{product.delivery}</p>
-          </div>
+        {/* U-45b (2026-09-26): ecommerce-standard info grid — SKU, live
+            stock state, delivery, warranty, audience, difficulty in one
+            scannable table (the two loose two-up grids they replace). */}
+        <div className="mt-10 border-y border-line py-6">
+          <p className="text-xs font-black uppercase tracking-widest text-navy">
+            Product information
+          </p>
+          <dl className="mt-3 grid gap-x-8 gap-y-2 sm:grid-cols-2">
+            {[
+              ["SKU", product.sku || product.id],
+              [
+                "Availability",
+                product.productType === "Project package"
+                  ? "Quote-based package"
+                  : product.stock > 0
+                    ? `In stock (${product.stock} unit${product.stock === 1 ? "" : "s"})`
+                    : "Out of stock — backorder on request",
+              ],
+              ["Delivery", product.delivery || "Nepal-wide courier"],
+              ["Warranty", product.warranty || "7-day replacement"],
+              ["Best for", product.audience || "Makers, schools, and engineers"],
+              ["Difficulty", product.difficulty],
+            ].map(([label, value]) => (
+              <div
+                key={label}
+                className="flex items-baseline justify-between gap-4 border-b border-line py-1.5"
+              >
+                <dt className="text-xs font-black uppercase tracking-widest text-slate-500">
+                  {label}
+                </dt>
+                <dd className="text-right text-sm text-ink">{value}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
         {product.productType === "Project package" && (
           <div className="mt-10 border-t-2 border-line py-6">
@@ -323,6 +369,46 @@ export default function ProductDetailPro({
                 </div>
               ))}
             </dl>
+          </div>
+        )}
+
+        {/* U-45: project detail shows the catalog components its build needs;
+            component detail shows the projects that use it. Both hidden when
+            the join table has no rows for this product. */}
+        {product.productType === "Project package" && componentProducts.length > 0 && (
+          <div className="mt-12 border-t-2 border-line pt-8">
+            <p className="text-xs font-black uppercase tracking-[.24em] text-navy">
+              Components used in this project
+            </p>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
+              Every part below is a real catalog component — check specs, availability, and add
+              spares to your build list.
+            </p>
+            <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+              {componentProducts.map(({ product: item, qty }) => (
+                <div key={item.id} className="relative">
+                  <span
+                    className="absolute -right-1.5 -top-1.5 z-10 flex h-6 min-w-6 items-center justify-center rounded-full bg-gold px-1.5 text-[11px] font-black text-ink shadow"
+                    aria-label={`Quantity ${qty}`}
+                  >
+                    ×{qty}
+                  </span>
+                  <ProductCard product={item} compact showCta={false} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {product.productType !== "Project package" && usedInProjects.length > 0 && (
+          <div className="mt-12 border-t-2 border-line pt-8">
+            <p className="text-xs font-black uppercase tracking-[.24em] text-navy">
+              Used in these projects
+            </p>
+            <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+              {usedInProjects.map((item) => (
+                <ProductCard key={item.id} product={item} compact showCta={false} />
+              ))}
+            </div>
           </div>
         )}
 

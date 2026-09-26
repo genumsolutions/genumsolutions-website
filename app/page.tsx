@@ -1,12 +1,14 @@
 import Link from "next/link";
-import Image from "next/image";
+import NextImage from "next/image";
 import type { Metadata } from "next";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
 import PageShell from "../components/PageShell";
+import HeroCarousel from "../components/HeroCarousel";
 import { getProductMedia } from "../lib/product-media";
 import { getTrainingPrograms, getPilotCosts, getCurriculumHighlights } from "../lib/programs-store";
 import { getManagedProducts } from "../lib/content-store";
 import { getSiteContent } from "../lib/content-store";
+import { applyScope } from "../lib/catalog";
 
 export const dynamic = "force-dynamic";
 
@@ -89,25 +91,37 @@ const printingOffers = [
 ];
 
 export default async function HomePage() {
-  const heroMedia = getProductMedia("Robotics");
   // Training programs, curriculum highlights, and pilot costing all render
   // from the shared DB tables (the SAME source the app's Home screen reads)
   // with the bundled lists as fallback — one company story on both surfaces.
   // U-38e: printing models come from the same "3D Models" catalog rows the
   // /3d-printing page shows, so the home strip never drifts from the vertical.
-  const [trainingPrograms, pilotCosts, curriculum, printModels] = await Promise.all([
-    getTrainingPrograms(),
-    getPilotCosts(),
-    getCurriculumHighlights(),
-    getManagedProducts()
-      .then((products) =>
-        products.filter(
-          (p) => p.category?.trim().toLowerCase() === "3d models" && p.active !== false
+  const [trainingPrograms, pilotCosts, curriculum, printModels, featuredElectronic] =
+    await Promise.all([
+      getTrainingPrograms(),
+      getPilotCosts(),
+      getCurriculumHighlights(),
+      getManagedProducts()
+        .then((products) =>
+          products.filter(
+            (p) => p.category?.trim().toLowerCase() === "3d models" && p.active !== false
+          )
         )
-      )
-      .catch(() => []),
-  ]);
+        .catch(() => []),
+      // U-46: in-stock electronic products with photos for the hero carousel
+      // (most-updated-first is not exposed on Product — stable name order).
+      getManagedProducts()
+        .then((products) =>
+          applyScope(products, "components")
+            .filter((p) => p.active !== false && p.stock > 0 && Boolean(p.image))
+            .sort((a, b) => a.name.localeCompare(b.name))
+        )
+        .catch(() => []),
+    ]);
   const printShowcase = printModels.slice(0, 4);
+  // U-46: hero carousel slides — the newest 3D prints + electronic products
+  // (already fetched above for the strips; no extra DB round-trip).
+  const heroProducts = [...printModels.slice(0, 2), ...featuredElectronic.slice(0, 2)];
 
   return (
     <PageShell>
@@ -150,24 +164,9 @@ export default async function HomePage() {
                 ))}
               </dl>
             </div>
-            <div className="relative z-0 aspect-[4/3] overflow-hidden rounded-3xl bg-ink shadow-2xl sm:aspect-square lg:aspect-[4/3]">
-              <Image
-                src={heroMedia.src}
-                alt={heroMedia.alt}
-                fill
-                priority
-                sizes="(max-width: 1024px) 100vw, 45vw"
-                className="object-cover opacity-90"
-              />
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/90 to-transparent p-5 text-white sm:p-6">
-                <p className="text-xs font-black uppercase tracking-[.2em] text-gold">
-                  Build what matters
-                </p>
-                <p className="mt-2 max-w-xs font-display text-xl font-bold leading-snug sm:text-2xl">
-                  From first circuit to real-world launch.
-                </p>
-              </div>
-            </div>
+            {/* U-46: the hero image is now a carousel — brand statement +
+                real featured products, auto-advancing. */}
+            <HeroCarousel products={heroProducts} />
           </div>
         </section>
 
@@ -269,7 +268,7 @@ export default async function HomePage() {
                         >
                           <span className="relative block aspect-square bg-mist">
                             {model.image ? (
-                              <Image
+                              <NextImage
                                 src={media}
                                 alt={model.name}
                                 fill

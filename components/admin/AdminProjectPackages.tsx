@@ -1,12 +1,12 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import { inputClass } from "../../lib/styles";
 import type { Product } from "./admin-types";
 import { emptyProduct, PAGE_SIZE } from "./admin-types";
-import { Pager, focusEditor, editorCard } from "./admin-helpers";
+import { Pager, focusEditor, editorCard, editorCardTitle } from "./admin-helpers";
 
 type Props = {
   products: Product[];
@@ -245,6 +245,74 @@ export default function AdminProjectPackages({
   const [projectPage, setProjectPage] = useState(1);
   const [busy, setBusy] = useState(false);
 
+  // U-45: component linker state for the OPEN project editor.
+  const [linkerLinks, setLinkerLinks] = useState<{ productId: string; quantity: number }[]>([]);
+  const [linkerSuggestions, setLinkerSuggestions] = useState<
+    {
+      productId: string | null;
+      label: string;
+      quantity: number;
+      score: number;
+      matchedBy: string;
+    }[]
+  >([]);
+  const [linkerBusy, setLinkerBusy] = useState(false);
+
+  // Load saved links + fresh suggestions whenever a project opens in the editor.
+  useEffect(() => {
+    if (!product.id || product.productType !== "Project package") {
+      setLinkerLinks([]);
+      setLinkerSuggestions([]);
+      return;
+    }
+    let active = true;
+    setLinkerBusy(true);
+    fetch(`/api/admin/project-components?projectId=${encodeURIComponent(product.id)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!active || !data) return;
+        const saved: { productId: string; quantity: number }[] = data.components ?? [];
+        if (saved.length > 0) {
+          setLinkerLinks(saved);
+        } else {
+          // Pre-fill from the matcher's confident suggestions; staff edits.
+          setLinkerLinks(
+            (data.suggestions ?? [])
+              .filter((s: { productId: string | null }) => s.productId)
+              .map((s: { productId: string; quantity: number }) => ({
+                productId: s.productId,
+                quantity: s.quantity,
+              }))
+          );
+        }
+        setLinkerSuggestions(data.suggestions ?? []);
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (active) setLinkerBusy(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [product.id, product.productType]);
+
+  async function saveComponentLinks() {
+    if (!product.id) return;
+    setLinkerBusy(true);
+    const response = await fetch("/api/admin/project-components", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ projectId: product.id, components: linkerLinks }),
+    });
+    const result = await response.json().catch(() => ({}));
+    setLinkerBusy(false);
+    setMessage(
+      response.ok
+        ? `Component links saved (${result.saved ?? linkerLinks.length}).`
+        : result.error || "Could not save component links."
+    );
+  }
+
   const projectProducts = products.filter(
     (item) =>
       item.productType === "Project package" ||
@@ -446,6 +514,129 @@ export default function AdminProjectPackages({
               projectCategories.length ? projectCategories : ["Project Packages", "Robot Cars"]
             }
           />
+          {/* U-45: component linker — only for a SAVED project row (needs an
+              id to hang links on). Suggestions come from the matcher; staff
+              adjusts quantities / removes rows, then saves. */}
+          {product.id && product.productType === "Project package" && (
+            <div className={`${editorCard} mt-4`}>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className={editorCardTitle}>Components used in this project</h2>
+                <button
+                  type="button"
+                  onClick={() => void saveComponentLinks()}
+                  disabled={linkerBusy}
+                  className="rounded-full bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark disabled:opacity-60"
+                >
+                  {linkerBusy ? "Saving…" : "Save component links"}
+                </button>
+              </div>
+              <p className="mt-1 text-sm text-muted">
+                Pre-filled from the project&rsquo;s materials list where the catalog matched. Link
+                the exact Electronic Products a builder needs — they appear (with quantities) on the
+                project&rsquo;s public page.
+              </p>
+              {linkerLinks.length === 0 && !linkerBusy && (
+                <p className="mt-3 text-sm text-slate-500">
+                  No components linked yet — add from the suggestions below.
+                </p>
+              )}
+              <ul className="mt-3 space-y-2">
+                {linkerLinks.map((link) => {
+                  const linked = products.find((p) => p.id === link.productId);
+                  return (
+                    <li
+                      key={link.productId}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded border border-line px-3 py-2"
+                    >
+                      <span className="min-w-0 flex-1 truncate text-sm font-bold text-ink">
+                        {linked?.name ?? link.productId}
+                      </span>
+                      <label className="flex items-center gap-2 text-xs font-black text-muted">
+                        Qty
+                        <input
+                          type="number"
+                          min={1}
+                          max={99}
+                          value={link.quantity}
+                          onChange={(e) =>
+                            setLinkerLinks((current) =>
+                              current.map((l) =>
+                                l.productId === link.productId
+                                  ? {
+                                      ...l,
+                                      quantity: Math.max(
+                                        1,
+                                        Math.min(99, Number(e.target.value) || 1)
+                                      ),
+                                    }
+                                  : l
+                              )
+                            )
+                          }
+                          className="w-16 rounded border border-line px-2 py-1 text-right text-sm text-ink"
+                          aria-label={`Quantity for ${linked?.name ?? link.productId}`}
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setLinkerLinks((current) =>
+                            current.filter((l) => l.productId !== link.productId)
+                          )
+                        }
+                        className="text-xs font-bold text-red-600 underline"
+                        aria-label={`Remove ${linked?.name ?? link.productId}`}
+                      >
+                        Remove
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+              {linkerSuggestions.length > 0 && (
+                <div className="mt-4 border-t border-line pt-3">
+                  <p className="text-xs font-black uppercase tracking-widest text-slate-500">
+                    Matcher suggestions
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {linkerSuggestions.map((s) => {
+                      const already = linkerLinks.some((l) => l.productId === s.productId);
+                      return (
+                        <button
+                          key={s.label}
+                          type="button"
+                          disabled={!s.productId || already}
+                          onClick={() => {
+                            if (!s.productId) return;
+                            setLinkerLinks((current) => [
+                              ...current,
+                              { productId: s.productId as string, quantity: s.quantity },
+                            ]);
+                          }}
+                          title={
+                            s.productId
+                              ? `matched by ${s.matchedBy} (score ${s.score.toFixed(2)})`
+                              : "no catalog match — generic part"
+                          }
+                          className={`rounded-full border px-3 py-1.5 text-xs font-bold transition ${
+                            already
+                              ? "border-line bg-mist text-slate-400"
+                              : s.productId
+                                ? "border-navy bg-white text-navy hover:bg-mist"
+                                : "cursor-not-allowed border-dashed border-line text-slate-400"
+                          }`}
+                        >
+                          {already ? "✓ " : "+ "}
+                          {s.label}
+                          {s.quantity > 1 ? ` (×${s.quantity})` : ""}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </section>
       </div>
       {previewProduct &&

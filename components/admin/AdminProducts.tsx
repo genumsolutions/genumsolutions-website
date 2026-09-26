@@ -238,6 +238,39 @@ export default function AdminProducts({
       }
       const p = result.preview;
       const canonical = typeof p?.extra?.canonical === "string" ? p.extra.canonical : url;
+      // U-45b (owner, 2026-09-26): re-host the extracted images RIGHT NOW so
+      // the editor can actually display them (the CSP blocks foreign CDNs —
+      // un-re-hosted images rendered blank and staff could not see or delete
+      // unwanted photos until after saving). Same guard the save path uses;
+      // failure is non-fatal (foreign URLs are kept and the save path
+      // re-hosts them again later).
+      const rawImages: string[] = Array.isArray(p?.images) ? p.images.slice(0, 8) : [];
+      let hostedImages = rawImages;
+      const foreign = rawImages.filter(
+        (src: string) => src.trim() && !src.startsWith("/") && !src.includes("supabase.co")
+      );
+      if (foreign.length > 0) {
+        try {
+          const up = await fetch("/api/admin/link-import", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "upload-image",
+              url: canonical,
+              imageUrls: foreign,
+            }),
+          });
+          const upResult = await up.json().catch(() => ({}));
+          if (up.ok && Array.isArray(upResult.gallery) && upResult.gallery.length > 0) {
+            const byUrl = new Map<string, string>();
+            let i = 0;
+            for (const f of foreign) byUrl.set(f, upResult.gallery[i++] ?? f);
+            hostedImages = rawImages.map((src) => byUrl.get(src) ?? src);
+          }
+        } catch {
+          // non-fatal — fall back to the raw foreign URLs
+        }
+      }
       // U-44: the destination is THIS tab. A category hint that belongs to a
       // different catalog (e.g. a MakerWorld car hinting "Robot Cars" while
       // importing into Electronic Products) is re-homed to the tab's default.
@@ -282,10 +315,12 @@ export default function AdminProducts({
         productType: "Retail kit",
         project_category: undefined,
         description: p.description || current.description,
-        image: p.images?.[0] || current.image,
+        // U-45b: editor images are already on our storage — visible in the
+        // editor AND durable if the source CDN ever blocks us.
+        image: hostedImages[0] || current.image,
         // U-23 (2026-09-24): seed the FULL gallery from the extracted images
         // so every photo is kept ("last link sticks"), not just the cover.
-        gallery: (p.images || []).slice(0, 8),
+        gallery: hostedImages,
         specs: p.specs || current.specs,
         price: current.price || Number(p.extra?.price ?? 0) || 0,
         priceLabel: current.priceLabel || "Request quote",
@@ -312,7 +347,7 @@ export default function AdminProducts({
       }));
       setExtracted({
         provider: p.provider,
-        images: (p.images || []).slice(0, 8),
+        images: hostedImages,
         fields: (p.specs?.filter(Boolean) || []).length,
       });
       setMessage(

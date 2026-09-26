@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import ArticleCard from "../../components/ArticleCard";
 import PageIntro from "../../components/PageIntro";
 import PageShell from "../../components/PageShell";
+import { getManagedProducts } from "../../lib/content-store";
+import { getProjectCategories } from "../../lib/project-categories-store";
+import { applyScope } from "../../lib/catalog";
 
 export const metadata: Metadata = {
   title: "About",
@@ -45,7 +49,24 @@ const whatWeDo = [
   },
 ];
 
-export default function AboutPage() {
+export const dynamic = "force-dynamic";
+
+export default async function AboutPage() {
+  // U-46: live catalog facts — the About page shows the real breadth of the
+  // store (categories + counts) instead of static claims only.
+  const [products, projectCategories] = await Promise.all([
+    getManagedProducts().catch(() => []),
+    getProjectCategories().catch(() => []),
+  ]);
+  const electronic = applyScope(products, "components").filter((p) => p.active !== false);
+  const models = applyScope(products, "models").filter((p) => p.active !== false);
+  const projects = applyScope(products, "projects").filter((p) => p.active !== false);
+  const liveCounts: [string, string][] = [
+    [String(electronic.length), "electronic components in store"],
+    [String(models.length), "3D models printed on demand"],
+    [String(projects.length), "project packages & builds"],
+    [String(projectCategories.length || 3), "project categories supported"],
+  ];
   return (
     <PageShell>
       <PageIntro
@@ -71,6 +92,32 @@ export default function AboutPage() {
           <div className="border-t-2 border-ink pt-4">
             <strong className="font-display text-2xl sm:text-3xl">500+</strong>
             <p className="mt-1 text-xs text-slate-500 sm:text-sm">students trained</p>
+          </div>
+        </div>
+
+        {/* U-46: live store facts — same DB the storefront reads. */}
+        <div className="mt-6 grid grid-cols-2 gap-4 rounded-2xl border border-line bg-white p-5 sm:grid-cols-4 sm:p-6">
+          {liveCounts.map(([value, label]) => (
+            <div key={label}>
+              <strong className="font-display text-2xl text-navy sm:text-3xl">{value}</strong>
+              <p className="mt-1 text-xs leading-5 text-slate-500">{label}</p>
+            </div>
+          ))}
+          <div className="col-span-full mt-1 flex flex-wrap gap-2">
+            {[
+              { href: "/products", label: "Shop components" },
+              { href: "/3d-printing", label: "3D products" },
+              { href: "/projects", label: "Projects" },
+              { href: "/tools", label: "Open tools" },
+            ].map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="rounded-full border border-line px-4 py-2 text-xs font-black text-ink transition hover:border-navy hover:text-navy"
+              >
+                {link.label}
+              </Link>
+            ))}
           </div>
         </div>
 
