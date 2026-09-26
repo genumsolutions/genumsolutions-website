@@ -81,8 +81,16 @@ export default function ProductDetailPro({
     .filter((p): p is Product => Boolean(p));
 
   // C3: record this view (localStorage, best-effort) once per mount.
+  // U-47v2: also fire the per-user habit counter (server-side, fire-and-forget;
+  // guests are ignored by the RPC).
   useEffect(() => {
     recordProductView(product.id);
+    fetch("/api/habits", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kind: "view" }),
+      keepalive: true,
+    }).catch(() => undefined);
   }, [product.id]);
   const projectSections = [
     ["Objectives", product.objectives],
@@ -103,6 +111,12 @@ export default function ProductDetailPro({
   function addToBuildList() {
     if (isQuote) return;
     add(product.id, Math.min(quantity, product.stock));
+    fetch("/api/habits", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kind: "cart" }),
+      keepalive: true,
+    }).catch(() => undefined);
     setAdded(true);
   }
 

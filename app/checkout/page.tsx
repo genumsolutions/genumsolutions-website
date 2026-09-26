@@ -97,6 +97,13 @@ export default function CheckoutPage() {
     });
     const result = await response.json();
     if (result.ok && result.order?.id) {
+      // U-47v2: habit counter (fire-and-forget; guests ignored server-side).
+      fetch("/api/habits", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind: "order" }),
+        keepalive: true,
+      }).catch(() => undefined);
       clear();
       window.location.href = `/checkout/success?order=${result.order.id}`;
     } else {
@@ -134,6 +141,15 @@ export default function CheckoutPage() {
         }),
       });
       const result = await response.json();
+      // U-47v2: habit counter on successful gateway handoff (fire-and-forget).
+      if ((provider === "khalti" && result.url) || (provider === "esewa" && result.action)) {
+        fetch("/api/habits", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ kind: "order" }),
+          keepalive: true,
+        }).catch(() => undefined);
+      }
       if (provider === "khalti" && result.url) {
         clear();
         window.location.href = result.url;
@@ -184,7 +200,10 @@ export default function CheckoutPage() {
               </span>
             </span>
           </Link>
-          <div className="flex shrink-0 items-center gap-2.5 whitespace-nowrap sm:gap-5">
+          {/* U-47v2 (owner: cart overflowed on narrow phones): wrap allowed,
+              no whitespace-nowrap — the two links stacked on a 320px screen
+              instead of pushing the page sideways. */}
+          <div className="flex min-w-0 shrink-0 flex-wrap items-center justify-end gap-x-2.5 gap-y-1 sm:gap-x-5">
             <Link
               href="/products"
               className="inline-flex min-h-9 items-center text-xs font-bold text-navy hover:underline sm:text-sm"
@@ -289,15 +308,17 @@ export default function CheckoutPage() {
                 {items.map(({ product, quantity }) => (
                   <div
                     key={product.id}
-                    className="flex flex-wrap items-center justify-between gap-3 border-b border-line py-3 last:border-b-0 last:pb-0 first:pt-0"
+                    className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-line py-3 last:border-b-0 last:pb-0 first:pt-0"
                   >
-                    <div className="min-w-0 flex-1">
+                    <div className="min-w-[9rem] flex-1">
                       <p className="line-clamp-2 text-sm font-bold">{product.name}</p>
                       <p className="truncate text-xs text-muted">
                         {formatNPR(product.price)} each · {product.stock} in stock
                       </p>
                     </div>
-                    <div className="flex shrink-0 items-center gap-2 whitespace-nowrap">
+                    {/* U-47v2: the qty controls wrap below the name on narrow
+                        screens instead of overflowing (owner report). */}
+                    <div className="flex shrink-0 items-center gap-2">
                       <button
                         onClick={() => changeQuantity(product.id, quantity - 1)}
                         className="h-8 w-8 rounded-lg border border-line font-bold transition hover:border-navy hover:text-navy disabled:opacity-40"
@@ -321,7 +342,7 @@ export default function CheckoutPage() {
                       </button>
                       <button
                         onClick={() => changeQuantity(product.id, 0)}
-                        className="ml-1 text-xs font-bold text-red-600 underline"
+                        className="ml-1 h-8 min-w-8 text-xs font-bold text-red-600 underline"
                         aria-label={`Remove ${product.name} from build list`}
                       >
                         Remove

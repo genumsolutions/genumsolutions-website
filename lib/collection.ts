@@ -6,6 +6,11 @@
 // distinguishes products (incl. project packages) from services. Reads
 // use the anon (cookie) client so RLS scopes rows to the signed-in
 // user; every helper returns an empty/failed state when signed out.
+//
+// FIX (2026-09-27): inserts MUST carry user_id explicitly — the column is
+// `not null` and, without it, every insert failed silently under RLS
+// (the "collection never shows on the profile" bug). The DB also got a
+// `default auth.uid()` on the column as belt-and-braces.
 // =====================================================================
 import { createClient, getSessionUser, supabaseConfigured } from "./supabase/server";
 
@@ -65,6 +70,6 @@ export async function toggleCollection(
   }
   const { error } = await client
     .from("user_collection")
-    .insert({ item_id: itemId, item_kind: kind });
+    .insert({ user_id: user.id, item_id: itemId, item_kind: kind });
   return !error;
 }

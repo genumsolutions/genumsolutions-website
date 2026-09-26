@@ -1636,7 +1636,9 @@ update public.project_categories set name = 'Aerial Drones', icon = 'navigation'
 -- see them. item_kind distinguishes products (incl. project packages —
 -- they are products rows) from services; item_id matches the source table.
 create table if not exists public.user_collection (
-  user_id uuid not null references auth.users(id) on delete cascade,
+  -- user_id defaults to auth.uid() so a client insert never silently fails
+  -- on a missing owner id (the 2026-09-27 "collection never shows" bug).
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
   item_id text not null,
   item_kind text not null default 'product' check (item_kind in ('product', 'service')),
   created_at timestamptz not null default now(),
@@ -1644,6 +1646,11 @@ create table if not exists public.user_collection (
 );
 
 alter table public.user_collection enable row level security;
+
+-- Belt-and-braces for tables created before this default existed (2026-09-27
+-- "collection never shows" bug: client inserts omitted user_id and the
+-- not-null column made every write fail silently under RLS).
+alter table public.user_collection alter column user_id set default auth.uid();
 
 drop policy if exists "own collection select" on public.user_collection;
 create policy "own collection select"
@@ -1660,3 +1667,87 @@ create index if not exists user_collection_user_idx
 
 comment on table public.user_collection is
   'U-47: per-user saved cards (products/projects/services). Heart on any card toggles a row; the profile page lists the collection. RLS: own rows only.';
+
+-- ===== U-47v2 (2026-09-27): PER-USER HABITS / BEHAVIOR STORE =====
+-- Owner: "make a proper database of each user for better control of data
+-- and habits of user." Aggregated, privacy-safe counters — NO raw page
+-- history (page_views already covers that with its own RLS). One row per
+-- user with counters the profile + future personalization read:
+--   viewed_count   : product-detail opens (deduped per day+product)
+--   search_count   : catalog searches submitted
+--   cart_adds      : build-list additions
+--   orders_placed  : denormalized from orders for a single-row read
+--   last_*_at      : recency markers for each habit
+-- RLS: the user updates their OWN row (upsert); staff may read all rows
+-- for support; writes are merged client-side (read, add, write back).
+create table if not exists public.user_habits (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  viewed_count integer not null default 0,
+  search_count integer not null default 0,
+  cart_adds integer not null default 0,
+  orders_placed integer not null default 0,
+  last_viewed_at timestamptz,
+  last_search_at timestamptz,
+  last_cart_at timestamptz,
+  last_order_at timestamptz,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.user_habits enable row level security;
+
+drop policy if exists "own habits select" on public.user_habits;
+create policy "own habits select"
+  on public.user_habits for select using (auth.uid() = user_id or public.is_staff());
+
+drop policy if exists "own habits insert" on public.user_habits;
+create policy "own habits insert"
+  on public.user_habits for insert with check (auth.uid() = user_id);
+
+drop policy if exists "own habits update" on public.user_habits;
+create policy "own habits update"
+  on public.user_habits for update using (auth.uid() = user_id);
+
+comment on table public.user_habits is
+  'U-47v2: aggregated per-user habit counters (views, searches, cart adds, orders). Own-row RLS + staff read. No raw browsing history — page_views keeps that.';
+
+-- SECURITY DEFINER increments: the client cannot UPDATE via upsert against
+-- a PRIMARY KEY row it has never read (insert would collide); a definer
+-- function does read-modify-write atomically and re-verifies the caller.
+create or replace function public.track_habit(p_kind text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+begin
+  if v_uid is null then
+    return; -- guests: silently ignored, nothing tracked
+  end if;
+
+  insert into public.user_habits (user_id) values (v_uid)
+  on conflict (user_id) do nothing;
+
+  if p_kind = 'view' then
+    update public.user_habits
+      set viewed_count = viewed_count + 1, last_viewed_at = now(), updated_at = now()
+      where user_id = v_uid;
+  elsif p_kind = 'search' then
+    update public.user_habits
+      set search_count = search_count + 1, last_search_at = now(), updated_at = now()
+      where user_id = v_uid;
+  elsif p_kind = 'cart' then
+    update public.user_habits
+      set cart_adds = cart_adds + 1, last_cart_at = now(), updated_at = now()
+      where user_id = v_uid;
+  elsif p_kind = 'order' then
+    update public.user_habits
+      set orders_placed = orders_placed + 1, last_order_at = now(), updated_at = now()
+      where user_id = v_uid;
+  end if;
+end;
+$$;
+
+comment on function public.track_habit(text) is
+  'U-47v2: atomic habit increment for the signed-in user (view|search|cart|order). Guests are ignored.';

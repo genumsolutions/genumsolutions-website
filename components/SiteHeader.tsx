@@ -211,8 +211,11 @@ export default function SiteHeader() {
         </div>
       </div>
 
-      {/* U-47: app-style left drawer — scrim + full-height panel sliding
-          from the LEFT edge (translate-x), one nav item per row, 48px taps. */}
+      {/* U-47v2 (owner): the drawer drops from the TOP-RIGHT — the same
+          corner the menu button sits in — and its height is measured from
+          the REAL available viewport (100dvh minus the header) so it never
+          overflows under browser chrome on small phones. One nav item per
+          row, 48px taps. */}
       <div
         id="mobile-navigation"
         ref={mobileNavRef}
@@ -228,9 +231,12 @@ export default function SiteHeader() {
         />
         <nav
           aria-label="Mobile"
-          className={`absolute inset-y-0 left-0 flex w-[82vw] max-w-xs flex-col overflow-y-auto bg-white shadow-2xl transition-transform duration-300 ease-out ${
-            open ? "translate-x-0" : "-translate-x-full"
+          className={`absolute right-0 top-0 flex w-[82vw] max-w-xs flex-col overflow-y-auto bg-white shadow-2xl transition-all duration-300 ease-out ${
+            open
+              ? "translate-x-0 translate-y-0 opacity-100"
+              : "-translate-x-2 -translate-y-full opacity-0"
           }`}
+          style={{ height: "calc(100dvh - 0px)" }}
         >
           <div className="flex items-center justify-between border-b border-line px-5 py-4">
             <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[.28em] text-navy">
