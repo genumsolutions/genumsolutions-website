@@ -14,6 +14,34 @@ import {
 } from "lucide-react";
 import { androidApp, refreshAndroidAppInfo, type AppInfo, type Company } from "../lib/company";
 
+/**
+ * Hydration-safe (2026-09-27): format the release date as a FIXED string via
+ * UTC getters. `toLocaleDateString` during SSR made the server HTML depend on
+ * the server's TZ/ICU while the client re-rendered with the device's — the
+ * text mismatch tripped React #418/#423/#425 on /app in the 60-load ux-audit.
+ * A pure UTC formatter renders identically on both sides (and matches what
+ * release.json's Nepali publisher means: the UTC calendar day it uploaded).
+ */
+function formatReleaseDateUtc(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+  return `${months[date.getUTCMonth()]} ${date.getUTCDate()}, ${date.getUTCFullYear()}`;
+}
+
 export default function AppDownloadClient({
   company,
   initial,
@@ -194,11 +222,7 @@ export default function AppDownloadClient({
                   <p className="mt-4 text-xs leading-5 text-slate-400">
                     Last published:{" "}
                     <time dateTime={appInfo.updatedAt} className="font-semibold text-slate-500">
-                      {new Date(appInfo.updatedAt).toLocaleDateString("en-US", {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                      })}
+                      {formatReleaseDateUtc(appInfo.updatedAt)}
                     </time>
                     {appInfo.notes ? (
                       <span className="text-slate-500"> · {appInfo.notes}</span>
