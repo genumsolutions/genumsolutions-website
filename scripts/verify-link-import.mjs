@@ -74,7 +74,13 @@ async function provision(role, email) {
   });
   if (signInError) throw signInError;
   const s = sess.session;
-  return { id: uid, token: s.access_token, refreshToken: s.refresh_token };
+  return {
+    id: uid,
+    email,
+    password: PASSWORD,
+    token: s.access_token,
+    refreshToken: s.refresh_token,
+  };
 }
 
 async function callFn(token, body) {
@@ -94,17 +100,29 @@ async function callFn(token, body) {
 
 // U-35 (2026-09-25): call the website proxy route (/api/admin/link-import)
 // exactly like the admin UI does, so the full Next cookie session is
-// exercised rather than the raw edge function endpoint. The proxy
-// reads the session from the sb-access / sb-refresh cookies (not the
-// Bearer header) before forwarding the caller's access_token to the
-// edge function.
-async function callUrl(proxy, token, refreshToken, body) {
+// exercised rather than the raw edge function endpoint.
+// U-39 (2026-09-26) FIX: @supabase/ssr 0.12.x uses the SINGLE chunked cookie
+// "sb-<project-ref>-auth-token" — the old hand-crafted sb-access/sb-refresh
+// pair was never read by the proxy, so the staff pass 401'd even though the
+// web admin itself worked fine. The harness now signs in through the REAL
+// /api/auth/login and replays the exact Set-Cookie it gets back.
+const SITE_BASE = process.env.E2E_SITE_BASE || "https://genumsolutions-website.vercel.app";
+async function loginCookie(email, password) {
+  const login = await fetch(`${SITE_BASE}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  if (!login.ok) throw new Error(`login failed (${login.status})`);
+  const setCookies = login.headers.getSetCookie?.() ?? [];
+  const pair = setCookies.map((s) => s.split(";")[0]).join("; ");
+  if (!pair) throw new Error("login set no cookies");
+  return pair;
+}
+async function callUrl(proxy, cookie, body) {
   const res = await fetch(proxy, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Cookie: `sb-access=${token}; sb-refresh=${refreshToken}`,
-    },
+    headers: { "Content-Type": "application/json", Cookie: cookie },
     body: JSON.stringify(body),
   });
   let data = null;
@@ -401,7 +419,7 @@ try {
     });
     assert("proxy rejects garbage token (401)", pBad.status === 401, `status ${pBad.status}`);
 
-    const pStaff = await callUrl(PROXY_URL, staff.token, staff.refreshToken, {
+    const pStaff = await callUrl(PROXY_URL, await loginCookie(staff.email, staff.password), {
       action: "preview",
       url: SAMPLE_URL,
     });
