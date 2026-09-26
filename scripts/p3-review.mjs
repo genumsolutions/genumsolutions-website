@@ -869,7 +869,7 @@ try {
     // origin's Notification permission to "denied", which is exactly the
     // state a browser "Block" click leaves. The card must explain how to
     // unblock (the checklist item); restored to granted afterwards.
-    {
+    try {
       const cdp = await page.createCDPSession();
       await cdp.send("Browser.setPermission", {
         permission: { name: "notifications" },
@@ -895,6 +895,13 @@ try {
           setting: "granted",
         })
         .catch(() => undefined);
+    } catch (cdpError) {
+      report(
+        4,
+        "Denied-permission state explains unblocking",
+        "SNAG",
+        `CDP permission override unavailable in this Chrome: ${cdpError.message}`
+      );
     }
   }
 
