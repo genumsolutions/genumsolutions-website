@@ -749,11 +749,20 @@ try {
         pushPayload ? "PASS" : "FAIL",
         pushPayload ? `title="${pushPayload.title}"` : "no push within 20s"
       );
+      // P3 §4 tap-through — DEFER closed 2026-09-26: the LIVE payload's
+      // click target is asserted here (what a tap must open), and the SW's
+      // notificationclick behavior is pinned by
+      // tests/sw-notification-click.test.mjs — the old handler focused an
+      // existing tab WITHOUT navigating, which is exactly the bug this DEFER
+      // was hiding (fixed in sw.js the same day). Chrome does not expose
+      // synthetic notification clicks to automation, so the physical tap
+      // stays a 2-second owner spot-check; every machine-checkable part is
+      // now asserted.
       report(
         4,
-        "Tap notification → opens /account#orders",
-        "DEFER",
-        "cannot synthesize a Chrome notification click from automation — one manual tap needed"
+        "Tap-through target delivered in live push payload",
+        pushPayload && pushPayload.url === "/account#orders" ? "PASS" : "FAIL",
+        pushPayload ? `url=${pushPayload.url}` : "no push payload captured"
       );
       // turn off
       await page.evaluate(() => {
@@ -856,12 +865,37 @@ try {
       optedOut === "1" && optInAfter === 0 ? "PASS" : "SNAG",
       `optout=${optedOut}, occurrences after reload=${optInAfter}`
     );
-    report(
-      4,
-      "Denied-permission state explains unblocking",
-      "DEFER",
-      "denied state not automatable; source branch verified (PushNotificationSettings.tsx)"
-    );
+    // P3 §4 denied-permission — DEFER closed 2026-09-26: CDP sets the
+    // origin's Notification permission to "denied", which is exactly the
+    // state a browser "Block" click leaves. The card must explain how to
+    // unblock (the checklist item); restored to granted afterwards.
+    {
+      const cdp = await page.createCDPSession();
+      await cdp.send("Browser.setPermission", {
+        permission: { name: "notifications" },
+        setting: "denied",
+      });
+      await page.reload({ waitUntil: "networkidle2" });
+      let deniedText = "";
+      for (let i = 0; i < 20; i++) {
+        deniedText = await page.evaluate(() => document.body.innerText);
+        if (/Notifications are blocked for this site/i.test(deniedText)) break;
+        await sleep(500);
+      }
+      const explained = /Notifications are blocked for this site/i.test(deniedText);
+      report(
+        4,
+        "Denied-permission state explains unblocking",
+        explained ? "PASS" : "FAIL",
+        explained ? "explainer rendered while blocked" : "denied explainer never rendered"
+      );
+      await cdp
+        .send("Browser.setPermission", {
+          permission: { name: "notifications" },
+          setting: "granted",
+        })
+        .catch(() => undefined);
+    }
   }
 
   // ================= cleanup =================

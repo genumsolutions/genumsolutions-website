@@ -215,13 +215,23 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const target = (event.notification.data && event.notification.data.url) || "/account";
+  const targetUrl = new URL(target, self.location.origin).href;
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
-      // Focus an existing window on our origin if one is open.
+      // P3 §4 tap-through: focus alone was all the old handler did, so with
+      // any site tab open the tap never landed on /account#orders. Focus the
+      // existing window AND navigate it to the payload target; fall back to
+      // opening a new window only when none of ours is open.
       for (const client of clientList) {
-        if ("focus" in client) return client.focus();
+        if ("focus" in client && client.url.startsWith(self.location.origin)) {
+          const nav =
+            typeof client.navigate === "function"
+              ? client.navigate(targetUrl).catch(() => undefined)
+              : Promise.resolve();
+          return Promise.all([client.focus(), nav]);
+        }
       }
-      return self.clients.openWindow(target);
+      return self.clients.openWindow(targetUrl);
     })
   );
 });
