@@ -110,8 +110,13 @@ export default function SiteHeader() {
       setOpen(false);
     }
     // Push a sentinel entry; hardware back => popstate => close (the
-    // sentinel is consumed by that back).
-    window.history.pushState({ genumMenu: true }, "");
+    // sentinel is consumed by that back). If one is already on the stack
+    // (previous close left it — link/scrim/Escape paths never unwind it),
+    // REUSE it instead of stacking another: at most one dead back-press
+    // can ever exist.
+    if (!window.history.state?.genumMenu) {
+      window.history.pushState({ genumMenu: true }, "");
+    }
     document.addEventListener("keydown", onKeyDown);
     window.addEventListener("popstate", onPopState);
     // U-47v6 (owner: menu items stopped navigating to their pages): the
