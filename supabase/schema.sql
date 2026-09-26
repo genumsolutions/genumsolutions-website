@@ -1436,3 +1436,118 @@ create index if not exists project_components_product_idx
 
 comment on table public.project_components is
   'U-45: project package -> Electronic Product component links (quantity-aware). Staff-managed via the admin Projects tab linker, which pre-fills suggestions from materials_required via lib/project-components.ts.';
+
+-- U-45 Phase 2 (2026-09-27): the NATIVE app's admin Projects tab needs the
+-- same linker as the website, but the website's /api/admin/project-components
+-- gate reads the website's session cookie — an app JWT cannot authorize on
+-- it. The app's established pattern for staff-gated writes from the client
+-- (mark_order_paid, restore_order_stock, admin_user_last_seen) is a SECURITY
+-- DEFINER function that re-verifies the role server-side; the client calls
+-- it with its own JWT via supabase.rpc. Same contract as the website PUT:
+-- validate + clamp, drop dupes/invalid ids, replace-all semantics.
+create or replace function public.save_project_components(
+  p_project_id text,
+  p_components jsonb
+)
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_is_staff boolean;
+  v_is_project boolean;
+  v_valid_ids text[];
+  v_rows jsonb;
+  v_row jsonb;
+  v_link record;
+  v_id text;
+  v_qty integer;
+  v_i integer;
+  v_saved integer := 0;
+begin
+  select coalesce(
+    (select true from public.profiles
+      where id = auth.uid() and role in ('staff', 'admin', 'owner')),
+    false
+  ) into v_is_staff;
+  if not v_is_staff then
+    raise exception 'Only staff members can save component links.' using
+      errcode = '42501';
+  end if;
+
+  if p_project_id is null or length(trim(p_project_id)) = 0 then
+    raise exception 'projectId is required.';
+  end if;
+
+  select exists (
+    select 1 from public.products
+    where id = p_project_id and product_type = 'Project package'
+  ) into v_is_project;
+  if not v_is_project then
+    raise exception 'Project not found.';
+  end if;
+
+  -- Normalize the incoming array: numeric-safe clamp 1..99 (matching the
+  -- website PUT), drop empty ids and duplicate product ids (last one wins).
+  v_rows := coalesce(p_components, '[]'::jsonb);
+  if jsonb_typeof(v_rows) <> 'array' then
+    raise exception 'components must be an array.';
+  end if;
+
+  drop table if exists _pc_norm;
+  create temp table _pc_norm (product_id text primary key, quantity integer)
+    on commit drop;
+  for v_i in 0 .. jsonb_array_length(v_rows) - 1 loop
+    v_row := v_rows -> v_i;
+    v_id := nullif(trim(coalesce(v_row ->> 'productId', '')), '');
+    begin
+      v_qty := greatest(1, least(99,
+        coalesce(round(nullif(v_row ->> 'quantity', '')::numeric, 0)), 1));
+    exception when others then
+      v_qty := 1;
+    end;
+    if v_id is not null then
+      insert into _pc_norm (product_id, quantity) values (v_id, v_qty)
+        on conflict (product_id) do update set quantity = excluded.quantity;
+    end if;
+  end loop;
+
+  -- Keep only ids that actually exist in the catalog (mirrors the website
+  -- PUT's products-in check).
+  select coalesce(array_agg(id), '{}'::text[]) into v_valid_ids
+    from public.products
+    where id in (select product_id from _pc_norm);
+  delete from _pc_norm where product_id <> all (coalesce(v_valid_ids, '{}'::text[]));
+
+  -- Replace-all: simplest, predictable contract (the editor always sends
+  -- the full list), identical to the website endpoint.
+  delete from public.project_components where project_id = p_project_id;
+  for v_link in
+    select product_id, quantity from _pc_norm
+    order by quantity desc, product_id asc
+  loop
+    v_saved := v_saved + 1;
+    insert into public.project_components (project_id, product_id, quantity, sort_order)
+    values (
+      p_project_id,
+      v_link.product_id,
+      v_link.quantity,
+      v_saved * 10
+    );
+  end loop;
+
+  return v_saved;
+exception
+  when others then
+    begin
+      drop table if exists _pc_norm;
+    exception when others then
+      null; -- temp table may not exist yet
+    end;
+    raise;
+end;
+$$;
+
+comment on function public.save_project_components(text, jsonb) is
+  'U-45 Phase 2: staff+ gated replace-all save for the app admin Projects linker (website parity with PUT /api/admin/project-components).';
