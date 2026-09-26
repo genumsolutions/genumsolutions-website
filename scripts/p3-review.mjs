@@ -149,26 +149,16 @@ try {
     await login(page, ADMIN_EMAIL);
     await page.goto(BASE + "/admin", { waitUntil: "networkidle2" });
     const tabs = await page.evaluate(() => {
-      const wanted = [
-        "Dashboard",
-        "Orders",
-        "Products",
-        "Projects",
-        "Services",
-        "Journal",
-        "Users",
-        "Messages",
-        "Finance",
-        "Activity",
-        "Content",
-        "Settings",
-      ];
+      // U-37 (2026-09-25): the admin strip merged 12→6 tabs. The old wanted
+      // list (Products/Projects/Journal/Finance/Activity…) made this check
+      // SNAG forever on a CORRECT site — the runner was the stale side.
+      const wanted = ["Dashboard", "Orders", "Catalog", "Content", "Users", "Settings"];
       const seq = [...document.querySelectorAll("button")]
         .map((b) => b.textContent.trim())
         .filter((t) => wanted.includes(t));
       return seq;
     });
-    const orderOk = tabs.length >= 12 && tabs[0] === "Dashboard" && tabs.indexOf("Orders") === 1;
+    const orderOk = tabs.length === 6 && tabs[0] === "Dashboard" && tabs.indexOf("Orders") === 1;
     report(
       1,
       "Admin tab order: Dashboard-first (W-4b)",
@@ -871,9 +861,14 @@ try {
     // unblock (the checklist item); restored to granted afterwards.
     try {
       const cdp = await page.createCDPSession();
+      // ORIGIN-SCOPED deny: the browser context granted "notifications" for
+      // this origin (overridePermissions above), and an origin grant SHADOWS
+      // the default — the first run without `origin` here stayed granted and
+      // the explainer never rendered (false FAIL).
       await cdp.send("Browser.setPermission", {
         permission: { name: "notifications" },
         setting: "denied",
+        origin: BASE,
       });
       await page.reload({ waitUntil: "networkidle2" });
       let deniedText = "";
@@ -893,6 +888,7 @@ try {
         .send("Browser.setPermission", {
           permission: { name: "notifications" },
           setting: "granted",
+          origin: BASE,
         })
         .catch(() => undefined);
     } catch (cdpError) {
