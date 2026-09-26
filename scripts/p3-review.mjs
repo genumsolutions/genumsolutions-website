@@ -870,7 +870,10 @@ try {
         setting: "denied",
         origin: BASE,
       });
-      await page.reload({ waitUntil: "networkidle2" });
+      // The explainer lives in the ACCOUNT page's PushNotificationSettings
+      // card — after the checkout checks the current page is /checkout, so
+      // sampling there can never see it (first runs false-FAILED on this).
+      await page.goto(BASE + "/account", { waitUntil: "networkidle2" });
       let deniedText = "";
       for (let i = 0; i < 20; i++) {
         deniedText = await page.evaluate(() => document.body.innerText);
