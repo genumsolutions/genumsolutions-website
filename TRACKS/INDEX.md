@@ -6,32 +6,52 @@ Master plan + recovery: `(workspace) guide/APP-WEBSITE-SYNC-PLAN-2026-09-18.md`.
 Branches: `main` (only push target) · `dev` (owner backup — never push).
 CI: `ci.yml` on `main` · `sync-app-fallback.yml` on `main` + 6h cron.
 
-> 🚨 **2026-09-27 — U-48 FINAL SNAG ROUND: code complete + all gates green (tsc 0 · lint clean ·
-> vitest 151/151 · `next build` green), but UNCOMMITTED and not pushed.** Web-side wins:
-> **U-32 ISR flip executed** (public pages are now genuinely static — `/`, `/about`, `/3d-printing`,
-> `/journal`, `/projects`, `/services`, `/tools`; `/products/[slug]` on-demand SSG; `/products`
-> intentionally dynamic for `searchParams`), admin/customer busy+disabled `finally` fixes, rate
-> limits for `/api/habits` + `/api/collection`, noindex on `/admin` + `/login`.
-> **⚠ TWO EDGE-FUNCTION FIXES REQUIRE A REDEPLOY — see below.**
-> Detail: `guide/PLAN-2026-09-27-U48-FINAL-SNAGS.md` §6–§7 + `guide/SESSION-2026-09-27-U48-FINAL-SNAGS.md`.
+> ✅ **2026-09-27 — U-48 FINAL SNAG ROUND: COMMITTED, PUSHED (`9b23f8b`), CI GREEN, and the
+> `site-content` security fix is DEPLOYED + VERIFIED LIVE.** Web-side wins: **U-32 ISR flip
+> executed** (public pages are now genuinely static — `/`, `/about`, `/3d-printing`, `/journal`,
+> `/projects`, `/services`, `/tools`; `/products/[slug]` on-demand SSG; `/products` intentionally
+> dynamic for `searchParams`), admin/customer busy+disabled `finally` fixes, rate limits for
+> `/api/habits` + `/api/collection`, noindex on `/admin` + `/login`.
+> Gates: tsc 0 · lint clean · vitest 151/151 · `next build` green (re-verified on the committed
+> state _after_ the pre-commit hook rewrote files). Detail: `guide/PLAN-2026-09-27-U48-FINAL-SNAGS.md`
+> §6–§7 + `guide/SESSION-2026-09-27-U48-FINAL-SNAGS.md`.
 
-> 🚨 **EDGE-FUNCTION REDEPLOY REQUIRED (security, live in production until done):**
+> ✅ **`site-content` DEPLOYED (v2 → v4) and the anonymous-write hole is CLOSED in production.**
+> Its `upsert` action used to run on the service role with **no caller check**, so any anonymous
+> caller could rewrite the home hero (`site_content`). It now requires an `admin`/`owner` bearer
+> token, and the app's admin save was switched to `supabase.functions.invoke` so that token rides
+> along. Verified live against production after deploy:
+> `get` no auth → **200** (public read intact) · `upsert` no auth → **401** · `upsert` bad token →
+> **401** · unknown action → **404** (proves the handler, not the gateway, is answering).
+>
+> ⚠️ **REDEPLOY IT WITH `--no-verify-jwt` — DO NOT FORGET THIS FLAG:**
 >
 > ```
-> supabase functions deploy site-content payment-khalti
+> supabase functions deploy site-content --no-verify-jwt --project-ref bkylfnlybtsujwzropru
 > ```
 >
-> - **`site-content`** — its `upsert` action ran on the service role with **no caller check**, so any
->   anonymous caller could rewrite the home hero (`site_content`). Now requires an `admin`/`owner`
->   bearer token. The app's admin save was switched to `supabase.functions.invoke` to send that
->   token, so **the admin content save 401s until the function is redeployed.**
-> - **`payment-khalti`** — `initiate` charged a **client-supplied** amount with no comparison to the
->   order's `total_npr`, so an order could be paid a fraction of its price and still be marked paid
->   and settled. The amount is now server-authoritative from the order row (as `payment-esewa` and
->   this site's own `app/api/checkout/khalti` already did) + an `amountMatches` guard on both verify
->   paths. **Needs one real low-value Khalti test payment after redeploy**, plus a check that a
->   mismatched amount is refused rather than settled.
-> - The website's own Khalti flow is unaffected and was already correct.
+> This function has BOTH a public action and a privileged one, so the **function itself** must be
+> reachable and must do its own role check. There is no `supabase/config.toml` in this repo, so a
+> plain `supabase functions deploy site-content` resets `verify_jwt` to the default `true`; the
+> Supabase gateway then rejects every unauthenticated request and the app's home hero read
+> (`fetchSiteContent` is a **raw fetch with no `Authorization` header**) 401s at the gateway. That
+> exact regression happened on the first deploy attempt here and was caught + fixed by redeploying
+> with `--no-verify-jwt` (confirmed `verify_jwt: false` + v4 on the server). The gateway can only
+> validate token _presence/signature_, never a role, so it can never stand in for the in-function
+> admin/owner check.
+> The other edge functions are correctly configured as-is: `admin-*` + `newsletter-subscribe` are
+> `verify_jwt: true` and their callers attach a JWT via `supabase.functions.invoke`; the
+> `payment-*` gateway callbacks are `verify_jwt: false` on purpose.
+
+> ⚠️ **`payment-khalti` FIX IS COMMITTED BUT _NOT_ DEPLOYED — still vulnerable in production.**
+> The owner is handling the payment side, so this was deliberately left undeployed on purpose. The
+> `initiate` action still trusts a **client-supplied** amount with no comparison to the order's
+> `total_npr`, so an order can be paid a fraction of its price and still be marked paid and settled.
+> The fix (server-authoritative amount + `amountMatches` on both verify paths) is on `main`. When
+> deploying it, note it must keep **`--no-verify-jwt`** (the Khalti gateway returns users with a
+> payment token, not a Supabase JWT), and then verify with one real low-value payment plus a check
+> that a mismatched amount is refused rather than settled. The website's own Khalti flow
+> (`app/api/checkout/khalti`) is unaffected and was already correct.
 
 > 🔁 **2026-09-27 — U-45 linker + U-47 owner rounds v1→v7 shipped (HEAD `0279dc3`, release v1.5.1).**
 > Six-category Projects + Control Panel remotes, minimal square cards, user collection + habits,
