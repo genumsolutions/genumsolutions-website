@@ -15,7 +15,13 @@ const AdminPanel = dynamicImport(() => import("../../components/AdminPanel"), {
 });
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "Admin" };
+// U-48: robots.txt already disallows /admin, but disallow is only a hint to
+// well-behaved crawlers — the noindex meta tag is the directive that actually
+// keeps the dashboard out of the index (matches /account).
+export const metadata: Metadata = {
+  title: "Admin",
+  robots: { index: false, follow: false },
+};
 
 export default async function AdminPage() {
   const [admin, products, role] = await Promise.all([

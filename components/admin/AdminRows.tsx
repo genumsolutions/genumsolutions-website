@@ -99,20 +99,29 @@ export default function AdminRows({
       return;
     }
     setBusy(true);
-    const response = await fetch("/api/admin/settings", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: kind, [noun]: payload }),
-    });
-    const result = await response.json().catch(() => ({}));
-    setBusy(false);
-    if (!response.ok) {
-      setMessage(result.error || `Could not save ${singular.toLowerCase()}.`);
-      return;
+    // U-48: try/catch/finally. The old code released `busy` with a plain
+    // setBusy(false) after the await, so a thrown fetch (offline, DNS, aborted
+    // request) left the Save button disabled showing "Saving..." FOREVER —
+    // a stuck editor the admin could only escape by reloading.
+    try {
+      const response = await fetch("/api/admin/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: kind, [noun]: payload }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setMessage(result.error || `Could not save ${singular.toLowerCase()}.`);
+        return;
+      }
+      setMessage(`${singular} saved.`);
+      await refresh();
+      setEditing(null);
+    } catch {
+      setMessage(`Could not reach the server to save ${singular.toLowerCase()}.`);
+    } finally {
+      setBusy(false);
     }
-    setMessage(`${singular} saved.`);
-    await refresh();
-    setEditing(null);
   }
 
   async function remove(id: string) {
@@ -133,19 +142,25 @@ export default function AdminRows({
   async function toggleVisibility(r: RowItem) {
     const payload = { ...r, active: r.active === false };
     setBusy(true);
-    const response = await fetch("/api/admin/settings", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: kind, [noun]: payload }),
-    });
-    const result = await response.json().catch(() => ({}));
-    setBusy(false);
-    if (!response.ok) {
-      setMessage(result.error || `Could not update ${singular.toLowerCase()}.`);
-      return;
+    // U-48: same stuck-busy guard as `save` above.
+    try {
+      const response = await fetch("/api/admin/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: kind, [noun]: payload }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setMessage(result.error || `Could not update ${singular.toLowerCase()}.`);
+        return;
+      }
+      onChange(rows.map((row) => (row.id === r.id ? payload : row)));
+      setMessage(r.active === false ? `${singular} shown.` : `${singular} hidden.`);
+    } catch {
+      setMessage(`Could not reach the server to update ${singular.toLowerCase()}.`);
+    } finally {
+      setBusy(false);
     }
-    onChange(rows.map((row) => (row.id === r.id ? payload : row)));
-    setMessage(r.active === false ? `${singular} shown.` : `${singular} hidden.`);
   }
 
   const safe = (r: RowItem, fallback = "") =>

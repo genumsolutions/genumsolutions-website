@@ -11,7 +11,12 @@ import { getManagedProducts } from "../lib/content-store";
 import { getSiteContent } from "../lib/content-store";
 import { applyScope } from "../lib/catalog";
 
-export const dynamic = "force-dynamic";
+// U-48: no force-dynamic — the home page is statically rendered and
+// revalidates in the background (layout `revalidate = 300`), with on-demand
+// busting from the writes: revalidateProducts (products/imports),
+// revalidateHomeContent (site_content), revalidatePrograms (training/pilot/
+// curriculum), revalidateCompany (root layout). Previously every home view
+// re-read all four tables.
 
 export async function generateMetadata(): Promise<Metadata> {
   const content = await getSiteContent();

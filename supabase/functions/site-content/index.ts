@@ -2,8 +2,6 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const supabaseUrl = Deno.env.get("NEXT_PUBLIC_SUPABASE_URL") ?? Deno.env.get("SUPABASE_URL") ?? "";
-const supabaseAnonKey =
-  Deno.env.get("NEXT_PUBLIC_SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 const supabaseServiceKey =
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SERVICE_ROLE_KEY") ?? "";
 
@@ -60,6 +58,43 @@ serve(async (req) => {
     }
 
     if (action === "upsert") {
+      // U-48 (2026-09-27) SECURITY: this action used to run with the SERVICE
+      // ROLE key and NO caller check at all, so any anonymous caller could
+      // rewrite the whole site_content row (defacement + free resource abuse).
+      // It is now gated exactly like the other service-role edge functions
+      // (admin-products / admin-set-role): resolve the CALLER's bearer token,
+      // then require an admin/owner profile. The "get" action above stays
+      // public on purpose - the home hero text is public content.
+      const authHeader = req.headers.get("Authorization") || "";
+      const callerToken = authHeader.replace(/^Bearer\s+/i, "");
+      if (!callerToken) {
+        return new Response(JSON.stringify({ error: "Sign in to edit site content." }), {
+          headers: { "Content-Type": "application/json" },
+          status: 401,
+        });
+      }
+
+      const { data: userData, error: userError } = await supabase.auth.getUser(callerToken);
+      const callerId = userData?.user?.id;
+      if (userError || !callerId) {
+        return new Response(JSON.stringify({ error: "Sign in to edit site content." }), {
+          headers: { "Content-Type": "application/json" },
+          status: 401,
+        });
+      }
+
+      const { data: callerProfile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", callerId)
+        .maybeSingle();
+      if (callerProfile?.role !== "admin" && callerProfile?.role !== "owner") {
+        return new Response(JSON.stringify({ error: "Only admins can edit site content." }), {
+          headers: { "Content-Type": "application/json" },
+          status: 403,
+        });
+      }
+
       const { content } = body;
       if (!content?.id) {
         return new Response(JSON.stringify({ error: "Content needs id" }), {

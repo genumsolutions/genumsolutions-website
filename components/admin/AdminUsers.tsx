@@ -60,17 +60,24 @@ function UserRobotManager({
 
   async function send(action: string, extra: Record<string, unknown>, successNote: string) {
     setBusy(true);
-    const response = await fetch("/api/admin/users", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, userId, ...extra }),
-    });
-    const body = await response.json().catch(() => ({}));
-    setBusy(false);
-    if (response.ok) {
-      setMessage(successNote);
-      void load();
-    } else setMessage(body.error || "Action failed.");
+    // U-48: try/catch/finally so a thrown fetch cannot leave the role/robot
+    // controls stuck disabled (see AdminContent for the same guard).
+    try {
+      const response = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, userId, ...extra }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (response.ok) {
+        setMessage(successNote);
+        void load();
+      } else setMessage(body.error || "Action failed.");
+    } catch {
+      setMessage("Could not reach the server. Try again.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   function startEdit(robot: RobotRow) {

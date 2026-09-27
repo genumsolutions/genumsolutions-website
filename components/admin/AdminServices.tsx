@@ -51,25 +51,31 @@ export default function AdminServices({ setMessage, canDelete }: Props) {
     }
     setBusy(true);
     const payload = { ...service, id: service.id.trim().toLowerCase().replace(/\s+/g, "-") };
-    const response = await fetch("/api/admin/services", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      setMessage(result.error || "Could not save service.");
+    // U-48: try/catch/finally so a thrown fetch cannot leave the Save button
+    // stuck on "Saving..." (see AdminContent for the same guard).
+    try {
+      const response = await fetch("/api/admin/services", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setMessage(result.error || "Could not save service.");
+        return;
+      }
+      setServices((current) =>
+        [...current.filter((s) => s.id !== payload.id), payload].sort(
+          (a, b) => a.sortOrder - b.sortOrder
+        )
+      );
+      setService(emptyService);
+      setMessage("Service saved.");
+    } catch {
+      setMessage("Could not reach the server to save the service.");
+    } finally {
       setBusy(false);
-      return;
     }
-    setServices((current) =>
-      [...current.filter((s) => s.id !== payload.id), payload].sort(
-        (a, b) => a.sortOrder - b.sortOrder
-      )
-    );
-    setService(emptyService);
-    setMessage("Service saved.");
-    setBusy(false);
   }
 
   async function removeService(id: string) {

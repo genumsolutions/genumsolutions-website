@@ -28,24 +28,36 @@ export default function PushNotificationSettings() {
     setBusy(true);
     setError("");
     setMessage("");
-    const result = await subscribeToPush();
-    if (result.ok) {
-      setMessage("Order updates will now pop up on this device.");
-    } else {
-      setError(result.error || "Could not turn notifications on.");
+    // U-48: try/catch/finally so a thrown push subscription (or a rejected
+    // getPushStatus) can't leave both buttons stuck on the spinner.
+    try {
+      const result = await subscribeToPush();
+      if (result.ok) {
+        setMessage("Order updates will now pop up on this device.");
+      } else {
+        setError(result.error || "Could not turn notifications on.");
+      }
+      setStatus(await getPushStatus().catch(() => null));
+    } catch {
+      setError("Could not turn notifications on. Check your connection and try again.");
+    } finally {
+      setBusy(false);
     }
-    setStatus(await getPushStatus().catch(() => null));
-    setBusy(false);
   }
 
   async function onUnsubscribe() {
     setBusy(true);
     setError("");
     setMessage("");
-    const result = await unsubscribeFromPush();
-    if (!result.ok) setError(result.error || "Could not turn notifications off.");
-    setStatus(await getPushStatus().catch(() => null));
-    setBusy(false);
+    try {
+      const result = await unsubscribeFromPush();
+      if (!result.ok) setError(result.error || "Could not turn notifications off.");
+      setStatus(await getPushStatus().catch(() => null));
+    } catch {
+      setError("Could not turn notifications off. Check your connection and try again.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   if (!status?.supported) return null;

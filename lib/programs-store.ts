@@ -5,9 +5,14 @@
 // Returns the same shapes the pages consumed from the old static
 // lib/programs.ts so rendering code did not need to change.
 // =====================================================================
-import { unstable_noStore } from "next/cache";
 import { localCurriculumHighlights, localPilotCosts, localTrainingPrograms } from "./programs-data";
 import { createServiceClient, supabaseConfigured } from "./supabase/server";
+
+// U-48 ISR flip: unstable_noStore() removed from all three reads. / and
+// /services render these, and every write path (app/api/admin/settings/route.ts
+// — training programs, pilot cost lines, curriculum highlights) calls
+// revalidatePrograms(), so edits land on the next request. Previously every
+// public render hit the DB for these three tables.
 
 export type TrainingProgram = {
   title: string;
@@ -18,7 +23,6 @@ export type TrainingProgram = {
 };
 
 export async function getTrainingPrograms(): Promise<TrainingProgram[]> {
-  unstable_noStore();
   if (!supabaseConfigured()) {
     return localTrainingPrograms.map(({ title, audience, description, duration, outcome }) => ({
       title,
@@ -68,7 +72,6 @@ export async function getTrainingPrograms(): Promise<TrainingProgram[]> {
 export type PilotCostLine = { item: string; cost: string; note: string };
 
 export async function getPilotCosts(): Promise<PilotCostLine[]> {
-  unstable_noStore();
   if (!supabaseConfigured()) {
     return localPilotCosts.map(({ item, cost, note }) => ({ item, cost, note }));
   }
@@ -93,7 +96,6 @@ export async function getPilotCosts(): Promise<PilotCostLine[]> {
 export type CurriculumHighlight = { ageBand: string; items: string[] };
 
 export async function getCurriculumHighlights(): Promise<CurriculumHighlight[]> {
-  unstable_noStore();
   if (!supabaseConfigured()) {
     return localCurriculumHighlights.map(({ ageBand, items }) => ({ ageBand, items }));
   }

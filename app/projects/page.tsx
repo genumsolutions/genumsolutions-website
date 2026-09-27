@@ -14,7 +14,9 @@ export const metadata: Metadata = {
     "Project packages and robot-car builds for teaching, automation, and prototyping from GENUM Solutions.",
 };
 
-export const dynamic = "force-dynamic";
+// U-48: no force-dynamic — statically rendered, revalidated in the background
+// (layout `revalidate = 300`). Catalog edits bust the cache on demand via
+// revalidateProducts(); linker edits via /api/admin/project-components.
 
 export default async function ProjectsPage() {
   // U-47v4 (deep-check finding, same as /products): the WHOLE catalog used

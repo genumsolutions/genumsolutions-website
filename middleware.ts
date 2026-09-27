@@ -22,6 +22,13 @@ const API_RATE_LIMITS: Array<{ prefix: string; limit: number }> = [
   { prefix: "/api/contact", limit: 20 },
   { prefix: "/api/products", limit: 120 },
   { prefix: "/api/admin/", limit: 120 },
+  // U-48: these two were the only unthrottled write endpoints — both are
+  // POSTs on a live user session (hearts toggle / habit counters) and both were
+  // reachable at unlimited rate, so any script could burn Supabase writes on
+  // our quota. Habits fires on ordinary browsing (view/search/cart), so its cap
+  // is the looser of the two; collection is a deliberate user click.
+  { prefix: "/api/habits", limit: 120 },
+  { prefix: "/api/collection", limit: 60 },
 ];
 
 function needsAuthRefresh(pathname: string) {

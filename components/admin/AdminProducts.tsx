@@ -197,15 +197,22 @@ export default function AdminProducts({
   async function uploadImage(file: File) {
     setUploading(true);
     setMessage("");
-    const form = new FormData();
-    form.append("file", file);
-    const response = await fetch("/api/admin/upload", { method: "POST", body: form });
-    const result = await response.json().catch(() => ({}));
-    if (response.ok && result.url) {
-      setProduct((current) => ({ ...current, image: result.url }));
-      setMessage("Image uploaded.");
-    } else setMessage(result.error || "Upload failed.");
-    setUploading(false);
+    // U-48: try/catch/finally so a failed/aborted upload can't leave the
+    // upload controls stuck on the spinner.
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const response = await fetch("/api/admin/upload", { method: "POST", body: form });
+      const result = await response.json().catch(() => ({}));
+      if (response.ok && result.url) {
+        setProduct((current) => ({ ...current, image: result.url }));
+        setMessage("Image uploaded.");
+      } else setMessage(result.error || "Upload failed.");
+    } catch {
+      setMessage("Upload failed — could not reach the server.");
+    } finally {
+      setUploading(false);
+    }
   }
 
   async function previewLink(event: FormEvent) {

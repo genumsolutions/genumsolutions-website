@@ -1,7 +1,12 @@
 import { localJournalPosts } from "./journal-data";
 import type { JournalPost } from "./journal";
 import { createServiceClient, supabaseConfigured } from "./supabase/server";
-import { unstable_noStore } from "next/cache";
+
+// U-48 ISR flip: unstable_noStore() removed from both reads. /journal is
+// statically rendered and every journal write path (POST/PUT/DELETE in
+// app/api/admin/journal/route.ts) calls revalidateJournal(), so an edit
+// appears on the next request instead of a per-render DB read. The admin
+// read (getManagedJournalPosts) still stays fresh: /admin is force-dynamic.
 
 /** Admin-facing journal row (includes hidden posts + ordering fields). */
 export type ManagedJournalPost = JournalPost & {
@@ -12,7 +17,6 @@ export type ManagedJournalPost = JournalPost & {
 // Reads the authoritative journal. Falls back to the bundled posts when
 // Supabase is not configured or unreachable so the page never renders empty.
 export async function getJournalPosts(): Promise<JournalPost[]> {
-  unstable_noStore();
   if (!supabaseConfigured()) return localJournalPosts;
   try {
     const db = createServiceClient();
@@ -38,7 +42,6 @@ export async function getJournalPosts(): Promise<JournalPost[]> {
 
 /** Admin read: every journal post (active or hidden), newest first. */
 export async function getManagedJournalPosts(): Promise<ManagedJournalPost[]> {
-  unstable_noStore();
   if (!supabaseConfigured()) {
     return localJournalPosts.map((post, index) => ({
       ...post,

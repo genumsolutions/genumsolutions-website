@@ -36,7 +36,9 @@ const processSteps = [
   ],
 ];
 
-export const dynamic = "force-dynamic";
+// U-48: no force-dynamic — statically rendered, revalidated in the background
+// (layout `revalidate = 300`). Service edits bust the cache via
+// revalidateServices(); training/pilot/curriculum edits via revalidatePrograms().
 
 export default async function ServicesPage() {
   const services = await listServices();

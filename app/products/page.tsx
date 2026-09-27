@@ -12,7 +12,12 @@ export const metadata: Metadata = {
     "Robotics kits, controllers, sensors, motors, and electronics — sourced, tested, and ready to build with.",
 };
 
-export const dynamic = "force-dynamic";
+// U-48: force-dynamic removed. This route still renders dynamically because it
+// reads `searchParams` (?q=&page=&category=&sort=&maxPrice=&inStock= are deep-
+// linkable filter state), but that no longer costs a fresh DB read: the
+// content-store no longer calls unstable_noStore(), so getManagedProducts() is
+// served from the data cache, and catalog edits bust it on demand via
+// revalidateProducts() from every product/import write path.
 
 export default async function ProductsPage({
   searchParams,

@@ -13,7 +13,9 @@ export const metadata: Metadata = {
     "Free and open-source tools for designing, simulating, programming, and documenting robotics and fabrication work. The Control Panel for your devices.",
 };
 
-export const dynamic = "force-dynamic";
+// U-48: no force-dynamic — statically rendered, revalidated in the background
+// (layout `revalidate = 300`). The mode catalog is the static ROBOCAR_MODES
+// table; the stock strip reads products, busted by revalidateProducts().
 
 export default async function ToolsPage() {
   // U-46: the tools page now also shows the REAL parts you can drive with

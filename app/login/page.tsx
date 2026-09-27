@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import PageShell from "../../components/PageShell";
 import AuthPanel from "../../components/AuthPanel";
 
-export const metadata: Metadata = { title: "Sign in" };
+// U-48: the sign-in surface has no public content worth indexing and
+// robots.txt disallows it — the noindex tag makes that binding.
+export const metadata: Metadata = { title: "Sign in", robots: { index: false, follow: false } };
 
 const modes = ["signin", "signup", "forgot"] as const;
 

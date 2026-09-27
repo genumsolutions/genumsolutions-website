@@ -1,9 +1,10 @@
 // On-demand revalidation for admin mutations.
 //
-// Public pages currently render dynamically (force-dynamic + unstable_noStore),
-// so these calls are inert today. They exist so admin edits stay INSTANT the
-// moment public routes move to ISR, instead of waiting out a 5-minute revalidate
-// window. Verified dependency map (see TRACKS/INDEX.md U-32):
+// U-48 (2026-09-27): the U-32 ISR flip has now LANDED. These calls are no longer
+// inert - public routes are cached (no force-dynamic, no unstable_noStore) and
+// these are the calls that keep admin edits instant instead of waiting out the
+// 5-minute revalidate window in the root layout. Verified dependency map
+// (see TRACKS/INDEX.md U-32):
 //
 //   products            -> / , /products , /products/[slug] , /3d-printing , /projects
 //   services            -> /services
@@ -11,6 +12,9 @@
 //   programs/pilots/cur -> / , /services
 //   journal_posts       -> /journal
 //   company_info        -> root layout (every page, incl. metadata)
+//
+// project_categories has no web write path (only the app writes that table), so
+// it rides the 300 s window rather than an explicit revalidate call.
 //
 // robo_car_modes is intentionally absent: /tools renders the static
 // ROBOCAR_MODES catalog, and only the app reads that table.

@@ -11,7 +11,10 @@ export function generateStaticParams() {
   return [];
 }
 
-export const dynamic = "force-dynamic";
+// U-48: no force-dynamic — `generateStaticParams` returns [] so every slug
+// renders on first request and is then cached, revalidated in the background
+// (layout `revalidate = 300`). Product edits bust this exact slug via
+// revalidateProducts(product.id); a delete busts it too.
 
 export async function generateMetadata({
   params,

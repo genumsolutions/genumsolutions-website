@@ -2,7 +2,10 @@ import { localProducts } from "./catalog-data";
 import type { Product } from "./catalog";
 import { ROBOCAR_MODES as localRoBoModes, type RoboCarMode } from "./robo-car-catalog";
 import { createServiceClient, supabaseConfigured } from "./supabase/server";
-import { unstable_noStore } from "next/cache";
+// U-48 ISR flip: this store's reads are CACHE-FRIENDLY — every admin write
+// path that mutates site_content calls revalidateHomeContent() (lib/revalidate.ts),
+// so public pages see edits immediately without per-request DB hits.
+// (unstable_noStore() removed — it made every public render fetch fresh.)
 
 export type { Product } from "./catalog";
 
@@ -154,7 +157,6 @@ export function productToRow(product: Product) {
 // Reads the authoritative catalog. Falls back to the bundled catalog when Supabase
 // is not configured or unreachable so the site never renders empty.
 export async function getManagedProducts(): Promise<Product[]> {
-  unstable_noStore();
   if (!supabaseConfigured()) return localProducts;
   try {
     const db = createServiceClient();

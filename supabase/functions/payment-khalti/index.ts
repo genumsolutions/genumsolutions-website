@@ -44,6 +44,32 @@ function corsHeaders() {
   };
 }
 
+/**
+ * U-48 (2026-09-27): amount guard for the two verify paths.
+ *
+ * `initiate` is now server-authoritative (it charges the order's own
+ * total_npr), so a cheap-amount payment can no longer be settled. This is
+ * defence in depth for the remaining case: a completed gateway payment whose
+ * amount disagrees with the order.
+ *
+ * Khalti is not consistent about which field it returns from /epayment/lookup/:
+ * `total_amount` is paisa (int), `amount` is rupees (float). We check whichever
+ * is present, in its own unit, and treat an ABSENT/NaN field as "cannot tell"
+ * (allowed) so a field-name change can never block a genuine payment.
+ */
+function amountMatches(verifyResult: any, orderTotalNpr: unknown): boolean {
+  const total = Number(orderTotalNpr);
+  if (!Number.isFinite(total)) return true;
+
+  const paisa = Number(verifyResult?.total_amount);
+  if (Number.isFinite(paisa)) return Math.abs(paisa - total * 100) < 100;
+
+  const rupees = Number(verifyResult?.amount);
+  if (Number.isFinite(rupees)) return Math.abs(rupees - total) < 1;
+
+  return true;
+}
+
 async function findOrder(orderId: string) {
   const { data } = await supabase
     .from("orders")
@@ -102,15 +128,40 @@ serve(async (req) => {
   try {
     if (action === "initiate") {
       const body = await req.json().catch(() => ({}));
-      const { amount, purchaseOrderId, purchaseOrderName, customerInfo } = body;
+      const { purchaseOrderId, purchaseOrderName, customerInfo } = body;
       if (!khaltiSecretKey) {
         return json({ error: "Khalti not configured" }, 503);
+      }
+
+      // U-48 (2026-09-27) SECURITY: the charged amount used to come straight
+      // from the request body. Anyone could open a real order for NPR 100,000,
+      // initiate Khalti with `amount: 1`, pay NPR 1, and the order was then
+      // marked paid (the verify step never compared amounts either). The amount
+      // is now SERVER-AUTHORITATIVE from the order row, exactly like
+      // payment-esewa already did - the client's `amount` is ignored entirely.
+      const orderId = String(purchaseOrderId ?? "");
+      if (!orderId) {
+        return json({ error: "order id is required" }, 400);
+      }
+      const order = await findOrder(orderId);
+      if (!order) {
+        return json({ error: "Unknown order" }, 404);
+      }
+      if (order.status === "paid") {
+        return json({ error: "This order is already paid" }, 409);
+      }
+      if (order.provider !== "khalti") {
+        return json({ error: "Order does not belong to this payment provider" }, 400);
+      }
+      const amountNpr = Math.max(0, Math.floor(Number(order.total_npr) || 0));
+      if (amountNpr <= 0) {
+        return json({ error: "Order total is invalid" }, 400);
       }
 
       // Return to the edge function itself, which verifies then redirects the
       // browser back into the native app via its custom scheme.
       const fnOrigin = `${url.protocol}//${url.host}${url.pathname.replace(/\/$/u, "")}`;
-      const returnUrl = `${fnOrigin}?action=return&order=${encodeURIComponent(String(purchaseOrderId))}`;
+      const returnUrl = `${fnOrigin}?action=return&order=${encodeURIComponent(orderId)}`;
       // Khalti requires a website_url; any valid https site on this Supabase
       // project satisfies the API for a mobile-first flow.
       const websiteUrl = `${url.protocol}//${url.host}`;
@@ -124,8 +175,8 @@ serve(async (req) => {
         body: JSON.stringify({
           return_url: returnUrl,
           website_url: websiteUrl,
-          amount: amount * 100,
-          purchase_order_id: String(purchaseOrderId),
+          amount: amountNpr * 100,
+          purchase_order_id: orderId,
           purchase_order_name: purchaseOrderName || "GENUM order",
           customer_info: customerInfo || {},
         }),
@@ -139,16 +190,16 @@ serve(async (req) => {
 
       const db = serviceClient ?? supabase;
       await db.from("transactions").insert({
-        order_id: String(purchaseOrderId),
+        order_id: orderId,
         provider_ref: result.pidx || "",
         provider: "khalti",
-        amount_npr: Math.floor(amount),
+        amount_npr: amountNpr,
         currency: "NPR",
         status: "initiated",
         raw_payload: { pidx: result.pidx, ...result },
       });
 
-      return json({ url: result.payment_url, pidx: result.pidx, orderId: String(purchaseOrderId) });
+      return json({ url: result.payment_url, pidx: result.pidx, orderId });
     }
 
     if (action === "return") {
@@ -188,7 +239,7 @@ serve(async (req) => {
       const paid =
         verifyResult?.status === "success" && verifyResult?.payment_status === "COMPLETED";
 
-      if (!paid) {
+      if (!paid || !amountMatches(verifyResult, order.total_npr)) {
         return html(
           `<!doctype html><html><body><script>location.replace('genumsolutions://checkout?provider=khalti&order=${orderId}&status=not-paid')</script></body></html>`
         );
@@ -222,7 +273,8 @@ serve(async (req) => {
         verifyResult?.status === "success" && verifyResult?.payment_status === "COMPLETED";
       if (paid && orderId) {
         const order = await findOrder(String(orderId));
-        if (order) await markPaidAndLog(order, pidx, { ...verifyResult, verifiedServerSide: true });
+        if (order && amountMatches(verifyResult, order.total_npr))
+          await markPaidAndLog(order, pidx, { ...verifyResult, verifiedServerSide: true });
       }
       return json({ valid: Boolean(verifyResult?.status === "success"), paid });
     }

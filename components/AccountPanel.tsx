@@ -119,18 +119,25 @@ export default function AccountPanel() {
     setError("");
     setProfileSaved(false);
     const data = Object.fromEntries(new FormData(event.currentTarget).entries());
-    const response = await fetch("/api/customer/profile", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    if (response.ok) {
-      setProfileSaved(true);
-      setCustomer((current) => (current ? { ...current, ...data } : current));
-    } else {
-      setError("Could not save your details.");
+    // U-48: try/catch/finally so a thrown fetch can't leave the Save button
+    // stuck on "Saving…" (see components/admin/AdminContent.tsx for the same guard).
+    try {
+      const response = await fetch("/api/customer/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (response.ok) {
+        setProfileSaved(true);
+        setCustomer((current) => (current ? { ...current, ...data } : current));
+      } else {
+        setError("Could not save your details.");
+      }
+    } catch {
+      setError("Could not reach the server to save your details.");
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   }
 
   if (!loaded) {

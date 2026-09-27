@@ -64,21 +64,28 @@ export default function AdminSettings({ setMessage, canDelete: _canDelete }: Pro
       return;
     }
     setBusy(true);
-    const response = await fetch("/api/admin/settings", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "company",
-        company: { ...company, name: company.name.trim(), email: company.email.trim() },
-      }),
-    });
-    const result = await response.json().catch(() => ({}));
-    setBusy(false);
-    if (!response.ok) {
-      setMessage(result.error || "Could not save company information.");
-      return;
+    // U-48: try/catch/finally so a thrown fetch cannot leave the Save button
+    // stuck on "Saving..." (see AdminContent for the same guard).
+    try {
+      const response = await fetch("/api/admin/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "company",
+          company: { ...company, name: company.name.trim(), email: company.email.trim() },
+        }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setMessage(result.error || "Could not save company information.");
+        return;
+      }
+      setMessage("Company information saved.");
+    } catch {
+      setMessage("Could not reach the server to save the company information.");
+    } finally {
+      setBusy(false);
     }
-    setMessage("Company information saved.");
   }
 
   return (

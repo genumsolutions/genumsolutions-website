@@ -44,19 +44,26 @@ export default function AdminContent({ setMessage, canDelete }: Props) {
       return;
     }
     setBusy(true);
-    const response = await fetch("/api/admin/content", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ homeTitle: homeTitle.trim(), homeBody: homeBody.trim() }),
-    });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      setMessage(result.error || "Could not save content.");
+    // U-48: try/catch/finally. Previously `busy` was released on the error and
+    // success branches only — a thrown fetch (offline) left the Save button
+    // disabled on "Saving..." forever.
+    try {
+      const response = await fetch("/api/admin/content", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ homeTitle: homeTitle.trim(), homeBody: homeBody.trim() }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setMessage(result.error || "Could not save content.");
+        return;
+      }
+      setMessage("Site content saved.");
+    } catch {
+      setMessage("Could not reach the server to save the content.");
+    } finally {
       setBusy(false);
-      return;
     }
-    setMessage("Site content saved.");
-    setBusy(false);
   }
 
   return (

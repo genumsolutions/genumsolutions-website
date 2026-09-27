@@ -6,6 +6,7 @@ import {
   suggestComponents,
   type CatalogCandidate,
 } from "../../../../lib/project-components";
+import { revalidatePath } from "next/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -137,5 +138,12 @@ export async function PUT(request: Request) {
     );
     if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 });
   }
+  // U-48 (ISR flip): /projects and /products/[slug] render the
+  // "components used in this project" / "used in these projects" strips from
+  // this table, and both are now statically rendered — without this the linker
+  // edit would sit invisible until the 5-minute revalidate window. Bust the
+  // project page plus every component detail page that lists the link.
+  revalidatePath("/projects");
+  for (const row of rows) revalidatePath(`/products/${row.productId}`);
   return NextResponse.json({ ok: true, saved: rows.length });
 }

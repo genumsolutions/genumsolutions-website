@@ -62,25 +62,31 @@ export default function AdminJournal({ setMessage, canDelete }: Props) {
       text: (post.text || "").trim(),
       sortOrder: Math.max(0, Math.round(Number(post.sortOrder) || 0)),
     };
-    const response = await fetch("/api/admin/journal", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      setMessage(result.error || "Could not save journal post.");
+    // U-48: try/catch/finally so a thrown fetch cannot leave the Save button
+    // stuck on "Saving..." (see AdminContent for the same guard).
+    try {
+      const response = await fetch("/api/admin/journal", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setMessage(result.error || "Could not save journal post.");
+        return;
+      }
+      setPosts((current) =>
+        [...current.filter((p) => p.id !== payload.id), payload].sort(
+          (a, b) => a.sortOrder - b.sortOrder
+        )
+      );
+      setPost(emptyJournal);
+      setMessage("Journal post saved.");
+    } catch {
+      setMessage("Could not reach the server to save the journal post.");
+    } finally {
       setBusy(false);
-      return;
     }
-    setPosts((current) =>
-      [...current.filter((p) => p.id !== payload.id), payload].sort(
-        (a, b) => a.sortOrder - b.sortOrder
-      )
-    );
-    setPost(emptyJournal);
-    setMessage("Journal post saved.");
-    setBusy(false);
   }
 
   async function removePost(id: string) {

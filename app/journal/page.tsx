@@ -13,7 +13,9 @@ export const metadata: Metadata = {
 // Journal content lives in the `journal_posts` table (DB-first, admin-editable)
 // with the bundled posts as fallback - both the website and the app render the
 // same latest posts.
-export const dynamic = "force-dynamic";
+// U-48: no force-dynamic — statically rendered, revalidated in the background
+// (layout `revalidate = 300`). Journal edits bust the cache via
+// revalidateJournal() from every journal write path.
 
 export default async function JournalPage() {
   const posts = await getJournalPosts();

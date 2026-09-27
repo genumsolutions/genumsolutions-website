@@ -299,18 +299,25 @@ export default function AdminProjectPackages({
   async function saveComponentLinks() {
     if (!product.id) return;
     setLinkerBusy(true);
-    const response = await fetch("/api/admin/project-components", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ projectId: product.id, components: linkerLinks }),
-    });
-    const result = await response.json().catch(() => ({}));
-    setLinkerBusy(false);
-    setMessage(
-      response.ok
-        ? `Component links saved (${result.saved ?? linkerLinks.length}).`
-        : result.error || "Could not save component links."
-    );
+    // U-48: try/catch/finally so a thrown fetch cannot leave the linker
+    // button stuck on "Saving…" (a permanently disabled editor).
+    try {
+      const response = await fetch("/api/admin/project-components", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId: product.id, components: linkerLinks }),
+      });
+      const result = await response.json().catch(() => ({}));
+      setMessage(
+        response.ok
+          ? `Component links saved (${result.saved ?? linkerLinks.length}).`
+          : result.error || "Could not save component links."
+      );
+    } catch {
+      setMessage("Could not reach the server to save component links.");
+    } finally {
+      setLinkerBusy(false);
+    }
   }
 
   const projectProducts = products.filter(
@@ -352,25 +359,32 @@ export default function AdminProjectPackages({
           ? String(product.specs).split("\n").filter(Boolean)
           : product.specs,
     };
-    const response = await fetch("/api/admin/products", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      setMessage(result.error || "Could not save product.");
+    // U-48: try/catch/finally — the old code released `busy` on both the error
+    // and success branches but NOT when the fetch itself threw, which left the
+    // Save button disabled on "Saving..." permanently.
+    try {
+      const response = await fetch("/api/admin/products", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setMessage(result.error || "Could not save product.");
+        return;
+      }
+      onProductsChange((current) =>
+        [...current.filter((item) => item.id !== payload.id), payload].sort((a, b) =>
+          a.name.localeCompare(b.name)
+        )
+      );
+      setProduct(emptyProduct);
+      setMessage("Product saved.");
+    } catch {
+      setMessage("Could not reach the server to save the product.");
+    } finally {
       setBusy(false);
-      return;
     }
-    onProductsChange((current) =>
-      [...current.filter((item) => item.id !== payload.id), payload].sort((a, b) =>
-        a.name.localeCompare(b.name)
-      )
-    );
-    setProduct(emptyProduct);
-    setMessage("Product saved.");
-    setBusy(false);
   }
 
   async function removeProduct(id: string) {

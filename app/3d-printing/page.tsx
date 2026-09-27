@@ -9,7 +9,9 @@ import ModelsCatalog from "../../components/ModelsCatalog";
 import { getManagedProducts } from "../../lib/content-store";
 import { applyScope } from "../../lib/catalog";
 
-export const dynamic = "force-dynamic";
+// U-48: no force-dynamic — statically rendered, revalidated in the background
+// (layout `revalidate = 300`). Catalog edits bust the cache on demand via
+// revalidateProducts() from every product/import write path.
 
 export const metadata: Metadata = {
   title: "3D Printing",

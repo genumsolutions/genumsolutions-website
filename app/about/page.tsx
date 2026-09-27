@@ -49,7 +49,9 @@ const whatWeDo = [
   },
 ];
 
-export const dynamic = "force-dynamic";
+// U-48: no force-dynamic — statically rendered, revalidated in the background
+// (layout `revalidate = 300`). Company edits bust the cache via
+// revalidateCompany() (root layout) and the store's own unstable_cache.
 
 export default async function AboutPage() {
   // U-46: live catalog facts — the About page shows the real breadth of the
