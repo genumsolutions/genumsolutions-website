@@ -123,6 +123,8 @@ export function inStockOnly(list: Product[], only: boolean): Product[] {
 // project packages PLUS Pre-packaged Kits (owner: kits display on the
 // projects page). The general category field stays "Robot Cars" for cars and
 // kits — load-bearing for the admin project window — never repurpose it.
+export type CatalogScope = "components" | "models" | "cars" | "projects";
+
 export function applyScope(all: Product[], scope: string): Product[] {
   if (scope === "models")
     return all.filter((p) => p.category?.trim().toLowerCase() === "3d models");
@@ -137,6 +139,43 @@ export function applyScope(all: Product[], scope: string): Product[] {
       p.category?.trim().toLowerCase() !== "3d models" &&
       p.productType !== "Project package"
   );
+}
+
+// The catalog a product is browsed in — the inverse of applyScope(). Order
+// matters: a robot car that is a Project package is listed on /projects, and a
+// kit that is not a package is listed with the cars. `components` is the
+// fallback (everything the other branches exclude).
+export function scopeForProduct(
+  product: Pick<Product, "category" | "productType" | "project_category">
+): CatalogScope {
+  if (product.category?.trim().toLowerCase() === "3d models") return "models";
+  if (product.productType === "Project package" || product.category === "Pre-packaged Kits")
+    return "projects";
+  if (product.project_category === "Robo Car") return "cars";
+  return "components";
+}
+
+/**
+ * The rows a product DETAIL page must hand to the client, for /products/[slug]
+ * (one route shared by all three customer catalogs).
+ *
+ * The product itself is always resolvable (fixing the 404s: 3D models, project
+ * packages, kits and robot cars were all unreachable because the page scoped
+ * its lookup to "components"). The related-products row stays inside the
+ * product's own catalog (U-47v4), and the project<->component bundle sections
+ * legitimately cross catalogs — a package's components are electronics, an
+ * electronic part's "used in" rows are packages — so the two bundle scopes are
+ * unioned in. Scopes the page cannot need are left out so the RSC payload
+ * never ships the whole catalog.
+ */
+export function detailCatalog(all: Product[], product: Product): Product[] {
+  const own = scopeForProduct(product);
+  const scopes: string[] = own === "projects" ? ["projects", "components"] : [own, "projects"];
+  const merged = new Map<string, Product>();
+  for (const scope of scopes) {
+    for (const row of applyScope(all, scope)) merged.set(row.id, row);
+  }
+  return [...merged.values()];
 }
 
 // Combine a category and a free-text query into a single filter predicate.

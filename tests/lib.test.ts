@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { initials } from "../lib/identity";
 import {
   applyScope,
+  detailCatalog,
   filterProducts,
   formatNPR,
   galleryImages,
@@ -11,6 +12,7 @@ import {
   pushRecentlyViewed,
   relatedProducts,
   resolveRecentlyViewed,
+  scopeForProduct,
   sortProducts,
   withinPrice,
   type Product,
@@ -329,6 +331,60 @@ describe("applyScope", () => {
     const model: Product = { ...base0, id: "m1", category: "3D Models" };
     expect(applyScope([...all, model], "components").map((p) => p.id)).toEqual(["p1", "p2"]);
     expect(applyScope([...all, model], "models").map((p) => p.id)).toEqual(["m1"]);
+  });
+});
+
+describe("scopeForProduct + detailCatalog (U-48b: the /products/[slug] 404s)", () => {
+  const base = makeProducts(1)[0] as Product;
+  const component: Product = { ...base, id: "c1" };
+  const model: Product = { ...base, id: "m1", category: "3D Models" };
+  const project: Product = { ...base, id: "pr1", productType: "Project package" };
+  const kit: Product = { ...base, id: "kit", category: "Pre-packaged Kits" };
+  const car: Product = {
+    ...base,
+    id: "car",
+    category: "Robot Cars",
+    project_category: "Robo Car",
+  };
+  const carPackage: Product = { ...car, id: "carpkg", productType: "Project package" };
+  const all: Product[] = [component, model, project, kit, car, carPackage];
+
+  it("maps each product to the catalog it is browsed in", () => {
+    expect(scopeForProduct(component)).toBe("components");
+    expect(scopeForProduct(model)).toBe("models");
+    expect(scopeForProduct(project)).toBe("projects");
+    expect(scopeForProduct(kit)).toBe("projects");
+    expect(scopeForProduct(car)).toBe("cars");
+    // A robot car that is also a package is listed on /projects, not /cars.
+    expect(scopeForProduct(carPackage)).toBe("projects");
+  });
+
+  it("always includes the product itself, whatever its scope (the 404 fix)", () => {
+    for (const product of all) {
+      expect(detailCatalog(all, product).map((p) => p.id)).toContain(product.id);
+    }
+  });
+
+  it("keeps a 3D model page on 3D models + the bundle scopes only", () => {
+    // own scope (models, for the related row) + projects (for "used in"). The
+    // components scope is NOT needed: the materials rows only render for a
+    // Project package, and that page unions it.
+    const ids = detailCatalog(all, model).map((p) => p.id);
+    expect(ids).toEqual(["m1", "pr1", "kit", "carpkg"]);
+    expect(ids).not.toContain("car"); // a car that is not a package is never linked
+    expect(ids).not.toContain("c1");
+  });
+
+  it("unions the bundle scopes so project↔component links resolve", () => {
+    // A package's "materials required" rows are electronics components...
+    expect(detailCatalog(all, project).map((p) => p.id)).toContain("c1");
+    // ...and an electronic part's "used in" rows are packages.
+    expect(detailCatalog(all, component).map((p) => p.id)).toContain("pr1");
+  });
+
+  it("never ships a scope the page cannot need (U-47v4 payload fix holds)", () => {
+    // An electronic detail page must not drag the 3D catalog across the wire.
+    expect(detailCatalog(all, component).map((p) => p.id)).not.toContain("m1");
   });
 });
 
