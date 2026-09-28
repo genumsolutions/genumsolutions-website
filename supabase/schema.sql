@@ -1732,6 +1732,106 @@ create index if not exists user_collection_user_idx
 comment on table public.user_collection is
   'U-47: per-user saved cards (products/projects/services). Heart on any card toggles a row; the profile page lists the collection. RLS: own rows only.';
 
+-- ===== CAR TELEMETRY (2026-09-28, Connections Hub round) =====
+-- One row per telemetry data point the car stores or reports.
+-- Read by the app when connected (via WS JSON `data` field) and persisted
+-- for history/analytics. Retains only what's needed for per-user patterns;
+-- raw per-session detail lives in `car_connection_sessions`.
+create table if not exists public.car_telemetry (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  profile_key text not null,
+  recorded_at timestamptz not null default now(),
+  data jsonb not null default '{}'::jsonb,   -- battery, rssi, mode, speed, etc.
+  type text not null default 'generic',      -- generic|battery|rssi|mode|speed|...
+  source text not null default 'app',        -- app|car|remote
+  unique (user_id, profile_key, recorded_at, type)
+);
+
+create index if not exists car_telemetry_user_idx on public.car_telemetry (user_id);
+create index if not exists car_telemetry_profile_idx on public.car_telemetry (profile_key);
+create index if not exists car_telemetry_type_idx on public.car_telemetry (type);
+
+-- Keep updated_at truthful on every write.
+create or replace function public.touch_car_telemetry()
+returns trigger set search_path = public as $$
+begin
+  new.recorded_at = now();
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
+
+drop trigger if exists car_telemetry_touch on public.car_telemetry;
+create trigger car_telemetry_touch
+before update on public.car_telemetry
+for each row execute function public.touch_car_telemetry();
+
+-- RLS: user owns their car's telemetry; staff+ can read all.
+alter table public.car_telemetry enable row level security;
+
+drop policy if exists "car_telemetry_select_own" on public.car_telemetry;
+create policy "car_telemetry_select_own"
+  on public.car_telemetry for select using (
+    auth.uid() = user_id
+    or public.is_staff()
+);
+
+drop policy if exists "car_telemetry_insert_own" on public.car_telemetry;
+create policy "car_telemetry_insert_own"
+  on public.car_telemetry for insert with check (auth.uid() = user_id);
+
+drop policy if exists "car_telemetry_update_own" on public.car_telemetry;
+create policy "car_telemetry_update_own"
+  on public.car_telemetry for update using (auth.uid() = user_id);
+
+drop policy if exists "car_telemetry_delete_own" on public.car_telemetry;
+create policy "car_telemetry_delete_own"
+  on public.car_telemetry for delete using (auth.uid() = user_id);
+
+-- ===== CAR CONNECTION SESSIONS (2026-09-28) =====
+-- One row per car-connection session: what the car needs from the app or
+-- remote when connected, for better accessibility and performance.
+-- The app writes this when a link session starts; the edge function or
+-- server can read it with the service role for diagnostics.
+create table if not exists public.car_connection_sessions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  profile_key text not null,
+  connected_at timestamptz not null default now(),
+  disconnected_at timestamptz,
+  remote_capabilities jsonb not null default '{}'::jsonb,   -- what the remote can do
+  app_preferences jsonb not null default '{}'::jsonb,     -- app settings for this link
+  performance_metrics jsonb not null default '{}'::jsonb, -- rssi, ip, mode, etc.
+  created_at timestamptz not null default now()
+);
+
+create index if not exists car_connection_user_idx on public.car_connection_sessions (user_id);
+create index if not exists car_connection_profile_idx on public.car_connection_sessions (profile_key);
+create index if not exists car_connection_connected_idx on public.car_connection_sessions (connected_at);
+
+-- RLS: user owns their connection sessions; staff+ can read all.
+alter table public.car_connection_sessions enable row level security;
+
+drop policy if exists "car_connection_select_own" on public.car_connection_sessions;
+create policy "car_connection_select_own"
+  on public.car_connection_sessions for select using (
+    auth.uid() = user_id
+    or public.is_staff()
+);
+
+drop policy if exists "car_connection_insert_own" on public.car_connection_sessions;
+create policy "car_connection_insert_own"
+  on public.car_connection_sessions for insert with check (auth.uid() = user_id);
+
+drop policy if exists "car_connection_update_own" on public.car_connection_sessions;
+create policy "car_connection_update_own"
+  on public.car_connection_sessions for update using (auth.uid() = user_id);
+
+drop policy if exists "car_connection_delete_own" on public.car_connection_sessions;
+create policy "car_connection_delete_own"
+  on public.car_connection_sessions for delete using (auth.uid() = user_id);
+
 -- ===== U-47v2 (2026-09-27): PER-USER HABITS / BEHAVIOR STORE =====
 -- Owner: "make a proper database of each user for better control of data
 -- and habits of user." Aggregated, privacy-safe counters — NO raw page
