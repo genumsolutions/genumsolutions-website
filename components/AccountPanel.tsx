@@ -5,6 +5,7 @@ import { FormEvent, ReactNode, useEffect, useState } from "react";
 import AuthPanel from "./AuthPanel";
 import PushNotificationSettings from "./PushNotificationSettings";
 import RobotPreferencesPanel from "./RobotPreferencesPanel";
+import CarProfilesPanel from "./CarProfilesPanel";
 import { formatNPR } from "../lib/catalog";
 import { initials } from "../lib/identity";
 import { inputClass } from "../lib/styles";
@@ -258,6 +259,8 @@ export default function AccountPanel() {
         <PushNotificationSettings />
 
         <RobotPreferencesPanel tier={customer.tier === "pro" ? "pro" : "free"} />
+
+        <CarProfilesPanel />
 
         <SectionCard title="Your orders" id="orders">
           {orders.length === 0 ? (
