@@ -216,7 +216,7 @@ export default function CarProfilesPanel() {
                         </button>
                         <button
                           onClick={() => void removeRow(row)}
-                          className="rounded-full border border-line px-4 py-1.5 text-xs font-bold text-red-600 transition hover:border-red-600"
+                          className="rounded-full border border-line px-4 py-1.5 text-xs font-bold text-ink transition hover:border-red-300 hover:text-red-600"
                         >
                           Remove
                         </button>
