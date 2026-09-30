@@ -97,7 +97,7 @@ describe("car-profiles route", () => {
     const res = await GET(new Request(url()));
     expect(res.status).toBe(200);
     const body = (await res.json()) as { profiles: Array<{ profile_key: string }> };
-    expect(body.profiles[0].profile_key).toBe("fw:1A2B3C");
+    expect(body.profiles[0]?.profile_key).toBe("fw:1A2B3C");
     // Customer path must use createClient (RLS-scoped), not the service role.
     const ups = state.calls.filter((c) => c.op === "select");
     expect(ups.length).toBeGreaterThan(0);
