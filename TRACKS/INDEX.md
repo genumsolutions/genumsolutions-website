@@ -9,6 +9,14 @@ restore, NOT a mirror, so it will fall behind `main` as new work lands — re-sy
 `git push origin main:dev` whenever the owner wants a fresh restore point).
 CI: `ci.yml` on `main` · `sync-app-fallback.yml` on `main` + 6h cron.
 
+> ✅ **2026-09-30 — CI REPAIR: TS2532 in the car-profiles tests fixed (`a8f72f7`),
+> sync-app-fallback green again.** `tests/car-profiles.test.ts` indexed `body.profiles[0]`
+> without the optional chain — `noUncheckedIndexedAccess` made `tsc --noEmit` fail, which broke
+> ci.yml AND every scheduled sync-app-fallback run (its gate typechecks before auto-committing
+> the fallback, so no fallback commit could land while it was red; anything pushed since
+> `9756628` was affected). One-line optional-chain fix. Gates: tsc 0 · vitest **164/164** ·
+> prettier clean · CI ✓ (36700664286) · Sync app fallback ✓ (36700664409).
+
 > ✅ **2026-09-27 — U-48 FINAL SNAG ROUND: COMMITTED, PUSHED (`9b23f8b`), CI GREEN, and the
 > `site-content` security fix is DEPLOYED + VERIFIED LIVE.** Web-side wins: **U-32 ISR flip
 > executed** (public pages are now genuinely static — `/`, `/about`, `/3d-printing`, `/journal`,
