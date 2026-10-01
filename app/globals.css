@@ -126,6 +126,7 @@ html[data-theme="dim"] .bg-emerald-100 {
 
 /* Text colors */
 html[data-theme="dim"] .text-ink,
+html[data-theme="dim"] .text-slate-900,
 html[data-theme="dim"] .text-slate-700,
 html[data-theme="dim"] .text-slate-800 {
   color: #f1f5f9 !important;
@@ -163,6 +164,9 @@ html[data-theme="dim"] .text-slate-500,
 html[data-theme="dim"] .text-slate-600 {
   color: #94a3b8 !important;
 }
+html[data-theme="dim"] .text-blue-600 {
+  color: #93c5fd !important;
+}
 html[data-theme="dim"] .text-red-400,
 html[data-theme="dim"] .text-red-600,
 html[data-theme="dim"] .text-red-700 {
@@ -179,11 +183,28 @@ html[data-theme="dim"] .text-emerald-600 {
 html[data-theme="dim"] .text-amber-800 {
   color: #fcd34d !important;
 }
+/* Favourite-star accent (garage): amber-500 is only 1.9:1 on the dim surface. */
+html[data-theme="dim"] .text-amber-500 {
+  color: #fbbf24 !important;
+}
 html[data-theme="dim"] .bg-slate-200 {
   background-color: #273449 !important;
 }
+/* Solid accent fill (garage save button). Lifted from blue-600 so the white
+   glyph keeps its contrast against the darker dim surface. */
+html[data-theme="dim"] .bg-blue-600 {
+  background-color: #2f6fd0 !important;
+}
 
 /* Borders */
+html[data-theme="dim"] .border-slate-200,
+html[data-theme="dim"] .border-slate-300 {
+  border-color: #334155 !important;
+}
+html[data-theme="dim"] .border-blue-500,
+html[data-theme="dim"] .focus\:border-blue-500:focus {
+  border-color: #60a5fa !important;
+}
 html[data-theme="dim"] .border-line,
 html[data-theme="dim"] .border-ink {
   border-color: #334155 !important;

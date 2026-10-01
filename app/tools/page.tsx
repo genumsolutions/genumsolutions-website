@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import PageShell from "../../components/PageShell";
 import IotRemote from "../../components/IotRemote";
+import GaragePanel from "../../components/GaragePanel";
 import RoboticsFleet from "../../components/RoboticsFleet";
 import OpenTools from "../../components/OpenTools";
 import { getManagedProducts } from "../../lib/content-store";
@@ -34,6 +35,15 @@ export default async function ToolsPage() {
       {/* U-47 (owner): the page IS the Control Panel — one heading, no
           doubled "Tools" intro above the panel's own title. */}
       <IotRemote />
+
+      {/* Garage - the signed-in user's own devices, named by them. Needs no
+          live link, so it stays useful while remote control is paused (unlike
+          the drive decks, which cannot work until the relay exists). */}
+      <section className="border-t border-line bg-mist py-10 lg:py-14">
+        <div className="mx-auto max-w-3xl px-5 lg:px-8">
+          <GaragePanel />
+        </div>
+      </section>
 
       {/* Fleet catalogue - mirrors the app's Remote screen fleet (W-5);
           descriptive only, live control stays parked (D-1) */}

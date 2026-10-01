@@ -18,7 +18,58 @@ import { useState } from "react";
 import CategoryControlPanel from "./CategoryControlPanel";
 import CategoryOverviewCard from "./CategoryOverviewCard";
 import { PROJECT_CATEGORIES } from "../lib/project-catalog";
-import { REMOTE_CONTROL_ENABLED } from "../lib/remote-control";
+import { REMOTE_CONTROL_ENABLED, WEBSITE_TRANSPORTS } from "../lib/remote-control";
+
+/**
+ * Why each transport can or cannot work from here, straight from the gate.
+ * Showing this instead of a flat "paused" note stops the question of "so what
+ * would unblock it?" — and keeps a future reader from adding a LAN transport
+ * that physically cannot arrive.
+ */
+function TransportFacts() {
+  return (
+    <div className="overflow-hidden rounded-xl border border-line">
+      <table className="w-full text-left text-xs">
+        <thead className="bg-mist text-[10px] uppercase tracking-wider text-muted">
+          <tr>
+            <th scope="col" className="px-3 py-2 font-black">
+              Transport
+            </th>
+            <th scope="col" className="px-3 py-2 font-black">
+              From this website
+            </th>
+            <th scope="col" className="hidden px-3 py-2 font-black sm:table-cell">
+              Why
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {WEBSITE_TRANSPORTS.map((t) => (
+            <tr key={t.id} className="border-t border-line">
+              <td className="px-3 py-2 font-semibold text-ink">{t.label}</td>
+              <td className="px-3 py-2">
+                <span
+                  className={`inline-flex items-center gap-1.5 font-bold ${
+                    t.reachable ? "text-emerald-700" : "text-muted"
+                  }`}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`h-2 w-2 rounded-full ${
+                      t.reachable ? "bg-emerald-600" : "bg-border"
+                    }`}
+                  />
+                  {t.reachable ? "Possible" : "No"}
+                </span>
+              </td>
+              <td className="hidden px-3 py-2 leading-5 text-muted sm:table-cell">{t.why}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 export default function IotRemote() {
   const [slug, setSlug] = useState<string>(PROJECT_CATEGORIES[0]!.slug);
@@ -33,8 +84,8 @@ export default function IotRemote() {
       </h2>
       <p className="mt-4 max-w-2xl text-base leading-7 text-muted lg:text-lg">
         {REMOTE_CONTROL_ENABLED
-          ? "Pick a project category, connect a Bluetooth or WiFi device, and drive or operate it live."
-          : "Live device control from the website is paused for now. Control your devices from the GENUM app, or open the car’s own hosted page (http://&lt;car-ip&gt;)."}
+          ? "Pick a project category, connect a device over the cloud relay, and drive or operate it live."
+          : "Live control from the website is paused for now — a public web page cannot reach a car on your local network. Drive your projects from the GENUM app over Bluetooth or WiFi."}
       </p>
 
       {/* Category selector */}
@@ -68,12 +119,17 @@ export default function IotRemote() {
             <p className="text-sm font-bold text-ink">Remote control paused</p>
           </div>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">
-            The website remote panel is temporarily halted. To drive your{" "}
-            {category.name.toLowerCase()} device, use the GENUM app (Classic Bluetooth or the car’s
-            own WiFi page at{" "}
-            <code className="rounded bg-mist px-1 py-0.5 text-xs">http://&lt;car-ip&gt;</code>). The
-            project team will re-enable web control once a supported transport is defined.
+            {/* No "http://<car-ip>" here. That address is only reachable from
+                inside the car's own network, so sending a public-site visitor
+                there is advice that cannot work. See WEBSITE_TRANSPORTS in
+                lib/remote-control.ts for the reachability verdicts. */}
+            This {category.name.toLowerCase()} project is controlled from the GENUM app right now.
+            Web control returns when the cloud relay is live: a relay works because the device dials
+            out over the internet, where a public web page cannot dial in.
           </p>
+          <div className="mt-4">
+            <TransportFacts />
+          </div>
         </section>
       )}
 
