@@ -14,7 +14,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, Car, Pencil, Check, X, Trash2, Clock } from "lucide-react";
-import { pairingLabel } from "../lib/device-registry";
 
 type Device = {
   deviceId: string;
@@ -247,7 +246,3 @@ export default function GaragePanel() {
     </div>
   );
 }
-
-// pairingLabel is used by the API route; re-exported here so the pairing
-// wording has a single definition the panel and the route cannot diverge on.
-export { pairingLabel };
