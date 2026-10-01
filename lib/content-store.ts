@@ -224,14 +224,27 @@ export async function getManagedRoBoModes(): Promise<RoboCarMode[]> {
   if (!supabaseConfigured()) return localRoBoModes;
   try {
     const db = createServiceClient();
+    // LEFT JOIN the planned flags so a mode that exists in the catalogue but
+    // has no firmware still travels WITH its isPlanned flag. Reading
+    // robo_car_modes alone (as this did) silently implied every mode was
+    // drivable, which is wrong for six of the nine.
     const { data, error } = await db
       .from("robo_car_modes")
-      .select("*")
+      .select("*, robo_car_modes_flags(is_planned, firmware_repo, note)")
       .order("sort_order", { ascending: true })
       .order("name", { ascending: true });
     if (error) throw error;
     if (!data || data.length === 0) return localRoBoModes;
-    return data as RoboCarMode[];
+    return (data as Record<string, unknown>[]).map((row) => {
+      const flag = (row.robo_car_modes_flags ?? null) as Record<string, unknown> | null;
+      // A missing flag row means "not planned" - the live modes deliberately
+      // have no row, so absence is the normal case and must not read as
+      // "unknown, hide it".
+      return {
+        ...(row as unknown as RoboCarMode),
+        isPlanned: flag?.is_planned === true,
+      };
+    });
   } catch (error) {
     console.error("Supabase robo mode read failed; using local catalog.", error);
     return localRoBoModes;

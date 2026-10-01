@@ -67,6 +67,21 @@ export interface RoboCarMode {
   blurb: string;
   /** Display order when listing modes (optional; defaults to 1000). */
   sortOrder?: number;
+  /**
+   * No firmware implements this mode yet (owner decision 2026-10-01).
+   *
+   * Six of the nine modes are PLANNED: obstacle-us, obstacle-ir,
+   * website-client, website-server, path-follow and rf-manual. `rf-manual`
+   * is planned from the CAR's point of view because the physical ESP32
+   * remote performs it, not the car.
+   *
+   * A UI that offers a planned mode as drivable is worse than one that omits
+   * it: the user picks it, nothing happens, and the car looks broken. So the
+   * flag travels with the mode and every deck must render it as unavailable.
+   * Runtime truth lives in `robo_car_modes_flags`; this bundled copy is the
+   * offline fallback and must be edited together with that table.
+   */
+  isPlanned?: boolean;
 }
 
 export const ROBOCAR_MODES: RoboCarMode[] = [
@@ -78,7 +93,7 @@ export const ROBOCAR_MODES: RoboCarMode[] = [
     name: "4WD4M",
     token: "4WD4M",
     deviceIndex: 0,
-    car: "4-wheel-drive",
+    car: "4-Wheel Drive",
     wheel: "4 × BO/brushed motors",
     steering: "Skid-steer (differential)",
     sensors: [],
@@ -90,10 +105,10 @@ export const ROBOCAR_MODES: RoboCarMode[] = [
   },
   {
     id: "2wd1m",
-    name: "Bluetooth · 2WD + Servo (1M)",
+    name: "Bluetooth — 2WD + Servo (1M)",
     token: "2WD1M",
     deviceIndex: 8,
-    car: "2-wheel-drive",
+    car: "2-Wheel Drive",
     wheel: "1 × BO motor (rear)",
     steering: "1 × servo (0..180, center 90)",
     sensors: [],
@@ -108,7 +123,7 @@ export const ROBOCAR_MODES: RoboCarMode[] = [
     name: "Self-Balancing",
     token: "AUTO",
     deviceIndex: 6,
-    car: "Self-balancing",
+    car: "Self-Balancing",
     wheel: "2 × BO motors",
     steering: "Self-balance (PID)",
     sensors: ["MPU6050 IMU"],
@@ -120,10 +135,10 @@ export const ROBOCAR_MODES: RoboCarMode[] = [
   },
   {
     id: "obstacle-us",
-    name: "Obstacle Avoidance · Ultrasonic",
+    name: "Obstacle Avoidance — Ultrasonic",
     token: "OBS_US",
     deviceIndex: 3,
-    car: "Obstacle avoider",
+    car: "Obstacle Avoider",
     wheel: "2/4 × BO motors",
     steering: "Skid-steer",
     sensors: ["HC-SR04 / ultrasonic"],
@@ -132,13 +147,14 @@ export const ROBOCAR_MODES: RoboCarMode[] = [
     controls: ["start-stop"],
     requiresConnection: true,
     blurb: "Runs autonomous obstacle avoidance using an ultrasonic sensor.",
+    isPlanned: true,
   },
   {
     id: "obstacle-ir",
-    name: "Obstacle Avoidance · IR",
+    name: "Obstacle Avoidance — IR",
     token: "OBS_IR",
     deviceIndex: 4,
-    car: "Obstacle avoider",
+    car: "Obstacle Avoider",
     wheel: "2/4 × BO motors",
     steering: "Skid-steer",
     sensors: ["IR / photodiode pair"],
@@ -147,13 +163,14 @@ export const ROBOCAR_MODES: RoboCarMode[] = [
     controls: ["start-stop"],
     requiresConnection: true,
     blurb: "Autonomous obstacle avoidance driven by IR sensors.",
+    isPlanned: true,
   },
   {
     id: "website-client",
-    name: "Website Controlled · Client",
+    name: "Website Controlled — Client",
     token: "ESP_CLI",
     deviceIndex: 7,
-    car: "Website car",
+    car: "Website Car",
     wheel: "2/4 × BO motors",
     steering: "Skid-steer",
     sensors: [],
@@ -162,13 +179,14 @@ export const ROBOCAR_MODES: RoboCarMode[] = [
     controls: ["weblink"],
     requiresConnection: false,
     blurb: "The ESP32 is a WiFi client; the browser/app acts as the control server.",
+    isPlanned: true,
   },
   {
     id: "website-server",
-    name: "Website Controlled · Server",
+    name: "Website Controlled — Server",
     token: "ESP_SER",
     deviceIndex: 1,
-    car: "Website car",
+    car: "Website Car",
     wheel: "2/4 × BO motors",
     steering: "Skid-steer",
     sensors: [],
@@ -177,13 +195,14 @@ export const ROBOCAR_MODES: RoboCarMode[] = [
     controls: ["weblink"],
     requiresConnection: false,
     blurb: "The ESP32 hosts its own web page; open its IP to drive it.",
+    isPlanned: true,
   },
   {
     id: "path-follow",
-    name: "Path Following · IR",
+    name: "Path Following — IR",
     token: "PATH",
     deviceIndex: 2,
-    car: "Line follower",
+    car: "Line Follower",
     wheel: "2/4 × BO motors",
     steering: "Skid-steer",
     sensors: ["IR line sensors"],
@@ -192,13 +211,14 @@ export const ROBOCAR_MODES: RoboCarMode[] = [
     controls: ["start-stop"],
     requiresConnection: true,
     blurb: "Follows an IR-detected line or path autonomously.",
+    isPlanned: true,
   },
   {
     id: "rf-manual",
-    name: "Manual · RF",
+    name: "Manual — RF",
     token: "MAN",
     deviceIndex: 5,
-    car: "RF car",
+    car: "RF Car",
     wheel: "2/4 × BO motors",
     steering: "Skid-steer",
     sensors: [],
@@ -207,6 +227,10 @@ export const ROBOCAR_MODES: RoboCarMode[] = [
     controls: ["drive-tank"],
     requiresConnection: false,
     blurb: "Manual control over RF modules (not BT or WiFi) - drive with the RF handset.",
+    // Planned FROM THE CAR'S SIDE: the RF handset does perform this, but the
+    // car firmware has no RF receiver path, so the car cannot be put into
+    // rf-manual over any app or website link.
+    isPlanned: true,
   },
 ];
 
