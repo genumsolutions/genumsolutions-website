@@ -32,7 +32,13 @@ import {
 // path run.
 // =====================================================================
 
-const BOARD = "A1B2C3D4E5F6";
+const BOARD = "A1B2C3";
+// SIX hex, exactly as the firmware prints it: `WebServerComm::boardIdHex()`
+// (WebServerComm.cpp:18) is `%06X` of `ESP.getEfuseMac() & 0xFFFFFF`. This
+// fixture used to be 12 chars long, to match a relay regex that used to
+// demand 12 - which meant the two agreed about a car that does not exist, and
+// every real car would have been refused at the hello. If you change this
+// string, change BOARD_ID_RE with it, and change the car with BOTH.
 // The token these tests present. Any 32 lowercase-hex characters is a valid
 // fake, so this is built with repeat() instead of written as a literal: a bare
 // long hex string assigned to a name containing TOKEN is precisely the shape
@@ -126,8 +132,14 @@ describe("hello validation", () => {
     // The pairing key must be byte-exact: `a1b2...` and `A1B2...` are two
     // different cars as far as the firmware is concerned, and "helpfully"
     // upper-casing here would let the wrong id pair.
-    for (const bad of ["a1b2c3d4e5f6", "A1B2C3D4E5F", "A1B2C3D4E5F6G", ""]) {
+    for (const bad of ["a1b2c3", "A1B2C3D", "A1B2C3G", "A1B2 C3", ""]) {
       expect(parseHello(helloCar({ boardIdHex: bad })).ok).toBe(false);
+    }
+    // And the shape itself: 6, not 5, not 7, not 12. This is the assertion that
+    // would have caught the real mismatch, and it is the one that failed when
+    // the regex and the firmware disagreed.
+    for (const good of ["000000", "FFFFFF", BOARD]) {
+      expect(parseHello(helloCar({ boardIdHex: good })).ok).toBe(true);
     }
   });
 
@@ -441,7 +453,7 @@ describe("frame forwarding", () => {
 
     const state =
       "STATE;MODE=4WD4M;SPD=150;TRIM=0;STATUS=Stopped;SSID=TP-Link_9F2C_LivingRoom;" +
-      "WANT=TP-Link_9F2C_LivingRoom_5G;AP=4WDCar_Wifi;IP=192.168.0.107;ID=A1B2C3D4E5F6\n";
+      "WANT=TP-Link_9F2C_LivingRoom_5G;AP=4WDCar_Wifi;IP=192.168.0.107;ID=A1B2C3\n";
     expect(state.length).toBeGreaterThan(128);
     expect(state.length).toBeLessThanOrEqual(LIMITS.maxBytesCarToController);
     expect(hub.forward(carHandle, state)).toBe("forwarded");
@@ -675,8 +687,10 @@ describe("enrollment body", () => {
     expect(parseEnrollment(JSON.stringify({ boardIdHex: BOARD, token: TOKEN })).ok).toBe(true);
   });
 
-  it("refuses a board id that is not the 12 uppercase hex the car prints", () => {
-    for (const bad of ["a1b2c3d4e5f6", "A1B2C3D4E5F", "A1B2C3D4E5F6G", "", 42, null]) {
+  it("refuses a board id that is not the 6 uppercase hex the car prints", () => {
+    // 42 and null because JSON has no integers-as-ids: a caller that sends one
+    // gets told which field is wrong, not a crash inside a regex.
+    for (const bad of ["a1b2c3", "A1B2C3D", "A1B2C3G", "", 42, null]) {
       const result = parseEnrollment({ boardIdHex: bad, token: TOKEN });
       expect(result.ok).toBe(false);
       if (!result.ok) expect(result.error).toContain("boardIdHex");
@@ -702,7 +716,7 @@ describe("enrollment body", () => {
   it("enforces the SAME formats as the hello, so the two cannot drift", async () => {
     // Same regexes, one implementation. If a future edit loosens the hello but
     // not enrollment (or the reverse), one of these two fails.
-    for (const boardIdHex of [BOARD, "a1b2c3d4e5f6", "A1B2C3D4E5F", ""]) {
+    for (const boardIdHex of [BOARD, "a1b2c3", "A1B2C3D", ""]) {
       expect(parseHello(helloCar({ boardIdHex })).ok).toBe(
         parseEnrollment({ boardIdHex, token: TOKEN }).ok
       );

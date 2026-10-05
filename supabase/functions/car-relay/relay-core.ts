@@ -56,8 +56,22 @@ export const LIMITS = {
 } as const;
 
 /** boardIdHex as the firmware prints it. Anchored, not "cleaned": a permissive
- *  normaliser here would let `A1B2` and `a1b2` pair as different cars. */
-const BOARD_ID_RE = /^[0-9A-F]{12}$/;
+ * normaliser here would let `A1B2` and `a1b2` pair as different cars.
+ *
+ * SIX hex, not twelve. `WebServerComm::boardIdHex()` (WebServerComm.cpp:18)
+ * prints `%06X` of `ESP.getEfuseMac() & 0xFFFFFF` — the last 6 hex, because the
+ * ESP32 OUI bytes are identical across the fleet and carry no information. The
+ * same 6-char string is what the car puts in `STATE;...;ID=`, what the owner
+ * reads off the car's page, and what the app already persists as `fw:<id>`.
+ * This regex said 12 for a long time, which meant it refused every car that
+ * exists: a 6-char id can never match a 12-char pattern. Nothing caught it
+ * because no car has ever spoken to a relay.
+ *
+ * Do not "fix" this by widening the car to a full MAC. That would invent a
+ * second identifier for the same physical board and quietly break the app's
+ * existing pairing. 24 bits of MAC is ~16.7M boards, and a collision still
+ * cannot grant access anyway: the peppered token is required as well. */
+const BOARD_ID_RE = /^[0-9A-F]{6}$/;
 
 /** Tokens are 32 hex chars (16 bytes). Fixed length so a truncated paste
  *  fails loudly instead of becoming a weak secret. */
