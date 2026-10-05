@@ -9,13 +9,51 @@ restore, NOT a mirror, so it will fall behind `main` as new work lands — re-sy
 `git push origin main:dev` whenever the owner wants a fresh restore point).
 CI: `ci.yml` on `main` · `sync-app-fallback.yml` on `main` + 6h cron.
 
+> •. **2026-10-05 (later) — U-94 PHASE 1 CONTRACT CORRECTED: THREE MORE DEFECTS, FOUND ONLY BY WRITING THE CAR SIDE. `40dac31`, PUSHED, CI GREEN, STILL NOT DEPLOYED.**
+> The relay had never had a car talk to it, which is exactly how three contract defects stayed green
+> across three suites. They are the reason F-75 exists.
+> **Defect 4 — every STATE line was being dropped (`039f014`).** `LIMITS.maxFrameBytes` was **128 in
+> both directions**, justified in its own comment as "handleCommand copies into a 128-byte buffer" —
+> true of the phone's _commands_, false of the car's _output_, which is built into **448** (`STATE`),
+> 200 (`NETW`) and 320 (`SCAN`). One router already puts a plain STATE line near 110 bytes before any
+> `REPLY=` is appended, so the relay was dropping exactly the traffic it exists to carry: a phone that
+> paired successfully would have met a connected, authenticated, permanently silent car. The caps are
+> now **per direction** — 448 out (the car's buffer), 128 in (the firmware's) — and
+> `relayForwardsControl()` lives in the pure core so the rule is testable on a laptop.
+> **Defect 5 — the latency pair never crossed (`039f014`).** `index.ts` answered a controller's `ping`
+> with the relay's **own** echo, so what the phone measured was the relay and reported it as the car;
+> the car's real `ping-echo` fell through to "unknown control frame" and was refused. The relay now
+> **originates two** frames (`hello-required`, `paired`) and **forwards two** (the latency pair, either
+> direction) — a parse rule that only exists inside `index.ts` is a rule nothing can test, which is how
+> this survived a green suite in the first place.
+> **Defect 6 — the pairing key could never match: `BOARD_ID_RE` wanted 12 hex, the car prints 6
+> (`40dac31`).** `WebServerComm::boardIdHex()` is `%06X` of `ESP.getEfuseMac() & 0xFFFFFF`. The
+> regex's own comment cited that function, described it correctly, and then wrote a pattern that
+> cannot match it: a 6-character string never matches a 12-character pattern, so **every hello from
+> every real car would have been refused** — as a malformed board id, before the token was looked at.
+> Enrolment shared the regex, so the admin page would have refused them too. Fixed on the relay side,
+> not the car's: those 6 chars are already the car's identity in `STATE;...;ID=`, on its page, and in
+> the app's `fw:<id>` profile, so widening the car would have invented a second identifier for the same
+> board. **And the test fixture had been 12 chars long — it agreed with the wrong regex**, which is how
+> two wrong things stayed green together. The fixture is now 6, with the producer's format string cited,
+> and the shape is asserted independently (6 accepted; 5, 7, lowercase, embedded space, non-hex refused).
+> Short ids are not a new weakness: 24 bits of MAC is ~16.7M boards and a collision still cannot grant
+> access, because the peppered token is required as well.
+> Gates: **tsc 0 · vitest 285/285 (23 files, 54 in the relay file) · eslint 0 · prettier clean ·
+> `next build` green**; CI run **`37318266116` green on all three jobs**. Both fixes are
+> **mutation-checked**: reverting the per-direction cap fails exactly the one new test that exists for
+> it, and putting the regex back to 12 fails 4 named tests across the hello and enrolment suites.
+> **Still NOT deployed, NOT applied, NOT device-tested.** Phase 2 (car `RelayComm`) is written and
+> green on the car side but has never been flashed; Phase 3 (app) has not started.
+
 > •. **2026-10-05 — U-94 PHASE 1 (the Internet-method relay) COMMITTED, PUSHED, CI GREEN, NOT DEPLOYED — and THREE defects were found in it before it could ever reach hardware.** The owner's "do everything that does not need hardware" released U-94 Phase 1; the Q1/Q2 rulings are in
 > `guide/PLAN-2026-10-04-U94-INTERNET-METHOD-DESIGN.md` §6.1–6.2. New in this round: `supabase/functions/car-relay/relay-core.ts` (the relay as a PURE, import-free module so
 > the same rules run in Deno and in vitest), `supabase/functions/car-relay/index.ts` (the Edge
-> Function wiring), `tests/car-relay.test.ts` (**50 tests** — no network, no Supabase, no car),
+> Function wiring), `tests/car-relay.test.ts` (**54 tests** — no network, no Supabase, no car),
 > `supabase/migrations/20261005130000_relay_token_digest.sql`, and a `deno check` job in
-> `ci.yml`. **Pushed `641e882..254aa26`** — `762366f` (the relay), `ba763e3` (this entry), `c6ee9aa` +
-> `495bae4` (F-73), `254aa26` (the Deno job made blocking).
+> `ci.yml`. **Pushed `641e882..40dac31`** — `762366f` (the relay), `ba763e3` (this entry), `c6ee9aa` +
+> `495bae4` (F-73), `254aa26` (the Deno job made blocking), `d31d57e`, then `039f014` + `40dac31`
+> (defects 4–6, above).
 > **The relay is a byte pipe**: pair two sockets by `boardIdHex`, forward frames, store NOTHING
 > about car state. Its own control frames are `\x00relay` + JSON, so it _cannot_ emit car grammar
 > even by accident (FIN-23/24 lock; four separate rounds of bugs in this project came from
@@ -40,10 +78,11 @@ CI: `ci.yml` on `main` · `sync-app-fallback.yml` on `main` + 6h cron.
 > edge-function secret — gated on signed-in + "this account has claimed that car"; health is
 > authenticated (which board ids are online is fleet information); the ping/echo pair moved into the
 > testable core; distinct WS close codes per refusal reason.
-> Gates: **tsc 0 · vitest 281/281 (23 files) · eslint 0 · prettier clean · `next build` green**, and
-> CI run **`37282979846` green on all three jobs** — `Quality checks` (typecheck, lint, unit tests,
-> gitleaks), `Production build`, and `Edge function typecheck (car-relay)`, which ran advisory for
-> exactly one clean run and then **lost `continue-on-error`** (`254aa26`), so it blocks from now on.
+> Gates: **tsc 0 · vitest 285/285 (23 files) · eslint 0 · prettier clean · `next build` green**, and
+> CI runs **`37282979846` then `37318266116` green on all three jobs** — `Quality checks` (typecheck,
+> lint, unit tests, gitleaks), `Production build`, and `Edge function typecheck (car-relay)`, which ran
+> advisory for exactly one clean run and then **lost `continue-on-error`** (`254aa26`), so it blocks from
+> now on.
 > **NOT deployed, NOT applied, NOT device-tested** — there is no Deno and no Supabase CLI on this
 > bench, and `tsconfig` excludes `supabase/functions`, so the Deno CI job is the only thing that has
 > ever type-checked `index.ts`. Owner steps are listed in the plan §6.2.

@@ -130,7 +130,7 @@ export function parseHello(input: string | Record<string, unknown>): HelloParse 
   if (typeof boardIdHex !== "string" || !BOARD_ID_RE.test(boardIdHex))
     return {
       ok: false,
-      error: "boardIdHex must be 12 uppercase hex chars (the value the car's page prints)",
+      error: "boardIdHex must be 6 uppercase hex chars (the value the car's page prints)",
     };
 
   const token = obj.token;
@@ -654,7 +654,7 @@ export function parseEnrollment(input: string | Record<string, unknown>): Enroll
 
   const boardIdHex = obj.boardIdHex;
   if (typeof boardIdHex !== "string" || !BOARD_ID_RE.test(boardIdHex)) {
-    return { ok: false, error: "boardIdHex must be 12 uppercase hex chars" };
+    return { ok: false, error: "boardIdHex must be 6 uppercase hex chars" };
   }
   const token = obj.token;
   if (typeof token !== "string" || !TOKEN_RE.test(token)) {
