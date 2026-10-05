@@ -77,3 +77,30 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  edge-relay:
+    name: Edge function typecheck (car-relay)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    # tsconfig.json EXCLUDES supabase/functions, so the car-relay edge function
+    # is invisible to `npm run typecheck` - and an edge function that does not
+    # compile is not a rounding error: it deploys, and then every WS upgrade
+    # fails at runtime with nothing in CI red. This job is the only thing that
+    # type-checks it.
+    #
+    # continue-on-error is DELIBERATE and temporary: this bench has no Deno, so
+    # the first clean run has not been seen. Remove this line once it has, and
+    # treat a failure here as a real failure from then on.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v1.x
+
+      - name: Check the relay function and its pure core
+        run: deno check supabase/functions/car-relay/index.ts
+      # Formatting is NOT re-checked here: prettier owns it repo-wide (a second
+      # formatter with different defaults would be a second source of truth).
