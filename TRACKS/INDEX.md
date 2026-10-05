@@ -9,6 +9,49 @@ restore, NOT a mirror, so it will fall behind `main` as new work lands — re-sy
 `git push origin main:dev` whenever the owner wants a fresh restore point).
 CI: `ci.yml` on `main` · `sync-app-fallback.yml` on `main` + 6h cron.
 
+> •. **2026-10-05 — U-94 PHASE 1 (the Internet-method relay) WRITTEN LOCALLY, NOT DEPLOYED, and two
+> defects were found in it before it could ever reach hardware.** The owner's "do everything that
+> does not need hardware" released U-94 Phase 1; the Q1/Q2 rulings are in
+> `guide/PLAN-2026-10-04-U94-INTERNET-METHOD-DESIGN.md` §6.1–6.2. New in this round, commit
+> **`762366f`** (local, not pushed): `supabase/functions/car-relay/relay-core.ts` (the relay as a PURE, import-free module so
+> the same rules run in Deno and in vitest), `supabase/functions/car-relay/index.ts` (the Edge
+> Function wiring), `tests/car-relay.test.ts` (**50 tests** — no network, no Supabase, no car),
+> `supabase/migrations/20261005130000_relay_token_digest.sql`, and an advisory `deno check` job in
+> `ci.yml`.
+> **The relay is a byte pipe**: pair two sockets by `boardIdHex`, forward frames, store NOTHING
+> about car state. Its own control frames are `\x00relay` + JSON, so it _cannot_ emit car grammar
+> even by accident (FIN-23/24 lock; four separate rounds of bugs in this project came from
+> assuming a firmware verb existed).
+> **Defect 1 (F-71) — the relay would have refused EVERY car.** `index.ts` checked the presented
+> token correctly, with the pepper, then called `hub.join()`, which recomputed the digest with NO
+> pepper against a table it had never been handed → `unclaimed car` for every peer, i.e. a healthy
+> car reported as broken. Every test was green because all of them seeded the hub the one way the
+> edge function does not use. Fixed by injecting the digest function into the hub and feeding it the
+> storage table (`replaceDigests`); mutation-tested — reverting the injection fails a test.
+> **Defect 2 (F-72) — the digest was headed for an owner-readable column.** `devices` is readable by
+> anyone who has claimed the unit, so a column there hands the token's verifier to a phone. It is
+> now its own table with RLS enabled and **no policies** (only the service role reaches it) plus
+> `revoke all` from anon/authenticated.
+> Also added: `POST /car-relay/enroll` — the only writer of a digest, since the pepper is an
+> edge-function secret — gated on signed-in + "this account has claimed that car"; health is
+> authenticated (which board ids are online is fleet information); the ping/echo pair moved into the
+> testable core; distinct WS close codes per refusal reason.
+> Gates: **tsc 0 · vitest 281/281 (23 files) · eslint 0 · prettier clean · `next build` green.**
+> **NOT deployed, NOT applied, NOT device-tested** — there is no Deno and no Supabase CLI on this
+> bench, and `tsconfig` excludes `supabase/functions`, so nothing local type-checks `index.ts`
+> (hence the advisory CI job). Owner steps are listed in the plan §6.2.
+
+> •. **2026-10-01 → 10-04 — DEVICE REGISTRY rounds, written up here for the first time (they were
+> committed and pushed but never recorded in any ledger; git is the source).** `5c4558f` registry +
+> per-unit naming + profile enrichment · `43c6c71` normalised car labels and planned-mode flags ·
+> `42b62ff` website garage + per-transport control gate · `e134591` mode names aligned with the
+> database · `fead461` a user's self-reported model can no longer overwrite a curated one ·
+> `641e882` `register_device()` rate-limited to 10 new units per account per hour + the
+> migration-ledger repair. Migrations `20261001120000`…`20261001170000`.
+> **None of these tables are in `supabase/schema.sql`, and `npm run db:apply` reads only that file**
+> — so registry migrations are applied with the SQL editor or `supabase db push`, not `db:apply`.
+> Pre-existing seam, still true for `20261005130000` (the relay token table).
+
 > ✅ **2026-09-30 — CI REPAIR: TS2532 in the car-profiles tests fixed (`a8f72f7`),
 > sync-app-fallback green again.** `tests/car-profiles.test.ts` indexed `body.profiles[0]`
 > without the optional chain — `noUncheckedIndexedAccess` made `tsc --noEmit` fail, which broke
@@ -140,17 +183,18 @@ CI: `ci.yml` on `main` · `sync-app-fallback.yml` on `main` + 6h cron.
 
 ## Deployed edge functions (live project ref `bkylfnlybtsujwzropru`)
 
-| Function          | Slug              | Status (as of 2026-09-24)                                                                                                                                                                                                                                                |
-| ----------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| admin-set-role    | admin-set-role    | ACTIVE v4                                                                                                                                                                                                                                                                |
-| admin-delete-user | admin-delete-user | ACTIVE v1                                                                                                                                                                                                                                                                |
-| push-order-status | push-order-status | ACTIVE (web-push via pg_net trigger; VAPID + PUSH_TRIGGER_SECRET set)                                                                                                                                                                                                    |
-| admin-products    | admin-products    | ACTIVE (U-14, 2026-09-23 — JWT staff+ gate; create/update/list, admin+ delete; live-verified 9/9)                                                                                                                                                                        |
-| link-import       | link-import       | ACTIVE (U-14 2026-09-23 + U-16 richer extraction — specs, gallery, stats, pricing extra, JSON-LD additionalProperty; **U-23 2026-09-24: full-gallery create + URL dedupe + backfill + slug/zh URL parsing + dims/print-time specs; re-deployed live, verified **40/40**) |
-| payment-esewa     | payment-esewa     | ACTIVE (2026-09-23 C1 — mark_order_paid RPC: status flip + stock decrement atomic/idempotent)                                                                                                                                                                            |
-| payment-khalti    | payment-khalti    | ACTIVE (2026-09-23 C1 — mark_order_paid RPC: status flip + stock decrement atomic/idempotent)                                                                                                                                                                            |
-| payment-webhook   | payment-webhook   | ACTIVE (2026-09-23 C1 — mark_order_paid RPC: status flip + stock decrement atomic/idempotent)                                                                                                                                                                            |
-| admin-services    | admin-services    | ACTIVE (2026-09-23 — SECURITY FIX: was writing with the service role and NO caller check; now JWT staff+ gate, admin+ delete, id sanitize — mirrors admin-products; live-verified 10/10, app writes now route through it)                                                |
+| Function          | Slug              | Status (as of 2026-09-24)                                                                                                                                                                                                                                                                                                                                                                                            |
+| ----------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| admin-set-role    | admin-set-role    | ACTIVE v4                                                                                                                                                                                                                                                                                                                                                                                                            |
+| admin-delete-user | admin-delete-user | ACTIVE v1                                                                                                                                                                                                                                                                                                                                                                                                            |
+| push-order-status | push-order-status | ACTIVE (web-push via pg_net trigger; VAPID + PUSH_TRIGGER_SECRET set)                                                                                                                                                                                                                                                                                                                                                |
+| admin-products    | admin-products    | ACTIVE (U-14, 2026-09-23 — JWT staff+ gate; create/update/list, admin+ delete; live-verified 9/9)                                                                                                                                                                                                                                                                                                                    |
+| link-import       | link-import       | ACTIVE (U-14 2026-09-23 + U-16 richer extraction — specs, gallery, stats, pricing extra, JSON-LD additionalProperty; **U-23 2026-09-24: full-gallery create + URL dedupe + backfill + slug/zh URL parsing + dims/print-time specs; re-deployed live, verified **40/40**)                                                                                                                                             |
+| payment-esewa     | payment-esewa     | ACTIVE (2026-09-23 C1 — mark_order_paid RPC: status flip + stock decrement atomic/idempotent)                                                                                                                                                                                                                                                                                                                        |
+| payment-khalti    | payment-khalti    | ACTIVE (2026-09-23 C1 — mark_order_paid RPC: status flip + stock decrement atomic/idempotent)                                                                                                                                                                                                                                                                                                                        |
+| payment-webhook   | payment-webhook   | ACTIVE (2026-09-23 C1 — mark_order_paid RPC: status flip + stock decrement atomic/idempotent)                                                                                                                                                                                                                                                                                                                        |
+| admin-services    | admin-services    | ACTIVE (2026-09-23 — SECURITY FIX: was writing with the service role and NO caller check; now JWT staff+ gate, admin+ delete, id sanitize — mirrors admin-products; live-verified 10/10, app writes now route through it)                                                                                                                                                                                            |
+| car-relay         | car-relay         | **NOT DEPLOYED — written 2026-10-05 (U-94 Phase 1), unit-tested locally, never deployed and never connected to. Owner steps: apply `20261005130000_relay_token_digest.sql`, `supabase secrets set RELAY_TOKEN_PEPPER`, then `supabase functions deploy car-relay --no-verify-jwt` (`--no-verify-jwt` is REQUIRED — the car has no Supabase session; car auth is board id + NVS token, phone auth is the user JWT).** |
 
 _Schema tables applied to live DB (`bkylfnlybtsujwzropru`): `profiles` (incl. `theme_preference`, `tier`), `web_push_subscriptions` (own-rows RLS), `user_settings`, `robot_user_settings` (+ 2026-09-24 U-23: `products.gallery` + `products.import_meta`). Web Push: `web_push_subscriptions` table + RLS policies + `sw.js` handlers + subscribe/unsubscribe APIs live; account card + checkout opt-in live; edge function sends Web Push (ACTIVE) + Expo (dormant until Firebase). Secrets: `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `PUSH_TRIGGER_SECRET` in `.env.local` (never committed)._
 
