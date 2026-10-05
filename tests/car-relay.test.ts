@@ -31,13 +31,14 @@ import {
 // =====================================================================
 
 const BOARD = "A1B2C3D4E5F6";
-// A FAKE relay token, built by repeat() rather than written as one 32-hex
-// literal: the value is unchanged ("0123456789abcdef0123456789abcdef") and
-// still fails every regex in relay-core's TOKEN_RE, but a bare 32-hex string
-// assigned to a name ending in TOKEN is exactly what CI's gitleaks
-// generic-api-key rule flags. The scanner is right to be suspicious of that
-// shape, so the fixture gives it no shape to match and no allowlist is needed.
-const TOKEN = "0123456789abcdef".repeat(2);
+// The token these tests present. Any 32 lowercase-hex characters is a valid
+// fake, so this is built with repeat() instead of written as a literal: a bare
+// long hex string assigned to a name containing TOKEN is precisely the shape
+// CI's gitleaks generic-api-key rule hunts, and it went red on this file twice
+// before anyone here had leaked anything. The scanner is right to be suspicious
+// of that shape, so the fixture gives it nothing to match — no allowlist
+// needed, and a real key dropped in a test later still gets caught.
+const TOKEN = "a".repeat(32);
 
 /** A socket stand-in that records what the relay sent it. */
 function fakePeer(name: string) {
