@@ -35,10 +35,18 @@ export const RELAY_CONTROL_PREFIX = "\x00relay";
 
 /** Hard caps. A runaway socket must not be able to exhaust the isolate. */
 export const LIMITS = {
-  /** Car handleCommand() copies into a 128-byte buffer; anything longer is
-   *  already truncated by the firmware, so forwarding it wastes bytes and
-   *  hides bugs. See ModeManager.cpp:290. */
-  maxFrameBytes: 128,
+  /** car -> controller. The car's own builders are the contract: STATE into a
+   *  448-byte buffer (`ModeManager.cpp:485`), NETW into 200, SCAN into 320. A
+   *  single 128-byte cap in BOTH directions was wrong in a way only the car side
+   *  could reveal: an honest STATE line with a router name, an IP, a board id and
+   *  a `REPLY=` is over 128 bytes, so the relay dropped every state frame it was
+   *  built to carry and the phone paired successfully into silence. Caps are
+   *  therefore PER DIRECTION, from what each end can actually accept. */
+  maxBytesCarToController: 448,
+  /** controller -> car. `handleCommand()` copies into a 128-byte buffer, so a
+   *  longer command is already truncated by the firmware; forwarding it wastes
+   *  bytes and hides bugs. This is the cap that has to exist. */
+  maxBytesControllerToCar: 128,
   /** Real frames are <= ~120 B (ROUTERS with 6 SSIDs is the worst case). */
   maxPendingBytes: 4096,
   /** Above this we drop the car's periodic frames rather than buffer them:
@@ -390,13 +398,18 @@ export class RelayHub {
    * tests assert on it. A frame with no partner is DROPPED, not buffered:
    * the car re-broadcasts STATE every 1500 ms anyway, so a stale command
    * sitting in a queue would be a command arriving seconds late.
+   *
+   * The size cap is the DIRECTION's cap, not one number for both: see
+   * LIMITS.maxBytesCarToController / maxBytesControllerToCar.
    */
   forward(
     handle: PeerHandle,
     frame: string
   ): "forwarded" | "queued" | "dropped-oversized" | "dropped-unpaired" {
     const bytes = frame.length;
-    if (bytes > LIMITS.maxFrameBytes) {
+    const cap =
+      handle.role === "car" ? LIMITS.maxBytesCarToController : LIMITS.maxBytesControllerToCar;
+    if (bytes > cap) {
       handle.dropped.oversized += 1;
       return "dropped-oversized";
     }
@@ -549,6 +562,44 @@ export function parsePingEcho(frame: string, nowMs: number): number | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * The control event name in a frame, or null when it is not a control frame
+ * with a usable payload.
+ *
+ * `isControl` is checked first, so a car line can never reach the JSON parse —
+ * the grammar lock is not "we would recognise it if we saw it", it is "we do
+ * not look".
+ */
+export function parseControlEvent(frame: string): string | null {
+  if (!isControl(frame)) return null;
+  try {
+    const payload = JSON.parse(frame.slice(RELAY_CONTROL_PREFIX.length)) as RelayControlPayload;
+    return typeof payload.ev === "string" && payload.ev.length > 0 ? payload.ev : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Does this control event CROSS the wire, or is it the relay's to refuse?
+ *
+ * THE RULE, and the bug it fixes: the relay ORIGINATES nothing but
+ * `hello-required` and `paired`. Everything a client sends is either a car
+ * line (forwarded) or a control frame, and of those only the latency pair is
+ * forwarded — `ping` from the controller to the car, `ping-echo` back. Every
+ * other control event is refused BY NAME, so a mismatched client build fails
+ * loudly instead of hanging.
+ *
+ * An earlier draft had the relay ANSWER a controller's ping with its own echo,
+ * which was wrong twice over: the controller would have measured the relay's
+ * own latency and reported it as the car's, and the car's real echo — the whole
+ * point of Phase 4's latency row — was refused as an unknown control frame.
+ * The relay is a pipe. It does not terminate a latency measurement.
+ */
+export function relayForwardsControl(ev: string): boolean {
+  return ev === "ping" || ev === "ping-echo";
 }
 
 // =====================================================================

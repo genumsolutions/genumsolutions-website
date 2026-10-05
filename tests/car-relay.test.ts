@@ -7,10 +7,12 @@ import {
   controlPing,
   controlPingEcho,
   isControl,
+  parseControlEvent,
   parseEnrollment,
   parseHello,
   parsePing,
   parsePingEcho,
+  relayForwardsControl,
   sha256Hex,
   tokenDigest,
   tokenDigestInput,
@@ -402,17 +404,65 @@ describe("frame forwarding", () => {
     expect(car.wireFrames).toEqual(["SPD180"]);
   });
 
-  it("drops a frame longer than the car can accept, and counts it", async () => {
+  it("drops a phone command longer than the car can accept, and counts it", async () => {
+    const hub = await hubWith();
+    const car = fakePeer("car");
+    const phone = fakePeer("phone");
+    await hub.join(helloCar(), car.peer);
+    const phoneHandle = await hub.join(helloController(), phone.peer);
+
+    // ModeManager copies into a 128-byte buffer, so anything past that is
+    // already truncated by the firmware.
+    expect(hub.forward(phoneHandle, "X".repeat(LIMITS.maxBytesControllerToCar + 1))).toBe(
+      "dropped-oversized"
+    );
+    expect(car.wireFrames).toEqual([]);
+    // Counted on the SENDER's handle: the phone's frame is the oversized one,
+    // and the car is the innocent party here.
+    expect(hub.stats()[0]?.controllerDropped?.oversized).toBe(1);
+  });
+
+  it("carries a STATE line far longer than a command, because the car builds 448", async () => {
+    // THE REGRESSION THIS ROW EXISTS FOR. The cap used to be one number (128)
+    // for both directions, justified as "handleCommand copies into 128 bytes" —
+    // which is true of the phone's COMMANDS and false of the car's OUTPUT.
+    // Meanwhile the car's own builders say otherwise: STATE into 448
+    // (ModeManager.cpp:485), NETW into 200, SCAN into 320. So every honest
+    // state frame was dropped as oversized and the phone paired into silence.
+    //
+    // These are the real shapes, not invented ones: a 32-char SSID, a different
+    // 32-char SSID being switched to (WANT=), the AP id, the LAN IP and the
+    // board id — which is what the car emits once it has joined a router.
     const hub = await hubWith();
     const car = fakePeer("car");
     const phone = fakePeer("phone");
     const carHandle = await hub.join(helloCar(), car.peer);
     await hub.join(helloController(), phone.peer);
 
-    // ModeManager copies into a 128-byte buffer, so anything past that is
-    // already truncated by the firmware.
-    expect(hub.forward(carHandle, "X".repeat(LIMITS.maxFrameBytes + 1))).toBe("dropped-oversized");
-    expect(phone.wireFrames).toEqual([]);
+    const state =
+      "STATE;MODE=4WD4M;SPD=150;TRIM=0;STATUS=Stopped;SSID=TP-Link_9F2C_LivingRoom;" +
+      "WANT=TP-Link_9F2C_LivingRoom_5G;AP=4WDCar_Wifi;IP=192.168.0.107;ID=A1B2C3D4E5F6\n";
+    expect(state.length).toBeGreaterThan(128);
+    expect(state.length).toBeLessThanOrEqual(LIMITS.maxBytesCarToController);
+    expect(hub.forward(carHandle, state)).toBe("forwarded");
+    expect(phone.wireFrames).toEqual([state]);
+
+    // A full REPLY= (the router-registry list rides STATE, up to 191 bytes) and
+    // a scan line are the two shapes most likely to cross 128 in the wild.
+    const withReply = `STATE;MODE=4WD4M;SPD=0;TRIM=0;STATUS=Stopped;REPLY=ROUTERS;ADDED;${"A".repeat(150)}\n`;
+    expect(withReply.length).toBeGreaterThan(128);
+    expect(hub.forward(carHandle, withReply)).toBe("forwarded");
+    expect(phone.wireFrames).toHaveLength(2);
+
+    const scan = `SCAN;${"B".repeat(30)},-60,1;${"C".repeat(30)},-70,0;${"D".repeat(30)},-55,0;${"E".repeat(30)},-80,1\n`;
+    expect(scan.length).toBeGreaterThan(128);
+    expect(hub.forward(carHandle, scan)).toBe("forwarded");
+    expect(phone.wireFrames).toHaveLength(3);
+
+    // Still capped: the car must not be able to stream unbounded frames either.
+    expect(hub.forward(carHandle, "X".repeat(LIMITS.maxBytesCarToController + 1))).toBe(
+      "dropped-oversized"
+    );
     expect(hub.stats()[0]?.carDropped?.oversized).toBe(1);
   });
 
@@ -543,6 +593,55 @@ describe("grammar lock (FIN-23/24)", () => {
   it("does not mistake an echo for a ping, or a ping for an echo", () => {
     expect(parsePing(controlPingEcho(BOARD, 1000))).toBeNull();
     expect(parsePingEcho(controlPing(BOARD, 1000), 1250)).toBeNull();
+  });
+
+  // ---- the latency pair, end to end through the hub.
+  //
+  // THE REGRESSION THESE ROWS EXIST FOR: the relay used to ANSWER a
+  // controller's ping with its own echo instead of forwarding it, and to refuse
+  // the car's `ping-echo` as an unknown control frame. So a phone measured the
+  // RELAY's latency and reported it as the car's, and the one number Phase 4's
+  // bench row depends on could never have existed. The relay is a pipe: it
+  // forwards the pair and originates nothing (bar `hello-required`/`paired`).
+  it("relays the latency pair verbatim, in both directions", async () => {
+    const hub = await hubWith();
+    const car = fakePeer("car");
+    const phone = fakePeer("phone");
+    const carHandle = await hub.join(helloCar(), car.peer);
+    const phoneHandle = await hub.join(helloController(), phone.peer);
+
+    const ping = controlPing(BOARD, 1000);
+    expect(hub.forward(phoneHandle, ping)).toBe("forwarded");
+    // `sent`, not `wireFrames`: a control frame is not a car line, and
+    // wireFrames deliberately filters those out.
+    expect(car.sent).toEqual([ping]);
+
+    const echo = controlPingEcho(BOARD, 1000);
+    expect(hub.forward(carHandle, echo)).toBe("forwarded");
+    expect(phone.sent).toEqual([echo]);
+    expect(parsePingEcho(phone.sent[0]!, 1250)).toBe(250);
+  });
+
+  it("names the only two control events the relay will carry", () => {
+    expect(relayForwardsControl("ping")).toBe(true);
+    expect(relayForwardsControl("ping-echo")).toBe(true);
+    // Everything else is the relay's to refuse by name, so a mismatched client
+    // build fails loudly instead of hanging on a silently-dropped frame.
+    for (const ev of ["paired", "hello-required", "refused", "link-down", "lagging", "enrolled"]) {
+      expect(relayForwardsControl(ev)).toBe(false);
+    }
+  });
+
+  it("reads a control event only out of a control frame", () => {
+    expect(parseControlEvent(controlPing(BOARD, 1))).toBe("ping");
+    expect(parseControlEvent(`${RELAY_CONTROL_PREFIX}{"ev":"paired"}`)).toBe("paired");
+    expect(parseControlEvent(`${RELAY_CONTROL_PREFIX}{}`)).toBeNull();
+    expect(parseControlEvent(`${RELAY_CONTROL_PREFIX}{"ev":""}`)).toBeNull();
+    expect(parseControlEvent(`${RELAY_CONTROL_PREFIX}not json`)).toBeNull();
+    // The grammar lock again: a car line never reaches the JSON parse.
+    for (const line of ["STATE;speed=1", "REQ_STATE", "F", "PING;t=1"]) {
+      expect(parseControlEvent(line)).toBeNull();
+    }
   });
 
   it("never parses a car line as a ping, even a NUL-free one that looks close", () => {

@@ -37,12 +37,11 @@ import {
   RELAY_PROTOCOL_VERSION,
   RelayHub,
   control,
-  controlPingEcho,
   isControl,
+  parseControlEvent,
   parseEnrollment,
   parseHello,
-  parsePing,
-  parsePingEcho,
+  relayForwardsControl,
   tokenDigest,
   type PeerHandle,
   type RelayPeer,
@@ -262,23 +261,28 @@ function wire(socket: WebSocket, jwt: string | null): void {
       return;
     }
 
-    // ---- ping round trip (the latency sample the Phase 4 bench row needs).
-    //      The CAR echoes a ping; the CONTROLLER reads the echo and measures.
+    // ---- control plane, after pairing.
+    //
+    // The relay ORIGINATES two frames (`hello-required`, `paired`) and forwards
+    // two more (the latency pair). It does not answer a ping with its own echo:
+    // doing that measures the relay and calls it the car, and the car's real
+    // echo then arrives as an unknown control frame and is refused. The rule
+    // lives in relay-core so it is testable on a laptop — see
+    // relayForwardsControl().
     if (isControl(raw)) {
-      if (joined.role === "car") {
-        const ping = parsePing(raw);
-        if (ping !== null) {
-          peer.send(controlPingEcho(joined.boardIdHex, ping));
-          return;
-        }
-      } else {
-        // A controller that receives an echo is measuring; nothing to do here.
-        if (parsePingEcho(raw, Date.now()) !== null) return;
+      const ev = parseControlEvent(raw);
+      if (ev && relayForwardsControl(ev)) {
+        if (handle) hub.forward(handle, raw);
+        return;
       }
-      // Unknown control traffic gets a refusal instead of silence, so a
-      // mismatched client build fails loudly rather than hanging.
+      // Anything else is refused by name rather than ignored, so a mismatched
+      // client build fails loudly instead of hanging.
       peer.send(
-        control({ ev: "refused", boardIdHex: joined.boardIdHex, detail: "unknown control frame" })
+        control({
+          ev: "refused",
+          boardIdHex: joined.boardIdHex,
+          detail: ev ? `control frame not relayed: ${ev}` : "unreadable control frame",
+        })
       );
       return;
     }
