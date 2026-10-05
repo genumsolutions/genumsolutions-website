@@ -9,15 +9,13 @@ restore, NOT a mirror, so it will fall behind `main` as new work lands — re-sy
 `git push origin main:dev` whenever the owner wants a fresh restore point).
 CI: `ci.yml` on `main` · `sync-app-fallback.yml` on `main` + 6h cron.
 
-> •. **2026-10-05 — U-94 PHASE 1 (the Internet-method relay) WRITTEN LOCALLY, NOT DEPLOYED, and two
-> defects were found in it before it could ever reach hardware.** The owner's "do everything that
-> does not need hardware" released U-94 Phase 1; the Q1/Q2 rulings are in
-> `guide/PLAN-2026-10-04-U94-INTERNET-METHOD-DESIGN.md` §6.1–6.2. New in this round, commit
-> **`762366f`** (local, not pushed): `supabase/functions/car-relay/relay-core.ts` (the relay as a PURE, import-free module so
+> •. **2026-10-05 — U-94 PHASE 1 (the Internet-method relay) COMMITTED, PUSHED, CI GREEN, NOT DEPLOYED — and THREE defects were found in it before it could ever reach hardware.** The owner's "do everything that does not need hardware" released U-94 Phase 1; the Q1/Q2 rulings are in
+> `guide/PLAN-2026-10-04-U94-INTERNET-METHOD-DESIGN.md` §6.1–6.2. New in this round: `supabase/functions/car-relay/relay-core.ts` (the relay as a PURE, import-free module so
 > the same rules run in Deno and in vitest), `supabase/functions/car-relay/index.ts` (the Edge
 > Function wiring), `tests/car-relay.test.ts` (**50 tests** — no network, no Supabase, no car),
-> `supabase/migrations/20261005130000_relay_token_digest.sql`, and an advisory `deno check` job in
-> `ci.yml`.
+> `supabase/migrations/20261005130000_relay_token_digest.sql`, and a `deno check` job in
+> `ci.yml`. **Pushed `641e882..254aa26`** — `762366f` (the relay), `ba763e3` (this entry), `c6ee9aa` +
+> `495bae4` (F-73), `254aa26` (the Deno job made blocking).
 > **The relay is a byte pipe**: pair two sockets by `boardIdHex`, forward frames, store NOTHING
 > about car state. Its own control frames are `\x00relay` + JSON, so it _cannot_ emit car grammar
 > even by accident (FIN-23/24 lock; four separate rounds of bugs in this project came from
@@ -32,14 +30,23 @@ CI: `ci.yml` on `main` · `sync-app-fallback.yml` on `main` + 6h cron.
 > anyone who has claimed the unit, so a column there hands the token's verifier to a phone. It is
 > now its own table with RLS enabled and **no policies** (only the service role reaches it) plus
 > `revoke all` from anon/authenticated.
+> **Defect 3 (F-73) — CI's own secret scan flagged the test fixture, twice.** `const TOKEN =
+"<32 hex>"` is `generic-api-key` (entropy 4.0). `repeat(2)` over a 16-hex literal was still
+> matched, because the rule only needs 16+ of `[a-z0-9/+._-]` within reach of a name containing
+> TOKEN and does not care what follows the quote. The fixture is now `"a".repeat(32)` — still 32
+> lowercase hex, still rejected when uppercased or lengthened. **No `tests/**` allowlist**, on
+> purpose: that would also hide a real key pasted into a test later.
 > Also added: `POST /car-relay/enroll` — the only writer of a digest, since the pepper is an
 > edge-function secret — gated on signed-in + "this account has claimed that car"; health is
 > authenticated (which board ids are online is fleet information); the ping/echo pair moved into the
 > testable core; distinct WS close codes per refusal reason.
-> Gates: **tsc 0 · vitest 281/281 (23 files) · eslint 0 · prettier clean · `next build` green.**
+> Gates: **tsc 0 · vitest 281/281 (23 files) · eslint 0 · prettier clean · `next build` green**, and
+> CI run **`37282979846` green on all three jobs** — `Quality checks` (typecheck, lint, unit tests,
+> gitleaks), `Production build`, and `Edge function typecheck (car-relay)`, which ran advisory for
+> exactly one clean run and then **lost `continue-on-error`** (`254aa26`), so it blocks from now on.
 > **NOT deployed, NOT applied, NOT device-tested** — there is no Deno and no Supabase CLI on this
-> bench, and `tsconfig` excludes `supabase/functions`, so nothing local type-checks `index.ts`
-> (hence the advisory CI job). Owner steps are listed in the plan §6.2.
+> bench, and `tsconfig` excludes `supabase/functions`, so the Deno CI job is the only thing that has
+> ever type-checked `index.ts`. Owner steps are listed in the plan §6.2.
 
 > •. **2026-10-01 → 10-04 — DEVICE REGISTRY rounds, written up here for the first time (they were
 > committed and pushed but never recorded in any ledger; git is the source).** `5c4558f` registry +
