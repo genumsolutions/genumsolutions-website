@@ -89,10 +89,10 @@ jobs:
     # fails at runtime with nothing in CI red. This job is the only thing that
     # type-checks it.
     #
-    # continue-on-error is DELIBERATE and temporary: this bench has no Deno, so
-    # the first clean run has not been seen. Remove this line once it has, and
-    # treat a failure here as a real failure from then on.
-    continue-on-error: true
+    # It was advisory (continue-on-error) for exactly one run, because this
+    # bench has no Deno and an unproven gate is not a gate. First clean run on
+    # 2026-10-05 (run 37282380295, 495bae4): green. It now BLOCKS, and a
+    # failure here is a real failure - index.ts compiles nowhere else.
     steps:
       - uses: actions/checkout@v5
 
