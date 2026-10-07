@@ -4,6 +4,7 @@ import {
   RELAY_CONTROL_PREFIX,
   RELAY_PROTOCOL_VERSION,
   RelayHub,
+  boardIdFromUniqueId,
   controlPing,
   controlPingEcho,
   isControl,
@@ -152,6 +153,47 @@ describe("hello validation", () => {
   it("refuses malformed JSON rather than throwing", () => {
     expect(parseHello("{not json")).toEqual({ ok: false, error: "hello is not valid JSON" });
     expect(parseHello(42 as unknown as string).ok).toBe(false);
+  });
+});
+
+// ------------------------------------------------- claim loader (U-95 Phase 5)
+
+describe("claim-loader unique_id pattern (loadClaimedDigests' seam)", () => {
+  // THE DEFECT THIS BLOCK EXISTS FOR: index.ts parsed `devices.unique_id`
+  // with /^fw:([0-9A-F]{12})$/ while the firmware writes SIX — so
+  // loadClaimedDigests() would have returned an EMPTY map and every
+  // legitimate car would have been refused as `unclaimed car`. F-75 recorded
+  // the relay-core half as fixed; the loader never got the fix, and the
+  // edge-relay CI job only type-checks, so two individually well-typed
+  // regexes reconciled happily. The pattern now lives in relay-core beside
+  // BOARD_ID_RE and index.ts imports it — these tests run the LOADER's
+  // pattern against the firmware's real format.
+  it("extracts the firmware's real 6-char id", () => {
+    // `982FF4` — the bench car: MAC 08:b6:1f:98:2f:f4 → efuseMac & 0xFFFFFF
+    // → `%06X` (WebServerComm.cpp:38-43). A real id, not a made-up shape.
+    expect(boardIdFromUniqueId("fw:982FF4")).toBe("982FF4");
+  });
+
+  it("refuses every shape the firmware does not print", () => {
+    expect(boardIdFromUniqueId("fw:1A2B3C4D5E6F")).toBeNull(); // 12 — the old loader's demand
+    expect(boardIdFromUniqueId("fw:1A2B3")).toBeNull(); // 5
+    expect(boardIdFromUniqueId("fw:1A2B3C4")).toBeNull(); // 7
+    expect(boardIdFromUniqueId("fw:a1b2c3")).toBeNull(); // lowercase: byte-exact, no normalising
+    expect(boardIdFromUniqueId("1A2B3C")).toBeNull(); // no `fw:` prefix
+    expect(boardIdFromUniqueId("fw:")).toBeNull();
+    expect(boardIdFromUniqueId(null)).toBeNull();
+    expect(boardIdFromUniqueId(42)).toBeNull();
+  });
+
+  it("hands the hub exactly a shape parseHello accepts", () => {
+    // Producer/consumer reconcile inside the relay: whatever the loader puts
+    // in the digest map must be a key a car's hello can match, or the map
+    // still misses for a car that exists.
+    const id = boardIdFromUniqueId("fw:982FF4");
+    expect(id).not.toBeNull();
+    expect(parseHello(helloCar({ boardIdHex: id! })).ok).toBe(true);
+    // …and the map key is the BARE id — a car never sends `fw:` in a hello.
+    expect(parseHello(helloCar({ boardIdHex: "fw:982FF4" })).ok).toBe(false);
   });
 });
 

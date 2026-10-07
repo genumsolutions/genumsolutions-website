@@ -36,6 +36,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
   RELAY_PROTOCOL_VERSION,
   RelayHub,
+  boardIdFromUniqueId,
   control,
   isControl,
   parseControlEvent,
@@ -93,9 +94,11 @@ async function loadClaimedDigests(): Promise<Map<string, string>> {
     const device = row.devices as { unique_id?: string } | null;
     const digest = typeof row.token_digest === "string" ? row.token_digest : "";
     // unique_id is stored as `fw:<boardIdHex>` — see register_device() and
-    // the app's resolveProfileKey. The relay keys on the bare board id.
-    const match = /^fw:([0-9A-F]{12})$/.exec(device?.unique_id ?? "");
-    if (match && digest) out.set(match[1]!, digest);
+    // the app's resolveProfileKey. The relay keys on the bare board id. The
+    // pattern is relay-core's CLAIM_UNIQUE_ID_RE (SIX — this line used to
+    // demand 12 and would have matched no car that exists; U-95 Phase 5).
+    const boardId = boardIdFromUniqueId(device?.unique_id);
+    if (boardId && digest) out.set(boardId, digest);
   }
   return out;
 }

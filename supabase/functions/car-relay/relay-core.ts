@@ -73,6 +73,29 @@ export const LIMITS = {
  * cannot grant access anyway: the peppered token is required as well. */
 const BOARD_ID_RE = /^[0-9A-F]{6}$/;
 
+/** `devices.unique_id` for a v2 car is `fw:<boardIdHex>` — the app's
+ *  resolveProfileKey (carProfileService.ts:39) prefixing the same 6 chars
+ *  BOARD_ID_RE accepts, which the firmware prints in `STATE;...;ID=` and on
+ *  its page. Same width, same refusal to normalise.
+ *
+ *  This is the pattern `loadClaimedDigests()` (index.ts) runs over every
+ *  claimed row, and it lives HERE — one line below the hello's pattern — for
+ *  one reason: it used to live in index.ts demanding **12**, where it matched
+ *  nothing, so the digest map came back empty and every real car would have
+ *  been refused as `unclaimed car` (U-95 Phase 5; the half of F-75 that never
+ *  propagated past relay-core, because the edge-relay CI job only type-checks
+ *  and two individually well-typed regexes reconcile happily). One producer's
+ *  format, both consumers, one file — so the next disagreement is a failing
+ *  test here, not a silently empty map there. */
+export const CLAIM_UNIQUE_ID_RE = /^fw:([0-9A-F]{6})$/;
+
+/** The bare board id inside a `devices.unique_id`, or null if it isn't one.
+ *  The map key must be the BARE id: the car's hello sends that, never `fw:`. */
+export function boardIdFromUniqueId(uniqueId: unknown): string | null {
+  const match = typeof uniqueId === "string" ? CLAIM_UNIQUE_ID_RE.exec(uniqueId) : null;
+  return match?.[1] ?? null;
+}
+
 /** Tokens are 32 hex chars (16 bytes). Fixed length so a truncated paste
  *  fails loudly instead of becoming a weak secret. */
 const TOKEN_RE = /^[0-9a-f]{32}$/;
