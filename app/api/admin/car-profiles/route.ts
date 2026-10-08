@@ -1,6 +1,51 @@
 import { NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase-service";
-import { isAdminRequest } from "@/lib/admin";
+import { createServiceClient } from "../../../../lib/supabase/server";
+import { isAdminRequest } from "../../../../lib/admin";
+
+export async function GET(request: Request) {
+  if (!(await isAdminRequest())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const { searchParams } = new URL(request.url);
+    const profileKey = searchParams.get("profileKey");
+    const userId = searchParams.get("userId");
+
+    if (!profileKey && !userId) {
+      return NextResponse.json({ error: "profileKey or userId is required" }, { status: 400 });
+    }
+
+    const db = createServiceClient();
+
+    if (profileKey) {
+      const { data: profile, error } = await db
+        .from("car_profiles")
+        .select("*")
+        .eq("profile_key", profileKey)
+        .single();
+
+      if (error || !profile) {
+        return NextResponse.json({ error: "Car profile not found" }, { status: 404 });
+      }
+      return NextResponse.json({ profiles: [profile] });
+    } else if (userId) {
+      const { data: profiles, error } = await db
+        .from("car_profiles")
+        .select("*")
+        .eq("user_id", userId);
+
+      if (error) {
+        console.error("Failed to fetch car profiles:", error);
+        return NextResponse.json({ error: "Failed to load car profiles" }, { status: 500 });
+      }
+      return NextResponse.json({ profiles: profiles || [] });
+    }
+  } catch (error) {
+    console.error("Fetch car profiles failed:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
 
 export async function DELETE(request: Request) {
   if (!(await isAdminRequest())) {
@@ -37,11 +82,6 @@ export async function DELETE(request: Request) {
     if (filtered.length === savedRouters.length) {
       return NextResponse.json({ error: "Router not found in saved list" }, { status: 404 });
     }
-
-    const newSettings = {
-      ...settings,
-      saved_routers: filtered,
-    };
 
     const { error: updateError } = await db
       .from("car_profiles")
