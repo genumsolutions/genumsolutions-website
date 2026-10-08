@@ -9,6 +9,18 @@ restore, NOT a mirror, so it will fall behind `main` as new work lands — re-sy
 `git push origin main:dev` whenever the owner wants a fresh restore point).
 CI: `ci.yml` on `main` · `sync-app-fallback.yml` on `main` + 6h cron.
 
+> • **2026-10-08 — U-97: MIGRATION `20261008180000_device_crash_reports.sql` APPLIED + VERIFIED.**
+> The app now uploads each car's restart record (reset reason, boot/crash counts, last crash phase +
+> heap) to `public.device_crash_reports`, one row per connection-session snapshot. RLS: users
+> read/insert their own, `is_staff()` manages all, **anon may insert** (diagnostics must work without
+> an account). `device_id` resolves from `devices.unique_id = 'fw:<boardId>'`; `user_id` is null for
+> anon. **Applied 2026-10-08** to project `bkylfnlybtsujwzropru` via the Management API
+> (`POST /v1/projects/{ref}/database/query`, one statement per request — multi-statement bodies 413).
+> Verified: 24 columns / 4 indexes / 3 RLS policies, table empty, anon insert tested then cleaned up.
+> The access token used lives in `C:\bs\.env.local` (`SUPABASE_ACCESS_TOKEN`, gitignored, expires
+> ~2026-11-07). App side: `genumsolutions-app … services/crashReportService.ts`; see its
+> `TRACKS/NEXT-SESSION.md` §1.
+
 > •. **2026-10-05 (later) — U-94 PHASE 1 CONTRACT CORRECTED: THREE MORE DEFECTS, FOUND ONLY BY WRITING THE CAR SIDE. `40dac31`, PUSHED, CI GREEN, STILL NOT DEPLOYED.**
 > The relay had never had a car talk to it, which is exactly how three contract defects stayed green
 > across three suites. They are the reason F-75 exists.
