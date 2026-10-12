@@ -17,6 +17,7 @@ import { resolve } from "node:path";
 // U-44 (2026-09-26): Catalog split into three catalog tabs mirroring the
 // customer storefront — Electronic Products (/products), 3D Products
 // (/3d-printing), Projects (/projects).
+// U-R3 (2026-10-12): "System Logs" added — fleet crash reports + app logs.
 const ADMIN_TABS = [
   "Dashboard",
   "Orders",
@@ -25,6 +26,7 @@ const ADMIN_TABS = [
   "Projects",
   "Content",
   "Users",
+  "System Logs",
   "Settings",
 ];
 

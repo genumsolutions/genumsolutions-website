@@ -10,6 +10,7 @@ import {
   FileText,
   Users,
   Settings as SettingsIcon,
+  Terminal,
 } from "lucide-react";
 import { tabActive, tabBase, tabInactive } from "../lib/styles";
 import { isAdminRole } from "../lib/roles";
@@ -27,6 +28,7 @@ import AdminJournal from "./admin/AdminJournal";
 import AdminContent from "./admin/AdminContent";
 import AdminUsers from "./admin/AdminUsers";
 import AdminMessages from "./admin/AdminMessages";
+import AdminLogs from "./admin/AdminLogs";
 import AdminSettings from "./admin/AdminSettings";
 
 type Props = { initialProducts: Product[]; currentRole: "staff" | "admin" | "owner" };
@@ -42,6 +44,7 @@ const TAB_ICONS = {
   Projects: Package,
   Content: FileText,
   Users: Users,
+  "System Logs": Terminal,
   Settings: SettingsIcon,
 } as const;
 
@@ -124,6 +127,8 @@ export default function AdminPanel({ initialProducts, currentRole }: Props) {
             <AdminMessages setMessage={setMessage} canDelete={canDelete} />
           </>
         );
+      case "System Logs":
+        return <AdminLogs />;
       case "Settings":
         return <AdminSettings setMessage={setMessage} canDelete={canDelete} />;
     }

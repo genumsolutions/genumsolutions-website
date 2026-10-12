@@ -12,6 +12,7 @@ export const STATUSES = ["pending", "paid", "fulfilled", "cancelled"] as const;
 //   "Projects" → /projects (+ Pre-packaged Kits)
 // Order mirrors the app's AdminScreen (guide/ARCHITECTURE.md B-6). Each tab
 // carries its OWN import section, preset to its catalog (no cross-tab drift).
+// U-R3 (2026-10-12): "System Logs" added — fleet crash reports + app logs.
 export const TABS = [
   "Dashboard",
   "Orders",
@@ -20,6 +21,7 @@ export const TABS = [
   "Projects",
   "Content",
   "Users",
+  "System Logs",
   "Settings",
 ] as const;
 export type Tab = (typeof TABS)[number];

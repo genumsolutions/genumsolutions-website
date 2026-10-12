@@ -36,13 +36,13 @@ export const RELAY_CONTROL_PREFIX = "\x00relay";
 /** Hard caps. A runaway socket must not be able to exhaust the isolate. */
 export const LIMITS = {
   /** car -> controller. The car's own builders are the contract: STATE into a
-   *  448-byte buffer (`ModeManager.cpp:485`), NETW into 200, SCAN into 320. A
+   *  512-byte buffer (`ModeManager.cpp:531`), NETW into 200, SCAN into 320. A
    *  single 128-byte cap in BOTH directions was wrong in a way only the car side
    *  could reveal: an honest STATE line with a router name, an IP, a board id and
    *  a `REPLY=` is over 128 bytes, so the relay dropped every state frame it was
    *  built to carry and the phone paired successfully into silence. Caps are
    *  therefore PER DIRECTION, from what each end can actually accept. */
-  maxBytesCarToController: 448,
+  maxBytesCarToController: 512,
   /** controller -> car. `handleCommand()` copies into a 128-byte buffer, so a
    *  longer command is already truncated by the firmware; forwarding it wastes
    *  bytes and hides bugs. This is the cap that has to exist. */
