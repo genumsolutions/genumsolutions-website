@@ -2,8 +2,8 @@
 // car-relay — U-94 Phase 1. The Internet-method relay, as a Supabase Edge
 // Function.
 //
-//   Q1 RULING (recorded 2026-10-05, guide/PLAN-2026-10-04-U94-INTERNET-
-//   METHOD-DESIGN.md §6.1) = (a) Supabase Edge Function. The owner delegated
+//   Q1 RULING (recorded 2026-10-05, §6.1 of the U-94 Internet-method
+//   design) = (a) Supabase Edge Function. The owner delegated
 //   the choice and took the recommendation.
 //
 // WHAT THIS IS: a byte pipe. It pairs one car socket and one phone socket by

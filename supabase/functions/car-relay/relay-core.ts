@@ -6,8 +6,7 @@
 // The whole point is that the relay's pairing/auth/forwarding rules are
 // testable on a laptop with no Supabase project, no WSS server and no car.
 //
-// SCOPE — read before "improving" this (guide/PLAN-2026-10-04-U94-INTERNET-
-// METHOD-DESIGN.md §4):
+// SCOPE — read before "improving" this (U-94 Internet-method design §4):
 //   The relay is a dumb pipe. It pairs two sockets by car id, forwards bytes,
 //   and stores NOTHING. It does not parse the car's wire grammar, does not
 //   interpret STATE/CAPS, does not keep history, does not queue for retry.
