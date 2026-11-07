@@ -59,7 +59,7 @@ function loadServiceKey() {
 }
 
 const SUPABASE_URL =
-  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://bkylfnlybtsujwzropru.supabase.co";
+  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://jxgmbodzkmxanuwfaqxo.supabase.co";
 
 const rand = Math.random().toString(36).slice(2, 8);
 const EMAIL = `uxflow-${rand}@genumtest.invalid`;

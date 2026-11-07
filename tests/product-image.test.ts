@@ -9,7 +9,7 @@ describe("isStorageImage (W1 image conversion gate)", () => {
   it("accepts the shared Supabase product-images bucket URLs", () => {
     expect(
       isStorageImage(
-        "https://bkylfnlybtsujwzropru.supabase.co/storage/v1/object/public/product-images/abc-model.png"
+        "https://jxgmbodzkmxanuwfaqxo.supabase.co/storage/v1/object/public/product-images/abc-model.png"
       )
     ).toBe(true);
   });
@@ -21,11 +21,11 @@ describe("isStorageImage (W1 image conversion gate)", () => {
   });
 
   it("rejects lookalikes: wrong path, http downgrade, non-supabase host", () => {
-    expect(isStorageImage("https://bkylfnlybtsujwzropru.supabase.co/not-storage/file.png")).toBe(
+    expect(isStorageImage("https://jxgmbodzkmxanuwfaqxo.supabase.co/not-storage/file.png")).toBe(
       false
     );
     expect(
-      isStorageImage("http://bkylfnlybtsujwzropru.supabase.co/storage/v1/object/public/a.png")
+      isStorageImage("http://jxgmbodzkmxanuwfaqxo.supabase.co/storage/v1/object/public/a.png")
     ).toBe(false);
     expect(isStorageImage("https://supabase.co.evil.test/storage/v1/object/public/a.png")).toBe(
       false

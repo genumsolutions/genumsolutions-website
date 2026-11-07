@@ -80,21 +80,21 @@ export type AppInfo = {
 //   node scripts/sync-app-fallback.mjs
 // (in this repo). bump-version.mjs in the app repo no longer touches this file.
 export const androidApp: AppInfo = {
-  version: "3.2.7",
-  versionCode: 60,
-  sizeLabel: "43 MB",
+  version: "3.2.9",
+  versionCode: 62,
+  sizeLabel: "41.6 MB",
   arch: "Android · 64-bit",
   apkUrl:
-    "https://bkylfnlybtsujwzropru.supabase.co/storage/v1/object/public/app-releases/genum-solutions-latest.apk",
+    "https://jxgmbodzkmxanuwfaqxo.supabase.co/storage/v1/object/public/app-releases/genum-solutions-latest.apk",
   latestApkUrl:
-    "https://bkylfnlybtsujwzropru.supabase.co/storage/v1/object/public/app-releases/genum-solutions-latest.apk",
+    "https://jxgmbodzkmxanuwfaqxo.supabase.co/storage/v1/object/public/app-releases/genum-solutions-latest.apk",
   releaseUrl:
-    "https://bkylfnlybtsujwzropru.supabase.co/storage/v1/object/public/app-releases/release.json",
+    "https://jxgmbodzkmxanuwfaqxo.supabase.co/storage/v1/object/public/app-releases/release.json",
   appsPagePath: "/app",
 };
 
 const RELEASE_URL =
-  "https://bkylfnlybtsujwzropru.supabase.co/storage/v1/object/public/app-releases/release.json";
+  "https://jxgmbodzkmxanuwfaqxo.supabase.co/storage/v1/object/public/app-releases/release.json";
 
 async function fetchReleaseManifest(): Promise<Record<string, unknown> | null> {
   try {

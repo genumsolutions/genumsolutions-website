@@ -19,7 +19,7 @@ import { fileURLToPath } from "node:url";
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const companyPath = resolve(rootDir, "lib/company.ts");
 const RELEASE_URL =
-  "https://bkylfnlybtsujwzropru.supabase.co/storage/v1/object/public/app-releases/release.json";
+  "https://jxgmbodzkmxanuwfaqxo.supabase.co/storage/v1/object/public/app-releases/release.json";
 
 async function main() {
   let manifest;
