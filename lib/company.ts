@@ -80,9 +80,9 @@ export type AppInfo = {
 //   node scripts/sync-app-fallback.mjs
 // (in this repo). bump-version.mjs in the app repo no longer touches this file.
 export const androidApp: AppInfo = {
-  version: "3.2.9",
-  versionCode: 62,
-  sizeLabel: "41.6 MB",
+  version: "3.3.0",
+  versionCode: 63,
+  sizeLabel: "41.7 MB",
   arch: "Android · 64-bit",
   apkUrl:
     "https://jxgmbodzkmxanuwfaqxo.supabase.co/storage/v1/object/public/app-releases/genum-solutions-latest.apk",
