@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { tabActive, tabBase, tabInactive } from "../lib/styles";
+import { isAdminRole } from "../lib/roles";
+import type { Product } from "../lib/content-store";
+import type { LucideIcon as LucideIconType } from "lucide-react";
 import {
   LayoutDashboard,
   ShoppingBag,
@@ -11,12 +15,9 @@ import {
   Users,
   Settings as SettingsIcon,
   Terminal,
+  UserCheck,
 } from "lucide-react";
-import { tabActive, tabBase, tabInactive } from "../lib/styles";
-import { isAdminRole } from "../lib/roles";
-import type { Product } from "../lib/content-store";
-import { TABS } from "./admin/admin-types";
-import type { Tab } from "./admin/admin-types";
+import { TABS, type Tab } from "./admin/admin-types";
 import AdminDashboard from "./admin/AdminDashboard";
 import AdminActivity from "./admin/AdminActivity";
 import AdminOrders from "./admin/AdminOrders";
@@ -30,13 +31,22 @@ import AdminUsers from "./admin/AdminUsers";
 import AdminMessages from "./admin/AdminMessages";
 import AdminLogs from "./admin/AdminLogs";
 import AdminSettings from "./admin/AdminSettings";
+import AdminUserLogs from "./admin/AdminUserLogs";
+import AdminProfileEntries from "./admin/AdminProfileEntries";
 
-type Props = { initialProducts: Product[]; currentRole: "staff" | "admin" | "owner" };
+type Props = {
+  initialProducts: Product[];
+  currentRole: "staff" | "admin" | "owner";
+};
 
 // U-44: tab ids must be URL/DOM-safe — "Electronic Products" → "electronic-products".
 const panelId = (name: string) => name.toLowerCase().replace(/\s+/g, "-");
 
-const TAB_ICONS = {
+type TabIconMap = {
+  [K in Tab]: LucideIconType;
+};
+
+const TAB_ICONS: TabIconMap = {
   Dashboard: LayoutDashboard,
   Orders: ShoppingBag,
   "Electronic Products": Cpu,
@@ -45,8 +55,10 @@ const TAB_ICONS = {
   Content: FileText,
   Users: Users,
   "System Logs": Terminal,
+  "User Logs": UserCheck,
+  "Profile Entries": Users,
   Settings: SettingsIcon,
-} as const;
+};
 
 export default function AdminPanel({ initialProducts, currentRole }: Props) {
   const [tab, setTab] = useState<Tab>("Dashboard");
@@ -129,6 +141,10 @@ export default function AdminPanel({ initialProducts, currentRole }: Props) {
         );
       case "System Logs":
         return <AdminLogs />;
+      case "User Logs":
+        return <AdminUserLogs />;
+      case "Profile Entries":
+        return <AdminProfileEntries />;
       case "Settings":
         return <AdminSettings setMessage={setMessage} canDelete={canDelete} />;
     }
@@ -139,10 +155,10 @@ export default function AdminPanel({ initialProducts, currentRole }: Props) {
       <div
         role="tablist"
         aria-label="Admin sections"
-        className="-mx-5 flex flex-wrap items-center gap-x-6 gap-y-1 border-b border-line px-5 pb-1 lg:mx-0 lg:px-0"
+        className="flex flex-wrap items-center gap-x-6 gap-y-1 border-b border-line px-5 pb-1 lg:mx-0 lg:px-0"
       >
-        {TABS.map((name, i) => {
-          const Icon = TAB_ICONS[name];
+        {TABS.map((name: Tab, i: number) => {
+          const Icon = TAB_ICONS[name] ?? LayoutDashboard;
           return (
             <button
               key={name}
@@ -169,8 +185,8 @@ export default function AdminPanel({ initialProducts, currentRole }: Props) {
         >
           {message}
         </p>
-      )}{" "}
-      {/* Swipeable track: 6 panels translate horizontally in sync.
+      )}
+      {/* Swipeable track: panels translate horizontally in sync.
           U-42 (2026-09-26), REVISED after owner regression report: the
           inactive panels get `h-0 overflow-hidden`, NOT `hidden` —
           display:none removes a panel from the flex row, which changes the
@@ -184,7 +200,7 @@ export default function AdminPanel({ initialProducts, currentRole }: Props) {
           className="flex transition-transform duration-300 ease-out"
           style={{ transform: `translateX(-${tabIndex * 100}%)` }}
         >
-          {TABS.map((name, i) => (
+          {TABS.map((name: Tab, i: number) => (
             <div
               key={name}
               role="tabpanel"

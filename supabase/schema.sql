@@ -1924,3 +1924,53 @@ $$;
 
 comment on function public.track_habit(text) is
   'U-47v2: atomic habit increment for the signed-in user (view|search|cart|order). Guests are ignored.';
+
+-- =====================================================================
+-- User activity log + profile-entry tables (2026-11-08)
+-- Admin-deletable per-user audit log and per-user profile entries, with
+-- each car/project profile surfaced inside the user's profile. These are
+-- intentionally separate from the existing profiles / car_profiles / activity_log
+-- tables so the new admin panels and API routes can own reads/deletes via the
+-- service role without touching the legacy tables.
+-- =====================================================================
+
+create table if not exists public.user_activity_log (
+  id uuid not null default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  action text not null default '',
+  entity_type text not null default '',
+  entity_id uuid,
+  details jsonb not null default '{}',
+  created_at timestamptz not null default now(),
+  primary key (id)
+);
+
+create table if not exists public.profile_entry_types (
+  id uuid not null default gen_random_uuid(),
+  name text not null default '',
+  description text not null default '',
+  created_at timestamptz not null default now(),
+  primary key (id)
+);
+
+insert into public.profile_entry_types (id, name, description)
+values ('00000000-0000-0000-0000-000000000001', 'car profile', 'A robot car profile saved under this user.')
+on conflict (id) do nothing;
+
+create table if not exists public.user_profile_entries (
+  id uuid not null default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  type_id uuid not null references profile_entry_types(id) on delete restrict,
+  title text not null default '',
+  body jsonb not null default '{}',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key (id)
+);
+
+alter table public.user_activity_log add constraint user_activity_log_user_id_fkey
+  foreign key (user_id) references auth.users(id) on delete cascade;
+alter table public.user_profile_entries add constraint user_profile_entries_user_id_fkey
+  foreign key (user_id) references auth.users(id) on delete cascade;
+alter table public.user_profile_entries add constraint user_profile_entries_type_id_fkey
+  foreign key (type_id) references profile_entry_types(id) on delete restrict;

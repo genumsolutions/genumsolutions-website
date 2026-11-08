@@ -4,6 +4,35 @@ export type { Product };
 
 export const PAGE_SIZE = 20;
 
+export type UserLogsPage = {
+  entries: {
+    id: string;
+    user_id: string | null;
+    action: string;
+    entity_type: string;
+    entity_id: string | null;
+    details: Record<string, unknown>;
+    created_at: string;
+  }[];
+  total: number;
+  page: number;
+  totalPages: number;
+};
+
+export type ProfileEntriesPage = {
+  entries: {
+    id: string;
+    profile_key: string;
+    user_id: string | null;
+    type_key: string;
+    value: string;
+    created_at: string;
+  }[];
+  total: number;
+  page: number;
+  totalPages: number;
+};
+
 export const STATUSES = ["pending", "paid", "fulfilled", "cancelled"] as const;
 
 // U-44 (2026-09-26, owner): the single Catalog tab becomes THREE tabs so the
@@ -22,6 +51,8 @@ export const TABS = [
   "Content",
   "Users",
   "System Logs",
+  "User Logs",
+  "Profile Entries",
   "Settings",
 ] as const;
 export type Tab = (typeof TABS)[number];

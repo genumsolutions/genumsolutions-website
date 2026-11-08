@@ -80,5 +80,6 @@ async function currentProfileRole(): Promise<string> {
     .select("role")
     .eq("id", data.user.id)
     .maybeSingle();
-  return String(profile?.role ?? "");
+  if (profile) return String(profile.role ?? "");
+  return "";
 }
