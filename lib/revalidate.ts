@@ -46,6 +46,9 @@ export function revalidatePrograms(): void {
 export function revalidateHomeContent(): void {
   safe("/");
 }
+export function revalidateContent(): void {
+  safe("/");
+}
 
 export function revalidateJournal(): void {
   safe("/journal");

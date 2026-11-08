@@ -244,4 +244,129 @@ export async function deleteCurriculumHighlight(id: string): Promise<void> {
   await createServiceClient().from("curriculum_highlights").delete().eq("id", id);
 }
 
+// Batch read helpers used by the Content admin route + Content tab.
+// They return the full admin shape (active + sortOrder) so the Content tab
+// editor can reconcile with /api/admin/settings. Public pages use
+// programs-store, which filters to active = true and returns lean shapes.
+export async function getTrainingPrograms(): Promise<ManagedTrainingProgram[]> {
+  const { data, error } = await createServiceClient()
+    .from("training_programs")
+    .select("*")
+    .order("sort_order", { ascending: true });
+  if (error || !data) return [];
+  return data.map((row) => ({
+    id: row.id ?? "",
+    title: row.title ?? "",
+    audience: row.audience ?? "",
+    description: row.description ?? "",
+    duration: row.duration ?? "",
+    outcome: row.outcome ?? "",
+    active: row.active !== false,
+    sortOrder: Number(row.sort_order ?? 0),
+  }));
+}
+
+export async function getPilotCostLines(): Promise<ManagedPilotCostLine[]> {
+  const { data, error } = await createServiceClient()
+    .from("pilot_cost_lines")
+    .select("*")
+    .order("sort_order", { ascending: true });
+  if (error || !data) return [];
+  return data.map((row) => ({
+    id: row.id ?? "",
+    item: row.item ?? "",
+    cost: row.cost ?? "",
+    note: row.note ?? "",
+    active: row.active !== false,
+    sortOrder: Number(row.sort_order ?? 0),
+  }));
+}
+
+export async function getCurriculumHighlights(): Promise<ManagedCurriculumHighlight[]> {
+  const { data, error } = await createServiceClient()
+    .from("curriculum_highlights")
+    .select("*")
+    .order("sort_order", { ascending: true });
+  if (error || !data) return [];
+  return data.map((row) => ({
+    id: row.id ?? "",
+    ageBand: row.age_band ?? "",
+    items: toStringArray(row.items),
+    active: row.active !== false,
+    sortOrder: Number(row.sort_order ?? 0),
+  }));
+}
+
+// -*- batch write helpers -*- //
+// Used by the Content admin route only. They coexist with the single-row
+// upserts above (used by /api/admin/settings + AdminRows) on purpose:
+//   - single-row helpers: one row per request, id generated server-side when
+//     missing, explicit per-row validation, called by AdminRows/AdminSettings.
+//   - batch helpers: many rows per request, caller-supplied ids only, used by
+//     the Content route which already validates shapes itself.
+// Both write the same tables; only one path is active for a given request.
+async function upsertTrainingProgram(row: Partial<ManagedTrainingProgram>): Promise<void> {
+  await createServiceClient()
+    .from("training_programs")
+    .upsert({
+      id: row.id ?? "",
+      title: row.title ?? "",
+      audience: row.audience ?? "",
+      description: row.description ?? "",
+      duration: row.duration ?? "",
+      outcome: row.outcome ?? "",
+      active: row.active !== false,
+      sort_order: Math.max(0, Math.round(Number(row.sortOrder) || 0)),
+      updated_at: new Date().toISOString(),
+    });
+}
+
+async function upsertPilotCostLine(row: Partial<ManagedPilotCostLine>): Promise<void> {
+  await createServiceClient()
+    .from("pilot_cost_lines")
+    .upsert({
+      id: row.id ?? "",
+      item: row.item ?? "",
+      cost: row.cost ?? "",
+      note: row.note ?? "",
+      active: row.active !== false,
+      sort_order: Math.max(0, Math.round(Number(row.sortOrder) || 0)),
+      updated_at: new Date().toISOString(),
+    });
+}
+
+async function upsertCurriculumHighlight(row: Partial<ManagedCurriculumHighlight>): Promise<void> {
+  await createServiceClient()
+    .from("curriculum_highlights")
+    .upsert({
+      id: row.id ?? "",
+      age_band: row.ageBand ?? "",
+      items: Array.isArray(row.items) ? row.items : [],
+      active: row.active !== false,
+      sort_order: Math.max(0, Math.round(Number(row.sortOrder) || 0)),
+      updated_at: new Date().toISOString(),
+    });
+}
+
+export async function saveTrainingPrograms(
+  rows: Array<Partial<ManagedTrainingProgram>>
+): Promise<void> {
+  if (!Array.isArray(rows) || rows.length === 0) return;
+  for (const row of rows) await upsertTrainingProgram(row);
+}
+
+export async function savePilotCostLines(
+  rows: Array<Partial<ManagedPilotCostLine>>
+): Promise<void> {
+  if (!Array.isArray(rows) || rows.length === 0) return;
+  for (const row of rows) await upsertPilotCostLine(row);
+}
+
+export async function saveCurriculumHighlights(
+  rows: Array<Partial<ManagedCurriculumHighlight>>
+): Promise<void> {
+  if (!Array.isArray(rows) || rows.length === 0) return;
+  for (const row of rows) await upsertCurriculumHighlight(row);
+}
+
 export { supabaseConfigured };
