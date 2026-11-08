@@ -5,7 +5,10 @@ import { checkRateLimit, clientIp } from "./lib/rate-limit";
 // Only refresh Supabase auth cookies on routes that need session state.
 // Public pages (/, /about, /products, etc.) skip the auth call entirely,
 // saving ~200-400 ms per page load.
-const AUTH_PATHS = ["/admin", "/account", "/checkout", "/login", "/auth", "/api"];
+// NOTE: /auth/callback intentionally excluded — the PKCE exchange sets its own
+// session cookies, and middleware getUser() churn during exchange can drop the
+// code-verifier cookie. Rate limits still apply to /api/* below.
+const AUTH_PATHS = ["/admin", "/account", "/checkout", "/login", "/api"];
 
 // Coarse, burst-style per-IP guard for the public / state-changing API routes.
 // These caps are intentionally high so they only trip on abuse / scrapers;

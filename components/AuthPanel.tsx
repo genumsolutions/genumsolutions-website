@@ -17,6 +17,30 @@ const callbackErrors: Record<string, string> = {
   config: "Google sign-in is not configured yet. Use email and password for now.",
 };
 
+// Supabase can send failures as URL hash params (e.g.
+// #error=server_error&error_description=Unable%20to%20exchange%20external%20code...)
+// instead of query params, so the server callback never sees them. Read both
+// places and surface the real description instead of a generic message.
+function readSupabaseError(): { code: string; description: string } | null {
+  try {
+    const search = new URLSearchParams(window.location.search);
+    const hash = new URLSearchParams(window.location.hash.slice(1));
+    const code = search.get("error") || hash.get("error") || hash.get("error_code") || "";
+    const description =
+      search.get("detail") || hash.get("error_description") || hash.get("error_code") || "";
+    if (!code && !description) return null;
+    let decoded = description;
+    try {
+      decoded = decodeURIComponent(description);
+    } catch {
+      decoded = description;
+    }
+    return { code, description: decoded };
+  } catch {
+    return null;
+  }
+}
+
 const GoogleIcon = (
   <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
     <path
@@ -80,10 +104,22 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [googleBusy, setGoogleBusy] = useState(false);
 
   useEffect(() => {
+    const supabaseError = readSupabaseError();
     const problem = new URLSearchParams(window.location.search).get("error");
-    if (problem && callbackErrors[problem]) setError(callbackErrors[problem]);
+    if (supabaseError?.description) {
+      const prefix =
+        problem === "config"
+          ? callbackErrors.config
+          : problem === "google" || supabaseError.code === "google"
+            ? callbackErrors.google
+            : "Sign-in failed.";
+      setError(`${prefix} Reason: ${supabaseError.description}`);
+    } else if (problem && callbackErrors[problem]) {
+      setError(callbackErrors[problem]);
+    }
   }, []);
 
   function switchMode(next: Mode) {
@@ -312,9 +348,12 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
                 </div>
                 <a
                   href="/api/auth/google"
+                  onClick={() => setGoogleBusy(true)}
+                  aria-disabled={googleBusy}
                   className="flex w-full items-center justify-center gap-3 rounded-lg border-2 border-line bg-white px-5 py-3.5 text-sm font-bold text-ink transition hover:border-navy hover:bg-navy-light"
                 >
-                  {GoogleIcon}Continue with Google
+                  {GoogleIcon}
+                  {googleBusy ? "Connecting…" : "Continue with Google"}
                 </a>
               </>
             )}

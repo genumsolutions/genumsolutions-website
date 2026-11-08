@@ -10,6 +10,17 @@ export async function GET(request: NextRequest) {
   const tokenHash = searchParams.get("token_hash");
   const type = searchParams.get("type");
 
+  // GoTrue can send failures as query params (error + error_description).
+  // Forward both to the login page so the real reason is visible instead of
+  // a generic "email link invalid" message.
+  const oauthError = searchParams.get("error");
+  if (oauthError && !code && !tokenHash) {
+    const detail = searchParams.get("error_description") || searchParams.get("error_code") || "";
+    console.error("[auth/callback] OAuth error from provider:", oauthError, detail);
+    const params = new URLSearchParams({ error: "google", detail });
+    return NextResponse.redirect(`${origin}/login?${params.toString()}`);
+  }
+
   // Only allow relative next paths to avoid open redirects.
   // Supabase double-encodes `next` inside redirect_to, so decode once first.
   let rawNext = searchParams.get("next") || "/reset-password";
@@ -33,6 +44,15 @@ export async function GET(request: NextRequest) {
         if (data.user?.id) await enforceSingleSession(data.user.id);
         return NextResponse.redirect(`${origin}${next}`);
       }
+      console.error(
+        "[auth/callback] code exchange failed:",
+        error?.name,
+        error?.message,
+        error?.status
+      );
+      const detail = error?.message || "";
+      const params = new URLSearchParams({ error: "google", detail });
+      return NextResponse.redirect(`${origin}/login?${params.toString()}`);
     } else if (
       tokenHash &&
       (type === "recovery" || type === "signup" || type === "invite" || type === "magiclink")
