@@ -52,16 +52,18 @@ export default function GaragePanel() {
   const load = useCallback(async () => {
     try {
       const res = await fetch("/api/user/devices");
-      if (res.status === 401) {
-        // Not an error state: the garage is a signed-in surface, so a
-        // visitor is simply not signed in. Showing a red box here would imply
-        // something is broken.
+      if (!res.ok) throw new Error("Could not load your devices.");
+      // The route answers guests with `authenticated: false` (not a 401), so
+      // the public /tools page never logs an auth error for a visitor who is
+      // simply not signed in. That is not an error state: the garage is a
+      // signed-in surface, so showing a red box would imply something broke.
+      const json = (await res.json()) as { authenticated?: boolean; devices?: Device[] };
+      if (!json.authenticated) {
         setSignedIn(false);
         setDevices([]);
+        setError(null);
         return;
       }
-      if (!res.ok) throw new Error("Could not load your devices.");
-      const json = (await res.json()) as { devices?: Device[] };
       setSignedIn(true);
       setDevices(json.devices ?? []);
       setError(null);

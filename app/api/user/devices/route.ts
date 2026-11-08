@@ -28,7 +28,12 @@ const MAX_NAME = 60;
 
 export async function GET() {
   const session = await getSessionUser();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // A guest is not an error here: this route backs a PUBLIC page (the Garage
+  // panel on /tools), and the other public read routes answer guests with
+  // 200 + a flag (/api/cart -> `authenticated`, /api/auth/session -> `user`).
+  // A 401 showed up as a console error for every anonymous visitor and turned
+  // the /tools page into a hard failure in the UX regression crawl.
+  if (!session) return NextResponse.json({ authenticated: false, devices: [], plannedModes: [] });
 
   const [devices, plannedFlags] = await Promise.all([
     getUserDevices(session.id),
@@ -36,6 +41,7 @@ export async function GET() {
   ]);
 
   return NextResponse.json({
+    authenticated: true,
     devices: devices.map((d) => ({
       ...d,
       // The pairing name matters: the OS lists "4WD CAR", not "4WD 4-Motor Car".
