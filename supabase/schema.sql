@@ -54,12 +54,18 @@ begin
   end if;
 end $$;
 
--- auto-create a profile whenever someone signs up
+-- auto-create a profile whenever someone signs up; the main account
+-- (genumsolutions@gmail.com) is created as owner on its very first signup,
+-- so admin access never depends on running the owner block below.
 create or replace function public.handle_new_user()
 returns trigger security definer set search_path = public as $$
 begin
-  insert into public.profiles (id, name)
-  values (new.id, coalesce(new.raw_user_meta_data->>'name', split_part(new.email, '@', 1)));
+  insert into public.profiles (id, name, role)
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data->>'name', split_part(new.email, '@', 1)),
+    case when lower(new.email) = 'genumsolutions@gmail.com' then 'owner' else 'customer' end
+  );
   return new;
 end;
 $$ language plpgsql;
@@ -288,17 +294,20 @@ alter table public.transactions enable row level security;
 --   is_owner()  — the single owner account (delete-user is owner-only)
 create or replace function public.is_staff()
 returns boolean language sql stable security definer set search_path = public as $$
-  select exists (select 1 from public.profiles where id = auth.uid() and role in ('staff','admin','owner'));
+  select lower(coalesce(auth.jwt() ->> 'email', '')) = 'genumsolutions@gmail.com'
+      or exists (select 1 from public.profiles where id = auth.uid() and role in ('staff','admin','owner'));
 $$;
 
 create or replace function public.is_admin()
 returns boolean language sql stable security definer set search_path = public as $$
-  select exists (select 1 from public.profiles where id = auth.uid() and role in ('admin','owner'));
+  select lower(coalesce(auth.jwt() ->> 'email', '')) = 'genumsolutions@gmail.com'
+      or exists (select 1 from public.profiles where id = auth.uid() and role in ('admin','owner'));
 $$;
 
 create or replace function public.is_owner()
 returns boolean language sql stable security definer set search_path = public as $$
-  select exists (select 1 from public.profiles where id = auth.uid() and role = 'owner');
+  select lower(coalesce(auth.jwt() ->> 'email', '')) = 'genumsolutions@gmail.com'
+      or exists (select 1 from public.profiles where id = auth.uid() and role = 'owner');
 $$;
 
 -- Admin-only aggregate so native clients can read cart totals without

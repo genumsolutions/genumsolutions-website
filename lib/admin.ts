@@ -1,14 +1,18 @@
 import { createClient, supabaseConfigured } from "./supabase/server";
-import { isAdminRole, isOwnerRole, isStaffRole, isValidAdminRole } from "./roles";
+import { isAdminRole, isOwnerEmail, isOwnerRole, isStaffRole, isValidAdminRole } from "./roles";
 import type { AdminRole } from "./roles";
 
-// Admin is any signed-in user whose profile row has role in ('staff','admin','owner').
+// Admin is any signed-in user whose profile row has role in ('staff','admin','owner'),
+// plus the owner email which is owner by definition (see OWNER_EMAIL).
 export async function getCurrentAdmin(): Promise<{ id: string; email: string } | null> {
   if (!supabaseConfigured()) return null;
   try {
     const supabase = createClient();
     const { data } = await supabase.auth.getUser();
     if (!data.user) return null;
+    if (isOwnerEmail(data.user.email)) {
+      return { id: data.user.id, email: data.user.email ?? "" };
+    }
     const { data: profile } = await supabase
       .from("profiles")
       .select("role")
@@ -63,11 +67,13 @@ export async function getCurrentUserRole(): Promise<AdminRole | null> {
   }
 }
 
-// Reads the signed-in user's profiles.role ('' when no user / no row).
+// Reads the signed-in user's effective role ('' when no user / no row).
+// The owner email counts as 'owner' even without a profiles row.
 async function currentProfileRole(): Promise<string> {
   const supabase = createClient();
   const { data } = await supabase.auth.getUser();
   if (!data.user) return "";
+  if (isOwnerEmail(data.user.email)) return "owner";
   if (!supabaseConfigured()) return "";
   const { data: profile } = await supabase
     .from("profiles")

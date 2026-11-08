@@ -11,14 +11,26 @@ export async function GET(request: NextRequest) {
   const next = /^\/[^/\\]/.test(rawNext) ? rawNext : "/account";
 
   try {
+    // Prefer the public site URL when set (Vercel preview/proxy hosts can
+    // otherwise produce an internal origin); fall back to request origin.
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "");
+    let callbackOrigin = origin;
+    if (siteUrl) {
+      try {
+        callbackOrigin = new URL(siteUrl).origin;
+      } catch {
+        callbackOrigin = origin;
+      }
+    }
     const { data, error } = await createClient().auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}`,
+        redirectTo: `${callbackOrigin}/auth/callback?next=${encodeURIComponent(next)}`,
         // Always show Google's account chooser so a user with several Google
         // accounts can pick the right one instead of dropping silently into a
         // previously signed-in session.
         queryParams: { prompt: "select_account" },
+        skipBrowserRedirect: false,
       },
     });
     if (error || !data.url) return NextResponse.redirect(`${origin}/login?error=google`);

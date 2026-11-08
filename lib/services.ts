@@ -1,4 +1,4 @@
-import { createServiceClient } from "./supabase/server";
+import { createServiceClient, supabaseConfigured } from "./supabase/server";
 
 export type Service = {
   id: string;
@@ -55,7 +55,13 @@ function serviceToRow(service: Partial<Service>): Record<string, unknown> {
 }
 
 export async function listServices(includeInactive = false): Promise<Service[]> {
-  const supabase = createServiceClient();
+  if (!supabaseConfigured()) return [];
+  let supabase;
+  try {
+    supabase = createServiceClient();
+  } catch {
+    return [];
+  }
   let query = supabase.from("services").select("*").order("sort_order");
   if (!includeInactive) query = query.eq("active", true);
   const { data } = await query;

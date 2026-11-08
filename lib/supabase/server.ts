@@ -2,12 +2,32 @@ import { cookies } from "next/headers";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { createClient as createRawClient, type SupabaseClient } from "@supabase/supabase-js";
 
+function isPlaceholder(value: string | undefined): boolean {
+  if (!value) return true;
+  const v = value.trim();
+  if (v.length < 40) return true;
+  return /replace[_-]/.test(v) || v.includes("your-project");
+}
+
 export function supabaseConfigured() {
-  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || isPlaceholder(url) || isPlaceholder(anon)) return false;
+  try {
+    const u = new URL(url);
+    if (u.protocol !== "https:" || !u.hostname.endsWith(".supabase.co")) return false;
+  } catch {
+    return false;
+  }
+  return true;
 }
 
 function assertConfigured() {
   if (!supabaseConfigured()) throw new Error("Supabase environment variables are not set.");
+}
+
+export function supabaseServiceConfigured() {
+  return supabaseConfigured() && !isPlaceholder(process.env.SUPABASE_SERVICE_ROLE_KEY);
 }
 
 // Cookie-bound client: enforces RLS for the signed-in user. Use in route handlers.
@@ -41,7 +61,10 @@ let serviceClient: SupabaseClient | null = null;
 // Service-role client: bypasses RLS. SERVER-ONLY - never import from client components.
 export function createServiceClient(): SupabaseClient {
   assertConfigured();
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY)
+  if (
+    !process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    isPlaceholder(process.env.SUPABASE_SERVICE_ROLE_KEY)
+  )
     throw new Error("SUPABASE_SERVICE_ROLE_KEY is not set.");
   if (!serviceClient) {
     serviceClient = createRawClient(

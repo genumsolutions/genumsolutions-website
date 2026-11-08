@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient, supabaseConfigured } from "../../../../lib/supabase/server";
 import { checkRateLimit, clientIp } from "../../../../lib/rate-limit";
 import { enforceSingleSession } from "../../../../lib/single-session";
-import { isValidAdminRole } from "../../../../lib/roles";
+import { isOwnerEmail, isValidAdminRole } from "../../../../lib/roles";
 
 // Native sign-in handoff for the mobile app.
 //
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     await enforceSingleSession(user.id);
 
     let name = user.email.split("@")[0];
-    let role = "customer";
+    let role: string = isOwnerEmail(user.email) ? "owner" : "customer";
     try {
       const { data: profile } = await supabase
         .from("profiles")
@@ -71,7 +71,8 @@ export async function POST(request: NextRequest) {
       if (profile?.name) name = profile.name;
       // U-24 (2026-09-24): staff/admin/owner are all admin-capable; the app's
       // admin gate mirrors the web header and recognizes all three.
-      if (profile && isValidAdminRole(profile.role)) role = profile.role;
+      if (!isOwnerEmail(user.email) && profile && isValidAdminRole(profile.role))
+        role = profile.role;
     } catch {
       // Profile lookup is best-effort; defaults above are fine.
     }

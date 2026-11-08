@@ -1,3 +1,12 @@
+// The sole owner account (role, not id). Its dashboard access must survive
+// even if the profiles row was created before the owner-promotion trigger
+// existed, so the server gates treat this address as owner on its own.
+export const OWNER_EMAIL = "genumsolutions@gmail.com";
+
+export function isOwnerEmail(email: unknown): boolean {
+  return typeof email === "string" && email.trim().toLowerCase() === OWNER_EMAIL;
+}
+
 // =====================================================================
 // roles.ts - pure, shared RBAC helpers for the accounts system.
 //

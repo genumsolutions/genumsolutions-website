@@ -11,8 +11,19 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get("type");
 
   // Only allow relative next paths to avoid open redirects.
-  const rawNext = searchParams.get("next") || "/reset-password";
-  const next = /^\/[^/\\]/.test(rawNext) ? rawNext : "/reset-password";
+  // Supabase double-encodes `next` inside redirect_to, so decode once first.
+  let rawNext = searchParams.get("next") || "/reset-password";
+  try {
+    const decoded = decodeURIComponent(rawNext);
+    if (decoded) rawNext = decoded;
+  } catch {
+    // Malformed encoding: keep raw, validation below will reject it.
+  }
+  // OAuth (code) sign-ins without an explicit next land on /account;
+  // email-link flows (token_hash) keep /reset-password as their default.
+  const fallback = code ? "/account" : "/reset-password";
+  if (!searchParams.get("next")) rawNext = fallback;
+  const next = /^\/[^/\\]/.test(rawNext) ? rawNext : fallback;
 
   try {
     const supabase = createClient();

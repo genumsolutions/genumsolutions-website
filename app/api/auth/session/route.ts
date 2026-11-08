@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient, getSessionUser, supabaseConfigured } from "../../../../lib/supabase/server";
-import { isValidAdminRole } from "../../../../lib/roles";
+import { isOwnerEmail, isValidAdminRole } from "../../../../lib/roles";
 
 // Lightweight session probe for the header pill: identity + role only,
 // no carts or messages, so every page load stays cheap.
@@ -10,7 +10,7 @@ export async function GET() {
     const user = await getSessionUser();
     if (!user) return NextResponse.json({ user: null });
     let name = user.email.split("@")[0];
-    let role = "customer";
+    let role = isOwnerEmail(user.email) ? "owner" : "customer";
     try {
       const { data: profile } = await createClient()
         .from("profiles")
@@ -22,7 +22,8 @@ export async function GET() {
       // the old `=== "admin"` check collapsed the owner account to "customer",
       // which hid the Admin dashboard link. Server RBAC still re-verifies
       // every action, so returning the true role only widens the header gate.
-      if (profile && isValidAdminRole(profile.role)) role = profile.role;
+      if (!isOwnerEmail(user.email) && profile && isValidAdminRole(profile.role))
+        role = profile.role;
     } catch {
       // Profile lookup is best-effort; defaults above are fine.
     }
