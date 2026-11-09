@@ -4,6 +4,15 @@ Next.js 14 (App Router, TypeScript) storefront for **GENUM SOLUTIONS PVT. LTD.**
 
 Live: https://genumsolutions-website.vercel.app · PAN 623676190
 
+## Operating docs
+
+- `docs/STORAGE_BUDGET.md` — free-tier limits, the image budget, and the
+  `images:optimize` / `images:verify` / `backup` commands.
+- `docs/ADMIN_COHERENCE.md` — the admin contract shared with the mobile app
+  (9 tabs, roles, data ownership, per-user profile management).
+- `scripts/ADMIN_DASHBOARD_STATE.md` — what the dashboard currently does and
+  why each decision was made.
+
 ## Project overview
 
 | Layer                 | Technology                                                                                                            |

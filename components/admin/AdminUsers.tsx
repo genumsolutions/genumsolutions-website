@@ -236,6 +236,264 @@ function UserRobotManager({
   );
 }
 
+// One project (car) profile row from car_profiles.
+type CarProfileRow = {
+  id: string;
+  profile_key: string;
+  car_name: string;
+  unique_id: string;
+  settings: Record<string, unknown>;
+  updated_at: string;
+};
+
+// Project profiles: the same car_profiles rows the app's build screen and the
+// website's CarProfilesPanel use, so an admin can rename a board, repair a
+// broken settings blob, or clear out an abandoned profile without touching the
+// customer's app. Staff can read the list; only admins get the write controls
+// (the API enforces the same rule).
+function UserCarProfileManager({
+  userId,
+  email,
+  setMessage,
+  canDelete,
+}: {
+  userId: string;
+  email: string;
+  setMessage: (msg: string) => void;
+  canDelete: boolean;
+}) {
+  const [profiles, setProfiles] = useState<CarProfileRow[] | null>(null);
+  const [error, setError] = useState("");
+  const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [draftName, setDraftName] = useState("");
+  const [draftJson, setDraftJson] = useState("");
+  const [newKey, setNewKey] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function load() {
+    setError("");
+    try {
+      const response = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "listCarProfiles", userId }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setError(data.error || "Could not load project profiles.");
+        setProfiles([]);
+        return;
+      }
+      setProfiles(data.profiles || []);
+    } catch {
+      setError("Could not reach the server.");
+      setProfiles([]);
+    }
+  }
+
+  useEffect(() => {
+    setProfiles(null);
+    setEditingKey(null);
+    void load();
+  }, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function send(
+    action: string,
+    extra: Record<string, unknown>,
+    successNote: string
+  ): Promise<boolean> {
+    setBusy(true);
+    try {
+      const response = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, userId, ...extra }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setMessage(body.error || "Action failed.");
+        return false;
+      }
+      setMessage(successNote);
+      await load();
+      return true;
+    } catch {
+      setMessage("Could not reach the server. Try again.");
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function startEdit(profile: CarProfileRow) {
+    setEditingKey(profile.profile_key);
+    setDraftName(profile.car_name);
+    setDraftJson(JSON.stringify(profile.settings ?? {}, null, 2));
+  }
+
+  async function saveEdit(profileKey: string) {
+    let settings: unknown;
+    try {
+      settings = JSON.parse(draftJson || "{}");
+    } catch {
+      setMessage("Settings must be valid JSON.");
+      return;
+    }
+    const ok = await send(
+      "upsertCarProfile",
+      { profileKey, carName: draftName, settings },
+      `Project profile saved for ${email}.`
+    );
+    if (ok) setEditingKey(null);
+  }
+
+  return (
+    <div className="mt-3 w-full rounded-xl border border-line bg-surface p-4">
+      <p className="text-xs font-black uppercase tracking-widest text-navy">Project profiles</p>
+      <p className="mt-1 text-xs text-slate-500">
+        Per-car rows from car_profiles — the profile key is the board&apos;s stable identity (
+        <span className="font-mono">fw:</span>, Bluetooth MAC,{" "}
+        <span className="font-mono">wifi:</span>). The app reads the same rows; no Wi-Fi passwords
+        are stored here.
+      </p>
+      {error ? (
+        <p className="mt-3 text-xs font-bold text-red-600" role="alert">
+          {error}{" "}
+          <button onClick={() => void load()} className="underline">
+            Retry
+          </button>
+        </p>
+      ) : profiles === null ? (
+        <p className="mt-3 text-xs text-slate-500" role="status">
+          Loading…
+        </p>
+      ) : profiles.length === 0 ? (
+        <p className="mt-3 text-xs text-slate-500">No project profiles for this user yet.</p>
+      ) : (
+        <ul className="mt-3 space-y-2">
+          {profiles.map((profile) => (
+            <li key={profile.id} className="rounded-lg border border-line bg-white p-3">
+              {editingKey === profile.profile_key ? (
+                <div>
+                  <input
+                    value={draftName}
+                    onChange={(e) => setDraftName(e.target.value)}
+                    placeholder="Profile display name"
+                    aria-label="Project profile name"
+                    className={`w-full text-xs ${inputClass}`}
+                  />
+                  <textarea
+                    value={draftJson}
+                    onChange={(e) => setDraftJson(e.target.value)}
+                    rows={6}
+                    aria-label="Project profile settings JSON"
+                    className={`mt-2 w-full font-mono text-xs ${inputClass}`}
+                  />
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      onClick={() => void saveEdit(profile.profile_key)}
+                      disabled={busy}
+                      className="rounded-full bg-navy px-4 py-1.5 text-xs font-black text-white disabled:opacity-60"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => setEditingKey(null)}
+                      className="rounded-full border border-line px-4 py-1.5 text-xs font-bold text-ink"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-bold text-ink">
+                      {profile.car_name || "Untitled profile"}{" "}
+                      <span className="font-mono font-normal text-slate-400">
+                        · {profile.profile_key}
+                      </span>
+                    </p>
+                    <p className="truncate font-mono text-[11px] text-slate-500">
+                      {Object.keys(profile.settings || {}).length} keys · updated{" "}
+                      {new Date(profile.updated_at).toLocaleDateString()}
+                      {profile.unique_id ? ` · id ${profile.unique_id}` : ""}
+                    </p>
+                  </div>
+                  <span className="flex gap-2">
+                    <button
+                      onClick={() => startEdit(profile)}
+                      disabled={!canDelete}
+                      title={
+                        canDelete ? undefined : "Only administrators can edit project profiles"
+                      }
+                      className="rounded-full border border-line px-3 py-1 text-xs font-bold text-navy transition hover:border-navy disabled:opacity-50"
+                    >
+                      Edit
+                    </button>
+                    {canDelete && (
+                      <button
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              `Delete the ${profile.car_name || profile.profile_key} profile for ${email}?`
+                            )
+                          )
+                            void send(
+                              "deleteCarProfile",
+                              { profileKey: profile.profile_key },
+                              "Project profile deleted."
+                            );
+                        }}
+                        className="rounded-full border border-red-200 px-3 py-1 text-xs font-bold text-red-600 transition hover:bg-red-50"
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </span>
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {canDelete && (
+        <div className="mt-3 flex flex-wrap items-end gap-2">
+          <label className="text-xs font-bold text-slate-500">
+            Add profile by key
+            <input
+              value={newKey}
+              onChange={(e) => setNewKey(e.target.value)}
+              placeholder="e.g. fw:1FB608"
+              aria-label="New project profile key"
+              className={`mt-1 w-48 text-xs ${inputClass}`}
+            />
+          </label>
+          <button
+            onClick={() => {
+              const profileKey = newKey.trim();
+              if (!profileKey) {
+                setMessage("Enter a profile key first.");
+                return;
+              }
+              void send(
+                "upsertCarProfile",
+                { profileKey, carName: profileKey, settings: {} },
+                `Project profile "${profileKey}" created for ${email}.`
+              );
+              setNewKey("");
+            }}
+            disabled={busy}
+            className="rounded-full border border-line px-4 py-2 text-xs font-bold text-navy transition hover:border-navy disabled:opacity-60"
+          >
+            Add profile
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AdminUsers({ setMessage, canDelete, currentRole }: Props) {
   const [userData, setUserData] = useState<
     UserPage & { users: (UserPage["users"][number] & { tier?: string })[] }
@@ -443,7 +701,7 @@ export default function AdminUsers({ setMessage, canDelete, currentRole }: Props
                       aria-expanded={expandedId === user.id}
                       className="border border-line px-3 py-1.5 text-xs font-bold text-ink transition hover:border-navy"
                     >
-                      {expandedId === user.id ? "Hide profiles" : "Robot profiles"}
+                      {expandedId === user.id ? "Hide profiles" : "Profiles"}
                     </button>
                     {currentRole === "owner" && (
                       <button
@@ -456,12 +714,20 @@ export default function AdminUsers({ setMessage, canDelete, currentRole }: Props
                   </span>
                 </div>
                 {expandedId === user.id && (
-                  <UserRobotManager
-                    userId={user.id}
-                    email={user.email}
-                    setMessage={setMessage}
-                    canDelete={canDelete}
-                  />
+                  <>
+                    <UserRobotManager
+                      userId={user.id}
+                      email={user.email}
+                      setMessage={setMessage}
+                      canDelete={canDelete}
+                    />
+                    <UserCarProfileManager
+                      userId={user.id}
+                      email={user.email}
+                      setMessage={setMessage}
+                      canDelete={canDelete}
+                    />
+                  </>
                 )}
               </li>
             ))}

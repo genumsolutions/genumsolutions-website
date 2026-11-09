@@ -20,7 +20,10 @@
     "seed:company": "tsx scripts/seed-company.ts",
     "db:apply": "tsx scripts/apply-schema.ts",
     "db:apply:seed": "tsx scripts/apply-schema.ts --seed",
-    "prepare": "husky"
+    "prepare": "husky",
+    "images:optimize": "tsx scripts/optimize-images.ts",
+    "backup": "tsx scripts/backup.ts",
+    "images:verify": "tsx scripts/verify-images.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",

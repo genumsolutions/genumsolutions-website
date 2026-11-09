@@ -90,6 +90,37 @@ Verified: inserting a car profile produced the entry (with `typeName` = `car pro
 and the log row; deleting it removed the entry and logged the deletion. Test rows
 were removed afterwards; three real entries remain from the backfill.
 
+## Coherence pass (2026-11-09, third)
+
+### Tabs merged: 11 -> 9
+
+`System Logs`, `User Logs` and `Profile Entries` answered the same question
+(what happened, and clear it out) but each cost its own click. They are now one
+**Logs** tab with three sections — Activity · Profiles · Crashes — on both
+clients. The panels were not rewritten: `AdminLogsHub` mounts the existing
+`AdminUserLogs`, `AdminProfileEntries` and `AdminLogs`, and the app's `LogsTab`
+mounts the existing three tab components. The app loads all four queries once
+on tab entry, so switching sections costs no extra requests.
+
+### Admins can now repair a user's project profiles
+
+`car_profiles` rows (the per-board profiles the build screen writes) are
+editable from **Users -> expand a user -> Project profiles** on both clients:
+rename, edit the settings JSON, create by profile key, delete. Staff can read;
+admin+ can write, which is what `20261109_admin_update_profiles.sql` adds to
+RLS (`admin insert` / `admin update` on `car_profiles` and
+`robot_user_settings`). The website actions live in
+`app/api/admin/users/route.ts` (`listCarProfiles`, `upsertCarProfile`,
+`deleteCarProfile`); the app calls Supabase directly with the same policies.
+
+### Image budget, enforced everywhere
+
+See `docs/STORAGE_BUDGET.md`. The bucket went from 23.56 MB to 3.26 MB
+(754 KB -> 104 KB average) and 63 product image references were verified to
+still resolve. New uploads are re-encoded before they are stored, on both the
+website (`lib/image-budget.ts`) and the edge import function
+(`prepareForStorage`), so the saving is permanent rather than a one-off cleanup.
+
 ## Still to confirm
 
 - The admin UI itself has not been exercised with a signed-in admin session from here. The published endpoints are live and gated (`401 {"error":"Unauthorized"}` without a session), and the underlying data path is verified, so what remains is a click-through in the live admin: `/admin` → **User Logs** and **Profile Entries**.

@@ -14,8 +14,7 @@ import {
   FileText,
   Users,
   Settings as SettingsIcon,
-  Terminal,
-  UserCheck,
+  ScrollText,
 } from "lucide-react";
 import { TABS, type Tab } from "./admin/admin-types";
 import AdminDashboard from "./admin/AdminDashboard";
@@ -29,10 +28,8 @@ import AdminJournal from "./admin/AdminJournal";
 import AdminContent from "./admin/AdminContent";
 import AdminUsers from "./admin/AdminUsers";
 import AdminMessages from "./admin/AdminMessages";
-import AdminLogs from "./admin/AdminLogs";
 import AdminSettings from "./admin/AdminSettings";
-import AdminUserLogs from "./admin/AdminUserLogs";
-import AdminProfileEntries from "./admin/AdminProfileEntries";
+import AdminLogsHub from "./admin/AdminLogsHub";
 
 type Props = {
   initialProducts: Product[];
@@ -54,9 +51,8 @@ const TAB_ICONS: TabIconMap = {
   Projects: Package,
   Content: FileText,
   Users: Users,
-  "System Logs": Terminal,
-  "User Logs": UserCheck,
-  "Profile Entries": Users,
+  // U-R5: the three monitoring tabs merged into one hub.
+  Logs: ScrollText,
   Settings: SettingsIcon,
 };
 
@@ -139,12 +135,8 @@ export default function AdminPanel({ initialProducts, currentRole }: Props) {
             <AdminMessages setMessage={setMessage} canDelete={canDelete} />
           </>
         );
-      case "System Logs":
-        return <AdminLogs />;
-      case "User Logs":
-        return <AdminUserLogs />;
-      case "Profile Entries":
-        return <AdminProfileEntries />;
+      case "Logs":
+        return <AdminLogsHub />;
       case "Settings":
         return <AdminSettings setMessage={setMessage} canDelete={canDelete} />;
     }

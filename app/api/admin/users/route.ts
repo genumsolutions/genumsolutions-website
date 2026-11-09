@@ -232,6 +232,83 @@ export async function POST(request: Request) {
     });
     return NextResponse.json({ ok: true });
   }
+  // --- Project (car) profiles ---------------------------------------------
+  // car_profiles rows are the per-user, per-car/project profiles the app and
+  // the website's CarProfilesPanel both read. Admins can tidy them up here:
+  // rename, repair the settings JSON, create one, or remove it. Staff can
+  // read (they need the context to answer a customer) but only admins write,
+  // which matches the "admin insert"/"admin update" RLS policies the app
+  // relies on when it talks to the same table with the user's own session.
+  if (action === "listCarProfiles") {
+    const db = createServiceClient();
+    const { data, error } = await db
+      .from("car_profiles")
+      .select("id, profile_key, car_name, unique_id, settings, wifi_history, updated_at")
+      .eq("user_id", userId)
+      .order("car_name", { ascending: true });
+    if (error)
+      return NextResponse.json({ error: "Could not load project profiles." }, { status: 500 });
+    return NextResponse.json({ profiles: data ?? [] });
+  }
+  if (action === "upsertCarProfile") {
+    if (!(await isAdminRequest()))
+      return NextResponse.json(
+        { error: "Only administrators can change project profiles." },
+        { status: 403 }
+      );
+    const profileKey = String(body?.profileKey || "").trim();
+    const carName = String(body?.carName || "").slice(0, 120);
+    const settings = body?.settings ?? {};
+    if (!profileKey || profileKey.length > 120)
+      return NextResponse.json({ error: "A valid profileKey is required." }, { status: 400 });
+    if (!settings || typeof settings !== "object" || Array.isArray(settings))
+      return NextResponse.json({ error: "Settings must be a JSON object." }, { status: 400 });
+    const db = createServiceClient();
+    const { error } = await db.from("car_profiles").upsert(
+      {
+        user_id: userId,
+        profile_key: profileKey,
+        car_name: carName || profileKey,
+        settings: settings as Record<string, unknown>,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id,profile_key" }
+    );
+    if (error)
+      return NextResponse.json({ error: "Could not save the project profile." }, { status: 500 });
+    await logActivity({
+      action: "user.car_profile_saved",
+      entityType: "user",
+      entityId: userId,
+      details: { profileKey, via: "admin" },
+    });
+    return NextResponse.json({ ok: true });
+  }
+  if (action === "deleteCarProfile") {
+    if (!(await isAdminRequest()))
+      return NextResponse.json(
+        { error: "Only administrators can delete project profiles." },
+        { status: 403 }
+      );
+    const profileKey = String(body?.profileKey || "").trim();
+    if (!profileKey)
+      return NextResponse.json({ error: "A profileKey is required." }, { status: 400 });
+    const db = createServiceClient();
+    const { error } = await db
+      .from("car_profiles")
+      .delete()
+      .eq("user_id", userId)
+      .eq("profile_key", profileKey);
+    if (error)
+      return NextResponse.json({ error: "Could not delete the project profile." }, { status: 500 });
+    await logActivity({
+      action: "user.car_profile_deleted",
+      entityType: "user",
+      entityId: userId,
+      details: { profileKey, via: "admin" },
+    });
+    return NextResponse.json({ ok: true });
+  }
   if (action === "deleteRobotSetting") {
     if (!(await isAdminRequest()))
       return NextResponse.json(

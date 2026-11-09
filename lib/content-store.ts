@@ -1,4 +1,5 @@
 import { localProducts } from "./catalog-data";
+import { clampGallery } from "./image-budget";
 import type { Product } from "./catalog";
 import { ROBOCAR_MODES as localRoBoModes, type RoboCarMode } from "./robo-car-catalog";
 import { createServiceClient, supabaseConfigured } from "./supabase/server";
@@ -148,7 +149,10 @@ export function productToRow(product: Product) {
     badge: product.badge || null,
     supplier: product.supplier || null,
     image_url: product.image || null,
-    gallery: product.gallery || [],
+    // Budget guard at the single write choke point: a product never stores
+    // more than IMAGE_BUDGET.maxImagesPerItem pictures, whatever the editor
+    // posted (see lib/image-budget.ts / docs/STORAGE_BUDGET.md).
+    gallery: clampGallery(product.gallery || []),
     import_meta: product.importMeta || {},
     updated_at: new Date().toISOString(),
   };

@@ -17,6 +17,12 @@ export const STATUSES = ["pending", "paid", "fulfilled", "cancelled"] as const;
 // Order mirrors the app's AdminScreen (guide/ARCHITECTURE.md B-6). Each tab
 // carries its OWN import section, preset to its catalog (no cross-tab drift).
 // U-R3 (2026-10-12): "System Logs" added — fleet crash reports + app logs.
+// U-R5 (2026-11-09): the three monitoring tabs (System Logs, User Logs,
+// Profile Entries) collapsed into ONE "Logs" tab with three sections. They
+// were already the same job — read what the fleet and its users did, and clear
+// rows out — spread over three tab strips that each cost a click to reach. The
+// panels themselves are unchanged and still mounted inside the hub, so nothing
+// was rewritten to make the merge.
 export const TABS = [
   "Dashboard",
   "Orders",
@@ -25,9 +31,7 @@ export const TABS = [
   "Projects",
   "Content",
   "Users",
-  "System Logs",
-  "User Logs",
-  "Profile Entries",
+  "Logs",
   "Settings",
 ] as const;
 export type Tab = (typeof TABS)[number];

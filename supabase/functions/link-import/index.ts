@@ -30,10 +30,21 @@
 // =====================================================================
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+// Pure-TypeScript image codec that runs on the edge runtime (no native deps).
+// Pinned: 1.3.0 is the last version published to deno.land/x.
+import { Image } from "https://deno.land/x/imagescript@1.3.0/mod.ts";
 
 const supabaseUrl = Deno.env.get("NEXT_PUBLIC_SUPABASE_URL") || Deno.env.get("SUPABASE_URL") || "";
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+// Free-tier storage budget (mirrors lib/image-budget.ts on the website and
+// docs/STORAGE_BUDGET.md in both repos): a source we refuse to download is
+// capped at 4 MB so the 256 MB / 150 s edge runtime cannot be pushed over by
+// one huge photo, and what we store is re-encoded to <=300 KB at <=1600 px.
 const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
+const MAX_STORED_BYTES = 300 * 1024;
+const MAX_STORED_EDGE = 1600;
+const STORE_QUALITY = 82;
+const MIN_STORE_QUALITY = 55;
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36";
 
@@ -1000,6 +1011,63 @@ async function downloadImage(
   }
 }
 
+/**
+ * Fit a downloaded image inside the storage budget before it is uploaded.
+ *
+ * The edge runtime has no sharp, so this decodes with imagescript (pure TS,
+ * works on Deno) and re-encodes to JPEG. Animated GIFs pass through untouched
+ * because flattening them to a single frame would silently change the product.
+ *
+ * Never throws: if a format cannot be decoded (AVIF, some WebP) the original
+ * is kept when it is already small, and rejected with a reason when it is not.
+ * That way an odd source degrades to "paste a different link", never to a
+ * half-written product row.
+ */
+async function prepareForStorage(img: {
+  bytes: Uint8Array;
+  contentType: string;
+  ext: string;
+}): Promise<{ bytes: Uint8Array; contentType: string; ext: string } | { error: string }> {
+  if (img.contentType === "image/gif") return img;
+  try {
+    const image = await Image.decode(img.bytes);
+    const longest = Math.max(image.width, image.height);
+    if (longest > MAX_STORED_EDGE) {
+      const scale = MAX_STORED_EDGE / longest;
+      image.resize(
+        Math.max(1, Math.round(image.width * scale)),
+        Math.max(1, Math.round(image.height * scale))
+      );
+    }
+    let quality = STORE_QUALITY;
+    let out = await image.encodeJPEG(quality);
+    while (out.byteLength > MAX_STORED_BYTES && quality > MIN_STORE_QUALITY) {
+      quality -= 9;
+      out = await image.encodeJPEG(quality);
+    }
+    if (out.byteLength > MAX_STORED_BYTES) {
+      // Quality alone was not enough (huge, noisy photo): step the dimensions
+      // down once at the floor quality before giving up.
+      image.resize(
+        Math.max(1, Math.round(image.width * 0.75)),
+        Math.max(1, Math.round(image.height * 0.75))
+      );
+      out = await image.encodeJPEG(MIN_STORE_QUALITY);
+    }
+    if (out.byteLength >= img.bytes.byteLength) return img;
+    return { bytes: new Uint8Array(out), contentType: "image/jpeg", ext: "jpg" };
+  } catch (error) {
+    console.warn("link-import could not re-encode image:", error);
+    if (img.bytes.byteLength <= MAX_STORED_BYTES) return img;
+    return {
+      error:
+        `That image is ${Math.round(img.bytes.byteLength / 1024)} KB and could not be ` +
+        `re-encoded; try a different link or upload the photo manually (limit ` +
+        `${Math.round(MAX_STORED_BYTES / 1024)} KB).`,
+    };
+  }
+}
+
 // ---------------- Main handlers ----------------
 
 /** Reason text for the admin, so a failure is never a silent dead end. */
@@ -1147,11 +1215,18 @@ async function runUploadImage(
       console.warn("link-import upload-image skip:", img.error);
       continue;
     }
-    const path = `${crypto.randomUUID()}-linkimport.${img.ext}`;
-    const { error: upErr } = await client.storage.from("product-images").upload(path, img.bytes, {
-      contentType: img.contentType,
-      upsert: false,
-    });
+    const stored = await prepareForStorage(img);
+    if ("error" in stored) {
+      console.warn("link-import upload-image skip:", stored.error);
+      continue;
+    }
+    const path = `${crypto.randomUUID()}-linkimport.${stored.ext}`;
+    const { error: upErr } = await client.storage
+      .from("product-images")
+      .upload(path, stored.bytes, {
+        contentType: stored.contentType,
+        upsert: false,
+      });
     if (upErr) {
       console.warn("link-import upload-image storage skip:", upErr.message);
       continue;
@@ -1229,11 +1304,18 @@ async function runCreate(body: Record<string, unknown>, client: ReturnType<typeo
       console.warn("link-import image skip:", img.error);
       continue;
     }
-    const path = `${crypto.randomUUID()}-${slugify(rawName)}.${img.ext}`;
-    const { error: upErr } = await client.storage.from("product-images").upload(path, img.bytes, {
-      contentType: img.contentType,
-      upsert: false,
-    });
+    const stored = await prepareForStorage(img);
+    if ("error" in stored) {
+      console.warn("link-import image skip:", stored.error);
+      continue;
+    }
+    const path = `${crypto.randomUUID()}-${slugify(rawName)}.${stored.ext}`;
+    const { error: upErr } = await client.storage
+      .from("product-images")
+      .upload(path, stored.bytes, {
+        contentType: stored.contentType,
+        upsert: false,
+      });
     if (upErr) {
       console.warn("link-import storage skip:", upErr.message);
       continue;
@@ -1402,10 +1484,12 @@ async function runBackfill(client: ReturnType<typeof createClient>, role: string
       for (const candidate of preview.images.slice(0, 8)) {
         const img = await downloadImage(candidate);
         if ("error" in img) continue;
-        const path = `${crypto.randomUUID()}-${slugify(name || "product")}.${img.ext}`;
+        const stored = await prepareForStorage(img);
+        if ("error" in stored) continue;
+        const path = `${crypto.randomUUID()}-${slugify(name || "product")}.${stored.ext}`;
         const { error: upErr } = await client.storage
           .from("product-images")
-          .upload(path, img.bytes, { contentType: img.contentType, upsert: false });
+          .upload(path, stored.bytes, { contentType: stored.contentType, upsert: false });
         if (upErr) continue;
         const storageUrl = `${supabaseUrl}/storage/v1/object/public/product-images/${path}`;
         if (!imageUrl) imageUrl = storageUrl;

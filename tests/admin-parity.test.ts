@@ -21,6 +21,9 @@ import { resolve } from "node:path";
 // U-R4 (2026-11-09): "User Logs" + "Profile Entries" added — server-rendered
 // panels backed by /api/admin/user-logs and /api/admin/profile-entries and by
 // the user_activity_log / user_profile_entries / profile_entry_types tables.
+// U-R5 (2026-11-09): "System Logs" + "User Logs" + "Profile Entries" merged
+// into one "Logs" tab (AdminLogsHub) with three sections — same panels, one
+// entry point. Both clients expose the identical 9-tab inventory.
 const ADMIN_TABS = [
   "Dashboard",
   "Orders",
@@ -29,9 +32,7 @@ const ADMIN_TABS = [
   "Projects",
   "Content",
   "Users",
-  "System Logs",
-  "User Logs",
-  "Profile Entries",
+  "Logs",
   "Settings",
 ];
 
