@@ -31,6 +31,33 @@ Live: https://genumsolutions-website.vercel.app · PAN 623676190
 - Cart persisted to **localStorage** for guests and **Supabase (`carts` table)** for signed-in users; quantities are clamped to live stock server-side on every save (replace semantics — no double counting).
 - Checkout with four payment flows; every payment event is written to an append-only **`transactions`** ledger.
 - Admin dashboard at `/admin` (session + `profiles.role = 'admin'` protected) with product CRUD, order status management, user role management, search, and pagination.
+
+### Admin Dashboard Structure (Nov 2026)
+
+The admin dashboard has 9 tabs, identical to the mobile app:
+
+| Tab                 | Path                 | Description                                                  |
+| ------------------- | -------------------- | ------------------------------------------------------------ |
+| Dashboard           | `/admin`             | Main dashboard overview                                      |
+| Orders              | `/admin/orders`      | Order management                                             |
+| Electronic Products | `/admin/products`    | Product catalog                                              |
+| 3D Products         | `/admin/3d-printing` | 3D printing catalog                                          |
+| Projects            | `/admin/projects`    | Project packages                                             |
+| Content             | `/admin/content`     | Services, journal, home copy                                 |
+| Users               | `/admin/users`       | User directory + car profiles + robot profiles (3 sections)  |
+| Logs                | `/admin/logs`        | System logs + user activity + fleet diagnostics (3 sections) |
+| Settings            | `/admin/settings`    | Company info (17 fields) + training programs + pilot costs   |
+
+### Users Tab — 3 Sections
+
+The **Users** tab has 3 sections:
+
+1. **User Directory** — Searchable user list with role/tier controls
+2. **Car Profiles** — Per-car profiles with distinguished identity fields: `profile_key`, `car_name`, `unique_id`, `settings`
+3. **Robot Profiles** — Per-robot settings with robot_code, telemetry_channel, parameters
+
+**Edit-button pattern**: Read-only by default → Edit reveals form → Save persists and locks → Cancel discards.
+
 - SEO: per-page metadata/OpenGraph, `sitemap.xml`, `robots.txt`, Organization JSON-LD, static prerendering with ISR.
 
 ### App-version contract (sibling `genumsolutions-app` repo)
