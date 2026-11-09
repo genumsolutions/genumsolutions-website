@@ -68,9 +68,7 @@ function UsersDirectory({
 
   const renderHeader = () => (
     <div className="mb-3">
-      <p className="text-xs font-black uppercase tracking-widest text-navy">
-        User Directory
-      </p>
+      <p className="text-xs font-black uppercase tracking-widest text-navy">User Directory</p>
       <p className="mt-1 text-xs text-slate-500">
         Search and manage user accounts and their basic information.
       </p>
@@ -104,7 +102,9 @@ function UsersDirectory({
               <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-bold">
-                    {user.name || "—"} {" "}<span className="font-normal text-slate-500">· {user.email}</span></p>
+                    {user.name || "—"}{" "}
+                    <span className="font-normal text-slate-500">· {user.email}</span>
+                  </p>
                   {user.phone && <p className="text-xs text-slate-400">{user.phone}</p>}
                   {user.address && (
                     <p className="break-words text-xs text-slate-400">{user.address}</p>
@@ -132,7 +132,9 @@ function UsersDirectory({
                   {user.tier === "pro" ? (
                     <button
                       onClick={() =>
-                        setMessage(`Upgrade ${user.email} to PRO? (Pro unlocks per-robot preference profiles.)`)
+                        setMessage(
+                          `Upgrade ${user.email} to PRO? (Pro unlocks per-robot preference profiles.)`
+                        )
                       }
                       className="border border-line px-3 py-1.5 text-xs font-bold text-slate-500 transition hover:border-slate-500"
                     >
@@ -140,7 +142,11 @@ function UsersDirectory({
                     </button>
                   ) : (
                     <button
-                      onClick={() => setMessage(`Downgrade ${user.email} to FREE? (Robot preference rows are kept but become read-only.)`)}
+                      onClick={() =>
+                        setMessage(
+                          `Downgrade ${user.email} to FREE? (Robot preference rows are kept but become read-only.)`
+                        )
+                      }
                       className="border border-line px-3 py-1.5 text-xs font-bold text-slate-500 transition:hover:border-slate-500"
                     >
                       Downgrade to Free
@@ -260,17 +266,17 @@ function CarProfilesSection({
 
   return (
     <div>
-      <p className="text-xs font-black uppercase tracking-widest text-navy">
-        Car Profiles
-      </p>
+      <p className="text-xs font-black uppercase tracking-widest text-navy">Car Profiles</p>
       <p className="mt-1 text-xs text-slate-500">
-        Per-car rows from car_profiles — the profile key is the board's stable identity (
+        Per-car rows from car_profiles — the profile key is the board&apos;s stable identity (
         <span className="font-mono">fw:</span>, Bluetooth MAC,
         <span className="font-mono">wifi:</span>). The app reads the same rows; no Wi-Fi passwords
         are stored here.
       </p>
       {profiles === null ? (
-        <p className="mt-3 text-xs text-slate-500" role="status">Loading…</p>
+        <p className="mt-3 text-xs text-slate-500" role="status">
+          Loading…
+        </p>
       ) : profiles.length === 0 ? (
         <p className="mt-3 text-xs text-slate-500">No car profiles for this user yet.</p>
       ) : (
@@ -313,7 +319,11 @@ function CarProfilesSection({
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="min-w-0">
                     <p className="truncate text-xs font-bold">
-                      {profile.car_name || "Untitled profile"} {" "}<span className="font-mono font-normal text-slate-400">· {profile.profile_key}</span></p>
+                      {profile.car_name || "Untitled profile"}{" "}
+                      <span className="font-mono font-normal text-slate-400">
+                        · {profile.profile_key}
+                      </span>
+                    </p>
                     <p className="truncate font-mono text-[11px] text-slate-500">
                       {Object.keys(profile.settings || {}).length} keys · updated{" "}
                       {new Date(profile.updated_at).toLocaleDateString()}
@@ -324,9 +334,7 @@ function CarProfilesSection({
                     <button
                       onClick={() => startEdit(profile)}
                       disabled={!canDelete}
-                      title={
-                        canDelete ? "" : "Only administrators can edit project profiles"
-                      }
+                      title={canDelete ? "" : "Only administrators can edit project profiles"}
                       className="rounded-full border border-line px-3 py-1 text-xs font-bold text-navy transition hover:border-navy disabled:opacity-50"
                     >
                       Edit
@@ -434,11 +442,7 @@ function RobotProfilesSection({
     void load();
   }, [userId]);
 
-  async function send(
-    action: string,
-    extra: Record<string, unknown>,
-    successNote: string
-  ) {
+  async function send(action: string, extra: Record<string, unknown>, successNote: string) {
     setMessage(successNote);
     try {
       const response = await fetch("/api/admin/users", {
@@ -480,15 +484,15 @@ function RobotProfilesSection({
 
   return (
     <div>
-      <p className="text-xs font-black uppercase tracking-widest text-navy">
-        Robot Profiles
-      </p>
+      <p className="text-xs font-black uppercase tracking-widest text-navy">Robot Profiles</p>
       <p className="mt-1 text-xs text-slate-500">
         Per-robot code values, parameters, and telemetry channels — stored separately from
         orders/carts. The app reads the same rows.
       </p>
       {robots === null ? (
-        <p className="mt-3 text-xs text-slate-500" role="status">Loading…</p>
+        <p className="mt-3 text-xs text-slate-500" role="status">
+          Loading…
+        </p>
       ) : robots.length === 0 ? (
         <p className="mt-3 text-xs text-slate-500">No robot profiles for this user yet.</p>
       ) : (
@@ -531,7 +535,11 @@ function RobotProfilesSection({
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="min-w-0">
                     <p className="truncate text-xs font-bold">
-                      {robot.robot_name || robot.robot_id} {" "}<span className="font-mono font-normal text-slate-400">· {robot.robot_id}</span></p>
+                      {robot.robot_name || robot.robot_id}{" "}
+                      <span className="font-mono font-normal text-slate-400">
+                        · {robot.robot_id}
+                      </span>
+                    </p>
                     <p className="truncate font-mono text-[11px] text-slate-500">
                       {Object.keys(robot.settings || {}).length} keys · updated{" "}
                       {new Date(robot.updated_at).toLocaleDateString()}
@@ -610,9 +618,11 @@ function RobotProfilesSection({
 // ======================
 
 export default function AdminUsers({ setMessage, canDelete, currentRole }: Props) {
-  const [userData, setUserData] = useState<UserPage & {
-    users: (ManagedUser & { tier?: string })[];
-  }>({ users: [], page: 1, hasMore: false });
+  const [userData, setUserData] = useState<
+    UserPage & {
+      users: (ManagedUser & { tier?: string })[];
+    }
+  >({ users: [], page: 1, hasMore: false });
   const [loaded, setLoaded] = useState(false);
   const [userQuery, setUserQuery] = useState("");
   void setUserQuery; // used in loadUsers for filtering
@@ -664,32 +674,40 @@ export default function AdminUsers({ setMessage, canDelete, currentRole }: Props
       <div className="flex border-b border-line pb-3 mb-4">
         <button
           onClick={() => setSelectedSection("directory")}
-          className={selectedSection === "directory"
-            ? "border-b-2 border-navy text-navy py-1"
-            : "border-b-0 py-1"}
+          className={
+            selectedSection === "directory"
+              ? "border-b-2 border-navy text-navy py-1"
+              : "border-b-0 py-1"
+          }
         >
           User Directory
         </button>
         <button
           onClick={() => setSelectedSection("car-profiles")}
-          className={selectedSection === "car-profiles"
-            ? "border-b-2 border-navy text-navy py-1"
-            : "border-b-0 py-1"}
+          className={
+            selectedSection === "car-profiles"
+              ? "border-b-2 border-navy text-navy py-1"
+              : "border-b-0 py-1"
+          }
         >
           Car Profiles
         </button>
         <button
           onClick={() => setSelectedSection("robot-profiles")}
-          className={selectedSection === "robot-profiles"
-            ? "border-b-2 border-navy text-navy py-1"
-            : "border-b-0 py-1"}
+          className={
+            selectedSection === "robot-profiles"
+              ? "border-b-2 border-navy text-navy py-1"
+              : "border-b-0 py-1"
+          }
         >
           Robot Profiles
         </button>
       </div>
 
       {!loaded ? (
-        <p className="text-sm text-slate-500" role="status">Loading…</p>
+        <p className="text-sm text-slate-500" role="status">
+          Loading…
+        </p>
       ) : userData.users.length === 0 ? (
         <p className="text-sm text-slate-500">No users found.</p>
       ) : (
