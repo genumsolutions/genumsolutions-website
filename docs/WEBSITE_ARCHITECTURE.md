@@ -129,7 +129,7 @@ Next.js App Router with page-based routing:
 
 See `docs/WEBSITE_ADMIN_COMPLETE.md` for complete admin UI documentation.
 
-**9 tabs** in the admin dashboard, identical to the app:
+**9 tabs** in the admin dashboard, identical to the app except no Profile tab:
 
 | Tab                 | Path                 | Description                                                  |
 | ------------------- | -------------------- | ------------------------------------------------------------ |
@@ -162,7 +162,48 @@ The **Users** tab (`AdminUsers.tsx`) has 3 sections:
 - Tap "Save" → persists and locks
 - Tap "Cancel" → discards and returns to read-only
 
-### 7. Responsive Design
+### 7. Product & Checkout Flow (mirrored with app)
+
+#### Product Detail Page (`app/products/[slug]/page.tsx` + `ProductDetailPro`)
+
+Mirrors the app's `ProductDetailScreen`:
+
+- **Gallery**: contain-fit hero image + thumbnail strip
+- **Header**: category badge + type badge, product name, note, description, price
+- **Import meta card**: design by, license, source (link or text)
+- **Info grid**: Price, SKU, Category, Stock, Supplier, Type
+- **Audience/Warranty rows**
+- **Color/Delivery rows**
+- **Specs section**: bullet list of key:value specs
+- **Project info** (Project packages): project overview, estimated duration, source folder, objectives, materials, learning outcomes, build steps, prerequisites, deliverables, maintenance notes, documentation/video links
+- **Components used** (Project packages): horizontal cards with qty badges
+- **Used in projects** (non-project): horizontal cards
+- **Related products**: horizontal cards (same category → same type)
+- **Add to cart**: qty stepper + Add to Cart button (sticky on mobile via cart provider)
+
+#### Checkout Page (`app/checkout/page.tsx`)
+
+Mirrors the app's `CheckoutScreen` with the same 3 payment methods:
+
+- **Order summary**: items list (qty × name + line total) + Subtotal + Total
+- **Delivery details form**: full name, email, phone, delivery address
+- **Payment method buttons**: eSewa, Khalti, Pay on delivery
+- **Sticky pay bar** (mobile): Total + eSewa + Khalti + Pay on delivery
+- **Sign-in gate**: prompts to sign in before placing order
+- **Newsletter opt-in**: consent checkbox beside order flow
+- **Empty/unavailable states**: items no longer available, empty build list
+
+#### Payment methods (identical across both):
+
+| Method           | App                                            | Website                                          | Shared                    |
+| ---------------- | ---------------------------------------------- | ------------------------------------------------ | ------------------------- |
+| Cash on delivery | `createOrder({provider:'cod'})` → OrderSuccess | `POST /api/orders` → success page                | Both write `orders` table |
+| eSewa            | `initiateEsewaPayment` → WebBrowser → confirm  | `POST /api/checkout/esewa` → form → confirm      | Both use eSewa v2         |
+| Khalti           | `initiateKhaltiPayment` → WebBrowser → confirm | `POST /api/checkout/khalti` → redirect → confirm | Both use Khalti v2        |
+
+Both re-price server-side, confirm server-to-server, write to immutable `transactions` ledger, and are idempotent.
+
+### 8. Responsive Design
 
 The website uses Tailwind CSS with responsive prefixes (`sm:`):
 
@@ -237,7 +278,7 @@ Safe pattern: order saved `pending` server-side, prices re-checked against datab
 - `lib/company.ts` → `androidApp` is the **bundled fallback** shown when manifest is unreachable.
 - Version pins that must move **together**: `mobile/app.json` ↔ `mobile/src/config/site.ts` ↔ git tag.
 
-### 12. Deployment (Vercel)
+### 13. Deployment (Vercel)
 
 1. Push repo to GitHub and import in Vercel (framework auto-detected as Next.js).
 2. Add every environment variable (Production + Preview).
@@ -289,7 +330,7 @@ tailwind.config.ts            # Tailwind config
 next.config.mjs               # Next.js config
 ```
 
-## Test Status
+### 14. Test Status
 
 - **301 vitest tests** across 24 files — all passing
 - **TypeScript `tsc --noEmit`** — 0 errors
