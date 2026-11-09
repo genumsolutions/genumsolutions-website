@@ -18,6 +18,9 @@ import { resolve } from "node:path";
 // customer storefront — Electronic Products (/products), 3D Products
 // (/3d-printing), Projects (/projects).
 // U-R3 (2026-10-12): "System Logs" added — fleet crash reports + app logs.
+// U-R4 (2026-11-09): "User Logs" + "Profile Entries" added — server-rendered
+// panels backed by /api/admin/user-logs and /api/admin/profile-entries and by
+// the user_activity_log / user_profile_entries / profile_entry_types tables.
 const ADMIN_TABS = [
   "Dashboard",
   "Orders",
@@ -27,8 +30,18 @@ const ADMIN_TABS = [
   "Content",
   "Users",
   "System Logs",
+  "User Logs",
+  "Profile Entries",
   "Settings",
 ];
+
+// Tabs that exist ONLY on the website. They are web-admin features (paginated
+// server routes + service-role reads) with no app-side screen yet, so the app
+// is not expected to declare them. Everything outside this list must stay an
+// exact match, in the same order, on both clients.
+const WEBSITE_ONLY_TABS = ["User Logs", "Profile Entries"];
+
+const SHARED_TABS = ADMIN_TABS.filter((tab) => !WEBSITE_ONLY_TABS.includes(tab));
 
 function readAdminTypesSource(): string {
   const local = resolve(__dirname, "../components/admin/admin-types.ts");
@@ -43,7 +56,7 @@ function readAdminTypesSource(): string {
 }
 
 describe("admin tab inventory (website <-> app mirror, B-6)", () => {
-  it("declares the 6 canonical tabs in admin-types.ts", () => {
+  it("declares the canonical website tabs in admin-types.ts", () => {
     const source = readAdminTypesSource();
     expect(source, "admin-types.ts not found").not.toBe("");
     const match = source.match(/export const TABS = \[([^\]]+)\] as const/);
@@ -74,6 +87,8 @@ describe("admin tab inventory (website <-> app mirror, B-6)", () => {
       .split(",")
       .map((s) => s.trim().replace(/^["']|["']$/g, ""))
       .filter(Boolean);
-    expect(appTabs).toEqual(ADMIN_TABS);
+    // The app mirrors the shared tabs; the website-only panels above are not
+    // expected there until the app ships equivalent screens.
+    expect(appTabs).toEqual(SHARED_TABS);
   });
 });
