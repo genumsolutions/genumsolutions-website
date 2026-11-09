@@ -382,8 +382,7 @@ Both projects share the same architectural patterns:
 | **Styling**          | NativeWind (`className` system)                      | Tailwind CSS (`tailwind.config.ts`)    | ✅ Same Tailwind tokens (navy/ink/gold) |
 | **Data layer**       | `src/services/` read Supabase                        | `lib/` + `app/api/` read Supabase      | ✅ Same Supabase anon key pattern       |
 | **Auth**             | Native Supabase auth (SecureStore)                   | Cookie sessions via `@supabase/ssr`    | ✅ Same Supabase Auth                   |
-| **Admin contract**   | `adminService.ts` + `AdminScreen.tsx`                | `lib/` + `app/api/admin/` + components | ✅ Same RLS-gated admin pattern         |
-| **Company info**     | `src/config/company.ts` (12 fields, subset)          | `lib/company.ts` (17 fields)           | ⚠️ App uses subset (see below)          |
+| **Admin contract**   | `adminService.ts` + `AdminScreen.tsx`                | `lib/` + `app/api/admin/` + components | ✅ Same RLS-gated admin pattern         |     | **Company info** | `src/config/company.ts` (12-field subset — deliberate) | `lib/company.ts` (17 fields, source of truth) | ⚠️ App subset (see note below) |
 | **WhatsApp helpers** | `src/config/socials.ts` (normalize + isValid + link) | `lib/socials.ts` (same 3 helpers)      | ✅ Yes — mirrored Nov 2026              |
 | **Version sync**     | `app.json` + `src/config/site.ts`                    | N/A (website version in package.json)  | ⚠️ Different pattern                    |
 | **Release**          | APK upload + OTA hot-patches                         | Vercel deployment                      | ✅ Both use git-pushed CI               |
@@ -391,13 +390,15 @@ Both projects share the same architectural patterns:
 
 ### Shared Files (Source of Truth)
 
-| File                                        | Purpose                                 | Location                            | Mirrored? |
-| ------------------------------------------- | --------------------------------------- | ----------------------------------- | --------- |
-| `supabase/schema.sql`                       | Database schema (tables, RLS, triggers) | website repo (source of truth)      | ✅ Yes    |
-| `lib/company.ts` ↔ `src/config/company.ts`  | Company info type (17 fields)           | website ↔ app                       | ✅ Yes    |
-| `tailwind.config.ts` ↔ `tailwind.config.js` | Tailwind theme tokens                   | website ↔ app                       | ✅ Yes    |
-| `lib/socials.ts` ↔ `src/config/socials.ts`  | Social links + WhatsApp helpers         | website ↔ app                       | ✅ Yes    |
-| `src/config/adminTabs.ts` ↔ parity tests    | Admin tab definitions                   | app (enforced by both repos' tests) | ✅ Yes    |
+| File                                        | Purpose                                                                 | Location                            | Mirrored? |
+| ------------------------------------------- | ----------------------------------------------------------------------- | ----------------------------------- | --------- |
+| `supabase/schema.sql`                       | Database schema (tables, RLS, triggers)                                 | website repo (source of truth)      | ✅ Yes    |
+| `lib/company.ts` ↔ `src/config/company.ts`  | Company info type (website: 17 fields, app: 12-field subset — see note) | website ↔ app                       | ⚠️ Subset |
+| `tailwind.config.ts` ↔ `tailwind.config.js` | Tailwind theme tokens                                                   | website ↔ app                       | ✅ Yes    |
+| `lib/socials.ts` ↔ `src/config/socials.ts`  | Social links + WhatsApp helpers                                         | website ↔ app                       | ✅ Yes    |
+| `src/config/adminTabs.ts` ↔ parity tests    | Admin tab definitions                                                   | app (enforced by both repos' tests) | ✅ Yes    |
+
+**Company type mismatch note:** Website `lib/company.ts` has 17 fields (source of truth). App `src/config/company.ts` intentionally uses a 12-field subset. The 5 omitted fields are `url`, `city`, `country`, `vatLabel`, `description` — all used exclusively by the website for: SEO metadata (`app/layout.tsx`), sitemap generation (`app/sitemap.ts`, `app/robots.ts`), JSON-LD structured data (`OrganizationJsonLd.tsx`, `BreadcrumbListJsonLd.tsx`), and admin Settings form fields (`AdminSettings.tsx`). The app has no web SEO, no sitemap, no JSON-LD, and no Settings panel that needs these fields — so adding them to the app's type would be dead weight. The 12 shared fields (name, shortName, address, email, phone, pan, whatsappNumber, facebookUrl, instagramUrl, tiktokUrl, linkedinUrl, youtubeUrl) are identical in type, name, and bundled value across both repos. This is a deliberate design choice, not an inconsistency.
 
 ### Sync Responsibilities
 
