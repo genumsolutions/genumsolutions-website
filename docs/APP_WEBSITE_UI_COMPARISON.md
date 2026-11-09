@@ -472,14 +472,6 @@ Both projects share the same architectural patterns:
 
 Both ServiceScreen and ContactScreen were verified as already in parity with their website counterparts (no changes needed):
 
-**ServicesScreen** ↔ **ServicesGrid**: category-only filter, empty state text, card structure match.
-
-**ContactScreen** ↔ **ContactForm/ContactPage**: hero, company details, socials, form, sending state, messages, edge function → customer_messages table match.
-
-_Since parity was confirmed, no changes were made to either screen._
-
-Both screens were verified as already in parity with their website counterparts (no changes needed):
-
 **ServicesScreen** (`genumsolutions-app/mobile/src/screens/ServicesScreen.tsx`) ↔ **ServicesGrid** (`genumsolutions-website/components/ServicesGrid.tsx`):
 
 - Category-only filter (no text search) — matches website
@@ -497,6 +489,16 @@ Both screens were verified as already in parity with their website counterparts 
 - Resolution strings — matches
 - Privacy/Terms links — matches
 - Edge function → `customer_messages` table — matches (same table, same edge function)
+
+### ServicesPage Training Programs & Pilot Costs — Already in App HomeScreen
+
+The app's HomeScreen already reads the same DB tables (`training_programs`, `pilot_cost_lines`, `curriculum_highlights`) via `programsService.ts` + `getProgramsContent()`, and renders them with the same structure as the website's ServicesPage:
+
+- **Training programs**: title + audience + description + duration badge + outcome — matches
+- **Pilot costing**: item + cost (NPR) + note — matches website table rows
+- **Curriculum highlights**: age band + project list — matches website grid
+
+Both use the same DB-first + bundled fallback pattern. The app shows these on the home screen; the website shows them on the Services page. Content parity confirmed.
 
 ## 15. Test Status
 
