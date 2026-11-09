@@ -1960,7 +1960,7 @@ on conflict (id) do nothing;
 create table if not exists public.user_profile_entries (
   id uuid not null default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
-  type_id uuid not null references profile_entry_types(id) on delete restrict,
+  type_id uuid not null references public.profile_entry_types(id) on delete restrict,
   title text not null default '',
   body jsonb not null default '{}',
   created_at timestamptz not null default now(),
@@ -1968,9 +1968,85 @@ create table if not exists public.user_profile_entries (
   primary key (id)
 );
 
-alter table public.user_activity_log add constraint user_activity_log_user_id_fkey
-  foreign key (user_id) references auth.users(id) on delete cascade;
-alter table public.user_profile_entries add constraint user_profile_entries_user_id_fkey
-  foreign key (user_id) references auth.users(id) on delete cascade;
-alter table public.user_profile_entries add constraint user_profile_entries_type_id_fkey
-  foreign key (type_id) references profile_entry_types(id) on delete restrict;
+-- The create-table statements above already declare these foreign keys
+-- inline. Re-adding them unconditionally raised 42710 on re-apply, so each
+-- one is guarded and only fills a real gap on an older/partial table.
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'user_activity_log_user_id_fkey'
+      and conrelid = 'public.user_activity_log'::regclass
+  ) then
+    alter table public.user_activity_log
+      add constraint user_activity_log_user_id_fkey
+      foreign key (user_id) references auth.users(id) on delete cascade;
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'user_profile_entries_user_id_fkey'
+      and conrelid = 'public.user_profile_entries'::regclass
+  ) then
+    alter table public.user_profile_entries
+      add constraint user_profile_entries_user_id_fkey
+      foreign key (user_id) references auth.users(id) on delete cascade;
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'user_profile_entries_type_id_fkey'
+      and conrelid = 'public.user_profile_entries'::regclass
+  ) then
+    alter table public.user_profile_entries
+      add constraint user_profile_entries_type_id_fkey
+      foreign key (type_id) references public.profile_entry_types(id) on delete restrict;
+  end if;
+end
+$$;
+
+create index if not exists user_activity_log_user_id_idx
+  on public.user_activity_log (user_id);
+create index if not exists user_activity_log_created_at_idx
+  on public.user_activity_log (created_at desc);
+create index if not exists user_profile_entries_user_id_idx
+  on public.user_profile_entries (user_id);
+create index if not exists user_profile_entries_type_id_idx
+  on public.user_profile_entries (type_id);
+create index if not exists user_profile_entries_created_at_idx
+  on public.user_profile_entries (created_at desc);
+
+alter table public.user_activity_log enable row level security;
+alter table public.profile_entry_types enable row level security;
+alter table public.user_profile_entries enable row level security;
+
+drop policy if exists "user_activity_log_select_own" on public.user_activity_log;
+create policy "user_activity_log_select_own" on public.user_activity_log
+  for select to authenticated
+  using (user_id = auth.uid());
+
+drop policy if exists "user_activity_log_insert_own" on public.user_activity_log;
+create policy "user_activity_log_insert_own" on public.user_activity_log
+  for insert to authenticated
+  with check (user_id = auth.uid());
+
+drop policy if exists "profile_entry_types_select_authenticated" on public.profile_entry_types;
+create policy "profile_entry_types_select_authenticated" on public.profile_entry_types
+  for select to authenticated
+  using (true);
+
+drop policy if exists "user_profile_entries_select_own" on public.user_profile_entries;
+create policy "user_profile_entries_select_own" on public.user_profile_entries
+  for select to authenticated
+  using (user_id = auth.uid());
+
+drop policy if exists "user_profile_entries_insert_own" on public.user_profile_entries;
+create policy "user_profile_entries_insert_own" on public.user_profile_entries
+  for insert to authenticated
+  with check (user_id = auth.uid());
+
+drop policy if exists "user_profile_entries_update_own" on public.user_profile_entries;
+create policy "user_profile_entries_update_own" on public.user_profile_entries
+  for update to authenticated
+  using (user_id = auth.uid())
+  with check (user_id = auth.uid());

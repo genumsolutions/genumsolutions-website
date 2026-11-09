@@ -1,0 +1,19 @@
+fix(db): make the user logs/profiles migration re-runnable and RLS-aware
+
+Applying the migration failed with
+`ERROR: 42710: constraint "user_activity_log_user_id_fkey" already exists`
+and left none of the three tables behind, because the create-table
+statements already declare their foreign keys inline and the script then
+re-added the same constraints by name. The Supabase SQL Editor runs the
+file in one transaction, so that failure rolled the whole thing back.
+
+- Drop the unconditional FK re-adds; guard each one with a pg_constraint
+  check so it only fills a real gap on an older/partial table.
+- Add indexes for the per-user and admin ordering paths.
+- Enable RLS on all three tables and add the signed-in-user policies
+  (own rows for logs and entries, read-only types). The admin routes keep
+  using the service-role key, which bypasses RLS.
+- Mirror the same changes in the appended section of supabase/schema.sql.
+- Extend verify-logs-profiles.sql with RLS and pg_policies checks.
+
+Co-Authored-By: Codebuff <noreply@codebuff.com>
