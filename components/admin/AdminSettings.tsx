@@ -48,6 +48,7 @@ export default function AdminSettings({ setMessage, canDelete: _canDelete }: Pro
   const [loaded, setLoaded] = useState(false);
   const [company, setCompany] = useState<CompanyInfo>(emptyCompany);
   const [busy, setBusy] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     void fetch("/api/admin/settings")
@@ -94,7 +95,7 @@ export default function AdminSettings({ setMessage, canDelete: _canDelete }: Pro
         <h2 className={editorCardTitle}>Company information</h2>
         {!loaded ? (
           <LoadingRow className="mt-3" />
-        ) : (
+        ) : isEditing ? (
           <form onSubmit={saveCompany} className="mt-5 grid gap-4">
             <label className="min-w-0 text-sm font-bold">
               Name
@@ -250,6 +251,87 @@ export default function AdminSettings({ setMessage, canDelete: _canDelete }: Pro
               </button>
             </SaveBar>
           </form>
+        ) : (
+          <div className="mt-5 grid gap-4">
+            <div className="min-w-0 text-sm font-bold">
+              Name
+              <span className="ml-2">{company.name}</span>
+            </div>
+            <div className="min-w-0 text-sm font-bold">
+              Short name
+              <span className="ml-2">{company.shortName}</span>
+            </div>
+            <div className="min-w-0 text-sm font-bold">
+              Address
+              <span className="ml-2">{company.address}</span>
+            </div>
+            <div className="min-w-0 text-sm font-bold">
+              City
+              <span className="ml-2">{company.city}</span>
+            </div>
+            <div className="min-w-0 text-sm font-bold">
+              Country
+              <span className="ml-2">{company.country}</span>
+            </div>
+            <div className="min-w-0 text-sm font-bold">
+              Email
+              <span className="ml-2">{company.email}</span>
+            </div>
+            <div className="min-w-0 text-sm font-bold">
+              Phone
+              <span className="ml-2">{company.phone}</span>
+            </div>
+            <div className="min-w-0 text-sm font-bold">
+              PAN
+              <span className="ml-2">{company.pan}</span>
+            </div>
+            <div className="min-w-0 text-sm font-bold">
+              VAT label
+              <span className="ml-2">{company.vatLabel}</span>
+            </div>
+            <div className="min-w-0 text-sm font-bold">
+              Description
+              <span className="ml-2">{company.description}</span>
+            </div>
+            <div className="min-w-0 text-sm font-bold">
+              WhatsApp number
+              <span className="ml-2">{company.whatsappNumber}</span>
+            </div>
+            <div className="min-w-0 text-sm font-bold">
+              Facebook URL
+              <span className="ml-2">{company.facebookUrl}</span>
+            </div>
+            <div className="min-w-0 text-sm font-bold">
+              Instagram URL
+              <span className="ml-2">{company.instagramUrl}</span>
+            </div>
+            <div className="min-w-0 text-sm font-bold">
+              TikTok URL
+              <span className="ml-2">{company.tiktokUrl}</span>
+            </div>
+            <div className="min-w-0 text-sm font-bold">
+              LinkedIn URL
+              <span className="ml-2">{company.linkedinUrl}</span>
+            </div>
+            <div className="min-w-0 text-sm font-bold">
+              YouTube URL
+              <span className="ml-2">{company.youtubeUrl}</span>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setIsEditing(true)}
+                className="text-sm text-navy hover:underline"
+              >
+                Edit
+              </button>
+              <button
+                onClick={() => setIsEditing(false)}
+                className="text-sm text-muted hover:underline"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         )}
       </PanelCard>
     </div>
