@@ -375,18 +375,21 @@ The `profile_key` is the **stable identity** that persists across app reinstalls
 
 Both projects share the same architectural patterns:
 
-| Aspect               | App                                                  | Website                                | Mirrored?                               |
-| -------------------- | ---------------------------------------------------- | -------------------------------------- | --------------------------------------- |
-| **Navigation**       | Bottom tabs + native-stack screens                   | Next.js App Router page routes         | ✅ Same concept                         |
-| **State management** | React Context (`AppContext`)                         | React state + Supabase cookies         | ✅ Both use React state                 |
-| **Styling**          | NativeWind (`className` system)                      | Tailwind CSS (`tailwind.config.ts`)    | ✅ Same Tailwind tokens (navy/ink/gold) |
-| **Data layer**       | `src/services/` read Supabase                        | `lib/` + `app/api/` read Supabase      | ✅ Same Supabase anon key pattern       |
-| **Auth**             | Native Supabase auth (SecureStore)                   | Cookie sessions via `@supabase/ssr`    | ✅ Same Supabase Auth                   |
-| **Admin contract**   | `adminService.ts` + `AdminScreen.tsx`                | `lib/` + `app/api/admin/` + components | ✅ Same RLS-gated admin pattern         |     | **Company info** | `src/config/company.ts` (12-field subset — deliberate) | `lib/company.ts` (17 fields, source of truth) | ⚠️ App subset (see note below) |
-| **WhatsApp helpers** | `src/config/socials.ts` (normalize + isValid + link) | `lib/socials.ts` (same 3 helpers)      | ✅ Yes — mirrored Nov 2026              |
-| **Version sync**     | `app.json` + `src/config/site.ts`                    | N/A (website version in package.json)  | ⚠️ Different pattern                    |
-| **Release**          | APK upload + OTA hot-patches                         | Vercel deployment                      | ✅ Both use git-pushed CI               |
-| **Testing**          | 955 vitest tests                                     | 301 vitest tests                       | ✅ Both use vitest                      |
+| Aspect                   | App                                                                       | Website                                                                 | Mirrored?                                  |
+| ------------------------ | ------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------ |
+| **Navigation**           | Bottom tabs + native-stack screens                                        | Next.js App Router page routes                                          | ✅ Same concept                            |
+| **State management**     | React Context (`AppContext`)                                              | React state + Supabase cookies                                          | ✅ Both use React state                    |
+| **Styling**              | NativeWind (`className` system)                                           | Tailwind CSS (`tailwind.config.ts`)                                     | ✅ Same Tailwind tokens (navy/ink/gold)    |
+| **Data layer**           | `src/services/` read Supabase                                             | `lib/` + `app/api/` read Supabase                                       | ✅ Same Supabase anon key pattern          |
+| **Auth**                 | Native Supabase auth (SecureStore)                                        | Cookie sessions via `@supabase/ssr`                                     | ✅ Same Supabase Auth                      |
+| **Admin contract**       | `adminService.ts` + `AdminScreen.tsx`                                     | `lib/` + `app/api/admin/` + components                                  | ✅ Same RLS-gated admin pattern            |     | **Company info** | `src/config/company.ts` (12-field subset — deliberate) | `lib/company.ts` (17 fields, source of truth) | ⚠️ App subset (see note below) |
+| **WhatsApp helpers**     | `src/config/socials.ts` (normalize + isValid + link)                      | `lib/socials.ts` (same 3 helpers)                                       | ✅ Yes — mirrored Nov 2026                 |
+| **Version sync**         | `app.json` + `src/config/site.ts`                                         | N/A (website version in package.json)                                   | ⚠️ Different pattern                       |
+| **Release**              | APK upload + OTA hot-patches                                              | Vercel deployment                                                       | ✅ Both use git-pushed CI                  |
+| **Testing**              | 955 vitest tests                                                          | 301 vitest tests                                                        | ✅ Both use vitest                         |
+| **Contact form**         | Edge function call to `contact` → `customer_messages` table, Resend email | `/api/contact` route → same edge function + table, Resend email         | ✅ Same edge function + table              |
+| **Newsletter**           | `newsletter-subscribe` edge function → `newsletter_subscribers` table     | `/api/newsletter` route → `lib/newsletter.ts` → same table              | ✅ Same table, different transport         |
+| **Services empty state** | "No services match your filters." (filters by search + category)          | "No services in this category. Contact us for details." (category only) | ⚠️ Different text (different filter scope) |
 
 ### Shared Files (Source of Truth)
 
@@ -399,6 +402,43 @@ Both projects share the same architectural patterns:
 | `src/config/adminTabs.ts` ↔ parity tests    | Admin tab definitions                                                   | app (enforced by both repos' tests) | ✅ Yes    |
 
 **Company type mismatch note:** Website `lib/company.ts` has 17 fields (source of truth). App `src/config/company.ts` intentionally uses a 12-field subset. The 5 omitted fields are `url`, `city`, `country`, `vatLabel`, `description` — all used exclusively by the website for: SEO metadata (`app/layout.tsx`), sitemap generation (`app/sitemap.ts`, `app/robots.ts`), JSON-LD structured data (`OrganizationJsonLd.tsx`, `BreadcrumbListJsonLd.tsx`), and admin Settings form fields (`AdminSettings.tsx`). The app has no web SEO, no sitemap, no JSON-LD, and no Settings panel that needs these fields — so adding them to the app's type would be dead weight. The 12 shared fields (name, shortName, address, email, phone, pan, whatsappNumber, facebookUrl, instagramUrl, tiktokUrl, linkedinUrl, youtubeUrl) are identical in type, name, and bundled value across both repos. This is a deliberate design choice, not an inconsistency.
+
+### Contact Form & Newsletter Parity
+
+#### Contact Form
+
+| Element       | App                                                                           | Website                                                          | Shared                                     |
+| ------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------ |
+| Entry point   | `ContactScreen.tsx` → `sendContactInquiry()`                                  | `app/contact/page.tsx` + `ContactForm.tsx` → `POST /api/contact` | Same form fields                           |
+| Transport     | Supabase edge function `contact` via `fetch(edgeUrls.contact)`                | Next.js API route `app/api/contact/route.ts`                     | Both call same Supabase project            |
+| Edge function | `supabase/functions/contact/index.ts` (in website repo, deployed to Supabase) | Same edge function (website API route also uses it)              | Same `supabase/functions/contact/index.ts` |
+| Input         | `{name, email, message}` JSON body                                            | `{name, email, message}` form data → JSON                        | Same 3 fields                              |
+| Validation    | name≤100, email≤254, message≤5000, email regex (client-side)                  | Same limits + email regex (server-side)                          | Same validation rules                      |
+| Rate limit    | Edge function in-memory (single region)                                       | `checkRateLimit('contact:<ip>', 5, 60s)` in-memory               | Both rate-limited                          |
+| Persistence   | Inserts into `customer_messages` table with `status: 'new'`                   | Same — inserts into `customer_messages`                          | Same `customer_messages` table             |
+| Email         | Resend (optional — degrades if no key)                                        | Resend (optional — degrades if no key)                           | Same Resend integration                    |
+| Response      | `{success: boolean, persisted: boolean}`                                      | `{message: string}` (success/error)                              | Same success semantics                     |
+| Read-back     | `getMyMessages()` reads `customer_messages`                                   | `Customer` type includes `messages[]` from `customer_messages`   | Same table                                 |
+
+**Key finding:** The app's `sendContactInquiry()` calls the Supabase edge function `contact` directly. The website's `/api/contact` route also calls the same edge function logic (same `customer_messages` insert + Resend email). All 3 paths (app edge call, website API route, website form submit) converge on the same edge function + table. The edge function source lives in `genumsolutions-website/supabase/functions/contact/index.ts`.
+
+#### Newsletter
+
+| Element       | App                                                                             | Website                                                                   | Shared                              |
+| ------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ----------------------------------- |
+| Entry point   | `AccountScreen.tsx` newsletter section → `subscribeToNewsletter()`              | `AccountPanel.tsx` newsletter section → `POST /api/newsletter`            | Same consent checkbox pattern       |
+| Transport     | `newsletter-subscribe` Supabase edge function via `supabase.functions.invoke()` | Next.js API route `app/api/newsletter/route.ts` → `lib/newsletter.ts`     | Both write to same table            |
+| Edge function | `supabase/functions/newsletter-subscribe/index.ts` (in website repo)            | Same edge function (website API route calls `lib/newsletter.ts` directly) | Same `newsletter_subscribers` table |
+| Input         | `{email, source}` where source is `app-account` or `app-checkout`               | `{email, source?}` where source is `footer` or `checkout`                 | Same email + source pattern         |
+| Validation    | Email regex, lowercase + trim                                                   | Same + `isValidEmail()` in `lib/newsletter.ts`                            | Same email normalization            |
+| Rate limit    | Edge function rate-limits by token                                              | `checkRateLimit('newsletter:<ip>', 20, 60s)` by IP                        | Both rate-limited (different keys)  |
+| Persistence   | Upsert into `newsletter_subscribers` table                                      | Same — upsert into `newsletter_subscribers`                               | Same table, same idempotent pattern |
+| Response      | `{ok: boolean, error?: string}`                                                 | `{ok: boolean, error?: string}`                                           | Same response shape                 |
+| Read-back     | Not displayed in app (subscribe only)                                           | Admin list at `/api/admin/newsletter` → `AdminMessages.tsx`               | Same table                          |
+
+**Key finding:** The app goes through the `newsletter-subscribe` edge function; the website's `/api/newsletter` route calls `lib/newsletter.ts` directly (which does the Supabase upsert). Both write to the same `newsletter_subscribers` table with the same idempotent upsert pattern. The source lives in `genumsolutions-website/supabase/functions/newsletter-subscribe/index.ts` (edge) and `genumsolutions-website/lib/newsletter.ts` (direct).
+
+**Note on source labels:** The app uses `app-account` and `app-checkout` as source labels; the website uses `footer` and `checkout`. These are different string values but both are just stored in the `source` column of `newsletter_subscribers` — they don't interfere. The admin newsletter list shows both.
 
 ### Sync Responsibilities
 
