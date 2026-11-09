@@ -16,35 +16,35 @@ Both the app and website provide admin functionality for managing company settin
 
 The app uses a **9-tab horizontal bar** at the top of `AdminScreen.tsx`:
 
-| Tab | Label | Section Component | Description |
-| --- | --- | --- | --- |
-| `dashboard` | **Dashboard** | `DashboardTab` | KPIs, order/revenue trend, recent activity feed |
-| `orders` | **Orders** | `OrdersTab` | Every order, payment state, pilot finance lines |
-| `electronic` | **Electronic Products** | `ElectronicsTab` | `/products` catalog — pricing, stock, photos |
-| `threed` | **3D Products** | `ThreeDTab` | `/3d-printing` catalog |
-| `projects` | **Projects** | `ProjectsTab` | Bundles sold on `/projects` including pre-packaged kits |
-| `content` | **Content** | `ContentTab` | Services, journal posts, home page copy |
-| `users` | **Users** | `UsersTab` | Accounts, roles, tiers, per-user directories/profile, robot/car profiles |
-| `logs` | **Logs** | `LogsTab` | User activity + user profiles + field diagnostics (U-R5 merged from System Logs, User Logs, Profile Entries) |
-| `settings` | **Settings** | `SettingsTab` | Company info (all 17 fields), training programs, pilot costs |
-| `profile` | **Profile** | `ProfileEntriesTab` | User profile entries — read-only by default, Edit → form → Save/Cancel (U-R5 merged from Profiles tab) |
+| Tab          | Label                   | Section Component   | Description                                                                                                  |
+| ------------ | ----------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `dashboard`  | **Dashboard**           | `DashboardTab`      | KPIs, order/revenue trend, recent activity feed                                                              |
+| `orders`     | **Orders**              | `OrdersTab`         | Every order, payment state, pilot finance lines                                                              |
+| `electronic` | **Electronic Products** | `ElectronicsTab`    | `/products` catalog — pricing, stock, photos                                                                 |
+| `threed`     | **3D Products**         | `ThreeDTab`         | `/3d-printing` catalog                                                                                       |
+| `projects`   | **Projects**            | `ProjectsTab`       | Bundles sold on `/projects` including pre-packaged kits                                                      |
+| `content`    | **Content**             | `ContentTab`        | Services, journal posts, home page copy                                                                      |
+| `users`      | **Users**               | `UsersTab`          | Accounts, roles, tiers, per-user directories/profile, robot/car profiles                                     |
+| `logs`       | **Logs**                | `LogsTab`           | User activity + user profiles + field diagnostics (U-R5 merged from System Logs, User Logs, Profile Entries) |
+| `settings`   | **Settings**            | `SettingsTab`       | Company info (all 17 fields), training programs, pilot costs                                                 |
+| `profile`    | **Profile**             | `ProfileEntriesTab` | User profile entries — read-only by default, Edit → form → Save/Cancel (U-R5 merged from Profiles tab)       |
 
 ### Website — Multi-panel layout
 
 The website uses Next.js page routes with React components for each admin panel:
 
-| Section/Path | Component | Description |
-| --- | --- | --- |
-| `/admin` | `AdminDashboard.tsx` | Main dashboard overview — KPIs, recent activity |
-| `/admin/settings` | `AdminSettings.tsx` | Company information editing (17 fields) |
-| `/admin/logs` | `AdminLogs.tsx` (via `AdminLogsHub`) | System logs, user activity, user profiles, fleet diagnostics (3 sections) |
-| `/admin/users` | `AdminUsers.tsx` | User directory, car profiles, robot profiles (3 sections) |
-| `/admin/products` | `AdminProducts.tsx` | Electronic products catalog |
-| `/admin/3d-printing` | `Admin3DProducts.tsx` | 3D printing products catalog |
-| `/admin/projects` | `AdminProjects.tsx` | Project packages, components |
-| `/admin/content` | `AdminContent.tsx` | Services, journal, home page copy |
-| `/admin/activity` | `AdminActivity.tsx` | Activity tracking |
-| `/admin/finance` | `AdminFinance.tsx` | Financial data, orders, transactions |
+| Section/Path         | Component                            | Description                                                               |
+| -------------------- | ------------------------------------ | ------------------------------------------------------------------------- |
+| `/admin`             | `AdminDashboard.tsx`                 | Main dashboard overview — KPIs, recent activity                           |
+| `/admin/settings`    | `AdminSettings.tsx`                  | Company information editing (17 fields)                                   |
+| `/admin/logs`        | `AdminLogs.tsx` (via `AdminLogsHub`) | System logs, user activity, user profiles, fleet diagnostics (3 sections) |
+| `/admin/users`       | `AdminUsers.tsx`                     | User directory, car profiles, robot profiles (3 sections)                 |
+| `/admin/products`    | `AdminProducts.tsx`                  | Electronic products catalog                                               |
+| `/admin/3d-printing` | `Admin3DProducts.tsx`                | 3D printing products catalog                                              |
+| `/admin/projects`    | `AdminProjects.tsx`                  | Project packages, components                                              |
+| `/admin/content`     | `AdminContent.tsx`                   | Services, journal, home page copy                                         |
+| `/admin/activity`    | `AdminActivity.tsx`                  | Activity tracking                                                         |
+| `/admin/finance`     | `AdminFinance.tsx`                   | Financial data, orders, transactions                                      |
 
 ### Alignment
 
@@ -61,12 +61,14 @@ The website uses Next.js page routes with React components for each admin panel:
 ### App (UsersTab)
 
 **Section 1: User Directory**
+
 - Header: `"User Directory"` + subtext + search input + Clear button
 - Per-user row: name + email + phone + address + joined date + last seen
 - Actions: role select (disabled: canDelete), tier toggle (Upgrade to Pro / Downgrade to Free), Delete user (owner only)
 - Search: internal state, filters by name or email lowercase includes
 
 **Section 2: Car Profiles**
+
 - Header: `"Car Profiles"` + subtext explaining profile_key identity (fw:, MAC, wifi:)
 - Per-car row: car_name + profile_key (font-mono) + settings count + updated date + unique_id
 - Edit form: TextInput for name + TextInput (multiline 6 rows) for settings JSON + Save (bg-emerald-600) + Cancel
@@ -76,6 +78,7 @@ The website uses Next.js page routes with React components for each admin panel:
 - Admin+: Edit enabled, Delete enabled (confirm dialog)
 
 **Section 3: Robot Profiles**
+
 - Header: `"Robot Profiles"` + subtext explaining per-robot code values/parameters/telemetry
 - Per-robot row: robot_name (or robot_id) + robot_id (font-mono) + settings count + updated date
 - Edit form: TextInput for name + TextInput (multiline 6 rows) for settings JSON + Save (bg-emerald-600) + Cancel
@@ -85,12 +88,14 @@ The website uses Next.js page routes with React components for each admin panel:
 ### Website (AdminUsers)
 
 **Section 1: User Directory**
+
 - Header: `"User Directory"` + subtext + search input + Clear button
 - Per-user row: name + email + phone + address + joined date + last seen
 - Actions: role select (disabled: canDelete), tier toggle buttons, Delete user (owner only)
 - Search: internal state, filters by name or email lowercase includes
 
 **Section 2: Car Profiles**
+
 - Header: `"Car Profiles"` + subtext explaining profile_key identity (fw:, MAC, wifi:)
 - Per-car row: car_name (or "Untitled profile") + profile_key (font-mono text-slate-400) + settings count + updated date + unique_id
 - Edit form: input for name + textarea (rows=6, font-mono) for settings JSON + Save (bg-emerald-600) + Cancel
@@ -100,6 +105,7 @@ The website uses Next.js page routes with React components for each admin panel:
 - Admin+: Edit enabled, Delete enabled (confirm dialog)
 
 **Section 3: Robot Profiles**
+
 - Header: `"Robot Profiles"` + subtext explaining per-robot code values/parameters/telemetry
 - Per-robot row: robot_name (or robot_id) + robot_id (font-mono text-slate-400) + settings count + updated date
 - Edit form: input for name + textarea (rows=6, font-mono) for settings JSON + Save (bg-emerald-600) + Cancel
@@ -108,21 +114,21 @@ The website uses Next.js page routes with React components for each admin panel:
 
 ### Alignment Summary
 
-| Element | App | Website | Mirrored? |
-| --- | --- | --- | --- |
-| Section headers | "User Directory", "Car Profiles", "Robot Profiles" | Same | ✅ Yes |
-| User row fields | name, email, phone, address, joined, last seen | Same | ✅ Yes |
-| Role select | customer/staff/admin/owner, disabled: canDelete | Same | ✅ Yes |
-| Tier toggle | Upgrade to Pro / Downgrade to Free | Same | ✅ Yes |
-| Delete user | owner only, confirm dialog | Same | ✅ Yes |
-| Car profile fields | car_name, profile_key, settings (JSON), updated_at, unique_id | Same | ✅ Yes |
-| Profile_key display | font-mono text-muted | font-mono text-slate-400 | ✅ Same intent |
-| Edit form | TextInput name + TextInput JSON (6 rows) | input name + textarea JSON (rows=6, font-mono) | ✅ Same pattern |
-| Save button | bg-emerald-600, "Save" | bg-emerald-600, "Save" | ✅ Same |
-| Cancel button | border-line, "Cancel" | border-line, "Cancel" | ✅ Same |
-| Staff restriction | Edit disabled, title tooltip | Same | ✅ Same |
-| Add new | input + "Add profile" button | Same | ✅ Same |
-| Robot profile fields | robot_name, robot_id, settings (JSON), updated_at | Same | ✅ Yes |
+| Element              | App                                                           | Website                                        | Mirrored?       |
+| -------------------- | ------------------------------------------------------------- | ---------------------------------------------- | --------------- |
+| Section headers      | "User Directory", "Car Profiles", "Robot Profiles"            | Same                                           | ✅ Yes          |
+| User row fields      | name, email, phone, address, joined, last seen                | Same                                           | ✅ Yes          |
+| Role select          | customer/staff/admin/owner, disabled: canDelete               | Same                                           | ✅ Yes          |
+| Tier toggle          | Upgrade to Pro / Downgrade to Free                            | Same                                           | ✅ Yes          |
+| Delete user          | owner only, confirm dialog                                    | Same                                           | ✅ Yes          |
+| Car profile fields   | car_name, profile_key, settings (JSON), updated_at, unique_id | Same                                           | ✅ Yes          |
+| Profile_key display  | font-mono text-muted                                          | font-mono text-slate-400                       | ✅ Same intent  |
+| Edit form            | TextInput name + TextInput JSON (6 rows)                      | input name + textarea JSON (rows=6, font-mono) | ✅ Same pattern |
+| Save button          | bg-emerald-600, "Save"                                        | bg-emerald-600, "Save"                         | ✅ Same         |
+| Cancel button        | border-line, "Cancel"                                         | border-line, "Cancel"                          | ✅ Same         |
+| Staff restriction    | Edit disabled, title tooltip                                  | Same                                           | ✅ Same         |
+| Add new              | input + "Add profile" button                                  | Same                                           | ✅ Same         |
+| Robot profile fields | robot_name, robot_id, settings (JSON), updated_at             | Same                                           | ✅ Yes          |
 
 ---
 
@@ -151,13 +157,13 @@ The website uses Next.js page routes with React components for each admin panel:
 
 ### Alignment Summary
 
-| Element | App | Website | Mirrored? |
-| --- | --- | --- | --- |
-| Field count | 17 (including url) | 17 (including url) | ✅ Yes |
-| Field names | name, shortName, url, address, city, country, email, phone, pan, vatLabel, description, whatsappNumber, facebookUrl, instagramUrl, tiktokUrl, linkedinUrl, youtubeUrl | Same | ✅ Yes |
-| Edit pattern | Read-only → Edit → form → Save/Cancel | Read-only → Edit → form → Save/Cancel | ✅ Yes |
-| Save guard | `saveBusy` disables Save button | Form `onSubmit` handles submission | ✅ Same intent |
-| Success feedback | `setMessage("Saved.")` + green banner | `setMessage("Company information saved.")` | ✅ Same concept |
+| Element          | App                                                                                                                                                                   | Website                                    | Mirrored?       |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | --------------- |
+| Field count      | 17 (including url)                                                                                                                                                    | 17 (including url)                         | ✅ Yes          |
+| Field names      | name, shortName, url, address, city, country, email, phone, pan, vatLabel, description, whatsappNumber, facebookUrl, instagramUrl, tiktokUrl, linkedinUrl, youtubeUrl | Same                                       | ✅ Yes          |
+| Edit pattern     | Read-only → Edit → form → Save/Cancel                                                                                                                                 | Read-only → Edit → form → Save/Cancel      | ✅ Yes          |
+| Save guard       | `saveBusy` disables Save button                                                                                                                                       | Form `onSubmit` handles submission         | ✅ Same intent  |
+| Success feedback | `setMessage("Saved.")` + green banner                                                                                                                                 | `setMessage("Company information saved.")` | ✅ Same concept |
 
 ---
 
@@ -165,13 +171,14 @@ The website uses Next.js page routes with React components for each admin panel:
 
 ### App (LogsTab)
 
-| Section | Content | Component |
-| --- | --- | --- |
-| **User Activity** | `user_activity_log` rows, filtered by search | `UserActivityTable` |
-| **User Profiles** | `user_profile_entries` rows, filtered by search, edit button per row | `ProfileEntriesTab` |
-| **Fleet Diagnostics** | `device_crash_reports` + `app_logs` with scope filter | `CrashReports` + `AppLogs` |
+| Section               | Content                                                              | Component                  |
+| --------------------- | -------------------------------------------------------------------- | -------------------------- |
+| **User Activity**     | `user_activity_log` rows, filtered by search                         | `UserActivityTable`        |
+| **User Profiles**     | `user_profile_entries` rows, filtered by search, edit button per row | `ProfileEntriesTab`        |
+| **Fleet Diagnostics** | `device_crash_reports` + `app_logs` with scope filter                | `CrashReports` + `AppLogs` |
 
 **Fleet Diagnostics details:**
+
 - Crash reports table: timestamp, car name, board id, error summary, reported_at
 - App logs section: scope filter dropdown (all / link/wifi / all-other), severity radio, search input, Apply button
 - App log rows: timestamp, level badge (color-coded), message, scope (font-mono text-xs), detail (JSON expandable)
@@ -179,26 +186,27 @@ The website uses Next.js page routes with React components for each admin panel:
 
 ### Website (AdminLogsHub)
 
-| Section | Content | Component |
-| --- | --- | --- |
-| **User Activity** | `user_activity_log` rows, filtered by search | `ActivityTable` |
-| **User Profiles** | `user_profile_entries` rows, filtered by search, edit button per row | `ProfileEntriesTable` |
-| **Fleet Diagnostics** | `device_crash_reports` + `app_logs` with scope filter | `CrashReports` + `AppLogs` |
+| Section               | Content                                                              | Component                  |
+| --------------------- | -------------------------------------------------------------------- | -------------------------- |
+| **User Activity**     | `user_activity_log` rows, filtered by search                         | `ActivityTable`            |
+| **User Profiles**     | `user_profile_entries` rows, filtered by search, edit button per row | `ProfileEntriesTable`      |
+| **Fleet Diagnostics** | `device_crash_reports` + `app_logs` with scope filter                | `CrashReports` + `AppLogs` |
 
 **Fleet Diagnostics details:**
+
 - Crash reports table: timestamp, car name, board id, error summary, reported_at
 - App logs section: scope filter dropdown, severity radio, search input, Apply button, log rows
 
 ### Alignment Summary
 
-| Element | App | Website | Mirrored? |
-| --- | --- | --- | --- |
-| 3 sections | User Activity, User Profiles, Fleet | Same | ✅ Yes |
-| Section selector | 3 pills, active bg-navy | Same | ✅ Yes |
-| Crash reports columns | timestamp, car name, board id, error, reported_at | Same | ✅ Yes |
-| App logs scope filter | dropdown (all/link-wifi/all-other) | Same | ✅ Yes |
-| App logs severity filter | radio (all/warn/error) | Same | ✅ Yes |
-| App logs search | input + Apply button | Same | ✅ Yes |
+| Element                     | App                                                          | Website                                        | Mirrored?  |
+| --------------------------- | ------------------------------------------------------------ | ---------------------------------------------- | ---------- |
+| 3 sections                  | User Activity, User Profiles, Fleet                          | Same                                           | ✅ Yes     |
+| Section selector            | 3 pills, active bg-navy                                      | Same                                           | ✅ Yes     |
+| Crash reports columns       | timestamp, car name, board id, error, reported_at            | Same                                           | ✅ Yes     |
+| App logs scope filter       | dropdown (all/link-wifi/all-other)                           | Same                                           | ✅ Yes     |
+| App logs severity filter    | radio (all/warn/error)                                       | Same                                           | ✅ Yes     |
+| App logs search             | input + Apply button                                         | Same                                           | ✅ Yes     |
 | `link/wifi` diagnostic wire | `appendLog({scope: "link/wifi", ...})` in `useControlHub.ts` | No dedicated wire (admin views app_logs table) | ⚠️ Partial |
 
 ---
@@ -218,27 +226,27 @@ Used in: SettingsTab (company), ProfileEntriesTab, UsersTab (car profiles, robot
 
 ### Button Labels
 
-| Button | App | Website | Mirrored? |
-| --- | --- | --- | --- |
-| Edit | "Edit" (text-xs text-navy uppercase tracking-[0.1em]) | "Edit" (text-xs font-bold text-navy, border-line) | ✅ Same word, different styling |
-| Save | "Save" (bg-emerald-600 text-white) | "Save" (bg-emerald-600 text-white) | ✅ Same |
-| Cancel | "Cancel" (border-line text-ink) | "Cancel" (border-line text-ink) | ✅ Same |
-| Delete | "Delete" (border-red-200 text-red-600) | "Delete" (border-red-200 text-red-600) | ✅ Same |
+| Button | App                                                   | Website                                           | Mirrored?                       |
+| ------ | ----------------------------------------------------- | ------------------------------------------------- | ------------------------------- |
+| Edit   | "Edit" (text-xs text-navy uppercase tracking-[0.1em]) | "Edit" (text-xs font-bold text-navy, border-line) | ✅ Same word, different styling |
+| Save   | "Save" (bg-emerald-600 text-white)                    | "Save" (bg-emerald-600 text-white)                | ✅ Same                         |
+| Cancel | "Cancel" (border-line text-ink)                       | "Cancel" (border-line text-ink)                   | ✅ Same                         |
+| Delete | "Delete" (border-red-200 text-red-600)                | "Delete" (border-red-200 text-red-600)            | ✅ Same                         |
 
 ---
 
 ## 6. Terminology & Labels
 
-| Term | App | Website | Mirrored? |
-| --- | --- | --- | --- |
-| **Edit button label** | "Edit" | "Edit" | ✅ Yes |
-| **Save button label** | "Save" | "Save" | ✅ Yes |
-| **Cancel button label** | "Cancel" | "Cancel" | ✅ Yes |
-| **Delete button label** | "Delete" | "Delete" | ✅ Yes |
-| **Company section heading** | "Company information" | "Company information" | ✅ Yes |
-| **Tab labels** | "Dashboard", "Orders", "Electronic Products", "3D Products", "Projects", "Content", "Users", "Logs", "Settings", "Profile" | Same (via parity test) | ✅ Yes |
-| **Users section labels** | "User Directory", "Car Profiles", "Robot Profiles" | Same | ✅ Yes |
-| **Logs section labels** | "User Activity", "User Profiles", "Fleet Diagnostics" | Same | ✅ Yes |
+| Term                        | App                                                                                                                        | Website                | Mirrored? |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ---------------------- | --------- |
+| **Edit button label**       | "Edit"                                                                                                                     | "Edit"                 | ✅ Yes    |
+| **Save button label**       | "Save"                                                                                                                     | "Save"                 | ✅ Yes    |
+| **Cancel button label**     | "Cancel"                                                                                                                   | "Cancel"               | ✅ Yes    |
+| **Delete button label**     | "Delete"                                                                                                                   | "Delete"               | ✅ Yes    |
+| **Company section heading** | "Company information"                                                                                                      | "Company information"  | ✅ Yes    |
+| **Tab labels**              | "Dashboard", "Orders", "Electronic Products", "3D Products", "Projects", "Content", "Users", "Logs", "Settings", "Profile" | Same (via parity test) | ✅ Yes    |
+| **Users section labels**    | "User Directory", "Car Profiles", "Robot Profiles"                                                                         | Same                   | ✅ Yes    |
+| **Logs section labels**     | "User Activity", "User Profiles", "Fleet Diagnostics"                                                                      | Same                   | ✅ Yes    |
 
 ---
 
@@ -272,15 +280,15 @@ Used in: SettingsTab (company), ProfileEntriesTab, UsersTab (car profiles, robot
 
 ## 8. Data Ownership
 
-| Data | Table | Written by |
-| --- | --- | --- |
-| Products / catalogs | `products` | website API, app via `admin-products` |
-| Robot preferences | `robot_user_settings` | app + website account page; admins repair |
-| Project (car) profiles | `car_profiles` | app build screen; admins repair |
-| User activity | `user_activity_log` | DB triggers on `car_profiles` / `orders` |
-| Profile entries | `user_profile_entries` | DB triggers on `car_profiles` |
-| Crash reports / app logs | `device_crash_reports`, `app_logs` | app telemetry |
-| Link imports | `link_import_attempts` | `link-import` edge function |
+| Data                     | Table                              | Written by                                |
+| ------------------------ | ---------------------------------- | ----------------------------------------- |
+| Products / catalogs      | `products`                         | website API, app via `admin-products`     |
+| Robot preferences        | `robot_user_settings`              | app + website account page; admins repair |
+| Project (car) profiles   | `car_profiles`                     | app build screen; admins repair           |
+| User activity            | `user_activity_log`                | DB triggers on `car_profiles` / `orders`  |
+| Profile entries          | `user_profile_entries`             | DB triggers on `car_profiles`             |
+| Crash reports / app logs | `device_crash_reports`, `app_logs` | app telemetry                             |
+| Link imports             | `link_import_attempts`             | `link-import` edge function               |
 
 `user_activity_log` and `user_profile_entries` have **no client writers**. They are filled by Postgres triggers so both clients see the same history without duplicating write code.
 
@@ -290,14 +298,15 @@ Used in: SettingsTab (company), ProfileEntriesTab, UsersTab (car profiles, robot
 
 Each car profile has **distinguished identity fields** that identify the car uniquely:
 
-| Field | Purpose | Example |
-| --- | --- | --- |
+| Field         | Purpose                                                                           | Example                                         |
+| ------------- | --------------------------------------------------------------------------------- | ----------------------------------------------- |
 | `profile_key` | Stable identity — `fw:boardId` (firmware board ID), Bluetooth MAC, or `wifi:uuid` | `fw:1FB608`, `AA:BB:CC:DD:EE:FF`, `wifi:abc123` |
-| `car_name` | Display name set by user | "My 2WD car" |
-| `unique_id` | Unique identifier for the car | `#12345` |
-| `settings` | JSON blob of car-specific settings | `{modeId: "eco", speed: 128}` |
+| `car_name`    | Display name set by user                                                          | "My 2WD car"                                    |
+| `unique_id`   | Unique identifier for the car                                                     | `#12345`                                        |
+| `settings`    | JSON blob of car-specific settings                                                | `{modeId: "eco", speed: 128}`                   |
 
 These fields appear in:
+
 - App: Users tab → Car Profiles section; UserPreferencesScreen → My Devices section
 - Website: Users tab → Car Profiles section
 
@@ -327,18 +336,18 @@ The `profile_key` is the **stable identity** that persists across app reinstalls
 
 ## 11. Current Alignment Status (Nov 2026)
 
-| Feature | App | Website | Mirrored? |
-| --- | --- | --- | --- |
-| Tab order (9 tabs) | Identical order | Identical order | ✅ Yes |
-| Users tab structure | 3 sections (User Directory, Car Profiles, Robot Profiles) | 3 sections (same) | ✅ Yes |
-| Edit-button pattern | Read-only → Edit → form → Save/Cancel | Same | ✅ Yes |
-| Company info fields | 17 fields (incl. url) | 17 fields (incl. url) | ✅ Yes |
-| Car profiles per user | profile_key, car_name, unique_id, settings | Same | ✅ Yes |
-| Robot profiles per user | robot_id, robot_name, settings | Same | ✅ Yes |
-| Logs tab sections | 3 sections (User Activity, User Profiles, Fleet) | Same | ✅ Yes |
-| Settings responsive | Mobile-first, stacks vertically | Mobile + desktop, responsive | ✅ Both |
-| Fleet diagnostics | Crash reports + app logs with scope filter | Same | ✅ Yes |
-| `link/wifi` diagnostic wire | `appendLog` in `useControlHub.ts` | No dedicated wire (views app_logs table) | ⚠️ Partial |
+| Feature                     | App                                                       | Website                                  | Mirrored?  |
+| --------------------------- | --------------------------------------------------------- | ---------------------------------------- | ---------- |
+| Tab order (9 tabs)          | Identical order                                           | Identical order                          | ✅ Yes     |
+| Users tab structure         | 3 sections (User Directory, Car Profiles, Robot Profiles) | 3 sections (same)                        | ✅ Yes     |
+| Edit-button pattern         | Read-only → Edit → form → Save/Cancel                     | Same                                     | ✅ Yes     |
+| Company info fields         | 17 fields (incl. url)                                     | 17 fields (incl. url)                    | ✅ Yes     |
+| Car profiles per user       | profile_key, car_name, unique_id, settings                | Same                                     | ✅ Yes     |
+| Robot profiles per user     | robot_id, robot_name, settings                            | Same                                     | ✅ Yes     |
+| Logs tab sections           | 3 sections (User Activity, User Profiles, Fleet)          | Same                                     | ✅ Yes     |
+| Settings responsive         | Mobile-first, stacks vertically                           | Mobile + desktop, responsive             | ✅ Both    |
+| Fleet diagnostics           | Crash reports + app logs with scope filter                | Same                                     | ✅ Yes     |
+| `link/wifi` diagnostic wire | `appendLog` in `useControlHub.ts`                         | No dedicated wire (views app_logs table) | ⚠️ Partial |
 
 ---
 
@@ -361,7 +370,42 @@ The `profile_key` is the **stable identity** that persists across app reinstalls
 
 ---
 
-## 13. Test Status
+## 13. Architecture Mirroring
+
+Both projects share the same architectural patterns:
+
+| Aspect               | App                                   | Website                                | Mirrored?                               |
+| -------------------- | ------------------------------------- | -------------------------------------- | --------------------------------------- |
+| **Navigation**       | Bottom tabs + native-stack screens    | Next.js App Router page routes         | ✅ Same concept                         |
+| **State management** | React Context (`AppContext`)          | React state + Supabase cookies         | ✅ Both use React state                 |
+| **Styling**          | NativeWind (`className` system)       | Tailwind CSS (`tailwind.config.ts`)    | ✅ Same Tailwind tokens (navy/ink/gold) |
+| **Data layer**       | `src/services/` read Supabase         | `lib/` + `app/api/` read Supabase      | ✅ Same Supabase anon key pattern       |
+| **Auth**             | Native Supabase auth (SecureStore)    | Cookie sessions via `@supabase/ssr`    | ✅ Same Supabase Auth                   |
+| **Admin contract**   | `adminService.ts` + `AdminScreen.tsx` | `lib/` + `app/api/admin/` + components | ✅ Same RLS-gated admin pattern         |
+| **Company info**     | `src/config/company.ts` (17 fields)   | `lib/company.ts` (17 fields)           | ✅ Identical types                      |
+| **Version sync**     | `app.json` + `src/config/site.ts`     | N/A (website version in package.json)  | ⚠️ Different pattern                    |
+| **Release**          | APK upload + OTA hot-patches          | Vercel deployment                      | ✅ Both use git-pushed CI               |
+| **Testing**          | 955 vitest tests                      | 301 vitest tests                       | ✅ Both use vitest                      |
+
+### Shared Files (Source of Truth)
+
+| File                                        | Purpose                                 | Location                            |
+| ------------------------------------------- | --------------------------------------- | ----------------------------------- |
+| `supabase/schema.sql`                       | Database schema (tables, RLS, triggers) | website repo (source of truth)      |
+| `lib/company.ts` ↔ `src/config/company.ts`  | Company info type (17 fields)           | website ↔ app                       |
+| `tailwind.config.ts` ↔ `tailwind.config.js` | Tailwind theme tokens                   | website ↔ app                       |
+| `src/config/adminTabs.ts` ↔ parity tests    | Admin tab definitions                   | app (enforced by both repos' tests) |
+
+### Sync Responsibilities
+
+- **Schema**: `supabase/schema.sql` is the source of truth. The app reads from the same DB.
+- **Company info**: Both repos have identical 17-field types. Keep in sync when fields change.
+- **Tailwind tokens**: Both use the same navy/ink/gold palette. Keep colors in sync.
+- **Admin tabs**: Parity tests enforce identical tab order on both repos.
+
+---
+
+## 14. Test Status
 
 - **App:** 955 vitest tests across 65 files — all passing
 - **Website:** 301 vitest tests across 24 files — all passing
