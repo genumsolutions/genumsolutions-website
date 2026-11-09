@@ -7,6 +7,7 @@ import {
   EmptyState,
   LoadingRow,
   Pager,
+  RowActions,
   formatTimestamp,
   panelTitle,
   PanelCard,
@@ -42,17 +43,38 @@ type AppLogRow = {
 
 async function fetchPage<T>(kind: "crash" | "app", page: number): Promise<LogsList<T>> {
   const response = await fetch(`/api/admin/logs?kind=${kind}&page=${page}&limit=${PAGE_SIZE}`);
-  return response.ok
-    ? ((await response.json()) as LogsList<T>)
-    : { entries: [], total: 0, page, totalPages: 1 };
+  const json = (await response.json().catch(() => null)) as
+    (LogsList<T> & { error?: string }) | null;
+  if (!response.ok) {
+    throw new Error(json?.error || `Could not load logs (HTTP ${response.status}).`);
+  }
+  if (!json || !Array.isArray(json.entries)) {
+    throw new Error("The server returned an unexpected logs payload.");
+  }
+  return json;
+}
+
+// DELETE /api/admin/logs?table=<table>&id=<id>. It has always been supported
+// server-side; the panel just never exposed it.
+async function deleteLogRow(table: "device_crash_reports" | "app_logs", id: string): Promise<void> {
+  const response = await fetch(`/api/admin/logs?table=${table}&id=${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+  const json = (await response.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
+  if (!response.ok || json?.ok !== true) {
+    throw new Error(json?.error || `Could not delete the log entry (HTTP ${response.status}).`);
+  }
 }
 
 function CrashSection() {
   const [entries, setEntries] = useState<CrashRow[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   useEffect(() => {
     void load(1);
@@ -61,14 +83,33 @@ function CrashSection() {
 
   async function load(p: number) {
     setLoaded(false);
+    setError(null);
     try {
       const data = await fetchPage<CrashRow>("crash", p);
       setEntries(data.entries);
       setTotal(data.total);
       setPage(data.page);
       setTotalPages(data.totalPages);
+    } catch (e) {
+      setEntries([]);
+      setError(e instanceof Error ? e.message : "Could not load crash reports.");
     } finally {
       setLoaded(true);
+    }
+  }
+
+  async function handleDelete(rowId: string) {
+    if (!window.confirm("Delete this crash report? This cannot be undone.")) return;
+    setDeleting(rowId);
+    setActionError(null);
+    try {
+      await deleteLogRow("device_crash_reports", rowId);
+      setEntries((prev) => prev.filter((r) => r.id !== rowId));
+      setTotal((prev) => Math.max(0, prev - 1));
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "Could not delete the crash report.");
+    } finally {
+      setDeleting(null);
     }
   }
 
@@ -79,8 +120,24 @@ function CrashSection() {
         One row per connection session, synced by the app from the car&apos;s stored restart record.
         A <span className="font-bold">crash</span> badge marks an actual crash_count &gt; 0.
       </p>
+      {actionError && (
+        <p className="mt-3 border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700">
+          {actionError}
+        </p>
+      )}
       {!loaded ? (
         <LoadingRow className="mt-3" />
+      ) : error ? (
+        <p className="mt-3 border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700">
+          {error}{" "}
+          <button
+            type="button"
+            onClick={() => void load(page)}
+            className="ml-1 underline underline-offset-2"
+          >
+            Retry
+          </button>
+        </p>
       ) : entries.length === 0 ? (
         <EmptyState className="mt-2">No crash reports synced yet.</EmptyState>
       ) : (
@@ -118,6 +175,16 @@ function CrashSection() {
                 <p className="mt-1 text-xs text-slate-400">
                   boot #{row.boot_count ?? "?"} · {formatTimestamp(row.reported_at)}
                 </p>
+                <RowActions
+                  actions={[
+                    {
+                      label: deleting === row.id ? "Deleting…" : "Delete",
+                      onClick: () => void handleDelete(row.id),
+                      tone: "red",
+                      show: deleting !== row.id,
+                    },
+                  ]}
+                />
               </li>
             ))}
           </ul>
@@ -134,9 +201,12 @@ function CrashSection() {
 function AppLogSection() {
   const [entries, setEntries] = useState<AppLogRow[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   useEffect(() => {
     void load(1);
@@ -145,14 +215,33 @@ function AppLogSection() {
 
   async function load(p: number) {
     setLoaded(false);
+    setError(null);
     try {
       const data = await fetchPage<AppLogRow>("app", p);
       setEntries(data.entries);
       setTotal(data.total);
       setPage(data.page);
       setTotalPages(data.totalPages);
+    } catch (e) {
+      setEntries([]);
+      setError(e instanceof Error ? e.message : "Could not load app logs.");
     } finally {
       setLoaded(true);
+    }
+  }
+
+  async function handleDelete(rowId: string) {
+    if (!window.confirm("Delete this app log line? This cannot be undone.")) return;
+    setDeleting(rowId);
+    setActionError(null);
+    try {
+      await deleteLogRow("app_logs", rowId);
+      setEntries((prev) => prev.filter((r) => r.id !== rowId));
+      setTotal((prev) => Math.max(0, prev - 1));
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "Could not delete the app log.");
+    } finally {
+      setDeleting(null);
     }
   }
 
@@ -163,8 +252,24 @@ function AppLogSection() {
         Warn/error lines flushed from the phone&apos;s ring buffer (logger + appLogService), newest
         first.
       </p>
+      {actionError && (
+        <p className="mt-3 border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700">
+          {actionError}
+        </p>
+      )}
       {!loaded ? (
         <LoadingRow className="mt-3" />
+      ) : error ? (
+        <p className="mt-3 border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700">
+          {error}{" "}
+          <button
+            type="button"
+            onClick={() => void load(page)}
+            className="ml-1 underline underline-offset-2"
+          >
+            Retry
+          </button>
+        </p>
       ) : entries.length === 0 ? (
         <EmptyState className="mt-2">No app logs uploaded yet.</EmptyState>
       ) : (
@@ -192,6 +297,16 @@ function AppLogSection() {
                   </p>
                 )}
                 <p className="mt-0.5 text-xs text-slate-400">{formatTimestamp(row.created_at)}</p>
+                <RowActions
+                  actions={[
+                    {
+                      label: deleting === row.id ? "Deleting…" : "Delete",
+                      onClick: () => void handleDelete(row.id),
+                      tone: "red",
+                      show: deleting !== row.id,
+                    },
+                  ]}
+                />
               </li>
             ))}
           </ul>

@@ -14,11 +14,21 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const page = Number(searchParams.get("page")) || 1;
     const limit = Number(searchParams.get("limit")) || 20;
-    const [entries, types] = await Promise.all([
+    const [result, types] = await Promise.all([
       listUserProfileEntries({ page, limit }),
       listProfileEntryTypes(),
     ]);
-    return NextResponse.json({ entries, types, page, hasMore: entries.entries.length === limit });
+    // Flat page shape, same as every other admin list route
+    // (/api/admin/user-logs, /api/admin/logs). This used to nest the page
+    // object under `entries`, so the panel's `data.entries.map(...)` threw
+    // and the tab rendered an error instead of a list.
+    return NextResponse.json({
+      entries: result.entries,
+      total: result.total,
+      page: result.page,
+      totalPages: result.totalPages,
+      types,
+    });
   } catch (error) {
     console.error("Profile entries list failed", error);
     return NextResponse.json({ error: "Could not load profile entries." }, { status: 500 });

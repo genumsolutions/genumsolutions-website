@@ -2050,3 +2050,27 @@ create policy "user_profile_entries_update_own" on public.user_profile_entries
   for update to authenticated
   using (user_id = auth.uid())
   with check (user_id = auth.uid());
+
+-- Staff/admin access, matching the "staff read X" / "admin delete X" pattern
+-- used by activity_log, device_crash_reports and app_logs. The website reads
+-- these tables with the service role (bypasses RLS); the mobile app reads with
+-- the signed-in session and needs these policies.
+drop policy if exists "staff read user activity log" on public.user_activity_log;
+create policy "staff read user activity log" on public.user_activity_log
+  for select to authenticated
+  using (public.is_staff());
+
+drop policy if exists "admin delete user activity log" on public.user_activity_log;
+create policy "admin delete user activity log" on public.user_activity_log
+  for delete to authenticated
+  using (public.is_admin());
+
+drop policy if exists "staff read user profile entries" on public.user_profile_entries;
+create policy "staff read user profile entries" on public.user_profile_entries
+  for select to authenticated
+  using (public.is_staff());
+
+drop policy if exists "admin delete user profile entries" on public.user_profile_entries;
+create policy "admin delete user profile entries" on public.user_profile_entries
+  for delete to authenticated
+  using (public.is_admin());

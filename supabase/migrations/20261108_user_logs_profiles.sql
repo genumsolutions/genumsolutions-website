@@ -157,6 +157,32 @@ create policy "user_profile_entries_update_own" on public.user_profile_entries
   using (user_id = auth.uid())
   with check (user_id = auth.uid());
 
+-- Staff/admin access. The website admin routes read with the service-role
+-- key (which bypasses RLS), but the mobile app reads with the signed-in
+-- session, so it needs explicit staff read + admin delete policies. This
+-- mirrors the "staff read X" / "admin delete X" convention used by
+-- activity_log, device_crash_reports and app_logs.
+-- (Applied to the live project by 20261109_user_logs_staff_rls.sql.)
+drop policy if exists "staff read user activity log" on public.user_activity_log;
+create policy "staff read user activity log" on public.user_activity_log
+  for select to authenticated
+  using (public.is_staff());
+
+drop policy if exists "admin delete user activity log" on public.user_activity_log;
+create policy "admin delete user activity log" on public.user_activity_log
+  for delete to authenticated
+  using (public.is_admin());
+
+drop policy if exists "staff read user profile entries" on public.user_profile_entries;
+create policy "staff read user profile entries" on public.user_profile_entries
+  for select to authenticated
+  using (public.is_staff());
+
+drop policy if exists "admin delete user profile entries" on public.user_profile_entries;
+create policy "admin delete user profile entries" on public.user_profile_entries
+  for delete to authenticated
+  using (public.is_admin());
+
 comment on table public.user_activity_log is
   'Per-user audit log written by the app; read/delete by admins through the service role.';
 comment on table public.profile_entry_types is

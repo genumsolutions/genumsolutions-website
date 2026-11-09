@@ -35,14 +35,6 @@ const ADMIN_TABS = [
   "Settings",
 ];
 
-// Tabs that exist ONLY on the website. They are web-admin features (paginated
-// server routes + service-role reads) with no app-side screen yet, so the app
-// is not expected to declare them. Everything outside this list must stay an
-// exact match, in the same order, on both clients.
-const WEBSITE_ONLY_TABS = ["User Logs", "Profile Entries"];
-
-const SHARED_TABS = ADMIN_TABS.filter((tab) => !WEBSITE_ONLY_TABS.includes(tab));
-
 function readAdminTypesSource(): string {
   const local = resolve(__dirname, "../components/admin/admin-types.ts");
   if (existsSync(local)) return readFileSync(local, "utf8");
@@ -87,8 +79,6 @@ describe("admin tab inventory (website <-> app mirror, B-6)", () => {
       .split(",")
       .map((s) => s.trim().replace(/^["']|["']$/g, ""))
       .filter(Boolean);
-    // The app mirrors the shared tabs; the website-only panels above are not
-    // expected there until the app ships equivalent screens.
-    expect(appTabs).toEqual(SHARED_TABS);
+    expect(appTabs).toEqual(ADMIN_TABS);
   });
 });

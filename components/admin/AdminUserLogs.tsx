@@ -13,41 +13,44 @@ import {
   PanelCard,
 } from "./admin-helpers";
 
-type LogRow = {
-  id: string;
-  user_id: string | null;
-  action: string;
-  entity_type: string;
-  entity_id: string | null;
-  details: Record<string, unknown>;
-  created_at: string;
-};
+type LogRow = UserLogsPage["entries"][number];
 
 async function fetchPage(page: number): Promise<UserLogsPage> {
   const response = await fetch(`/api/admin/user-logs?page=${page}&limit=${PAGE_SIZE}`);
-  return response.ok
-    ? ((await response.json()) as UserLogsPage)
-    : { entries: [], total: 0, page, totalPages: 1 };
+  const json = (await response.json().catch(() => null)) as
+    (UserLogsPage & { error?: string }) | null;
+  if (!response.ok) {
+    throw new Error(json?.error || `Could not load user activity logs (HTTP ${response.status}).`);
+  }
+  if (!json || !Array.isArray(json.entries)) {
+    throw new Error("The server returned an unexpected user-logs payload.");
+  }
+  return json;
 }
 
-async function deleteRow(logId: string): Promise<boolean> {
+async function deleteRow(logId: string): Promise<void> {
   const response = await fetch("/api/admin/user-logs", {
     method: "DELETE",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id: logId }),
   });
-  return response.ok && (await response.json()).ok === true;
+  const json = (await response.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
+  if (!response.ok || json?.ok !== true) {
+    throw new Error(json?.error || `Could not delete the log entry (HTTP ${response.status}).`);
+  }
 }
 
-function confirmDelete(_logId: string): boolean {
+function confirmDelete(logId: string): boolean {
   if (typeof window === "undefined") return true;
-  void _logId;
+  void logId;
   return window.confirm("Delete this user activity log entry? This cannot be undone.");
 }
 
 export default function AdminUserLogs() {
   const [entries, setEntries] = useState<LogRow[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -60,12 +63,16 @@ export default function AdminUserLogs() {
 
   async function load(p: number) {
     setLoaded(false);
+    setError(null);
     try {
       const data = await fetchPage(p);
       setEntries(data.entries);
       setTotal(data.total);
       setPage(data.page);
       setTotalPages(data.totalPages);
+    } catch (e) {
+      setEntries([]);
+      setError(e instanceof Error ? e.message : "Could not load user activity logs.");
     } finally {
       setLoaded(true);
     }
@@ -74,12 +81,13 @@ export default function AdminUserLogs() {
   async function handleDelete(rowId: string) {
     if (!confirmDelete(rowId)) return;
     setDeleting(rowId);
+    setActionError(null);
     try {
-      const ok = await deleteRow(rowId);
-      if (ok) {
-        setEntries((prev) => prev.filter((r) => r.id !== rowId));
-        setTotal((prev) => Math.max(0, prev - 1));
-      }
+      await deleteRow(rowId);
+      setEntries((prev) => prev.filter((r) => r.id !== rowId));
+      setTotal((prev) => Math.max(0, prev - 1));
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "Could not delete the log entry.");
     } finally {
       setDeleting(null);
     }
@@ -98,10 +106,28 @@ export default function AdminUserLogs() {
         <p className="mt-1 text-xs text-slate-500">
           Per-user audit entries logged by the app. Admin-only delete.
         </p>
+        {actionError && (
+          <p className="mt-3 border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700">
+            {actionError}
+          </p>
+        )}
         {!loaded ? (
           <LoadingRow className="mt-3" />
+        ) : error ? (
+          <p className="mt-3 border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700">
+            {error}{" "}
+            <button
+              type="button"
+              onClick={() => void load(page)}
+              className="ml-1 underline underline-offset-2"
+            >
+              Retry
+            </button>
+          </p>
         ) : entries.length === 0 ? (
-          <EmptyState className="mt-2">No user activity logs yet.</EmptyState>
+          <EmptyState className="mt-2">
+            No user activity logs yet. Entries appear here as signed-in users use the app.
+          </EmptyState>
         ) : (
           <>
             <ul className="mt-3 space-y-2">
@@ -123,6 +149,11 @@ export default function AdminUserLogs() {
                       {formatTimestamp(row.created_at)}
                     </span>
                   </div>
+                  {row.user_id && (
+                    <p className="mt-0.5 font-mono text-[11px] text-slate-400">
+                      user {row.user_id.slice(0, 8)}…
+                    </p>
+                  )}
                   {row.details && Object.keys(row.details).length > 0 && (
                     <p className="mt-1 break-words text-xs text-slate-500">
                       {JSON.stringify(row.details)}
@@ -132,7 +163,7 @@ export default function AdminUserLogs() {
                     actions={[
                       {
                         label: deleting === row.id ? "Deleting…" : "Delete",
-                        onClick: () => handleDelete(row.id),
+                        onClick: () => void handleDelete(row.id),
                         tone: "red",
                         show: deleting !== row.id,
                       },

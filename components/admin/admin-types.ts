@@ -4,36 +4,9 @@ export type { Product };
 
 export const PAGE_SIZE = 20;
 
-export type UserLogsPage = {
-  entries: {
-    id: string;
-    user_id: string | null;
-    action: string;
-    entity_type: string;
-    entity_id: string | null;
-    details: Record<string, unknown>;
-    created_at: string;
-  }[];
-  total: number;
-  page: number;
-  totalPages: number;
-};
-
-export type ProfileEntriesPage = {
-  entries: {
-    id: string;
-    user_id: string;
-    type_id: string;
-    title: string;
-    body: Record<string, unknown>;
-    typeName: string;
-    created_at: string;
-    updated_at: string;
-  }[];
-  total: number;
-  page: number;
-  totalPages: number;
-};
+// UserLogsPage / ProfileEntriesPage live in lib/user-logs.ts next to the
+// queries that produce them; the admin panels import them from there. Keeping
+// a second copy here previously let the two shapes drift apart.
 
 export const STATUSES = ["pending", "paid", "fulfilled", "cancelled"] as const;
 

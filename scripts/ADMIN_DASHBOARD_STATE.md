@@ -44,6 +44,52 @@
 - Joined read `user_profile_entries?select=*,profile_entry_types(name)` → HTTP 200 and resolves `profile_entry_types.name`, which is what `listUserProfileEntries` maps to `typeName`.
 - Insert → read → delete round trip on both `user_activity_log` and `user_profile_entries` succeeded (HTTP 200 each), and both tables were left empty again afterwards.
 
+## Coherence pass (2026-11-09, second)
+
+The two clients now expose the identical 11-tab admin inventory and the same
+four management surfaces, all backed by one database.
+
+### Fixed: the Profile Entries tab crashed ("hit a snag")
+
+`GET /api/admin/profile-entries` returned `{ entries: { entries: [...], total, ... }, types }`
+— the page object was nested under `entries`, so the panel's `data.entries.map(...)`
+threw and React showed the error boundary. The route now returns the flat shape
+every other admin list route uses: `{ entries, total, page, totalPages, types }`.
+`AdminUserLogs`, `AdminProfileEntries` and both `AdminLogs` sections now also
+surface the real error message with a Retry action instead of a silent empty
+state, and guard against a malformed payload.
+
+### Fixed: admins could not manage robot profiles, crash logs or app logs
+
+The live policy audit showed `car_profiles`, `robot_user_settings`,
+`device_crash_reports` and `app_logs` only had per-user `"own"` policies. The
+website reads them with the service-role key so it worked; the app reads with
+the signed-in session, so its Users / System Logs panels silently showed only
+the admin's own rows. `20261109_admin_manage_rls.sql` adds the standard
+`staff read` / `admin delete` pair to all four tables.
+
+### Added: delete controls where the API already supported them
+
+`DELETE /api/admin/logs` had existed all along but the System Logs panel never
+called it. Crash reports and app log lines now have Delete in the website panel
+and in the app's System Logs tab.
+
+### Added: writers so the panels hold real data
+
+Nothing wrote to `user_activity_log` or `user_profile_entries`, so the new tabs
+could only ever be empty. `20261109_user_logs_writers.sql` adds triggers, which
+cover both clients with one implementation and cost nothing on the free tier:
+
+- `car_profiles` insert/update -> upserts the matching `user_profile_entries` row
+  and appends `car_profile_saved` to `user_activity_log`
+- `car_profiles` delete -> removes the entry and logs `car_profile_deleted`
+- `orders` insert -> `order_placed`; status change -> `order_status_changed`
+  It also backfills entries for existing car profiles.
+
+Verified: inserting a car profile produced the entry (with `typeName` = `car profile`)
+and the log row; deleting it removed the entry and logged the deletion. Test rows
+were removed afterwards; three real entries remain from the backfill.
+
 ## Still to confirm
 
 - The admin UI itself has not been exercised with a signed-in admin session from here. The published endpoints are live and gated (`401 {"error":"Unauthorized"}` without a session), and the underlying data path is verified, so what remains is a click-through in the live admin: `/admin` → **User Logs** and **Profile Entries**.
