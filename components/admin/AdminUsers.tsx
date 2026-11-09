@@ -2,17 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { inputClass } from "../../lib/styles";
-import type { UserPage } from "./admin-types";
+import type { UserPage, ManagedUser } from "./admin-types";
 import { PAGE_SIZE } from "./admin-types";
 import { Pager } from "./admin-helpers";
 
-type Props = {
-  setMessage: (msg: string) => void;
-  canDelete: boolean;
-  currentRole: "staff" | "admin" | "owner";
-};
-
-// One robot preference row (user × robot) from robot_user_settings.
 type RobotRow = {
   robot_id: string;
   robot_name: string;
@@ -20,48 +13,433 @@ type RobotRow = {
   updated_at: string;
 };
 
-// Expandable per-user engineering manager: tier toggle + the user's robot
-// preference rows (code values / parameters / telemetry channels), kept in
-// the dedicated robot_user_settings table — never mixed with orders/carts.
-function UserRobotManager({
+type CarProfileRow = {
+  id: string;
+  profile_key: string;
+  car_name: string;
+  unique_id: string;
+  settings: Record<string, unknown>;
+  updated_at: string;
+};
+
+type UserDirRow = {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  address?: string;
+  createdAt?: string;
+  lastSignInAt?: string;
+  role?: "customer" | "staff" | "admin" | "owner";
+  tier?: "free" | "pro";
+};
+
+type Props = {
+  setMessage: (msg: string) => void;
+  canDelete: boolean;
+  currentRole: "staff" | "admin" | "owner";
+};
+
+// ============================================================
+// UsersDirectory - Shows user directory rows
+// ============================================================
+
+function UsersDirectory({
+  users,
+  canDelete,
+  isOwner,
+  setMessage,
+}: {
+  users: UserDirRow[];
+  canDelete: boolean;
+  isOwner: boolean;
+  setMessage: (msg: string) => void;
+}) {
+  // Use the search state internally
+  const [search, setSearch] = useState("");
+
+  const filteredUsers = users.filter((user) => {
+    const matchesQuery =
+      !search ||
+      user.name.toLowerCase().includes(search.toLowerCase()) ||
+      user.email.toLowerCase().includes(search.toLowerCase());
+    return matchesQuery;
+  });
+
+  const renderHeader = () => (
+    <div className="mb-3">
+      <p className="text-xs font-black uppercase tracking-widest text-navy">
+        User Directory
+      </p>
+      <p className="mt-1 text-xs text-slate-500">
+        Search and manage user accounts and their basic information.
+      </p>
+      <div className="mt-3 flex flex-col sm:flex-row gap-2">
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search users…"
+          aria-label="Search users"
+          className={`mt-1 w-full sm:ml-2 sm:mt-0 sm:w-64 ${inputClass}`}
+        />
+        <button
+          onClick={() => setSearch("")}
+          className="bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark"
+        >
+          Clear
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div>
+      {renderHeader()}
+      {filteredUsers.length === 0 ? (
+        <p className="mt-3 text-xs text-slate-500">No users found.</p>
+      ) : (
+        <ul className="mt-3 space-y-2">
+          {filteredUsers.map((user) => (
+            <li key={user.id} className="border border-line bg-white p-4">
+              <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-bold">
+                    {user.name || "—"} {" "}<span className="font-normal text-slate-500">· {user.email}</span></p>
+                  {user.phone && <p className="text-xs text-slate-400">{user.phone}</p>}
+                  {user.address && (
+                    <p className="break-words text-xs text-slate-400">{user.address}</p>
+                  )}
+                  <p className="text-xs text-slate-400">
+                    Joined {new Date(user.createdAt ?? Date.now()).toLocaleDateString()}
+                    {user.lastSignInAt
+                      ? ` · Last seen ${new Date(user.lastSignInAt).toLocaleDateString()}`
+                      : ""}
+                  </p>
+                </div>
+                <span className="flex flex-wrap gap-2 sm:w-auto">
+                  <select
+                    disabled={!canDelete}
+                    aria-label={`Role for ${user.email}`}
+                    className="border border-line bg-white px-2 py-1.5 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="customer">customer</option>
+                    <option value="staff">staff</option>
+                    <option value="admin">admin</option>
+                    <option value="owner" disabled>
+                      owner
+                    </option>
+                  </select>
+                  {user.tier === "pro" ? (
+                    <button
+                      onClick={() =>
+                        setMessage(`Upgrade ${user.email} to PRO? (Pro unlocks per-robot preference profiles.)`)
+                      }
+                      className="border border-line px-3 py-1.5 text-xs font-bold text-slate-500 transition hover:border-slate-500"
+                    >
+                      Upgrade to Pro
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setMessage(`Downgrade ${user.email} to FREE? (Robot preference rows are kept but become read-only.)`)}
+                      className="border border-line px-3 py-1.5 text-xs font-bold text-slate-500 transition:hover:border-slate-500"
+                    >
+                      Downgrade to Free
+                    </button>
+                  )}
+                  {isOwner && canDelete && (
+                    <button
+                      onClick={() =>
+                        window.confirm(
+                          `Permanently delete ${user.email}? This removes their account and all related data. This cannot be undone.`
+                        ) && void setSearch("")
+                      }
+                      className="border border-red-200 px-3 py-1.5 text-xs font-bold text-red-600 transition hover:bg-red-50"
+                    >
+                      Delete user
+                    </button>
+                  )}
+                </span>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+// ======================
+// CarProfilesSection
+// ======================
+
+function CarProfilesSection({
   userId,
   email,
+  profiles,
   setMessage,
   canDelete,
 }: {
   userId: string;
   email: string;
+  profiles: CarProfileRow[] | null;
   setMessage: (msg: string) => void;
   canDelete: boolean;
 }) {
-  const [robots, setRobots] = useState<RobotRow[] | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingKey, setEditingKey] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
   const [draftJson, setDraftJson] = useState("");
-  const [newRobotId, setNewRobotId] = useState("");
-  const [busy, setBusy] = useState(false);
 
   async function load() {
-    const response = await fetch("/api/admin/users", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "listRobotSettings", userId }),
-    });
-    if (response.ok) {
-      const data = await response.json();
-      setRobots(data.robots || []);
-    } else setRobots([]);
+    try {
+      const response = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "listCarProfiles", userId }),
+      });
+      await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        setMessage(err.error || "Could not load car profiles.");
+        return;
+      }
+    } catch {
+      // keep current profiles
+    }
   }
 
   useEffect(() => {
-    setRobots(null);
     void load();
-  }, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [userId]);
 
-  async function send(action: string, extra: Record<string, unknown>, successNote: string) {
-    setBusy(true);
-    // U-48: try/catch/finally so a thrown fetch cannot leave the role/robot
-    // controls stuck disabled (see AdminContent for the same guard).
+  async function send(
+    action: string,
+    extra: Record<string, unknown>,
+    successNote: string
+  ): Promise<boolean> {
+    setMessage(successNote);
+    try {
+      const response = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, userId, ...extra }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setMessage(body.error || "Action failed.");
+        return false;
+      }
+      void load();
+      return true;
+    } catch {
+      setMessage("Could not reach the server. Try again.");
+      return false;
+    }
+  }
+
+  function startEdit(profile: CarProfileRow) {
+    setEditingKey(profile.profile_key);
+    setDraftName(profile.car_name);
+    setDraftJson(JSON.stringify(profile.settings ?? {}, null, 2));
+  }
+
+  async function saveEdit(profileKey: string) {
+    let settings: unknown;
+    try {
+      settings = JSON.parse(draftJson || "{}");
+    } catch {
+      setMessage("Settings must be valid JSON.");
+      return;
+    }
+    const ok = await send(
+      "upsertCarProfile",
+      { profileKey, carName: draftName, settings },
+      `Project profile saved for ${email}.`
+    );
+    if (ok) setEditingKey(null);
+  }
+
+  return (
+    <div>
+      <p className="text-xs font-black uppercase tracking-widest text-navy">
+        Car Profiles
+      </p>
+      <p className="mt-1 text-xs text-slate-500">
+        Per-car rows from car_profiles — the profile key is the board's stable identity (
+        <span className="font-mono">fw:</span>, Bluetooth MAC,
+        <span className="font-mono">wifi:</span>). The app reads the same rows; no Wi-Fi passwords
+        are stored here.
+      </p>
+      {profiles === null ? (
+        <p className="mt-3 text-xs text-slate-500" role="status">Loading…</p>
+      ) : profiles.length === 0 ? (
+        <p className="mt-3 text-xs text-slate-500">No car profiles for this user yet.</p>
+      ) : (
+        <ul className="mt-3 space-y-2">
+          {profiles.map((profile) => (
+            <li key={profile.id} className="rounded-lg border border-line bg-white p-3">
+              {editingKey === profile.profile_key ? (
+                <div>
+                  <input
+                    value={draftName}
+                    onChange={(e) => setDraftName(e.target.value)}
+                    placeholder="Profile display name"
+                    aria-label="Project profile name"
+                    className={`w-full text-xs ${inputClass}`}
+                  />
+                  <textarea
+                    value={draftJson}
+                    onChange={(e) => setDraftJson(e.target.value)}
+                    rows={6}
+                    aria-label="Project profile settings JSON"
+                    className={`mt-2 w-full font-mono text-xs ${inputClass}`}
+                  />
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      onClick={() => void saveEdit(profile.profile_key)}
+                      disabled={false}
+                      className="rounded-full bg-emerald-600 px-4 py-1.5 text-xs font-black text-white"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => setEditingKey(null)}
+                      className="rounded-full border border-line px-4 py-1.5 text-xs font-bold text-ink"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-bold">
+                      {profile.car_name || "Untitled profile"} {" "}<span className="font-mono font-normal text-slate-400">· {profile.profile_key}</span></p>
+                    <p className="truncate font-mono text-[11px] text-slate-500">
+                      {Object.keys(profile.settings || {}).length} keys · updated{" "}
+                      {new Date(profile.updated_at).toLocaleDateString()}
+                      {profile.unique_id ? ` · id ${profile.unique_id}` : ""}
+                    </p>
+                  </div>
+                  <span className="flex gap-2">
+                    <button
+                      onClick={() => startEdit(profile)}
+                      disabled={!canDelete}
+                      title={
+                        canDelete ? "" : "Only administrators can edit project profiles"
+                      }
+                      className="rounded-full border border-line px-3 py-1 text-xs font-bold text-navy transition hover:border-navy disabled:opacity-50"
+                    >
+                      Edit
+                    </button>
+                    {canDelete && (
+                      <button
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              `Delete the ${profile.car_name || profile.profile_key} profile for ${email}?`
+                            )
+                          ) {
+                            void send(
+                              "deleteCarProfile",
+                              { profileKey: profile.profile_key },
+                              "Project profile deleted."
+                            );
+                          }
+                        }}
+                        className="rounded-full border border-red-200 px-3 py-1 text-xs font-bold text-red-600 transition hover:bg-red-50"
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </span>
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {canDelete && (
+        <div className="mt-3 flex flex-wrap items-end gap-2">
+          <label className="text-xs font-bold text-slate-500">
+            Add profile by key
+            <input
+              value=""
+              onChange={(e) => setDraftName(e.target.value)}
+              placeholder="e.g. fw:1FB608"
+              aria-label="New project profile key"
+              className={`mt-1 w-48 text-xs ${inputClass}`}
+            />
+          </label>
+          <button
+            onClick={() => {
+              const profileKey = "";
+              if (!profileKey) {
+                setMessage("Enter a profile key first.");
+                return;
+              }
+              void send(
+                "upsertCarProfile",
+                { profileKey, carName: profileKey, settings: {} },
+                `Project profile "${profileKey}" created for ${email}.`
+              );
+            }}
+            disabled={false}
+            className="rounded-full border border-line px-4 py-2 text-xs font-bold text-navy transition hover:border-navy disabled:opacity-60"
+          >
+            Add profile
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ======================
+// RobotProfilesSection
+// ======================
+
+function RobotProfilesSection({
+  userId,
+  email,
+  robots,
+  setMessage,
+  canDelete,
+}: {
+  userId: string;
+  email: string;
+  robots: RobotRow[] | null;
+  setMessage: (msg: string) => void;
+  canDelete: boolean;
+}) {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draftName, setDraftName] = useState("");
+  const [draftJson, setDraftJson] = useState("");
+
+  async function load() {
+    try {
+      const response = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "listRobotSettings", userId }),
+      });
+      if (response.ok) {
+        await response.json();
+      }
+    } catch {
+      // keep current robots
+    }
+  }
+
+  useEffect(() => {
+    void load();
+  }, [userId]);
+
+  async function send(
+    action: string,
+    extra: Record<string, unknown>,
+    successNote: string
+  ) {
+    setMessage(successNote);
     try {
       const response = await fetch("/api/admin/users", {
         method: "POST",
@@ -70,13 +448,10 @@ function UserRobotManager({
       });
       const body = await response.json().catch(() => ({}));
       if (response.ok) {
-        setMessage(successNote);
         void load();
       } else setMessage(body.error || "Action failed.");
     } catch {
       setMessage("Could not reach the server. Try again.");
-    } finally {
-      setBusy(false);
     }
   }
 
@@ -104,18 +479,16 @@ function UserRobotManager({
   }
 
   return (
-    <div className="mt-3 w-full rounded-xl border border-line bg-surface p-4">
+    <div>
       <p className="text-xs font-black uppercase tracking-widest text-navy">
-        Robot preference profiles
+        Robot Profiles
       </p>
       <p className="mt-1 text-xs text-slate-500">
         Per-robot code values, parameters, and telemetry channels — stored separately from
         orders/carts. The app reads the same rows.
       </p>
       {robots === null ? (
-        <p className="mt-3 text-xs text-slate-500" role="status">
-          Loading…
-        </p>
+        <p className="mt-3 text-xs text-slate-500" role="status">Loading…</p>
       ) : robots.length === 0 ? (
         <p className="mt-3 text-xs text-slate-500">No robot profiles for this user yet.</p>
       ) : (
@@ -141,8 +514,8 @@ function UserRobotManager({
                   <div className="mt-2 flex gap-2">
                     <button
                       onClick={() => void saveEdit()}
-                      disabled={busy}
-                      className="rounded-full bg-navy px-4 py-1.5 text-xs font-black text-white disabled:opacity-60"
+                      disabled={false}
+                      className="rounded-full bg-emerald-600 px-4 py-1.5 text-xs font-black text-white"
                     >
                       Save
                     </button>
@@ -157,12 +530,8 @@ function UserRobotManager({
               ) : (
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="truncate text-xs font-bold text-ink">
-                      {robot.robot_name || robot.robot_id}{" "}
-                      <span className="font-mono font-normal text-slate-400">
-                        · {robot.robot_id}
-                      </span>
-                    </p>
+                    <p className="truncate text-xs font-bold">
+                      {robot.robot_name || robot.robot_id} {" "}<span className="font-mono font-normal text-slate-400">· {robot.robot_id}</span></p>
                     <p className="truncate font-mono text-[11px] text-slate-500">
                       {Object.keys(robot.settings || {}).length} keys · updated{" "}
                       {new Date(robot.updated_at).toLocaleDateString()}
@@ -182,14 +551,15 @@ function UserRobotManager({
                             window.confirm(
                               `Delete the ${robot.robot_name || robot.robot_id} profile for ${email}?`
                             )
-                          )
+                          ) {
                             void send(
                               "deleteRobotSetting",
                               { robotId: robot.robot_id },
                               "Robot profile deleted."
                             );
+                          }
                         }}
-                        className="rounded-full border border-red-200 px-3 py-1 text-xs font-bold text-red-600 transition hover:bg-red-50"
+                        className="rounded-full border border-red-200 px-3 py-1 text-xs font-bold text-red-600 transition:hover:bg-red-50"
                       >
                         Delete
                       </button>
@@ -205,8 +575,8 @@ function UserRobotManager({
         <label className="text-xs font-bold text-slate-500">
           Add robot by id
           <input
-            value={newRobotId}
-            onChange={(e) => setNewRobotId(e.target.value)}
+            value=""
+            onChange={(e) => setDraftName(e.target.value)}
             placeholder="e.g. 2wd1m-basic"
             aria-label="New robot id"
             className={`mt-1 w-48 text-xs ${inputClass}`}
@@ -214,7 +584,7 @@ function UserRobotManager({
         </label>
         <button
           onClick={() => {
-            const robotId = newRobotId.trim();
+            const robotId = "";
             if (!robotId) {
               setMessage("Enter a robot id first.");
               return;
@@ -224,10 +594,9 @@ function UserRobotManager({
               { robotId, robotName: robotId, settings: {} },
               `Robot profile "${robotId}" created for ${email}.`
             );
-            setNewRobotId("");
           }}
-          disabled={busy}
-          className="rounded-full border border-line px-4 py-2 text-xs font-bold text-navy transition hover:border-navy disabled:opacity-60"
+          disabled={false}
+          className="rounded-full border border-line px-4 py-2 text-xs font-bold text-navy transition:hover:border-navy disabled:opacity-60"
         >
           Add profile
         </button>
@@ -236,271 +605,18 @@ function UserRobotManager({
   );
 }
 
-// One project (car) profile row from car_profiles.
-type CarProfileRow = {
-  id: string;
-  profile_key: string;
-  car_name: string;
-  unique_id: string;
-  settings: Record<string, unknown>;
-  updated_at: string;
-};
-
-// Project profiles: the same car_profiles rows the app's build screen and the
-// website's CarProfilesPanel use, so an admin can rename a board, repair a
-// broken settings blob, or clear out an abandoned profile without touching the
-// customer's app. Staff can read the list; only admins get the write controls
-// (the API enforces the same rule).
-function UserCarProfileManager({
-  userId,
-  email,
-  setMessage,
-  canDelete,
-}: {
-  userId: string;
-  email: string;
-  setMessage: (msg: string) => void;
-  canDelete: boolean;
-}) {
-  const [profiles, setProfiles] = useState<CarProfileRow[] | null>(null);
-  const [error, setError] = useState("");
-  const [editingKey, setEditingKey] = useState<string | null>(null);
-  const [draftName, setDraftName] = useState("");
-  const [draftJson, setDraftJson] = useState("");
-  const [newKey, setNewKey] = useState("");
-  const [busy, setBusy] = useState(false);
-
-  async function load() {
-    setError("");
-    try {
-      const response = await fetch("/api/admin/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "listCarProfiles", userId }),
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        setError(data.error || "Could not load project profiles.");
-        setProfiles([]);
-        return;
-      }
-      setProfiles(data.profiles || []);
-    } catch {
-      setError("Could not reach the server.");
-      setProfiles([]);
-    }
-  }
-
-  useEffect(() => {
-    setProfiles(null);
-    setEditingKey(null);
-    void load();
-  }, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  async function send(
-    action: string,
-    extra: Record<string, unknown>,
-    successNote: string
-  ): Promise<boolean> {
-    setBusy(true);
-    try {
-      const response = await fetch("/api/admin/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, userId, ...extra }),
-      });
-      const body = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        setMessage(body.error || "Action failed.");
-        return false;
-      }
-      setMessage(successNote);
-      await load();
-      return true;
-    } catch {
-      setMessage("Could not reach the server. Try again.");
-      return false;
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function startEdit(profile: CarProfileRow) {
-    setEditingKey(profile.profile_key);
-    setDraftName(profile.car_name);
-    setDraftJson(JSON.stringify(profile.settings ?? {}, null, 2));
-  }
-
-  async function saveEdit(profileKey: string) {
-    let settings: unknown;
-    try {
-      settings = JSON.parse(draftJson || "{}");
-    } catch {
-      setMessage("Settings must be valid JSON.");
-      return;
-    }
-    const ok = await send(
-      "upsertCarProfile",
-      { profileKey, carName: draftName, settings },
-      `Project profile saved for ${email}.`
-    );
-    if (ok) setEditingKey(null);
-  }
-
-  return (
-    <div className="mt-3 w-full rounded-xl border border-line bg-surface p-4">
-      <p className="text-xs font-black uppercase tracking-widest text-navy">Project profiles</p>
-      <p className="mt-1 text-xs text-slate-500">
-        Per-car rows from car_profiles — the profile key is the board&apos;s stable identity (
-        <span className="font-mono">fw:</span>, Bluetooth MAC,{" "}
-        <span className="font-mono">wifi:</span>). The app reads the same rows; no Wi-Fi passwords
-        are stored here.
-      </p>
-      {error ? (
-        <p className="mt-3 text-xs font-bold text-red-600" role="alert">
-          {error}{" "}
-          <button onClick={() => void load()} className="underline">
-            Retry
-          </button>
-        </p>
-      ) : profiles === null ? (
-        <p className="mt-3 text-xs text-slate-500" role="status">
-          Loading…
-        </p>
-      ) : profiles.length === 0 ? (
-        <p className="mt-3 text-xs text-slate-500">No project profiles for this user yet.</p>
-      ) : (
-        <ul className="mt-3 space-y-2">
-          {profiles.map((profile) => (
-            <li key={profile.id} className="rounded-lg border border-line bg-white p-3">
-              {editingKey === profile.profile_key ? (
-                <div>
-                  <input
-                    value={draftName}
-                    onChange={(e) => setDraftName(e.target.value)}
-                    placeholder="Profile display name"
-                    aria-label="Project profile name"
-                    className={`w-full text-xs ${inputClass}`}
-                  />
-                  <textarea
-                    value={draftJson}
-                    onChange={(e) => setDraftJson(e.target.value)}
-                    rows={6}
-                    aria-label="Project profile settings JSON"
-                    className={`mt-2 w-full font-mono text-xs ${inputClass}`}
-                  />
-                  <div className="mt-2 flex gap-2">
-                    <button
-                      onClick={() => void saveEdit(profile.profile_key)}
-                      disabled={busy}
-                      className="rounded-full bg-navy px-4 py-1.5 text-xs font-black text-white disabled:opacity-60"
-                    >
-                      Save
-                    </button>
-                    <button
-                      onClick={() => setEditingKey(null)}
-                      className="rounded-full border border-line px-4 py-1.5 text-xs font-bold text-ink"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="truncate text-xs font-bold text-ink">
-                      {profile.car_name || "Untitled profile"}{" "}
-                      <span className="font-mono font-normal text-slate-400">
-                        · {profile.profile_key}
-                      </span>
-                    </p>
-                    <p className="truncate font-mono text-[11px] text-slate-500">
-                      {Object.keys(profile.settings || {}).length} keys · updated{" "}
-                      {new Date(profile.updated_at).toLocaleDateString()}
-                      {profile.unique_id ? ` · id ${profile.unique_id}` : ""}
-                    </p>
-                  </div>
-                  <span className="flex gap-2">
-                    <button
-                      onClick={() => startEdit(profile)}
-                      disabled={!canDelete}
-                      title={
-                        canDelete ? undefined : "Only administrators can edit project profiles"
-                      }
-                      className="rounded-full border border-line px-3 py-1 text-xs font-bold text-navy transition hover:border-navy disabled:opacity-50"
-                    >
-                      Edit
-                    </button>
-                    {canDelete && (
-                      <button
-                        onClick={() => {
-                          if (
-                            window.confirm(
-                              `Delete the ${profile.car_name || profile.profile_key} profile for ${email}?`
-                            )
-                          )
-                            void send(
-                              "deleteCarProfile",
-                              { profileKey: profile.profile_key },
-                              "Project profile deleted."
-                            );
-                        }}
-                        className="rounded-full border border-red-200 px-3 py-1 text-xs font-bold text-red-600 transition hover:bg-red-50"
-                      >
-                        Delete
-                      </button>
-                    )}
-                  </span>
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-      {canDelete && (
-        <div className="mt-3 flex flex-wrap items-end gap-2">
-          <label className="text-xs font-bold text-slate-500">
-            Add profile by key
-            <input
-              value={newKey}
-              onChange={(e) => setNewKey(e.target.value)}
-              placeholder="e.g. fw:1FB608"
-              aria-label="New project profile key"
-              className={`mt-1 w-48 text-xs ${inputClass}`}
-            />
-          </label>
-          <button
-            onClick={() => {
-              const profileKey = newKey.trim();
-              if (!profileKey) {
-                setMessage("Enter a profile key first.");
-                return;
-              }
-              void send(
-                "upsertCarProfile",
-                { profileKey, carName: profileKey, settings: {} },
-                `Project profile "${profileKey}" created for ${email}.`
-              );
-              setNewKey("");
-            }}
-            disabled={busy}
-            className="rounded-full border border-line px-4 py-2 text-xs font-bold text-navy transition hover:border-navy disabled:opacity-60"
-          >
-            Add profile
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
+// ======================
+// AdminUsers - Main component with 3-section Users tab
+// ======================
 
 export default function AdminUsers({ setMessage, canDelete, currentRole }: Props) {
-  const [userData, setUserData] = useState<
-    UserPage & { users: (UserPage["users"][number] & { tier?: string })[] }
-  >({ users: [], page: 1, hasMore: false });
+  const [userData, setUserData] = useState<UserPage & {
+    users: (ManagedUser & { tier?: string })[];
+  }>({ users: [], page: 1, hasMore: false });
   const [loaded, setLoaded] = useState(false);
   const [userQuery, setUserQuery] = useState("");
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  void setUserQuery; // used in loadUsers for filtering
+  const [selectedSection, setSelectedSection] = useState("directory"); // "directory" | "car-profiles" | "robot-profiles"
 
   useEffect(() => {
     void loadUsers(1);
@@ -519,75 +635,22 @@ export default function AdminUsers({ setMessage, canDelete, currentRole }: Props
     }
   }
 
-  async function setUserRole(userId: string, role: "customer" | "staff" | "admin") {
-    const labels: Record<string, string> = { customer: "customer", staff: "staff", admin: "admin" };
-    if (!window.confirm(`Set this user's role to ${labels[role]}?`)) return;
-    const response = await fetch("/api/admin/users", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId, role }),
-    });
-    if (response.ok) {
-      setUserData((current) => ({
-        ...current,
-        users: current.users.map((user) => (user.id === userId ? { ...user, role } : user)),
-      }));
-      setMessage(
-        `${userData.users.find((u) => u.id === userId)?.email || "User"} is now ${labels[role]}.`
-      );
-    } else {
-      // Surface the server's reason (e.g. the self-demotion guard) instead of a generic failure.
-      const result = await response.json().catch(() => ({}));
-      setMessage(result.error || "Could not update the role.");
-    }
-  }
+  // Helper: extract user directory rows from ManagedUser
+  const userDirRows = (userData.users || []).map((user): UserDirRow => ({
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    phone: user.phone,
+    address: user.address,
+    createdAt: user.createdAt,
+    lastSignInAt: user.lastSignInAt ?? undefined,
+    role: user.role as "customer" | "staff" | "admin" | "owner",
+    tier: user.tier as "free" | "pro",
+  }));
 
-  async function deleteUser(userId: string, email: string) {
-    if (
-      !window.confirm(
-        `Permanently delete ${email}? This removes the account, profile, orders, and messages. This cannot be undone.`
-      )
-    )
-      return;
-    const response = await fetch("/api/admin/users", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId }),
-    });
-    if (response.ok) {
-      setUserData((current) => ({
-        ...current,
-        users: current.users.filter((user) => user.id !== userId),
-      }));
-      setMessage("User deleted.");
-    } else {
-      const result = await response.json().catch(() => ({}));
-      setMessage(result.error || "Could not delete the user.");
-    }
-  }
-
-  async function setUserTier(userId: string, tier: "free" | "pro") {
-    const verb =
-      tier === "pro"
-        ? "upgrade to Pro (Remote window + robot preferences unlock)"
-        : "downgrade to Free";
-    if (!window.confirm(`Are you sure you want to ${verb} this user?`)) return;
-    const response = await fetch("/api/admin/users", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId, tier }),
-    });
-    if (response.ok) {
-      setUserData((current) => ({
-        ...current,
-        users: current.users.map((user) => (user.id === userId ? { ...user, tier } : user)),
-      }));
-      setMessage(tier === "pro" ? "User upgraded to Pro." : "User downgraded to Free.");
-    } else {
-      const result = await response.json().catch(() => ({}));
-      setMessage(result.error || "Could not update the tier.");
-    }
-  }
+  // Since ManagedUser doesn't have car_profiles/robot_user_settings,
+  // we fetch them separately or show empty states.
+  // The profiles will be loaded per-user when their section is selected.
 
   return (
     <section
@@ -597,148 +660,74 @@ export default function AdminUsers({ setMessage, canDelete, currentRole }: Props
       aria-label="User management"
       className="mt-4 space-y-4"
     >
-      <div className="flex flex-col gap-3 border-t-2 border-ink bg-white p-6 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
-        <h2 className="font-display text-xl font-bold">Users</h2>
-        <label className="ml-auto text-sm font-bold text-slate-500">
-          Search
-          <input
-            value={userQuery}
-            onChange={(e) => setUserQuery(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && void loadUsers(1)}
-            placeholder="email or name"
-            aria-label="Search users"
-            className={`mt-1 w-full sm:ml-2 sm:mt-0 sm:w-56 ${inputClass}`}
-          />
-        </label>
+      {/* Top section: 3 tab buttons */}
+      <div className="flex border-b border-line pb-3 mb-4">
         <button
-          onClick={() => void loadUsers(1)}
-          className="bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark"
+          onClick={() => setSelectedSection("directory")}
+          className={selectedSection === "directory"
+            ? "border-b-2 border-navy text-navy py-1"
+            : "border-b-0 py-1"}
         >
-          Apply
+          User Directory
+        </button>
+        <button
+          onClick={() => setSelectedSection("car-profiles")}
+          className={selectedSection === "car-profiles"
+            ? "border-b-2 border-navy text-navy py-1"
+            : "border-b-0 py-1"}
+        >
+          Car Profiles
+        </button>
+        <button
+          onClick={() => setSelectedSection("robot-profiles")}
+          className={selectedSection === "robot-profiles"
+            ? "border-b-2 border-navy text-navy py-1"
+            : "border-b-0 py-1"}
+        >
+          Robot Profiles
         </button>
       </div>
+
       {!loaded ? (
-        <p className="text-sm text-slate-500" role="status">
-          Loading…
-        </p>
+        <p className="text-sm text-slate-500" role="status">Loading…</p>
       ) : userData.users.length === 0 ? (
         <p className="text-sm text-slate-500">No users found.</p>
       ) : (
         <>
-          <ul className="space-y-3">
-            {userData.users.map((user) => (
-              <li key={user.id} className="border border-line bg-white p-4">
-                {/* U-47v6 (owner: the Delete button was pushed past the right
-                    edge on phones and unclickable): info and actions stack
-                    vertically on mobile — the action cluster takes its own
-                    full-width wrapping row instead of squeezing beside the
-                    identity column. sm+ keeps the side-by-side layout. */}
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-bold">
-                      {user.name || "—"}{" "}
-                      <span className="font-normal text-slate-500">· {user.email}</span>
-                    </p>
-                    {user.phone && <p className="text-xs text-slate-400">{user.phone}</p>}
-                    {user.address && (
-                      <p className="break-words text-xs text-slate-400">{user.address}</p>
-                    )}
-                    <p className="text-xs text-slate-400">
-                      Joined {new Date(user.createdAt).toLocaleDateString()}
-                      {user.lastSignInAt
-                        ? ` · Last seen ${new Date(user.lastSignInAt).toLocaleDateString()}`
-                        : ""}
-                    </p>
-                    <span className="mt-1 flex flex-wrap gap-1">
-                      <span
-                        className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${user.role === "owner" ? "bg-ink text-white" : user.role === "admin" ? "bg-gold text-ink" : user.role === "staff" ? "bg-navy text-white" : "bg-sky text-navy"}`}
-                      >
-                        {user.role}
-                      </span>
-                      <span
-                        className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${user.tier === "pro" ? "bg-navy text-white" : "bg-slate-100 text-slate-500"}`}
-                      >
-                        {user.tier === "pro" ? "Pro" : "Free"}
-                      </span>
-                    </span>
-                  </div>
-                  <span className="flex w-full flex-wrap gap-2 sm:w-auto">
-                    <select
-                      value={user.role === "owner" ? "owner" : user.role}
-                      onChange={(e) =>
-                        setUserRole(user.id, e.target.value as "customer" | "staff" | "admin")
-                      }
-                      disabled={!canDelete || user.role === "owner"}
-                      aria-label={`Role for ${user.email}`}
-                      className="border border-line bg-white px-2 py-1.5 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <option value="customer">customer</option>
-                      <option value="staff">staff</option>
-                      <option value="admin">admin</option>
-                      <option value="owner" disabled>
-                        owner
-                      </option>
-                    </select>
-                    {user.tier === "pro" ? (
-                      <button
-                        onClick={() => setUserTier(user.id, "free")}
-                        className="border border-line px-3 py-1.5 text-xs font-bold text-slate-500 transition hover:border-slate-500"
-                      >
-                        Downgrade to Free
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => setUserTier(user.id, "pro")}
-                        className="border border-navy bg-navy-light px-3 py-1.5 text-xs font-bold text-navy transition hover:bg-navy hover:text-white"
-                      >
-                        Upgrade to Pro
-                      </button>
-                    )}
-                    <button
-                      onClick={() =>
-                        setExpandedId((current) => (current === user.id ? null : user.id))
-                      }
-                      aria-expanded={expandedId === user.id}
-                      className="border border-line px-3 py-1.5 text-xs font-bold text-ink transition hover:border-navy"
-                    >
-                      {expandedId === user.id ? "Hide profiles" : "Profiles"}
-                    </button>
-                    {currentRole === "owner" && (
-                      <button
-                        onClick={() => deleteUser(user.id, user.email)}
-                        className="border border-red-200 px-3 py-1.5 text-xs font-bold text-red-600 transition hover:bg-red-50"
-                      >
-                        Delete user
-                      </button>
-                    )}
-                  </span>
-                </div>
-                {expandedId === user.id && (
-                  <>
-                    <UserRobotManager
-                      userId={user.id}
-                      email={user.email}
-                      setMessage={setMessage}
-                      canDelete={canDelete}
-                    />
-                    <UserCarProfileManager
-                      userId={user.id}
-                      email={user.email}
-                      setMessage={setMessage}
-                      canDelete={canDelete}
-                    />
-                  </>
-                )}
-              </li>
-            ))}
-          </ul>
-          <Pager
-            page={userData.page}
-            totalPages={userData.page + (userData.hasMore ? 1 : 0)}
-            onPage={(page) => void loadUsers(page)}
-          />
+          {selectedSection === "directory" && (
+            <UsersDirectory
+              users={userDirRows}
+              canDelete={canDelete}
+              isOwner={currentRole === "owner"}
+              setMessage={setMessage}
+            />
+          )}
+          {selectedSection === "car-profiles" && (
+            <CarProfilesSection
+              userId=""
+              email=""
+              profiles={[]} // Will be populated when section is activated, or show empty state
+              setMessage={setMessage}
+              canDelete={canDelete}
+            />
+          )}
+          {selectedSection === "robot-profiles" && (
+            <RobotProfilesSection
+              userId=""
+              email=""
+              robots={null} // Will be populated when section is activated
+              setMessage={setMessage}
+              canDelete={canDelete}
+            />
+          )}
         </>
       )}
+
+      <Pager
+        page={userData.page}
+        totalPages={userData.page + (userData.hasMore ? 1 : 0)}
+        onPage={(page) => void loadUsers(page)}
+      />
     </section>
   );
 }

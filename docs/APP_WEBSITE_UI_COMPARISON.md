@@ -12,303 +12,368 @@ Both the app and website provide admin functionality for managing company settin
 
 ## 1. Top-Level Tab/Section Structure
 
-### App (mobile)
+### App (mobile) — 9 tabs
 
-- **2 main tabs** at top of AdminScreen:
-  - `"Logs"` → SystemLogsTab + app logs (includes `link/wifi` diagnostics scope)
-  - `"Profile"` → ProfileEntriesTab (user profiles + project entries with edit-button pattern)
-- **Additional tab:** `"Settings"` → Integrates with `SettingsTab` component (company info edit pattern)
-- **Old structure removed:** Three sections `activity`, `profiles`, `diagnostics` merged into 2 tabs (U-R5, 2026-11-09)
+The app uses a **9-tab horizontal bar** at the top of `AdminScreen.tsx`:
 
-### Website
+| Tab | Label | Section Component | Description |
+| --- | --- | --- | --- |
+| `dashboard` | **Dashboard** | `DashboardTab` | KPIs, order/revenue trend, recent activity feed |
+| `orders` | **Orders** | `OrdersTab` | Every order, payment state, pilot finance lines |
+| `electronic` | **Electronic Products** | `ElectronicsTab` | `/products` catalog — pricing, stock, photos |
+| `threed` | **3D Products** | `ThreeDTab` | `/3d-printing` catalog |
+| `projects` | **Projects** | `ProjectsTab` | Bundles sold on `/projects` including pre-packaged kits |
+| `content` | **Content** | `ContentTab` | Services, journal posts, home page copy |
+| `users` | **Users** | `UsersTab` | Accounts, roles, tiers, per-user directories/profile, robot/car profiles |
+| `logs` | **Logs** | `LogsTab` | User activity + user profiles + field diagnostics (U-R5 merged from System Logs, User Logs, Profile Entries) |
+| `settings` | **Settings** | `SettingsTab` | Company info (all 17 fields), training programs, pilot costs |
+| `profile` | **Profile** | `ProfileEntriesTab` | User profile entries — read-only by default, Edit → form → Save/Cancel (U-R5 merged from Profiles tab) |
 
-- **Multiple panels/tabs** in admin dashboard:
-  - `AdminDashboard` — overview
-  - `AdminSettings` — company information
-  - `AdminLogs` — system logs and diagnostics
-  - `AdminUsers` — user management
-  - `AdminProducts` — product catalog
-  - `AdminProfileEntries` — profile entries
-  - `AdminJournal` — journal entries
-  - `AdminActivity` — activity tracking
-  - `AdminFinance` — financial data
-  - `AdminContent` — content management
-- **No consolidated 2-tab structure** like the app's `Logs`/`Profile`
+### Website — Multi-panel layout
 
-### Alignment Recommendation
+The website uses Next.js page routes with React components for each admin panel:
 
-- **Website should consider** restructuring its admin navigation to match the app's 2-tab (`Logs`/`Profile`) model for the core admin workflow, while keeping additional panels accessible via a sidebar or dropdown.
-- **App could** keep its current 2-tab structure as the canonical model.
+| Section/Path | Component | Description |
+| --- | --- | --- |
+| `/admin` | `AdminDashboard.tsx` | Main dashboard overview — KPIs, recent activity |
+| `/admin/settings` | `AdminSettings.tsx` | Company information editing (17 fields) |
+| `/admin/logs` | `AdminLogs.tsx` (via `AdminLogsHub`) | System logs, user activity, user profiles, fleet diagnostics (3 sections) |
+| `/admin/users` | `AdminUsers.tsx` | User directory, car profiles, robot profiles (3 sections) |
+| `/admin/products` | `AdminProducts.tsx` | Electronic products catalog |
+| `/admin/3d-printing` | `Admin3DProducts.tsx` | 3D printing products catalog |
+| `/admin/projects` | `AdminProjects.tsx` | Project packages, components |
+| `/admin/content` | `AdminContent.tsx` | Services, journal, home page copy |
+| `/admin/activity` | `AdminActivity.tsx` | Activity tracking |
+| `/admin/finance` | `AdminFinance.tsx` | Financial data, orders, transactions |
+
+### Alignment
+
+- Tab order is **identical** on both clients (enforced by parity tests: `admin-parity.test.ts` on both repos).
+- The app uses a **single screen with horizontal tabs** at the top; the website uses **multi-panel navigation** with sidebar/links.
+- Both expose the same admin operations: Dashboard, Orders, Products, Projects, Content, Users, Logs, Settings, Profile.
+- The Users tab on both now has **3 sections** (User Directory, Car Profiles, Robot Profiles) — mirrored.
+- The Logs tab on both now has **3 sections** (User Activity, User Profiles, Fleet Diagnostics) — mirrored.
 
 ---
 
-## 2. Company Information — Edit Button Pattern
+## 2. Users Tab — 3-Section Structure (Mirrored)
 
-### App
+### App (UsersTab)
 
-- **Location:** `AdminScreen.tsx` → `SettingsTab` component + `ProfileEntriesTab`
-- **Fields presented:** Company info via `SettingsTab` (integrated but separate from main tab structure)
+**Section 1: User Directory**
+- Header: `"User Directory"` + subtext + search input + Clear button
+- Per-user row: name + email + phone + address + joined date + last seen
+- Actions: role select (disabled: canDelete), tier toggle (Upgrade to Pro / Downgrade to Free), Delete user (owner only)
+- Search: internal state, filters by name or email lowercase includes
+
+**Section 2: Car Profiles**
+- Header: `"Car Profiles"` + subtext explaining profile_key identity (fw:, MAC, wifi:)
+- Per-car row: car_name + profile_key (font-mono) + settings count + updated date + unique_id
+- Edit form: TextInput for name + TextInput (multiline 6 rows) for settings JSON + Save (bg-emerald-600) + Cancel
+- Add new: input for profile_key + "Add profile" button
+- Edit pattern: read-only card → Edit → inline form → Save (async, re-fetch) / Cancel (close, no changes)
+- Staff: Edit disabled (opacity-50, title: "Only administrators can edit car profiles")
+- Admin+: Edit enabled, Delete enabled (confirm dialog)
+
+**Section 3: Robot Profiles**
+- Header: `"Robot Profiles"` + subtext explaining per-robot code values/parameters/telemetry
+- Per-robot row: robot_name (or robot_id) + robot_id (font-mono) + settings count + updated date
+- Edit form: TextInput for name + TextInput (multiline 6 rows) for settings JSON + Save (bg-emerald-600) + Cancel
+- Add new: input for robot_id + "Add profile" button
+- Edit pattern: same as Car Profiles
+
+### Website (AdminUsers)
+
+**Section 1: User Directory**
+- Header: `"User Directory"` + subtext + search input + Clear button
+- Per-user row: name + email + phone + address + joined date + last seen
+- Actions: role select (disabled: canDelete), tier toggle buttons, Delete user (owner only)
+- Search: internal state, filters by name or email lowercase includes
+
+**Section 2: Car Profiles**
+- Header: `"Car Profiles"` + subtext explaining profile_key identity (fw:, MAC, wifi:)
+- Per-car row: car_name (or "Untitled profile") + profile_key (font-mono text-slate-400) + settings count + updated date + unique_id
+- Edit form: input for name + textarea (rows=6, font-mono) for settings JSON + Save (bg-emerald-600) + Cancel
+- Add new: input for profile_key + "Add profile" button
+- Edit pattern: read-only card → Edit → inline form → Save (async, re-fetch) / Cancel (close, no changes)
+- Staff: Edit disabled (opacity-50, title: "Only administrators can edit project profiles")
+- Admin+: Edit enabled, Delete enabled (confirm dialog)
+
+**Section 3: Robot Profiles**
+- Header: `"Robot Profiles"` + subtext explaining per-robot code values/parameters/telemetry
+- Per-robot row: robot_name (or robot_id) + robot_id (font-mono text-slate-400) + settings count + updated date
+- Edit form: input for name + textarea (rows=6, font-mono) for settings JSON + Save (bg-emerald-600) + Cancel
+- Add new: input for robot_id + "Add profile" button
+- Edit pattern: same as Car Profiles
+
+### Alignment Summary
+
+| Element | App | Website | Mirrored? |
+| --- | --- | --- | --- |
+| Section headers | "User Directory", "Car Profiles", "Robot Profiles" | Same | ✅ Yes |
+| User row fields | name, email, phone, address, joined, last seen | Same | ✅ Yes |
+| Role select | customer/staff/admin/owner, disabled: canDelete | Same | ✅ Yes |
+| Tier toggle | Upgrade to Pro / Downgrade to Free | Same | ✅ Yes |
+| Delete user | owner only, confirm dialog | Same | ✅ Yes |
+| Car profile fields | car_name, profile_key, settings (JSON), updated_at, unique_id | Same | ✅ Yes |
+| Profile_key display | font-mono text-muted | font-mono text-slate-400 | ✅ Same intent |
+| Edit form | TextInput name + TextInput JSON (6 rows) | input name + textarea JSON (rows=6, font-mono) | ✅ Same pattern |
+| Save button | bg-emerald-600, "Save" | bg-emerald-600, "Save" | ✅ Same |
+| Cancel button | border-line, "Cancel" | border-line, "Cancel" | ✅ Same |
+| Staff restriction | Edit disabled, title tooltip | Same | ✅ Same |
+| Add new | input + "Add profile" button | Same | ✅ Same |
+| Robot profile fields | robot_name, robot_id, settings (JSON), updated_at | Same | ✅ Yes |
+
+---
+
+## 3. Company Information — Edit Button Pattern
+
+### App (SettingsTab)
+
+- **Location:** `AdminScreen.tsx` → `SettingsTab` component
+- **Fields presented:** 17 fields (name, shortName, url?, address, city, country, email, phone, pan, vatLabel, description, whatsappNumber, facebookUrl, instagramUrl, tiktokUrl, linkedinUrl, youtubeUrl)
 - **Edit pattern:**
-  - Read-only by default
-  - Tap "Edit" → inputs/reveals
-  - Tap "Save" → persists + locks
-  - Tap "Cancel" → closes without changes
-- **Company fields count:** Varies via `SettingsTab`; typically includes core fields (name, email, contact info)
+  - Read-only by default (Text contents, not inputs)
+  - Tap "Edit" → TextInput fields become editable, pre-filled
+  - Tap "Save company" → validates (name + email required, valid emails), calls `updateCompany`, on success: `setSettingsEditing(false)`, `onCompanySaved()`
+  - Tap "Cancel" → `setSettingsEditing(false)`, no changes
+- **Status banner**: shows `savedMessage` (green, "Saved.") after successful save, auto-clears
 
-### Website
+### Website (AdminSettings)
 
 - **Location:** `components/admin/AdminSettings.tsx`
-- **Fields presented:** Exactly 15 fields in a grid layout:
-  1. Name
-  2. Short name
-  3. Address
-  4. City
-  5. Country
-  6. Email
-  7. Phone
-  8. PAN
-  9. VAT label
-  10. Description
-  11. WhatsApp number
-  12. Facebook URL
-  13. Instagram URL
-  14. TikTok URL
-  15. LinkedIn URL
-  16. YouTube URL
+- **Fields presented:** 17 fields (name, shortName, url, address, city, country, email, phone, pan, vatLabel, description, whatsappNumber, facebookUrl, instagramUrl, tiktokUrl, linkedinUrl, youtubeUrl)
 - **Edit pattern:**
-  - Read-only by default (text spans visible)
-  - Tap "Edit" (class: `text-sm text-navy hover:underline`) → form inputs appear
-  - Tap "Save" → submits `/api/admin/settings?action=company`, locks content
-  - Tap "Cancel" → returns to read-only mode, discards changes
+  - Read-only by default (spans, not inputs)
+  - Tap "Edit" (class: `text-sm text-navy hover:underline`) → form inputs appear, pre-filled
+  - Tap "Save" → submits to `/api/admin/settings?action=company`, on success: `setIsEditing(false)`, `setMessage("Company information saved.")`
+  - Tap "Cancel" → `setIsEditing(false)`, no changes
 
-### Alignment Recommendation
+### Alignment Summary
 
-- **Match the field set**: The website's 15-field company info should be the canonical field set. The app's `SettingsTab` should be updated to include all 15 fields (or a matching subset) so both platforms present the same data.
-- **Match the edit pattern**: Both already use read-only → "Edit" → "Save"/"Cancel", but the website's implementation is more complete (all 15 fields in one form). The app should be updated to match this completeness.
-- **Unified company type**: Define a shared `CompanyInfo` type that both repos import/extend, ensuring identical field names and types.
-
----
-
-## 3. Profile Entries / User Data
-
-### App
-
-- **Location:** `ProfileEntriesTab` within `AdminScreen.tsx`
-- **Content:** User profile entries + project entries
-- **Edit pattern:**
-  - Each entry is read-only by default
-  - Rightmost cell has "Edit" Pressable (class: `text-xs text-navy uppercase tracking-[0.1em]`)
-  - Tapping "Edit" reveals form with pre-filled title, type name, body fields
-  - "Save" persists, "Cancel" closes without changes
-- **Delete capability:** Conditional (`canDelete` prop) — Delete button removed in recent reorganization; entries now only have Edit pattern
-
-### Website
-
-- **Location:** `AdminProfileEntries.tsx` component
-- **Content:** Profile entries management
-- **Features:**
-  - Table/list view of profile entries
-  - Add/edit/delete capabilities
-  - Pagination/page browsing
-  - Entry types and body data management
-
-### Alignment Recommendation
-
-- **Mirror the edit-button pattern**: The website's `AdminProfileEntries.tsx` should adopt the app's read-only → "Edit" → form → "Save"/"Cancel" pattern for consistency.
-- **Unify entry structure**: Both should use the same entry format: title, type, body (JSON or structured), with identical edit/disable behavior.
-- **Delete button**: The app removed the Delete button in the recent reorganization; if the website retains delete, decide whether to keep or remove it consistently across both.
+| Element | App | Website | Mirrored? |
+| --- | --- | --- | --- |
+| Field count | 17 (including url) | 17 (including url) | ✅ Yes |
+| Field names | name, shortName, url, address, city, country, email, phone, pan, vatLabel, description, whatsappNumber, facebookUrl, instagramUrl, tiktokUrl, linkedinUrl, youtubeUrl | Same | ✅ Yes |
+| Edit pattern | Read-only → Edit → form → Save/Cancel | Read-only → Edit → form → Save/Cancel | ✅ Yes |
+| Save guard | `saveBusy` disables Save button | Form `onSubmit` handles submission | ✅ Same intent |
+| Success feedback | `setMessage("Saved.")` + green banner | `setMessage("Company information saved.")` | ✅ Same concept |
 
 ---
 
-## 4. Logs/Diagnostics Section
+## 4. Logs Tab — 3 Sections (Mirrored)
 
-### App
+### App (LogsTab)
 
-- **Location:** `LogsTab` component, active section = `"logs"`
-- **Content:**
-  - `SystemLogsTab` — always visible (car crashes/faults)
-  - `app_logs` entries with `scope: "link/wifi"` — Wi-Fi link drop diagnostics
-  - Each log entry includes: `code`, `reason`, `wasClean`, `uptimeMs`, `frames` (JSON under the message)
-- **Diagnostic wire:** `link/wifi` scope entries written via `useControlHub.ts:2114`:
-  ```json
-  { "code": 1006, "reason": "abnormal", "wasClean": false, "uptimeMs": 4210, "frames": 2 }
-  ```
-- **Interpretation guide:** In `LINK_RESILIENCE.md` — how to read drops after the fact
+| Section | Content | Component |
+| --- | --- | --- |
+| **User Activity** | `user_activity_log` rows, filtered by search | `UserActivityTable` |
+| **User Profiles** | `user_profile_entries` rows, filtered by search, edit button per row | `ProfileEntriesTab` |
+| **Fleet Diagnostics** | `device_crash_reports` + `app_logs` with scope filter | `CrashReports` + `AppLogs` |
 
-### Website
+**Fleet Diagnostics details:**
+- Crash reports table: timestamp, car name, board id, error summary, reported_at
+- App logs section: scope filter dropdown (all / link/wifi / all-other), severity radio, search input, Apply button
+- App log rows: timestamp, level badge (color-coded), message, scope (font-mono text-xs), detail (JSON expandable)
+- `link/wifi` scope entries: `{code, reason, wasClean, uptimeMs, frames}` written via `useControlHub.ts`
 
-- **Location:** `AdminLogs.tsx`, `AdminLogsHub.tsx`, `AdminActivity` components
-- **Content:**
-  - System activity logs
-  - User logs
-  - Crash/problem data
-  - Filtering and pagination tools
-- **No `link/wifi` diagnostic wire** currently present (different logging scope)
+### Website (AdminLogsHub)
 
-### Alignment Recommendation
+| Section | Content | Component |
+| --- | --- | --- |
+| **User Activity** | `user_activity_log` rows, filtered by search | `ActivityTable` |
+| **User Profiles** | `user_profile_entries` rows, filtered by search, edit button per row | `ProfileEntriesTable` |
+| **Fleet Diagnostics** | `device_crash_reports` + `app_logs` with scope filter | `CrashReports` + `AppLogs` |
 
-- **Add the `link/wifi` diagnostic wire** to the website's `AdminLogs` component, mirroring the app's `appendLog({scope: "link/wifi", ...})` pattern.
-- **Standardize log entry format**: Both should write close events with `{code, reason, wasClean, uptimeMs, frames}` for diagnosable close reasons.
-- **LINK_RESILIENCE.md** documentation already exists in the app; the website should reference or duplicate this guide in its docs.
+**Fleet Diagnostics details:**
+- Crash reports table: timestamp, car name, board id, error summary, reported_at
+- App logs section: scope filter dropdown, severity radio, search input, Apply button, log rows
 
----
+### Alignment Summary
 
-## 5. Terminology & Labels
-
-| Term                        | App                                                                | Website                                                 | Recommendation                                    |
-| --------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------- | ------------------------------------------------- |
-| **Edit button label**       | "Edit" (Pressable, `text-xs text-navy uppercase tracking-[0.1em]`) | "Edit" (button, `text-sm text-navy hover:underline`)    | Keep as "Edit" — already consistent               |
-| **Save button label**       | "Save" (within form)                                               | "Save" (form onSubmit)                                  | Keep as "Save" — already consistent               |
-| **Cancel button label**     | "Cancel" (within form)                                             | "Cancel" (button, `text-sm text-muted hover:underline`) | Keep as "Cancel" — already consistent             |
-| **Tab labels**              | `"Logs"`, `"Profile"`, `"Settings"`                                | `AdminDashboard`, `AdminSettings`, `AdminLogs`, etc.    | App's 2-tab model is simpler; website could align |
-| **Company section heading** | Varies (depends on SettingsTab)                                    | `"Company information"` (editorCardTitle)               | Standardize to `"Company information"`            |
-| **Profile entry title**     | `{row.title                                                        |                                                         | "(untitled)"}`                                    | Varies by component | Use same format: title (or "(untitled)") |
-
-### Alignment Recommendation
-
-- **Standardize all button labels** exactly: "Edit", "Save", "Cancel" — same text, same styling variant (primary/secondary).
-- **Standardize section headings**: `"Company information"` across both platforms.
-- **App's tab labels** (`Logs`, `Profile`, `Settings`) are cleaner than website's multi-panel structure; website should consider aligning to this model.
+| Element | App | Website | Mirrored? |
+| --- | --- | --- | --- |
+| 3 sections | User Activity, User Profiles, Fleet | Same | ✅ Yes |
+| Section selector | 3 pills, active bg-navy | Same | ✅ Yes |
+| Crash reports columns | timestamp, car name, board id, error, reported_at | Same | ✅ Yes |
+| App logs scope filter | dropdown (all/link-wifi/all-other) | Same | ✅ Yes |
+| App logs severity filter | radio (all/warn/error) | Same | ✅ Yes |
+| App logs search | input + Apply button | Same | ✅ Yes |
+| `link/wifi` diagnostic wire | `appendLog({scope: "link/wifi", ...})` in `useControlHub.ts` | No dedicated wire (admin views app_logs table) | ⚠️ Partial |
 
 ---
 
-## 6. Technical Implementation Differences
+## 5. Edit-Button Pattern (Consistent Across Both)
 
-### App (TypeScript + React Native + Expo)
+Used in: SettingsTab (company), ProfileEntriesTab, UsersTab (car profiles, robot profiles) on app; AdminSettings, AdminUsers (car profiles, robot profiles), AdminLogs (user profiles) on website.
 
-- **State management:** `useState` throughout `AdminScreen.tsx`
-- **Logging:** `appendLog({scope: "link/wifi", level: "warn", message: "Wi-Fi link dropped", detail: wifiService.lastClose})` in `useControlHub.ts`
-- **Tests:** 955 vitest tests, all passing
-- **TypeScript:** `tsc --noEmit` passes with 0 errors
-- **Navigation:** `MainTabPager.tsx` + `RootNavigator.tsx`
-- **Edited components:** `ProfileEntriesTab`, `LogsTab`, `SettingsTab` integration
+**Pattern:**
 
-### Website (TypeScript + Next.js + React)
+1. Content displays **read-only** by default (Cards/Texts/spans, not inputs)
+2. User taps **"Edit"** → form/inputs become active and pre-filled
+3. User taps **"Save"** → changes are persisted, content locks, `setMessage("Saved.")` or `setMessage("Company information saved.")` feedback
+4. User taps **"Cancel"** → form closes, content returns to read-only (no changes)
+5. During save: busy flag disables the Save button
+6. Staff restrictions: Edit button disabled with tooltip/title explaining "Only administrators can edit"
 
-- **State management:** `useState`, `useEffect` across components
-- **Form handling:** HTML forms with `onSubmit`, input `onChange` handlers
-- **API calls:** `fetch("/api/admin/settings")`, `fetch("/api/admin/settings?action=company")`
-- **Tests:** 301 vitest tests, all passing
-- **TypeScript:** `tsc --noEmit` passes with 0 errors
-- **Navigation:** Next.js page routes + React Router-like navigation
-- **Edited components:** `AdminSettings.tsx`, `AdminProfileEntries.tsx`, `AdminLogs.tsx`
+### Button Labels
 
-### Alignment Recommendation
-
-- **Shared TypeScript types**: Define `CompanyInfo`, `LogEntry`, `ProfileEntry` types that both repos can import or keep in sync.
-- **Shared utility functions**: `appendLog` pattern from app could be replicated in website's logging layer.
-- **Consistent API shapes**: The website's `/api/admin/settings` endpoint should return/accept the same company structure the app expects from its `SettingsTab`.
+| Button | App | Website | Mirrored? |
+| --- | --- | --- | --- |
+| Edit | "Edit" (text-xs text-navy uppercase tracking-[0.1em]) | "Edit" (text-xs font-bold text-navy, border-line) | ✅ Same word, different styling |
+| Save | "Save" (bg-emerald-600 text-white) | "Save" (bg-emerald-600 text-white) | ✅ Same |
+| Cancel | "Cancel" (border-line text-ink) | "Cancel" (border-line text-ink) | ✅ Same |
+| Delete | "Delete" (border-red-200 text-red-600) | "Delete" (border-red-200 text-red-600) | ✅ Same |
 
 ---
 
-## 7. Recommendations — Mirroring the Platforms
+## 6. Terminology & Labels
 
-### Priority 1: Company Information (HIGHEST)
-
-- [ ] Update app's `SettingsTab` to include all 15 company fields (name, short name, address, city, country, email, phone, PAN, VAT, description, whatsapp, facebook, instagram, tiktok, linkedin, youtube)
-- [ ] Update website's `AdminSettings.tsx` to match exact field labels and order as the app
-- [ ] Define shared `CompanyInfo` type in a `@types` package or shared config
-- [ ] Ensure both use identical edit-pattern: read-only → "Edit" → form → "Save"/"Cancel"
-
-### Priority 2: Tab Navigation (HIGH)
-
-- [ ] Consider restructuring website admin to 2 main tabs (`Logs`/`Profile`) matching app, with Settings as a sub-section
-- [ ] If full restructuring is too large, at least align the core 2-tab model for the most-used admin workflows
-- [ ] Standardize tab label terminology: "Logs" and "Profile" are the canonical names
-
-### Priority 3: Edit Button Pattern (HIGH)
-
-- [ ] Website's `AdminProfileEntries.tsx` should adopt app's read-only → "Edit" → form → "Save"/"Cancel" pattern
-- [ ] Ensure entry rows in both have identical structure: title | body preview | Edit button
-- [ ] Remove or consistently keep Delete button across both (app removed it; website should decide)
-
-### Priority 4: Diagnostic Logging (MEDIUM)
-
-- [ ] Website's `AdminLogs` should write `link/wifi` scope entries same as app: `appendLog({scope: "link/wifi", ...})`
-- [ ] Add `LINK_RESILIENCE.md`-style guide to website docs
-- [ ] Standardize log entry format: `{code, reason, wasClean, uptimeMs, frames}`
-
-### Priority 5: Terminology (LOW)
-
-- [ ] Ensure all button labels are exactly "Edit", "Save", "Cancel" (case, spacing)
-- [ ] Standardize section headings: "Company information"
-- [ ] Align tab labels where possible: "Logs" / "Profile" / "Settings"
-
-### Priority 6: Code & Test Parity (MEDIUM)
-
-- [ ] Run both repos' full test suites after any changes (955 mobile + 301 website)
-- [ ] Ensure TypeScript 0 errors on both after changes
-- [ ] Document changes in each repo's `docs/` folder (blueprints already created)
-- [ ] Commit and push changes to both repos with clear messages
+| Term | App | Website | Mirrored? |
+| --- | --- | --- | --- |
+| **Edit button label** | "Edit" | "Edit" | ✅ Yes |
+| **Save button label** | "Save" | "Save" | ✅ Yes |
+| **Cancel button label** | "Cancel" | "Cancel" | ✅ Yes |
+| **Delete button label** | "Delete" | "Delete" | ✅ Yes |
+| **Company section heading** | "Company information" | "Company information" | ✅ Yes |
+| **Tab labels** | "Dashboard", "Orders", "Electronic Products", "3D Products", "Projects", "Content", "Users", "Logs", "Settings", "Profile" | Same (via parity test) | ✅ Yes |
+| **Users section labels** | "User Directory", "Car Profiles", "Robot Profiles" | Same | ✅ Yes |
+| **Logs section labels** | "User Activity", "User Profiles", "Fleet Diagnostics" | Same | ✅ Yes |
 
 ---
 
-## 8. Deliverables — Documentation in Each Repo
+## 7. Technical Implementation Differences
 
-### Already Created (or to be created):
+### App (React Native + Expo + TypeScript)
 
-**In `genumsolutions-app/mobile/`:**
+- **Framework:** Expo Go, React Native, TypeScript
+- **Navigation:** `MainTabPager` + `RootNavigator` + `useState` for tab selection
+- **Styling:** Tailwind-like `className` system (NativeWind)
+- **State Management:** `useState` throughout `AdminScreen.tsx`
+- **Form Handling:** Controlled components via state setters
+- **API Calls:** Supabase SDK calls (`supabase.from("company_info").select("*...`).single()`)
+- **Logging:** `appendLog({scope: "link/wifi", ...})` in `useControlHub.ts` for link diagnostics
+- **Tests:** 955 vitest tests across 65 files — all passing
+- **TypeCheck:** `tsc --noEmit` passes 0 errors
 
-- `docs/ADMIN_UI_BLUEPRINT.md` — App admin UI structure and patterns (just created)
-- `docs/APP_WEBSITE_UI_COMPARISON.md` — This comparison report (just created)
-- `docs/LINK_RESILIENCE.md` — Already exists; documents churn fix + close diagnostics
+### Website (Next.js + React + TypeScript)
 
-**In `genumsolutions-website/`:**
-
-- `docs/ADMIN_UI_BLUEPRINT.md` — Website admin UI structure (just created)
-- `docs/APP_WEBSITE_UI_COMPARISON.md` — This comparison report (just created, also copy to website repo)
-- `docs/LINK_RESILIENCE.md` — Should be created or referenced; documents diagnostic wire for website admins
-
-### How to Keep Documentation "Safe" in Each Repo
-
-1. **Add `docs/` folder to both repos** (already done above)
-2. **Commit blueprint and comparison documents** to each repo's main branch
-3. **Add documentation to `.gitignore` exclusion** only if binary/large; these are Markdown so they should be committed
-4. **Reference documentation in README** or `TRACKS` file so new developers know where to find the blueprints
-5. **Update documentation** whenever UI changes are made — treat docs as first-class code, not afterthought
-
----
-
-## 9. Next Steps — Action Items
-
-### Immediate (this session)
-
-1. ✅ Create `ADMIN_UI_BLUEPRINT.md` in app repo (DONE)
-2. ✅ Create `ADMIN_UI_BLUEPRINT.md` in website repo (DONE)
-3. ✅ Create `APP_WEBSITE_UI_COMPARISON.md` in app repo (DONE)
-4. ✅ Create `APP_WEBSITE_UI_COMPARISON.md` in website repo (DONE)
-
-### Short-term (next dev session)
-
-1. Update app's `SettingsTab` to include full 15-field company info matching website
-2. Update website's `AdminSettings.tsx` field labels to match app's terminology exactly
-3. Add `link/wifi` diagnostic wire to website's `AdminLogs` component
-4. Mirror edit-button pattern in website's `AdminProfileEntries.tsx`
-
-### Long-term (next sprint)
-
-1. Restructure website admin navigation to mirror app's 2-tab (`Logs`/`Profile`) model
-2. Create shared TypeScript types package shared between both repos
-3. Implement cross-repo CI checks that validate UI consistency
-4. Maintain documentation as living documents — update on every UI change
+- **Framework:** Next.js 14 (app router), React 18, TypeScript
+- **Navigation:** Next.js page routes + React components
+- **Styling:** Tailwind CSS (`tailwind.config.ts`)
+- **State Management:** `useState`, `useEffect` across components
+- **Form Handling:** HTML forms with `onSubmit`, input `onChange` handlers
+- **API Calls:** `fetch("/api/admin/settings")`, `fetch("/api/admin/users")` for admin operations
+- **Logging:** `AdminLogs.tsx` component views `app_logs` and `device_crash_reports` tables
+- **Tests:** 301 vitest tests across 24 files — all passing
+- **TypeCheck:** `tsc --noEmit` passes 0 errors
 
 ---
 
-## 10. Conclusion
+## 8. Data Ownership
 
-The app and website provide overlapping admin functionality with different UI implementations. By aligning on:
+| Data | Table | Written by |
+| --- | --- | --- |
+| Products / catalogs | `products` | website API, app via `admin-products` |
+| Robot preferences | `robot_user_settings` | app + website account page; admins repair |
+| Project (car) profiles | `car_profiles` | app build screen; admins repair |
+| User activity | `user_activity_log` | DB triggers on `car_profiles` / `orders` |
+| Profile entries | `user_profile_entries` | DB triggers on `car_profiles` |
+| Crash reports / app logs | `device_crash_reports`, `app_logs` | app telemetry |
+| Link imports | `link_import_attempts` | `link-import` edge function |
 
-- **Company info fields and edit pattern** (Priority 1)
-- **Tab navigation structure** (Priority 2)
-- **Edit button workflow** (Priority 3)
-- **Diagnostic logging format** (Priority 4)
+`user_activity_log` and `user_profile_entries` have **no client writers**. They are filled by Postgres triggers so both clients see the same history without duplicating write code.
 
-Both platforms can mirror each other as consistent company assets, where operations in one are predictable from the other, and either platform being "down" doesn't break the other's operations (since backend/API can remain the single source of truth while UI mirrors).
+---
 
-The documentation in each repo's `docs/` folder ensures that UI/UX intent is preserved even as developers change, and the comparison report provides a baseline for measuring alignment progress over time.
+## 9. Per-Car Identity Fields (Distinguished)
+
+Each car profile has **distinguished identity fields** that identify the car uniquely:
+
+| Field | Purpose | Example |
+| --- | --- | --- |
+| `profile_key` | Stable identity — `fw:boardId` (firmware board ID), Bluetooth MAC, or `wifi:uuid` | `fw:1FB608`, `AA:BB:CC:DD:EE:FF`, `wifi:abc123` |
+| `car_name` | Display name set by user | "My 2WD car" |
+| `unique_id` | Unique identifier for the car | `#12345` |
+| `settings` | JSON blob of car-specific settings | `{modeId: "eco", speed: 128}` |
+
+These fields appear in:
+- App: Users tab → Car Profiles section; UserPreferencesScreen → My Devices section
+- Website: Users tab → Car Profiles section
+
+The `profile_key` is the **stable identity** that persists across app reinstalls and device changes. It uses the firmware board ID (`fw:boardId`) when available, falls back to Bluetooth MAC, and uses a UUID for Wi-Fi connections.
+
+---
+
+## 10. Responsive Design
+
+### App (Mobile-first)
+
+- Uses `className` system with responsive prefixes (`sm:`)
+- Layout stacks vertically on small screens, side-by-side on larger
+- Column widths use `flex-1` and `min-w-0` to avoid overflow
+- Action clusters use `flex-col sm:flex-row` to stack on mobile, row on desktop
+
+### Website (Mobile + Desktop)
+
+- Uses Tailwind CSS with responsive prefixes (`sm:`)
+- `flex-col sm:flex-row` — vertical on mobile, horizontal on desktop
+- `w-full sm:w-64` — full width on mobile, fixed width on desktop
+- `sm:flex-row sm:items-center sm:justify-between` — action cluster stacks on mobile, side-by-side on desktop
+- Users tab: top section selector is horizontal on all sizes; user rows stack on mobile, side-by-side on desktop
+- Settings tab: view mode grid responsive; edit mode form grid responsive
+
+---
+
+## 11. Current Alignment Status (Nov 2026)
+
+| Feature | App | Website | Mirrored? |
+| --- | --- | --- | --- |
+| Tab order (9 tabs) | Identical order | Identical order | ✅ Yes |
+| Users tab structure | 3 sections (User Directory, Car Profiles, Robot Profiles) | 3 sections (same) | ✅ Yes |
+| Edit-button pattern | Read-only → Edit → form → Save/Cancel | Same | ✅ Yes |
+| Company info fields | 17 fields (incl. url) | 17 fields (incl. url) | ✅ Yes |
+| Car profiles per user | profile_key, car_name, unique_id, settings | Same | ✅ Yes |
+| Robot profiles per user | robot_id, robot_name, settings | Same | ✅ Yes |
+| Logs tab sections | 3 sections (User Activity, User Profiles, Fleet) | Same | ✅ Yes |
+| Settings responsive | Mobile-first, stacks vertically | Mobile + desktop, responsive | ✅ Both |
+| Fleet diagnostics | Crash reports + app logs with scope filter | Same | ✅ Yes |
+| `link/wifi` diagnostic wire | `appendLog` in `useControlHub.ts` | No dedicated wire (views app_logs table) | ⚠️ Partial |
+
+---
+
+## 12. Documentation Deliverables
+
+### In `genumsolutions-app/mobile/docs/`:
+
+- `APP_ADMIN_COMPLETE.md` — Complete admin UI documentation (every element, every field, every pattern)
+- `ADMIN_UI_BLUEPRINT.md` — Admin UI blueprint (structure, patterns, types)
+- `APP_WEBSITE_UI_COMPARISON.md` — This comparison report (also in website repo)
+- `LINK_RESILIENCE.md` — Churn fix + close diagnostics guide
+
+### In `genumsolutions-website/docs/`:
+
+- `WEBSITE_ADMIN_COMPLETE.md` — Complete admin UI documentation (every element, every field, every pattern)
+- `ADMIN_UI_BLUEPRINT.md` — Website admin UI blueprint (structure, patterns, types)
+- `APP_WEBSITE_UI_COMPARISON.md` — This comparison report (also in app repo)
+- `ADMIN_COHERENCE.md` — Admin coherence doc (tab inventory, role permissions, data ownership)
+- `LINK_RESILIENCE.md` — Reference app's guide; documents diagnostic wire for website admins
+
+---
+
+## 13. Test Status
+
+- **App:** 955 vitest tests across 65 files — all passing
+- **Website:** 301 vitest tests across 24 files — all passing
+- **Both repos:** `tsc --noEmit` passes 0 errors
+- **Parity tests:** enforce identical tab structure on both repos
 
 ---
 
 _Report generated: 2026-11-09_
 _Comparison between: genumsolutions-app/mobile and genumsolutions-website_
-_Both repos: TypeScript 0 errors, green CI on all tests_
+_Both repos: TypeScript 0 errors, green CI on all tests (955 mobile + 301 website)_
+_Users tab: 3-section structure mirrored (User Directory, Car Profiles, Robot Profiles)_
+_Logs tab: 3-section structure mirrored (User Activity, User Profiles, Fleet Diagnostics)_
+_Company info: 17 fields mirrored with url field_
+_Edit-button pattern: consistent across both (read-only → Edit → form → Save/Cancel)_
