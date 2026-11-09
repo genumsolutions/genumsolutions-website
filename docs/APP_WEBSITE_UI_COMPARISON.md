@@ -462,13 +462,34 @@ Both projects share the same architectural patterns:
 
 ## 14. Customer-Facing Page Parity (Nov 2026)
 
-| Page               | App Screen                           | Website Page                                            | Shared Sections                                                                                                                                    |
-| ------------------ | ------------------------------------ | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **About**          | `AboutScreen.tsx`                    | `app/about/page.tsx`                                    | Hero, stats (4), how we work, what we do (4 cards), technical foundation (6 competencies)                                                          |
-| **Product detail** | `ProductDetailScreen.tsx`            | `app/products/[slug]/page.tsx` → `ProductDetailPro.tsx` | Gallery, description, price, product info grid, specs, project info (projects only), components/projects cross-links, related products, pinned CTA |
-| **Contact**        | `ContactScreen.tsx`                  | `app/contact/page.tsx`                                  | Company details (address/email/phone/whatsapp), socials, inquiry form (name/email/message), Send button, status feedback                           |
-| **Services**       | `ServicesScreen.tsx` (category-only) | `app/services/page.tsx`                                 | Category filter, service cards, empty state                                                                                                        |
-| **Account**        | `AccountScreen.tsx`                  | `app/account/page.tsx`                                  | Header, stats (3), collection, activity, orders, details, newsletter, messages                                                                     |
+| Page               | App Screen                | Website Page                                            | Shared Sections                                                                                                                                    |
+| ------------------ | ------------------------- | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **About**          | `AboutScreen.tsx`         | `app/about/page.tsx`                                    | Hero, stats (4), how we work, what we do (4 cards), technical foundation (6 competencies)                                                          |
+| **Product detail** | `ProductDetailScreen.tsx` | `app/products/[slug]/page.tsx` → `ProductDetailPro.tsx` | Gallery, description, price, product info grid, specs, project info (projects only), components/projects cross-links, related products, pinned CTA |
+| **Contact**        | `ContactScreen.tsx`       | `app/contact/page.tsx`                                  | Company details (address/email/phone/whatsapp), socials, inquiry form (name/email/message), Send button, status feedback                           |     | **Services** | `ServicesScreen.tsx` (category-only) | `app/services/page.tsx` | Category filter, service cards, empty state |
+| **Account**        | `AccountScreen.tsx`       | `app/account/page.tsx`                                  | Header, stats (3), collection, activity, orders, details, newsletter, messages                                                                     |
+
+### ServicesScreen & ContactScreen — Already Mirrored
+
+Both screens were verified as already in parity with their website counterparts (no changes needed):
+
+**ServicesScreen** (`genumsolutions-app/mobile/src/screens/ServicesScreen.tsx`) ↔ **ServicesGrid** (`genumsolutions-website/components/ServicesGrid.tsx`):
+
+- Category-only filter (no text search) — matches website
+- Empty state: "No services in this category. Contact us for details." — matches
+- Service card: name + description + price label + CTA — matches (layout differs: native card vs ArticleCard grid)
+
+**ContactScreen** (`genumsolutions-app/mobile/src/screens/ContactScreen.tsx`) ↔ **ContactForm** + **ContactPage** (`genumsolutions-website/components/ContactForm.tsx` + `app/contact/page.tsx`):
+
+- Hero title + intro — matches
+- Company details: address (geo://), email (mailto:), phone (tel:), WhatsApp (when set) — matches
+- Socials row (5 platforms) — matches
+- Form fields: name (100), email (254), message (5000) — matches
+- Sending state: "Sending..." + spinner — matches
+- Success/error messages — matches
+- Resolution strings — matches
+- Privacy/Terms links — matches
+- Edge function → `customer_messages` table — matches (same table, same edge function)
 
 ## 15. Test Status
 
