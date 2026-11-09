@@ -22,11 +22,13 @@ export type UserLogsPage = {
 export type ProfileEntriesPage = {
   entries: {
     id: string;
-    profile_key: string;
-    user_id: string | null;
-    type_key: string;
-    value: string;
+    user_id: string;
+    type_id: string;
+    title: string;
+    body: Record<string, unknown>;
+    typeName: string;
     created_at: string;
+    updated_at: string;
   }[];
   total: number;
   page: number;

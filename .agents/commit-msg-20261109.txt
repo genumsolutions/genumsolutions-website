@@ -1,0 +1,28 @@
+feat(admin): clean up admin probe scripts, unify single probe surface, and fix .env.local quoting
+
+Tighten the published admin API probe into one consistent shape:
+- admin-api-probe.ts now reads credentials from the environment only and
+  rejects placeholder values instead of silently falling back.
+- admin-api-probe.sh is now a thin wrapper that exports PROBE_BASE and
+  PROBE_ENDPOINTS into one inline tsx probe, removing the duplicate
+  inline TS probe and the stale hardcoded token fallbacks.
+- admin-api-probe.sh/-tsx now support PROBE_VERCEL=1 to probe the
+  published Vercel site instead of the Supabase project host.
+- Removed redundant service-role / duplicate content probe paths from
+  the shell wrapper; the canonical surface is now the single tsx probe.
+- Make .env.local shell-safe by quoting RESEND_FROM_EMAIL so
+  set -a; . ./.env.local no longer breaks on line 7.
+
+Fix the remaining type/content discrepancy:
+- admin-types.ts now matches the actual profile-entries shape used by
+  lib/user-logs.ts and /api/admin/profile-entries.
+
+Make the blocked migration paths explicit instead of pretending they work:
+- apply-migration-via-api.sh, apply-migration-via-db-host.sh, and
+  verify-migration-via-api.sh now state clearly that they are NOT usable
+  from this environment and point to the usable paths.
+- verify-logs-profiles.sql is the canonical DB verification artifact.
+
+Add a written state file for the admin dashboard parity work.
+
+Co-Authored-By: Codebuff <noreply@codebuff.com>
