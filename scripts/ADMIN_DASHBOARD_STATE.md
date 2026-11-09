@@ -27,26 +27,26 @@
 - The published site `https://genumsolutions-website.vercel.app/api/admin/*` is live and gated:
   - Every admin endpoint returns `401 { "error": "Unauthorized" }` when probed without an admin session.
   - That includes `/api/admin/user-logs`, `/api/admin/profile-entries`, `/api/admin/logs`, `/api/admin/content`, `/api/admin/users`, `/api/admin/orders`, `/api/admin/products`, `/api/admin/activity`, `/api/admin/analytics`, `/api/admin/messages`, `/api/admin/settings`, `/api/admin/car-modes`, `/api/admin/car-profiles`.
-- The Supabase project host itself does not expose those routes: `https://jxgmbodzkmxanuwfaqxo.supabase.co/api/admin/*` returns `404` with empty body. That is expected; the admin routes live on the Vercel deployment, not on the Supabase project host.
+- The Supabase project host itself does not expose those routes: `https://jxgmbodzkmxanuwfaqxo.supabase.co/api/admin/*` returns `404` with empty body. That is expected; the admin routes live on the Vercel deployment, not on the Supabase project host.## Migration applied live (2026-11-09)
+- `supabase/migrations/20261108_user_logs_profiles.sql` was applied in the Supabase Dashboard SQL Editor and succeeded.
+- The earlier `ERROR: 42710: constraint "user_activity_log_user_id_fkey" already exists` was a bug in the migration, not in the DB: the create-table statements already declared the foreign keys inline, then re-added the same constraints by name. The whole file rolled back in the SQL Editor transaction, which is why the tables reported as missing afterwards. Fixed by guarding each FK add with a `pg_constraint` existence check; the migration is now safe to re-run.
+- RLS is enabled on all three tables with six policies:
+  - `user_activity_log`: `user_activity_log_select_own`, `user_activity_log_insert_own`
+  - `user_profile_entries`: `user_profile_entries_select_own`, `user_profile_entries_insert_own`, `user_profile_entries_update_own`
+  - `profile_entry_types`: `profile_entry_types_select_authenticated`
+    The admin routes are unaffected — they use the service-role key, which bypasses RLS.
 
-## Not verified from here yet
+### Verified live via PostgREST with the service-role key
 
-- The three tables `user_activity_log`, `user_profile_entries`, `profile_entry_types` have not been confirmed on the live DB from here, because the migration has not been applied from here.
-- Admin-deletable behavior with real rows has not been confirmed end to end from here, because the migration is not applied here, there is no admin session available for the live site probes, no `SUPABASE_DB_URL` is in `.env.local`, and the only SQL-proxy paths reachable from here are blocked.
+- `GET /rest/v1/user_activity_log` → HTTP 200, `[]`
+- `GET /rest/v1/profile_entry_types` → HTTP 200, returns the seeded row `00000000-0000-0000-0000-000000000001` (`car profile`)
+- `GET /rest/v1/user_profile_entries` → HTTP 200, `[]`
+- Joined read `user_profile_entries?select=*,profile_entry_types(name)` → HTTP 200 and resolves `profile_entry_types.name`, which is what `listUserProfileEntries` maps to `typeName`.
+- Insert → read → delete round trip on both `user_activity_log` and `user_profile_entries` succeeded (HTTP 200 each), and both tables were left empty again afterwards.
 
-## Remaining blocker
+## Still to confirm
 
-The migration `supabase/migrations/20261108_user_logs_profiles.sql` (and the same three-table section appended in `supabase/schema.sql`) still needs to be applied to the live project through one of these usable paths:
-
-- Supabase Dashboard SQL Editor
-- `npm run db:apply` once `SUPABASE_DB_URL` is added to `.env.local`
-- A CI run with direct DB credentials
-
-After the migration is applied, run `scripts/verify-logs-profiles.sql` in the Dashboard SQL Editor and confirm:
-
-- the three tables exist,
-- the columns/foreign keys match,
-- the seeded `profile_entry_types` row `00000000-0000-0000-0000-000000000001` exists.
+- The admin UI itself has not been exercised with a signed-in admin session from here. The published endpoints are live and gated (`401 {"error":"Unauthorized"}` without a session), and the underlying data path is verified, so what remains is a click-through in the live admin: `/admin` → **User Logs** and **Profile Entries**.
 
 ## Duplicate/redundant cleanup already applied
 
