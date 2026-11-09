@@ -462,12 +462,11 @@ Both projects share the same architectural patterns:
 
 ## 14. Customer-Facing Page Parity (Nov 2026)
 
-| Page               | App Screen                | Website Page                                            | Shared Sections                                                                                                                                    |
-| ------------------ | ------------------------- | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **About**          | `AboutScreen.tsx`         | `app/about/page.tsx`                                    | Hero, stats (4), how we work, what we do (4 cards), technical foundation (6 competencies)                                                          |
+| Page | App Screen | Website Page | Shared Sections |
+| ------------------ | ------------------------- | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- || **About** | `AboutScreen.tsx` | `app/about/page.tsx` | Hero, stats (4 static + 2 live from DB via getProducts()), how we work, what we do (4 cards), technical foundation (6 competencies) |
 | **Product detail** | `ProductDetailScreen.tsx` | `app/products/[slug]/page.tsx` → `ProductDetailPro.tsx` | Gallery, description, price, product info grid, specs, project info (projects only), components/projects cross-links, related products, pinned CTA |
-| **Contact**        | `ContactScreen.tsx`       | `app/contact/page.tsx`                                  | Company details (address/email/phone/whatsapp), socials, inquiry form (name/email/message), Send button, status feedback                           |     | **Services** | `ServicesScreen.tsx` (category-only) | `app/services/page.tsx` | Category filter, service cards, empty state |
-| **Account**        | `AccountScreen.tsx`       | `app/account/page.tsx`                                  | Header, stats (3), collection, activity, orders, details, newsletter, messages                                                                     |
+| **Contact** | `ContactScreen.tsx` | `app/contact/page.tsx` | Company details (address/email/phone/whatsapp), socials, inquiry form (name/email/message), Send button, status feedback | | **Services** | `ServicesScreen.tsx` (category-only) | `app/services/page.tsx` | Category filter, service cards, empty state |
+| **Account** | `AccountScreen.tsx` | `app/account/page.tsx` | Header, stats (3), collection, activity, orders, details, newsletter, messages |
 
 ### ServicesScreen & ContactScreen — Already Mirrored
 
