@@ -23,7 +23,8 @@
     "prepare": "husky",
     "images:optimize": "tsx scripts/optimize-images.ts",
     "backup": "tsx scripts/backup.ts",
-    "images:verify": "tsx scripts/verify-images.ts"
+    "images:verify": "tsx scripts/verify-images.ts",
+    "images:sweep": "tsx scripts/sweep-images.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",

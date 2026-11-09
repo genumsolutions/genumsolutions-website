@@ -35,6 +35,7 @@ are the code, and a test on each side fails if the two drift apart.
 | Every product save (gallery clamp)      | `lib/content-store.ts` → `clampGallery()`                         |
 | Import by link, on either client        | `supabase/functions/link-import/index.ts` → `prepareForStorage()` |
 | Existing bucket contents                | `scripts/optimize-images.ts`                                      |
+| Orphaned objects                        | `scripts/sweep-images.ts` + `lib/image-sweep.ts`                  |
 
 The app has no encoder of its own: it never uploads bytes directly, every image
 it stores arrives through `link-import`, which is where the app-side cap is
@@ -46,6 +47,8 @@ applied. `src/lib/imageLimits.ts` mirrors the numbers so the UI can state them.
 npm run images:optimize -- --dry-run   # measure, change nothing
 npm run images:optimize                # re-encode anything over budget + repoint rows
 npm run images:verify                  # fail if a product points at a missing file
+npm run images:sweep                   # list files no row references (dry run)
+npm run images:sweep -- --delete       # remove those files
 npm run backup -- --with-images        # snapshot every table + the image bytes
 ```
 
@@ -53,14 +56,29 @@ npm run backup -- --with-images        # snapshot every table + the image bytes
 the original, so an interrupted run leaves the storefront serving the old file
 rather than a broken image.
 
+`images:sweep` is the opposite job — it removes files nothing points at, which
+happens when an image is replaced or a product is deleted. It is a dry run
+unless you pass `--delete`, and it fails closed: it scans **every** table
+PostgREST exposes (39 today, discovered from the API schema rather than a
+hand-written list), and refuses to delete if any table read fails or if the
+scan finds zero references. An object is kept when its exact path or its bare
+file name appears in any row, when it changed in the last 24 h (`--keep-hours`
+to change), or when it is protected — currently
+`genum-product-placeholder.webp`. The judgement lives in `lib/image-sweep.ts`
+with unit tests, so the rules are pinned independently of live data.
+
+Run it after bulk catalog edits (`images:verify` first — a missing file is a
+bug; an unreferenced one is just weight).
+
 ## Measured results (2026-11-09)
 
-| Metric                    | Before          | After           |
-| ------------------------- | --------------- | --------------- |
-| `product-images` bucket   | 23.56 MB        | 3.26 MB         |
-| Average image             | 754 KB          | 104 KB          |
-| Source images over 2 MB   | 4 (2.9 MB PNGs) | 0               |
-| Referenced images checked | —               | 63, all resolve |
+| Metric                    | Before          | After                |
+| ------------------------- | --------------- | -------------------- |
+| `product-images` bucket   | 23.56 MB        | 2.90 MB (29 objects) |
+| Average image             | 754 KB          | 102 KB               |
+| Source images over 2 MB   | 4 (2.9 MB PNGs) | 0                    |
+| Referenced images checked | —               | 63, all resolve      |
+| Unreferenced objects      | 3               | 0                    |
 
 One live import smoke test through the deployed edge function: an 810 KB source
 photo stored at **154 KB**, 1600 px, JPEG.
