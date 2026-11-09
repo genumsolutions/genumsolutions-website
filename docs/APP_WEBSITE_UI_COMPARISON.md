@@ -336,18 +336,19 @@ The `profile_key` is the **stable identity** that persists across app reinstalls
 
 ## 11. Current Alignment Status (Nov 2026)
 
-| Feature                     | App                                                       | Website                                  | Mirrored?  |
-| --------------------------- | --------------------------------------------------------- | ---------------------------------------- | ---------- |
-| Tab order (9 tabs)          | Identical order                                           | Identical order                          | ✅ Yes     |
-| Users tab structure         | 3 sections (User Directory, Car Profiles, Robot Profiles) | 3 sections (same)                        | ✅ Yes     |
-| Edit-button pattern         | Read-only → Edit → form → Save/Cancel                     | Same                                     | ✅ Yes     |
-| Company info fields         | 17 fields (incl. url)                                     | 17 fields (incl. url)                    | ✅ Yes     |
-| Car profiles per user       | profile_key, car_name, unique_id, settings                | Same                                     | ✅ Yes     |
-| Robot profiles per user     | robot_id, robot_name, settings                            | Same                                     | ✅ Yes     |
-| Logs tab sections           | 3 sections (User Activity, User Profiles, Fleet)          | Same                                     | ✅ Yes     |
-| Settings responsive         | Mobile-first, stacks vertically                           | Mobile + desktop, responsive             | ✅ Both    |
-| Fleet diagnostics           | Crash reports + app logs with scope filter                | Same                                     | ✅ Yes     |
-| `link/wifi` diagnostic wire | `appendLog` in `useControlHub.ts`                         | No dedicated wire (views app_logs table) | ⚠️ Partial |
+| Feature                     | App                                                                            | Website                                  | Mirrored?                  |
+| --------------------------- | ------------------------------------------------------------------------------ | ---------------------------------------- | -------------------------- |
+| Tab order (9 tabs)          | Identical order                                                                | Identical order                          | ✅ Yes                     |
+| Users tab structure         | 3 sections (User Directory, Car Profiles, Robot Profiles)                      | 3 sections (same)                        | ✅ Yes                     |
+| Edit-button pattern         | Read-only → Edit → form → Save/Cancel                                          | Same                                     | ✅ Yes                     |
+| Company info fields         | 12 fields (subset, no url/city/country/vatLabel/description)                   | 17 fields (incl. url)                    | ⚠️ App uses subset         |
+| WhatsApp helpers            | normalizeWhatsappNumber + isValidWhatsappNumber + whatsappLink (in socials.ts) | Same 3 helpers (in lib/socials.ts)       | ✅ Yes — mirrored Nov 2026 |
+| Car profiles per user       | profile_key, car_name, unique_id, settings                                     | Same                                     | ✅ Yes                     |
+| Robot profiles per user     | robot_id, robot_name, settings                                                 | Same                                     | ✅ Yes                     |
+| Logs tab sections           | 3 sections (User Activity, User Profiles, Fleet)                               | Same                                     | ✅ Yes                     |
+| Settings responsive         | Mobile-first, stacks vertically                                                | Mobile + desktop, responsive             | ✅ Both                    |
+| Fleet diagnostics           | Crash reports + app logs with scope filter                                     | Same                                     | ✅ Yes                     |
+| `link/wifi` diagnostic wire | `appendLog` in `useControlHub.ts`                                              | No dedicated wire (views app_logs table) | ⚠️ Partial                 |
 
 ---
 
@@ -374,33 +375,36 @@ The `profile_key` is the **stable identity** that persists across app reinstalls
 
 Both projects share the same architectural patterns:
 
-| Aspect               | App                                   | Website                                | Mirrored?                               |
-| -------------------- | ------------------------------------- | -------------------------------------- | --------------------------------------- |
-| **Navigation**       | Bottom tabs + native-stack screens    | Next.js App Router page routes         | ✅ Same concept                         |
-| **State management** | React Context (`AppContext`)          | React state + Supabase cookies         | ✅ Both use React state                 |
-| **Styling**          | NativeWind (`className` system)       | Tailwind CSS (`tailwind.config.ts`)    | ✅ Same Tailwind tokens (navy/ink/gold) |
-| **Data layer**       | `src/services/` read Supabase         | `lib/` + `app/api/` read Supabase      | ✅ Same Supabase anon key pattern       |
-| **Auth**             | Native Supabase auth (SecureStore)    | Cookie sessions via `@supabase/ssr`    | ✅ Same Supabase Auth                   |
-| **Admin contract**   | `adminService.ts` + `AdminScreen.tsx` | `lib/` + `app/api/admin/` + components | ✅ Same RLS-gated admin pattern         |
-| **Company info**     | `src/config/company.ts` (17 fields)   | `lib/company.ts` (17 fields)           | ✅ Identical types                      |
-| **Version sync**     | `app.json` + `src/config/site.ts`     | N/A (website version in package.json)  | ⚠️ Different pattern                    |
-| **Release**          | APK upload + OTA hot-patches          | Vercel deployment                      | ✅ Both use git-pushed CI               |
-| **Testing**          | 955 vitest tests                      | 301 vitest tests                       | ✅ Both use vitest                      |
+| Aspect               | App                                                  | Website                                | Mirrored?                               |
+| -------------------- | ---------------------------------------------------- | -------------------------------------- | --------------------------------------- |
+| **Navigation**       | Bottom tabs + native-stack screens                   | Next.js App Router page routes         | ✅ Same concept                         |
+| **State management** | React Context (`AppContext`)                         | React state + Supabase cookies         | ✅ Both use React state                 |
+| **Styling**          | NativeWind (`className` system)                      | Tailwind CSS (`tailwind.config.ts`)    | ✅ Same Tailwind tokens (navy/ink/gold) |
+| **Data layer**       | `src/services/` read Supabase                        | `lib/` + `app/api/` read Supabase      | ✅ Same Supabase anon key pattern       |
+| **Auth**             | Native Supabase auth (SecureStore)                   | Cookie sessions via `@supabase/ssr`    | ✅ Same Supabase Auth                   |
+| **Admin contract**   | `adminService.ts` + `AdminScreen.tsx`                | `lib/` + `app/api/admin/` + components | ✅ Same RLS-gated admin pattern         |
+| **Company info**     | `src/config/company.ts` (12 fields, subset)          | `lib/company.ts` (17 fields)           | ⚠️ App uses subset (see below)          |
+| **WhatsApp helpers** | `src/config/socials.ts` (normalize + isValid + link) | `lib/socials.ts` (same 3 helpers)      | ✅ Yes — mirrored Nov 2026              |
+| **Version sync**     | `app.json` + `src/config/site.ts`                    | N/A (website version in package.json)  | ⚠️ Different pattern                    |
+| **Release**          | APK upload + OTA hot-patches                         | Vercel deployment                      | ✅ Both use git-pushed CI               |
+| **Testing**          | 955 vitest tests                                     | 301 vitest tests                       | ✅ Both use vitest                      |
 
 ### Shared Files (Source of Truth)
 
-| File                                        | Purpose                                 | Location                            |
-| ------------------------------------------- | --------------------------------------- | ----------------------------------- |
-| `supabase/schema.sql`                       | Database schema (tables, RLS, triggers) | website repo (source of truth)      |
-| `lib/company.ts` ↔ `src/config/company.ts`  | Company info type (17 fields)           | website ↔ app                       |
-| `tailwind.config.ts` ↔ `tailwind.config.js` | Tailwind theme tokens                   | website ↔ app                       |
-| `src/config/adminTabs.ts` ↔ parity tests    | Admin tab definitions                   | app (enforced by both repos' tests) |
+| File                                        | Purpose                                 | Location                            | Mirrored? |
+| ------------------------------------------- | --------------------------------------- | ----------------------------------- | --------- |
+| `supabase/schema.sql`                       | Database schema (tables, RLS, triggers) | website repo (source of truth)      | ✅ Yes    |
+| `lib/company.ts` ↔ `src/config/company.ts`  | Company info type (17 fields)           | website ↔ app                       | ✅ Yes    |
+| `tailwind.config.ts` ↔ `tailwind.config.js` | Tailwind theme tokens                   | website ↔ app                       | ✅ Yes    |
+| `lib/socials.ts` ↔ `src/config/socials.ts`  | Social links + WhatsApp helpers         | website ↔ app                       | ✅ Yes    |
+| `src/config/adminTabs.ts` ↔ parity tests    | Admin tab definitions                   | app (enforced by both repos' tests) | ✅ Yes    |
 
 ### Sync Responsibilities
 
 - **Schema**: `supabase/schema.sql` is the source of truth. The app reads from the same DB.
-- **Company info**: Both repos have identical 17-field types. Keep in sync when fields change.
-- **Tailwind tokens**: Both use the same navy/ink/gold palette. Keep colors in sync.
+- **Company info**: Website `lib/company.ts` has 17 fields (the source of truth). App `src/config/company.ts` intentionally uses a 12-field subset — it omits `url`, `city`, `country`, `vatLabel`, `description` because the app doesn't need them (offline fallback, no web URL display, no VAT label on mobile). This is a deliberate design choice, not an oversight. The shared fields (name, shortName, address, email, phone, pan, whatsappNumber, facebookUrl, instagramUrl, tiktokUrl, linkedinUrl, youtubeUrl) are identical in type and value.
+- **Tailwind tokens**: Verified matching — both configs share 13 common color tokens (ink, navy, navy-dark, navy-light, sky, mist, gold, gold-dark, line, border, surface, muted, accent), identical font families (Inter/Sora/ui-monospace), identical border radius values, and identical box shadow values (card/glow/neon). App adds 7 theme-responsive tokens (danger, success, select-bg/ink) for error/success states. Website uses direct hex values; app uses CSS variable references for runtime theme flipping — both resolve to the same visible colors. See `APP_ARCHITECTURE.md` section 12 and `WEBSITE_ARCHITECTURE.md` section 9.
+- **WhatsApp helpers**: Verified matching — both `lib/socials.ts` (website) and `src/config/socials.ts` (app) now have the same 4 helpers: `socialLinks()`, `normalizeWhatsappNumber()`, `isValidWhatsappNumber()`, `whatsappLink()`. The app mirrors the website 1:1. See commit 953f1cb.
 - **Admin tabs**: Parity tests enforce identical tab order on both repos.
 
 ---
