@@ -15,8 +15,6 @@
  * Credentials are read from environment variables only. The file does NOT store
  * any real key; it bails out when a required credential is a placeholder.
  */
-import { createClient } from "@supabase/supabase-js";
-
 function env(name: string, fallback?: string): string {
   const raw = process.env[name];
   if (raw && raw !== "undefined" && !raw.startsWith("replace") && !raw.includes("replace_with"))
@@ -37,12 +35,13 @@ if (!anonKey || anonKey.startsWith("replace") || anonKey === "undefined") {
   process.exit(2);
 }
 
-const anonClient = createClient(url, anonKey, {
-  auth: { persistSession: false },
-});
-
 type ProbeResult =
   { ok: true; status: number; body: unknown } | { ok: false; status: number; text: string };
+
+function describe(result: ProbeResult, max: number): string {
+  const raw = result.ok ? JSON.stringify(result.body) : result.text;
+  return (raw ?? "").slice(0, max);
+}
 
 async function probe(
   key: string,
@@ -93,13 +92,11 @@ const endpoints = [
 async function run() {
   let anyDown = false;
   const production = process.env.PROBE_VERCEL === "1";
-  const baseForProbe = production ? productionBase : url;
   if (production) console.log("Probing production at " + productionBase + " (PROBE_VERCEL=1).");
   for (const path of endpoints) {
     const result = await probe(anonKey, path, production ? productionBase : undefined);
     if (!result.ok) anyDown = true;
-    const short = result.ok ? JSON.stringify(result.body).slice(0, 400) : result.text;
-    console.log(`anon ${path} -> HTTP ${result.status} | ${short}`);
+    console.log(`anon ${path} -> HTTP ${result.status} | ${describe(result, 400)}`);
   }
   // Probes that skip the apikey header to see if the endpoint exists at all.
   if (production) {
@@ -109,9 +106,7 @@ async function run() {
         Accept: "application/json",
       });
       if (!result.ok) anyDown = true;
-      console.log(
-        `bare ${path} -> HTTP ${result.status} | ${typeof result.text === "string" ? result.text.slice(0, 220) : JSON.stringify(result.body).slice(0, 220)}`
-      );
+      console.log(`bare ${path} -> HTTP ${result.status} | ${describe(result, 220)}`);
     }
     const env = {
       HOST: process.env.HOST,
@@ -135,9 +130,7 @@ async function run() {
     for (const path of svcEndpoints) {
       const result = await probe(svcKey, path, production ? productionBase : undefined);
       if (!result.ok) anyDown = true;
-      console.log(
-        `svc ${path} -> HTTP ${result.status} | ${typeof result.text === "string" ? result.text.slice(0, 400) : JSON.stringify(result.body).slice(0, 400)}`
-      );
+      console.log(`svc ${path} -> HTTP ${result.status} | ${describe(result, 400)}`);
     }
   }
   process.exit(anyDown ? 1 : 0);
