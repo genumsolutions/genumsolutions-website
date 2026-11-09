@@ -48,6 +48,25 @@ function readAdminTypesSource(): string {
   return "";
 }
 
+/**
+ * Pull `TAB_HINTS` / `ADMIN_TAB_HINTS` out of the source text. Values are
+ * single-line double-quoted strings by construction (no quotes inside), which
+ * keeps this readable instead of needing a TS parser in a test.
+ */
+function readHints(source: string, declaration: string): Record<string, string> {
+  const block = source.match(
+    new RegExp(`export const ${declaration}[^=]*= \\{([\\s\\S]*?)\\n\\};`)
+  );
+  const out: Record<string, string> = {};
+  for (const line of (block?.[1] ?? "").split(/\r?\n/)) {
+    const match = line.match(/^\s*(?:"([^"]+)"|([A-Za-z][\w ]*))\s*:\s*"([^"]*)"/);
+    if (!match) continue;
+    const key = match[1] ?? match[2];
+    if (key) out[key] = match[3] ?? "";
+  }
+  return out;
+}
+
 describe("admin tab inventory (website <-> app mirror, B-6)", () => {
   it("declares the canonical website tabs in admin-types.ts", () => {
     const source = readAdminTypesSource();
@@ -81,5 +100,23 @@ describe("admin tab inventory (website <-> app mirror, B-6)", () => {
       .map((s) => s.trim().replace(/^["']|["']$/g, ""))
       .filter(Boolean);
     expect(appTabs).toEqual(ADMIN_TABS);
+  });
+
+  // U-UI1 (2026-11-09): the sentence under the tab strip is part of the shared
+  // console contract now, not decoration. Both surfaces must say the same
+  // thing, and every tab must actually have a line.
+  it("describes every tab with the same sentences the app uses", () => {
+    const webHints = readHints(readAdminTypesSource(), "TAB_HINTS");
+    expect(Object.keys(webHints).sort()).toEqual([...ADMIN_TABS].sort());
+    for (const [tab, hint] of Object.entries(webHints))
+      expect(hint.length, `empty hint for ${tab}`).toBeGreaterThan(10);
+
+    const appPath = resolve(
+      __dirname,
+      "../../../genumsolutions-app/mobile/src/config/adminTabs.ts"
+    );
+    if (!existsSync(appPath)) return; // sibling repo absent (CI layout)
+    const appHints = readHints(readFileSync(appPath, "utf8"), "ADMIN_TAB_HINTS");
+    expect(appHints).toEqual(webHints);
   });
 });

@@ -36,6 +36,23 @@ export const TABS = [
 ] as const;
 export type Tab = (typeof TABS)[number];
 
+// U-UI1 (2026-11-09): one line per tab, shown under the tab strip on BOTH
+// clients (website AdminPanel, app AdminScreen). The app keeps an identical
+// copy in src/config/adminTabs.ts and both parity tests compare the two maps,
+// so the console explains itself the same way on either surface. Keep values
+// free of double quotes — the tests parse them out of the source text.
+export const TAB_HINTS: Record<Tab, string> = {
+  Dashboard: "Revenue, orders and traffic at a glance.",
+  Orders: "Every order, its payment state and the pilot finance lines.",
+  "Electronic Products": "The /products catalog — pricing, stock and photos.",
+  "3D Products": "The /3d-printing catalog.",
+  Projects: "Bundles sold on /projects, including pre-packaged kits.",
+  Content: "Services, journal posts and the home page copy.",
+  Users: "Accounts, roles, orders and each person's project profiles.",
+  Logs: "User activity, project profiles and field diagnostics.",
+  Settings: "Company details, training programs and pilot costs.",
+};
+
 export const TAB_GROUP_OF: Record<Tab, string> = Object.fromEntries(
   TABS.map((tab) => [tab, ""])
 ) as Record<Tab, string>;

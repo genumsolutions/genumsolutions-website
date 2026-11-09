@@ -16,7 +16,7 @@ import {
   Settings as SettingsIcon,
   ScrollText,
 } from "lucide-react";
-import { TABS, type Tab } from "./admin/admin-types";
+import { TAB_HINTS, TABS, type Tab } from "./admin/admin-types";
 import AdminDashboard from "./admin/AdminDashboard";
 import AdminActivity from "./admin/AdminActivity";
 import AdminOrders from "./admin/AdminOrders";
@@ -142,34 +142,57 @@ export default function AdminPanel({ initialProducts, currentRole }: Props) {
     }
   }
 
+  // U-UI1 (2026-11-09): the strip is now ONE sticky row that scrolls
+  // horizontally instead of wrapping onto three lines on a phone. That matches
+  // the app's tab strip (one row, horizontal scroll, same active treatment) and
+  // keeps the current section visible while you scroll a long panel.
+  function moveTo(index: number) {
+    const next = TABS[index];
+    if (!next) return;
+    setTab(next);
+    setVisited((prev) => new Set(prev).add(index));
+    document.getElementById(`tab-${panelId(next)}`)?.focus();
+  }
+
   return (
-    <div className="mx-auto max-w-7xl px-5 py-10 lg:px-8">
-      <div
-        role="tablist"
-        aria-label="Admin sections"
-        className="flex flex-wrap items-center gap-x-6 gap-y-1 border-b border-line px-5 pb-1 lg:mx-0 lg:px-0"
-      >
-        {TABS.map((name: Tab, i: number) => {
-          const Icon = TAB_ICONS[name] ?? LayoutDashboard;
-          return (
-            <button
-              key={name}
-              role="tab"
-              id={`tab-${panelId(name)}`}
-              aria-selected={tab === name}
-              aria-controls={`panel-${panelId(name)}`}
-              onClick={() => {
-                setTab(name);
-                setVisited((prev) => new Set(prev).add(i));
-              }}
-              className={`${tabBase} text-[13px] ${tab === name ? tabActive : tabInactive}`}
-            >
-              <Icon size={15} aria-hidden="true" />
-              {name}
-            </button>
-          );
-        })}
+    <div className="mx-auto max-w-7xl px-5 pb-14 lg:px-8">
+      <div className="sticky top-0 z-20 -mx-5 border-b border-line bg-white/95 px-5 backdrop-blur lg:-mx-8 lg:px-8">
+        <div
+          role="tablist"
+          aria-label="Admin sections"
+          className="flex items-center gap-5 overflow-x-auto pb-0.5 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          onKeyDown={(event) => {
+            if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+            event.preventDefault();
+            const step = event.key === "ArrowRight" ? 1 : -1;
+            moveTo((tabIndex + step + TABS.length) % TABS.length);
+          }}
+        >
+          {TABS.map((name: Tab, i: number) => {
+            const Icon = TAB_ICONS[name] ?? LayoutDashboard;
+            return (
+              <button
+                key={name}
+                role="tab"
+                id={`tab-${panelId(name)}`}
+                aria-selected={tab === name}
+                aria-controls={`panel-${panelId(name)}`}
+                tabIndex={tab === name ? 0 : -1}
+                onClick={() => {
+                  setTab(name);
+                  setVisited((prev) => new Set(prev).add(i));
+                }}
+                className={`${tabBase} text-[12px] ${tab === name ? tabActive : tabInactive}`}
+              >
+                <Icon size={14} aria-hidden="true" />
+                {name}
+              </button>
+            );
+          })}
+        </div>
       </div>
+      {/* What this tab is for, in the same words the app uses (TAB_HINTS). */}
+      <p className="mt-4 text-xs leading-5 text-muted">{TAB_HINTS[tab]}</p>
       {message && (
         <p
           role="status"

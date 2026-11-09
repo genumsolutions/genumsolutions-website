@@ -47,11 +47,15 @@ export function Stat({
   value: string | number;
   sub?: string;
 }) {
+  // U-UI1 (2026-11-09): was a square white block with a 2px ink top rule, which
+  // made eight heavy black bars across the dashboard. Now the same quiet card
+  // the app's StatCard draws — rounded, hairline border, muted label — so the
+  // numbers are the loud part, not the frames.
   return (
-    <div className="border-t-2 border-ink bg-white p-5">
-      <p className="text-xs font-black uppercase tracking-widest text-slate-400">{label}</p>
+    <div className="rounded-xl border border-line bg-white p-5">
+      <p className="text-[11px] font-black uppercase tracking-[0.14em] text-muted">{label}</p>
       <p className="mt-2 break-words font-display text-3xl font-bold text-ink">{value}</p>
-      {sub && <p className="mt-1 text-xs text-slate-500">{sub}</p>}
+      {sub && <p className="mt-1 text-xs text-muted">{sub}</p>}
     </div>
   );
 }
