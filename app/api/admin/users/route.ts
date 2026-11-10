@@ -152,11 +152,11 @@ export async function PUT(request: Request) {
   return NextResponse.json({ ok: true });
 }
 
-// DELETE accounts referenced from the admin Users tab. Owner-only; every other
-// admin and staff can do everything the directory needs except removing users.
+// DELETE accounts from the admin Users tab.
+// Owner can delete any user; admin can delete staff-level users; staff cannot delete users.
 export async function DELETE(request: Request) {
-  if (!(await isOwnerRequest()))
-    return NextResponse.json({ error: "Only the owner can delete users." }, { status: 403 });
+  if (!(await isAdminRequest()))
+    return NextResponse.json({ error: "Only administrators can delete users." }, { status: 403 });
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY)
     return NextResponse.json({ error: "Service role key is not configured." }, { status: 503 });
   const body = await request.json().catch(() => null);
