@@ -16,18 +16,19 @@ Both the app and website provide admin functionality for managing company settin
 
 The app uses a **9-tab horizontal bar** at the top of `AdminScreen.tsx`:
 
-| Tab          | Label                   | Section Component   | Description                                                                                                  |
-| ------------ | ----------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `dashboard`  | **Dashboard**           | `DashboardTab`      | KPIs, order/revenue trend, recent activity feed                                                              |
-| `orders`     | **Orders**              | `OrdersTab`         | Every order, payment state, pilot finance lines                                                              |
-| `electronic` | **Electronic Products** | `ElectronicsTab`    | `/products` catalog — pricing, stock, photos                                                                 |
-| `threed`     | **3D Products**         | `ThreeDTab`         | `/3d-printing` catalog                                                                                       |
-| `projects`   | **Projects**            | `ProjectsTab`       | Bundles sold on `/projects` including pre-packaged kits                                                      |
-| `content`    | **Content**             | `ContentTab`        | Services, journal posts, home page copy                                                                      |
-| `users`      | **Users**               | `UsersTab`          | Accounts, roles, tiers, per-user directories/profile, robot/car profiles                                     |
-| `logs`       | **Logs**                | `LogsTab`           | User activity + user profiles + field diagnostics (U-R5 merged from System Logs, User Logs, Profile Entries) |
-| `settings`   | **Settings**            | `SettingsTab`       | Company info (all 17 fields), training programs, pilot costs                                                 |
-| `profile`    | **Profile**             | `ProfileEntriesTab` | User profile entries — read-only by default, Edit → form → Save/Cancel (U-R5 merged from Profiles tab)       |
+| Tab          | Label                   | Section Component | Description                                                                                                  |
+| ------------ | ----------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------ |
+| `dashboard`  | **Dashboard**           | `DashboardTab`    | KPIs, order/revenue trend, recent activity feed                                                              |
+| `orders`     | **Orders**              | `OrdersTab`       | Every order, payment state, pilot finance lines                                                              |
+| `electronic` | **Electronic Products** | `ElectronicsTab`  | `/products` catalog — pricing, stock, photos                                                                 |
+| `threed`     | **3D Products**         | `ThreeDTab`       | `/3d-printing` catalog                                                                                       |
+| `projects`   | **Projects**            | `ProjectsTab`     | Bundles sold on `/projects` including pre-packaged kits                                                      |
+| `content`    | **Content**             | `ContentTab`      | Services, journal posts, home page copy                                                                      |
+| `users`      | **Users**               | `UsersTab`        | Accounts, roles, tiers, per-user directories/profile, robot/car profiles                                     |
+| `logs`       | **Logs**                | `LogsTab`         | User activity + user profiles + field diagnostics (U-R5 merged from System Logs, User Logs, Profile Entries) |
+| `settings`   | **Settings**            | `SettingsTab`     | Company info (all 17 fields), training programs, pilot costs                                                 |
+
+The nine entries above are the whole bar — `TABS` in `AdminScreen.tsx` has exactly these. **Profile is not a tenth tab:** `ProfileEntriesTab` is an inner section of the Logs tab, selected by the `LOG_SECTIONS` pills (`logs`, `profile`) inside `LogsTab`. The app then shows User Activity / User Profiles / Fleet Diagnostics under `logs`, and the profile-entry list under `profile`.
 
 ### Website — Multi-panel layout
 
@@ -237,16 +238,16 @@ Used in: SettingsTab (company), ProfileEntriesTab, UsersTab (car profiles, robot
 
 ## 6. Terminology & Labels
 
-| Term                        | App                                                                                                                        | Website                | Mirrored? |
-| --------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ---------------------- | --------- |
-| **Edit button label**       | "Edit"                                                                                                                     | "Edit"                 | ✅ Yes    |
-| **Save button label**       | "Save"                                                                                                                     | "Save"                 | ✅ Yes    |
-| **Cancel button label**     | "Cancel"                                                                                                                   | "Cancel"               | ✅ Yes    |
-| **Delete button label**     | "Delete"                                                                                                                   | "Delete"               | ✅ Yes    |
-| **Company section heading** | "Company information"                                                                                                      | "Company information"  | ✅ Yes    |
-| **Tab labels**              | "Dashboard", "Orders", "Electronic Products", "3D Products", "Projects", "Content", "Users", "Logs", "Settings", "Profile" | Same (via parity test) | ✅ Yes    |
-| **Users section labels**    | "User Directory", "Car Profiles", "Robot Profiles"                                                                         | Same                   | ✅ Yes    |
-| **Logs section labels**     | "User Activity", "User Profiles", "Fleet Diagnostics"                                                                      | Same                   | ✅ Yes    |
+| Term                        | App                                                                                                                                                     | Website                | Mirrored? |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- | --------- |
+| **Edit button label**       | "Edit"                                                                                                                                                  | "Edit"                 | ✅ Yes    |
+| **Save button label**       | "Save"                                                                                                                                                  | "Save"                 | ✅ Yes    |
+| **Cancel button label**     | "Cancel"                                                                                                                                                | "Cancel"               | ✅ Yes    |
+| **Delete button label**     | "Delete"                                                                                                                                                | "Delete"               | ✅ Yes    |
+| **Company section heading** | "Company information"                                                                                                                                   | "Company information"  | ✅ Yes    |
+| **Tab labels**              | "Dashboard", "Orders", "Electronic Products", "3D Products", "Projects", "Content", "Users", "Logs", "Settings" (9 — Profile is a Logs section, see §1) | Same (via parity test) | ✅ Yes    |
+| **Users section labels**    | "User Directory", "Car Profiles", "Robot Profiles"                                                                                                      | Same                   | ✅ Yes    |
+| **Logs section labels**     | "User Activity", "User Profiles", "Fleet Diagnostics"                                                                                                   | Same                   | ✅ Yes    |
 
 ---
 
