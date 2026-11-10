@@ -58,6 +58,15 @@ function summarizeBody(body: Record<string, unknown>): string {
   return JSON.stringify(body);
 }
 
+function dedupeRows<T extends { id: string }>(rows: T[]): T[] {
+  const seen = new Set<string>();
+  return rows.filter((row) => {
+    if (seen.has(row.id)) return false;
+    seen.add(row.id);
+    return true;
+  });
+}
+
 export default function AdminProfileEntries() {
   const [entries, setEntries] = useState<EntryRow[]>([]);
   const [types, setTypes] = useState<ProfileEntryType[]>([]);
@@ -79,7 +88,7 @@ export default function AdminProfileEntries() {
     setError(null);
     try {
       const data = await fetchPage(p);
-      setEntries(data.entries);
+      setEntries(dedupeRows(data.entries));
       setTypes(data.types ?? []);
       setTotal(data.total);
       setPage(data.page);
@@ -168,13 +177,14 @@ export default function AdminProfileEntries() {
                       <span className="text-sm font-medium text-ink">
                         {row.title || "(untitled)"}
                       </span>
-                      {row.user_id && (
-                        <span className="font-mono text-xs text-slate-500">
-                          user {row.user_id.slice(0, 8)}…
-                        </span>
-                      )}
                       {summary && (
                         <span className="ml-auto font-mono text-xs text-slate-500">{summary}</span>
+                      )}
+                      {row.user_id && (
+                        <details className="w-full text-[11px] text-slate-400">
+                          <summary className="cursor-pointer font-bold">Technical details</summary>
+                          <p className="mt-1 font-mono break-all">user {row.user_id}</p>
+                        </details>
                       )}
                     </div>
                     {Object.keys(row.body ?? {}).length > 0 && !summary && (

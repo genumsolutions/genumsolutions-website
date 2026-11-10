@@ -32,7 +32,6 @@ const ADMIN_TABS = [
   "Projects",
   "Content",
   "Users",
-  "Logs",
   "Settings",
 ];
 

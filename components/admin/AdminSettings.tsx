@@ -44,11 +44,19 @@ const emptyCompany: CompanyInfo = {
   youtubeUrl: "",
 };
 
+const SECTIONS = [
+  { id: "details", label: "Company details", hint: "Name, address and tax details." },
+  { id: "contact", label: "Contact", hint: "Email, phone and public description." },
+  { id: "social", label: "Social & messaging", hint: "WhatsApp and social profile links." },
+] as const;
+
+type SectionId = (typeof SECTIONS)[number]["id"];
+
 export default function AdminSettings({ setMessage, canDelete: _canDelete }: Props) {
   const [loaded, setLoaded] = useState(false);
   const [company, setCompany] = useState<CompanyInfo>(emptyCompany);
   const [busy, setBusy] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const [section, setSection] = useState<SectionId>("details");
 
   useEffect(() => {
     void fetch("/api/admin/settings")
@@ -65,8 +73,6 @@ export default function AdminSettings({ setMessage, canDelete: _canDelete }: Pro
       return;
     }
     setBusy(true);
-    // U-48: try/catch/finally so a thrown fetch cannot leave the Save button
-    // stuck on "Saving..." (see AdminContent for the same guard).
     try {
       const response = await fetch("/api/admin/settings", {
         method: "PUT",
@@ -90,250 +96,204 @@ export default function AdminSettings({ setMessage, canDelete: _canDelete }: Pro
   }
 
   return (
-    <div role="tabpanel" id="panel-settings" aria-labelledby="tab-settings" className="mt-4">
-      <PanelCard>
-        <h2 className={editorCardTitle}>Company information</h2>
-        {!loaded ? (
-          <LoadingRow className="mt-3" />
-        ) : isEditing ? (
-          <form onSubmit={saveCompany} className="mt-5 grid gap-4">
-            <label className="min-w-0 text-sm font-bold">
-              Name
-              <input
-                value={company.name}
-                onChange={(e) => setCompany({ ...company, name: e.target.value })}
-                className={`mt-2 w-full ${inputClass}`}
-              />
-            </label>
-            <label className="min-w-0 text-sm font-bold">
-              Short name
-              <input
-                value={company.shortName}
-                onChange={(e) => setCompany({ ...company, shortName: e.target.value })}
-                className={`mt-2 w-full ${inputClass}`}
-              />
-            </label>
-            <label className="min-w-0 text-sm font-bold">
-              Address
-              <textarea
-                value={company.address}
-                onChange={(e) => setCompany({ ...company, address: e.target.value })}
-                rows={2}
-                className={`mt-2 w-full ${inputClass}`}
-              />
-            </label>
-            <label className="min-w-0 text-sm font-bold">
-              City
-              <input
-                value={company.city}
-                onChange={(e) => setCompany({ ...company, city: e.target.value })}
-                className={`mt-2 w-full ${inputClass}`}
-              />
-            </label>
-            <label className="min-w-0 text-sm font-bold">
-              Country
-              <input
-                value={company.country}
-                onChange={(e) => setCompany({ ...company, country: e.target.value })}
-                className={`mt-2 w-full ${inputClass}`}
-              />
-            </label>
-            <label className="min-w-0 text-sm font-bold">
-              Email
-              <input
-                type="email"
-                value={company.email}
-                onChange={(e) => setCompany({ ...company, email: e.target.value })}
-                className={`mt-2 w-full ${inputClass}`}
-              />
-            </label>
-            <label className="min-w-0 text-sm font-bold">
-              Phone
-              <input
-                value={company.phone}
-                onChange={(e) => setCompany({ ...company, phone: e.target.value })}
-                className={`mt-2 w-full ${inputClass}`}
-              />
-            </label>
-            <label className="min-w-0 text-sm font-bold">
-              PAN
-              <input
-                value={company.pan}
-                onChange={(e) => setCompany({ ...company, pan: e.target.value })}
-                className={`mt-2 w-full ${inputClass}`}
-              />
-            </label>
-            <label className="min-w-0 text-sm font-bold">
-              VAT label
-              <input
-                value={company.vatLabel}
-                onChange={(e) => setCompany({ ...company, vatLabel: e.target.value })}
-                className={`mt-2 w-full ${inputClass}`}
-              />
-            </label>
-            <label className="min-w-0 text-sm font-bold">
-              Description
-              <textarea
-                value={company.description}
-                onChange={(e) => setCompany({ ...company, description: e.target.value })}
-                rows={3}
-                className={`mt-2 w-full ${inputClass}`}
-              />
-            </label>
-            {/* C5 (2026-09-23): socials + WhatsApp. Empty = that surface is
-                hidden on the site. WhatsApp accepts any format; it is stored
-                digits-only (country code + number, no '+'). */}
-            <label className="min-w-0 text-sm font-bold">
-              WhatsApp number
-              <input
-                value={company.whatsappNumber}
-                onChange={(e) => setCompany({ ...company, whatsappNumber: e.target.value })}
-                placeholder="97798XXXXXXXX"
-                className={`mt-2 w-full ${inputClass}`}
-              />
-              <span className="mt-1 block text-xs font-normal text-slate-400">
-                Country code + number, digits only (e.g. 9779861842552). Leave empty to hide the
-                WhatsApp button.
-              </span>
-            </label>
-            <label className="min-w-0 text-sm font-bold">
-              Facebook URL
-              <input
-                value={company.facebookUrl}
-                onChange={(e) => setCompany({ ...company, facebookUrl: e.target.value })}
-                placeholder="https://facebook.com/…"
-                className={`mt-2 w-full ${inputClass}`}
-              />
-            </label>
-            <label className="min-w-0 text-sm font-bold">
-              Instagram URL
-              <input
-                value={company.instagramUrl}
-                onChange={(e) => setCompany({ ...company, instagramUrl: e.target.value })}
-                placeholder="https://instagram.com/…"
-                className={`mt-2 w-full ${inputClass}`}
-              />
-            </label>
-            <label className="min-w-0 text-sm font-bold">
-              TikTok URL
-              <input
-                value={company.tiktokUrl}
-                onChange={(e) => setCompany({ ...company, tiktokUrl: e.target.value })}
-                placeholder="https://tiktok.com/@…"
-                className={`mt-2 w-full ${inputClass}`}
-              />
-            </label>
-            <label className="min-w-0 text-sm font-bold">
-              LinkedIn URL
-              <input
-                value={company.linkedinUrl}
-                onChange={(e) => setCompany({ ...company, linkedinUrl: e.target.value })}
-                placeholder="https://linkedin.com/company/…"
-                className={`mt-2 w-full ${inputClass}`}
-              />
-            </label>
-            <label className="min-w-0 text-sm font-bold">
-              YouTube URL
-              <input
-                value={company.youtubeUrl}
-                onChange={(e) => setCompany({ ...company, youtubeUrl: e.target.value })}
-                placeholder="https://youtube.com/@…"
-                className={`mt-2 w-full ${inputClass}`}
-              />
-            </label>
-            <SaveBar>
-              <button
-                type="submit"
-                disabled={busy}
-                className="bg-navy px-5 py-3 text-sm font-black text-white transition hover:bg-navy/90 disabled:opacity-60"
-              >
-                {busy ? "Saving..." : "Save company"}
-              </button>
-            </SaveBar>
-          </form>
-        ) : (
-          <div className="mt-5 grid gap-4">
-            <div className="min-w-0 text-sm font-bold">
-              Name
-              <span className="ml-2">{company.name}</span>
-            </div>
-            <div className="min-w-0 text-sm font-bold">
-              Short name
-              <span className="ml-2">{company.shortName}</span>
-            </div>
-            <div className="min-w-0 text-sm font-bold">
-              Address
-              <span className="ml-2">{company.address}</span>
-            </div>
-            <div className="min-w-0 text-sm font-bold">
-              City
-              <span className="ml-2">{company.city}</span>
-            </div>
-            <div className="min-w-0 text-sm font-bold">
-              Country
-              <span className="ml-2">{company.country}</span>
-            </div>
-            <div className="min-w-0 text-sm font-bold">
-              Email
-              <span className="ml-2">{company.email}</span>
-            </div>
-            <div className="min-w-0 text-sm font-bold">
-              Phone
-              <span className="ml-2">{company.phone}</span>
-            </div>
-            <div className="min-w-0 text-sm font-bold">
-              PAN
-              <span className="ml-2">{company.pan}</span>
-            </div>
-            <div className="min-w-0 text-sm font-bold">
-              VAT label
-              <span className="ml-2">{company.vatLabel}</span>
-            </div>
-            <div className="min-w-0 text-sm font-bold">
-              Description
-              <span className="ml-2">{company.description}</span>
-            </div>
-            <div className="min-w-0 text-sm font-bold">
-              WhatsApp number
-              <span className="ml-2">{company.whatsappNumber}</span>
-            </div>
-            <div className="min-w-0 text-sm font-bold">
-              Facebook URL
-              <span className="ml-2">{company.facebookUrl}</span>
-            </div>
-            <div className="min-w-0 text-sm font-bold">
-              Instagram URL
-              <span className="ml-2">{company.instagramUrl}</span>
-            </div>
-            <div className="min-w-0 text-sm font-bold">
-              TikTok URL
-              <span className="ml-2">{company.tiktokUrl}</span>
-            </div>
-            <div className="min-w-0 text-sm font-bold">
-              LinkedIn URL
-              <span className="ml-2">{company.linkedinUrl}</span>
-            </div>
-            <div className="min-w-0 text-sm font-bold">
-              YouTube URL
-              <span className="ml-2">{company.youtubeUrl}</span>
-            </div>
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setIsEditing(true)}
-                className="text-sm text-navy hover:underline"
-              >
-                Edit
-              </button>
-              <button
-                onClick={() => setIsEditing(false)}
-                className="text-sm text-muted hover:underline"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
-      </PanelCard>
+    <div
+      role="tabpanel"
+      id="panel-settings"
+      aria-labelledby="tab-settings"
+      className="mt-4 space-y-4"
+    >
+      <div
+        className="flex flex-wrap gap-2"
+        role="tablist"
+        aria-label="Company information sections"
+      >
+        {SECTIONS.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            role="tab"
+            aria-selected={section === item.id}
+            onClick={() => setSection(item.id)}
+            className={`rounded-full border px-4 py-1.5 text-xs font-black transition ${
+              section === item.id
+                ? "border-navy bg-navy text-white"
+                : "border-line bg-white text-navy hover:border-navy"
+            }`}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+      <p className="text-xs text-slate-500">{SECTIONS.find((s) => s.id === section)?.hint}</p>
+      {!loaded ? (
+        <LoadingRow className="mt-3" />
+      ) : (
+        <form onSubmit={saveCompany} className="space-y-4">
+          <PanelCard>
+            {section === "details" && (
+              <div className="grid gap-4">
+                <h2 className={editorCardTitle}>Company details</h2>
+                <label className="min-w-0 text-sm font-bold">
+                  Name
+                  <input
+                    value={company.name}
+                    onChange={(e) => setCompany({ ...company, name: e.target.value })}
+                    className={`mt-2 w-full ${inputClass}`}
+                  />
+                </label>
+                <label className="min-w-0 text-sm font-bold">
+                  Short name
+                  <input
+                    value={company.shortName}
+                    onChange={(e) => setCompany({ ...company, shortName: e.target.value })}
+                    className={`mt-2 w-full ${inputClass}`}
+                  />
+                </label>
+                <label className="min-w-0 text-sm font-bold">
+                  Address
+                  <textarea
+                    value={company.address}
+                    onChange={(e) => setCompany({ ...company, address: e.target.value })}
+                    rows={2}
+                    className={`mt-2 w-full ${inputClass}`}
+                  />
+                </label>
+                <label className="min-w-0 text-sm font-bold">
+                  City
+                  <input
+                    value={company.city}
+                    onChange={(e) => setCompany({ ...company, city: e.target.value })}
+                    className={`mt-2 w-full ${inputClass}`}
+                  />
+                </label>
+                <label className="min-w-0 text-sm font-bold">
+                  Country
+                  <input
+                    value={company.country}
+                    onChange={(e) => setCompany({ ...company, country: e.target.value })}
+                    className={`mt-2 w-full ${inputClass}`}
+                  />
+                </label>
+                <label className="min-w-0 text-sm font-bold">
+                  PAN
+                  <input
+                    value={company.pan}
+                    onChange={(e) => setCompany({ ...company, pan: e.target.value })}
+                    className={`mt-2 w-full ${inputClass}`}
+                  />
+                </label>
+                <label className="min-w-0 text-sm font-bold">
+                  VAT label
+                  <input
+                    value={company.vatLabel}
+                    onChange={(e) => setCompany({ ...company, vatLabel: e.target.value })}
+                    className={`mt-2 w-full ${inputClass}`}
+                  />
+                </label>
+              </div>
+            )}
+            {section === "contact" && (
+              <div className="grid gap-4">
+                <h2 className={editorCardTitle}>Contact</h2>
+                <label className="min-w-0 text-sm font-bold">
+                  Email
+                  <input
+                    type="email"
+                    value={company.email}
+                    onChange={(e) => setCompany({ ...company, email: e.target.value })}
+                    className={`mt-2 w-full ${inputClass}`}
+                  />
+                </label>
+                <label className="min-w-0 text-sm font-bold">
+                  Phone
+                  <input
+                    value={company.phone}
+                    onChange={(e) => setCompany({ ...company, phone: e.target.value })}
+                    className={`mt-2 w-full ${inputClass}`}
+                  />
+                </label>
+                <label className="min-w-0 text-sm font-bold">
+                  Description
+                  <textarea
+                    value={company.description}
+                    onChange={(e) => setCompany({ ...company, description: e.target.value })}
+                    rows={3}
+                    className={`mt-2 w-full ${inputClass}`}
+                  />
+                </label>
+              </div>
+            )}
+            {section === "social" && (
+              <div className="grid gap-4">
+                <h2 className={editorCardTitle}>Social & messaging</h2>
+                <label className="min-w-0 text-sm font-bold">
+                  WhatsApp number
+                  <input
+                    value={company.whatsappNumber}
+                    onChange={(e) => setCompany({ ...company, whatsappNumber: e.target.value })}
+                    placeholder="97798XXXXXXXX"
+                    className={`mt-2 w-full ${inputClass}`}
+                  />
+                </label>
+                <label className="min-w-0 text-sm font-bold">
+                  Facebook URL
+                  <input
+                    value={company.facebookUrl}
+                    onChange={(e) => setCompany({ ...company, facebookUrl: e.target.value })}
+                    placeholder="https://facebook.com/…"
+                    className={`mt-2 w-full ${inputClass}`}
+                  />
+                </label>
+                <label className="min-w-0 text-sm font-bold">
+                  Instagram URL
+                  <input
+                    value={company.instagramUrl}
+                    onChange={(e) => setCompany({ ...company, instagramUrl: e.target.value })}
+                    placeholder="https://instagram.com/…"
+                    className={`mt-2 w-full ${inputClass}`}
+                  />
+                </label>
+                <label className="min-w-0 text-sm font-bold">
+                  TikTok URL
+                  <input
+                    value={company.tiktokUrl}
+                    onChange={(e) => setCompany({ ...company, tiktokUrl: e.target.value })}
+                    placeholder="https://tiktok.com/@…"
+                    className={`mt-2 w-full ${inputClass}`}
+                  />
+                </label>
+                <label className="min-w-0 text-sm font-bold">
+                  LinkedIn URL
+                  <input
+                    value={company.linkedinUrl}
+                    onChange={(e) => setCompany({ ...company, linkedinUrl: e.target.value })}
+                    placeholder="https://linkedin.com/company/…"
+                    className={`mt-2 w-full ${inputClass}`}
+                  />
+                </label>
+                <label className="min-w-0 text-sm font-bold">
+                  YouTube URL
+                  <input
+                    value={company.youtubeUrl}
+                    onChange={(e) => setCompany({ ...company, youtubeUrl: e.target.value })}
+                    placeholder="https://youtube.com/@…"
+                    className={`mt-2 w-full ${inputClass}`}
+                  />
+                </label>
+              </div>
+            )}
+          </PanelCard>
+          <SaveBar>
+            <button
+              type="submit"
+              disabled={busy}
+              className="bg-navy px-5 py-3 text-sm font-black text-white transition hover:bg-navy/90 disabled:opacity-60"
+            >
+              {busy ? "Saving..." : "Save company"}
+            </button>
+          </SaveBar>
+        </form>
+      )}
     </div>
   );
 }

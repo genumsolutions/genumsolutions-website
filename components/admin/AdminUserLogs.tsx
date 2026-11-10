@@ -46,6 +46,15 @@ function confirmDelete(logId: string): boolean {
   return window.confirm("Delete this user activity log entry? This cannot be undone.");
 }
 
+function dedupeRows<T extends { id: string }>(rows: T[]): T[] {
+  const seen = new Set<string>();
+  return rows.filter((row) => {
+    if (seen.has(row.id)) return false;
+    seen.add(row.id);
+    return true;
+  });
+}
+
 export default function AdminUserLogs() {
   const [entries, setEntries] = useState<LogRow[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -66,7 +75,7 @@ export default function AdminUserLogs() {
     setError(null);
     try {
       const data = await fetchPage(p);
-      setEntries(data.entries);
+      setEntries(dedupeRows(data.entries));
       setTotal(data.total);
       setPage(data.page);
       setTotalPages(data.totalPages);
@@ -140,20 +149,17 @@ export default function AdminUserLogs() {
                     {row.entity_type && (
                       <span className="text-xs text-slate-500">{row.entity_type}</span>
                     )}
-                    {row.entity_id && (
-                      <span className="font-mono text-xs text-slate-500">
-                        {row.entity_id.slice(0, 8)}…
-                      </span>
-                    )}
                     <span className="ml-auto text-xs text-slate-400">
                       {formatTimestamp(row.created_at)}
                     </span>
                   </div>
-                  {row.user_id && (
-                    <p className="mt-0.5 font-mono text-[11px] text-slate-400">
-                      user {row.user_id.slice(0, 8)}…
+                  <details className="mt-1 text-[11px] text-slate-400">
+                    <summary className="cursor-pointer font-bold">Technical details</summary>
+                    <p className="mt-1 font-mono break-all">
+                      {row.user_id ? `user ${row.user_id}` : ""}
+                      {row.entity_id ? ` · entity ${row.entity_id}` : ""}
                     </p>
-                  )}
+                  </details>
                   {row.details && Object.keys(row.details).length > 0 && (
                     <p className="mt-1 break-words text-xs text-slate-500">
                       {JSON.stringify(row.details)}

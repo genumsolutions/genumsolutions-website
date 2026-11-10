@@ -86,7 +86,8 @@ function CrashSection() {
     setError(null);
     try {
       const data = await fetchPage<CrashRow>("crash", p);
-      setEntries(data.entries);
+      const unique = Array.from(new Map(data.entries.map((e) => [e.id, e])).values());
+      setEntries(unique);
       setTotal(data.total);
       setPage(data.page);
       setTotalPages(data.totalPages);
@@ -218,7 +219,8 @@ function AppLogSection() {
     setError(null);
     try {
       const data = await fetchPage<AppLogRow>("app", p);
-      setEntries(data.entries);
+      const unique = Array.from(new Map(data.entries.map((e) => [e.id, e])).values());
+      setEntries(unique);
       setTotal(data.total);
       setPage(data.page);
       setTotalPages(data.totalPages);
