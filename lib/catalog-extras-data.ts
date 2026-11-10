@@ -474,3 +474,25 @@ export const catalogPackages: Product[] = [
     maintenanceNotes: "",
   },
 ];
+
+/**
+ * Provenance for the two arrays above — checked by
+ * `lib/catalog-extras-data.test.ts`. Do not edit by hand.
+ */
+export const catalogExtrasMeta = {
+  generatedAt: "2026-11-10T09:18:34.723Z",
+  newestSourceUpdatedAt: "2026-11-09T09:21:17.464+00:00",
+  counts: {
+    models: 2,
+    packages: 5,
+  },
+  sourceUpdatedAt: {
+    "4wd4m-basic": "2026-11-07T11:28:22.76712+00:00",
+    "2wd1m-basic": "2026-11-07T11:28:22.76712+00:00",
+    "self-balancing-basic": "2026-11-07T11:28:22.76712+00:00",
+    "esp32-remote": "2026-11-07T11:28:22.76712+00:00",
+    "smart-dustbin": "2026-11-07T11:28:22.76712+00:00",
+    "maha-laxmi": "2026-11-09T09:15:35.002+00:00",
+    "lord-shiva-statue-seated-blessing-pose-3d-print": "2026-11-09T09:21:17.464+00:00",
+  },
+} as const;

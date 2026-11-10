@@ -99,6 +99,16 @@ const toProduct = (row) => {
 const models = data.filter(isModel).map(toProduct);
 const packages = data.filter(isPackage).map(toProduct);
 
+// Provenance, so the committed file can be checked for staleness without the
+// database: when the snapshot was taken, and when each row inside it was last
+// edited upstream. A row whose `updated_at` is newer than `generatedAt` means
+// the file predates data it claims to contain.
+const extrasRows = data.filter((row) => isModel(row) || isPackage(row));
+const sourceUpdatedAt = Object.fromEntries(
+  extrasRows.map((row) => [row.id, row.updated_at || row.created_at || null]),
+);
+const newestSourceUpdatedAt = Object.values(sourceUpdatedAt).filter(Boolean).sort().at(-1) || null;
+
 const header = `/**
  * GENERATED — do not edit by hand. \`npm run snapshot:catalog-extras\`
  * rewrites this file from the live \`products\` table.
@@ -114,9 +124,21 @@ import type { Product } from "./catalog";
 /** 3D models — printed on demand, browsed only on /3d-printing. */
 export const catalogModels: Product[] = `;
 
+const meta = {
+  generatedAt: new Date().toISOString(),
+  newestSourceUpdatedAt,
+  counts: { models: models.length, packages: packages.length },
+  sourceUpdatedAt,
+};
+
 const out = `${header}${JSON.stringify(models, null, 2)};\n
 /** Project packages — browsed on /projects, built from the Genum source trees. */
-export const catalogPackages: Product[] = ${JSON.stringify(packages, null, 2)};\n`;
+export const catalogPackages: Product[] = ${JSON.stringify(packages, null, 2)};\n
+/**
+ * Provenance for the two arrays above — checked by
+ * \`lib/catalog-extras-data.test.ts\`. Do not edit by hand.
+ */
+export const catalogExtrasMeta = ${JSON.stringify(meta, null, 2)} as const;\n`;
 // Format with the repo's prettier so re-runs produce no diff noise.
 const { format } = await import("prettier");
 const formatted = await format(out, { parser: "typescript", printWidth: 100 });

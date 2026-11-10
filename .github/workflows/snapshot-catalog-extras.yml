@@ -1,0 +1,95 @@
+# =====================================================================
+# Refresh the catalog-extras snapshot - keeps `lib/catalog-extras-data.ts`
+# (2 3D models + 5 project packages) in sync with the live Supabase catalog.
+#
+# Those rows exist only in the database (admin panel / MakerWorld link-import),
+# so the offline fallback is a snapshot rather than hand-maintained data. This
+# workflow re-runs `scripts/snapshot-catalog-extras.mjs` against the live DB on
+# a weekly schedule and opens a PR when the committed snapshot has drifted.
+#
+# Why a PR (not a direct push, unlike sync-app-fallback.yml): the snapshot
+# touches data the site renders, and a bad row should be reviewable before it
+# ships. Validation (typecheck + catalog-extras test) runs in THIS job before
+# the PR is opened, because GITHUB_TOKEN-authored pushes do not trigger CI.
+#
+# Required repository secrets:
+#   NEXT_PUBLIC_SUPABASE_URL
+#   NEXT_PUBLIC_SUPABASE_ANON_KEY
+# =====================================================================
+name: Snapshot catalog extras
+
+on:
+  schedule:
+    - cron: "13 6 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: snapshot-catalog-extras
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    name: Refresh lib/catalog-extras-data.ts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Write .env.local from secrets
+        run: |
+          printf 'NEXT_PUBLIC_SUPABASE_URL=%s\n' "$NEXT_PUBLIC_SUPABASE_URL" >> .env.local
+          printf 'NEXT_PUBLIC_SUPABASE_ANON_KEY=%s\n' "$NEXT_PUBLIC_SUPABASE_ANON_KEY" >> .env.local
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Re-run the catalog snapshot
+        id: snapshot
+        run: npm run snapshot:catalog-extras
+
+      - name: Validate the regenerated snapshot
+        id: validate
+        run: |
+          npm run typecheck
+          npx vitest run tests/catalog-extras.test.ts
+
+      - name: Restore on validation failure
+        if: steps.validate.outcome == 'failure'
+        run: |
+          git checkout -- lib/catalog-extras-data.ts
+          echo "Regenerated snapshot failed validation - restored; no PR opened."
+          exit 1
+
+      - name: Open PR when the snapshot changed
+        if: steps.validate.outcome == 'success'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lib/catalog-extras-data.ts
+          if git diff --cached --quiet; then
+            echo "Snapshot already matches the live database - no PR needed."
+            exit 0
+          fi
+          branch="chore/snapshot-catalog-extras-$(date -u +%Y%m%d-%H%M%S)"
+          git checkout -b "$branch"
+          git commit -m "chore: refresh catalog-extras snapshot from live database"
+          git push origin "$branch"
+          gh pr create \
+            --title "chore: refresh catalog-extras snapshot from live database" \
+            --body "Automated weekly refresh of \`lib/catalog-extras-data.ts\` (2 3D models + 5 project packages) from the live Supabase catalog. Typecheck and \`catalog-extras.test.ts\` passed before this PR was opened." \
+            --base main \
+            --head "$branch"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
