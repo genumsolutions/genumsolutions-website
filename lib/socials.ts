@@ -6,6 +6,9 @@
 // surface is not used — callers must hide the entry rather than render a
 // dead link. The WhatsApp number is stored DIGITS-ONLY with country code
 // (no '+'), so wa.me links build directly and validation is simple.
+//
+// This file mirrors genumsolutions-app/mobile/src/config/socials.ts.
+// Both repos must stay in sync — check APP_WEBSITE_UI_COMPARISON.md.
 // =====================================================================
 import type { Company } from "./company";
 
