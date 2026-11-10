@@ -15,6 +15,7 @@
  * the admin panel.
  */
 import type { Product } from "./catalog";
+import { catalogModels, catalogPackages } from "./catalog-extras-data";
 
 const standard = {
   audience: "Students, schools, hobbyists, and makers",
@@ -952,4 +953,17 @@ const inventoryProducts: Product[] = [
   ),
 ];
 
-export const localProducts: Product[] = inventoryProducts;
+// The owner's 3D models and project packages live only in the database (created
+// through the admin panel and link-import), so they are snapshotted into
+// `catalog-extras-data.ts` instead of being retyped here. Including them keeps
+// the offline fallback the same shape as the live catalog — without them the
+// site falls back to 55 / 0 / 0 while live is 55 / 2 / 5, so /about, /projects
+// and /3d-printing all under-report whenever Supabase is unreachable.
+//
+// Regenerate the snapshot with `npm run snapshot:catalog-extras` after adding a
+// model or package in the admin panel.
+export const localProducts: Product[] = [
+  ...inventoryProducts,
+  ...catalogModels,
+  ...catalogPackages,
+];

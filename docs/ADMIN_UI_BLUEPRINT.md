@@ -8,18 +8,18 @@ Admin panels located in `components/admin/`. Provides centralized admin dashboar
 
 The website admin uses Next.js page routes with React components for each admin panel:
 
-| Path | Component | Description |
-| --- | --- | --- |
-| `/admin` | `AdminDashboard.tsx` | Main dashboard overview — KPIs, recent activity |
-| `/admin/settings` | `AdminSettings.tsx` | Company information editing (17 fields) |
-| `/admin/logs` | `AdminLogs.tsx` (via `AdminLogsHub`) | System logs, user activity, user profiles, fleet diagnostics (3 sections) |
-| `/admin/users` | `AdminUsers.tsx` | User directory, car profiles, robot profiles (3 sections) |
-| `/admin/products` | `AdminProducts.tsx` | Electronic products catalog |
-| `/admin/3d-printing` | `Admin3DProducts.tsx` | 3D printing products catalog |
-| `/admin/projects` | `AdminProjects.tsx` | Project packages, components |
-| `/admin/content` | `AdminContent.tsx` | Services, journal, home page copy |
-| `/admin/activity` | `AdminActivity.tsx` | Activity tracking |
-| `/admin/finance` | `AdminFinance.tsx` | Financial data, orders, transactions |
+| Path                 | Component                            | Description                                                               |
+| -------------------- | ------------------------------------ | ------------------------------------------------------------------------- |
+| `/admin`             | `AdminDashboard.tsx`                 | Main dashboard overview — KPIs, recent activity                           |
+| `/admin/settings`    | `AdminSettings.tsx`                  | Company information editing (17 fields)                                   |
+| `/admin/logs`        | `AdminLogs.tsx` (via `AdminLogsHub`) | System logs, user activity, user profiles, fleet diagnostics (3 sections) |
+| `/admin/users`       | `AdminUsers.tsx`                     | User directory, car profiles, robot profiles (3 sections)                 |
+| `/admin/products`    | `AdminProducts.tsx`                  | Electronic products catalog                                               |
+| `/admin/3d-printing` | `Admin3DProducts.tsx`                | 3D printing products catalog                                              |
+| `/admin/projects`    | `AdminProjects.tsx`                  | Project packages, components                                              |
+| `/admin/content`     | `AdminContent.tsx`                   | Services, journal, home page copy                                         |
+| `/admin/activity`    | `AdminActivity.tsx`                  | Activity tracking                                                         |
+| `/admin/finance`     | `AdminFinance.tsx`                   | Financial data, orders, transactions                                      |
 
 Tab order is identical on the app and website (enforced by parity tests: `admin-parity.test.ts`).
 
@@ -276,7 +276,7 @@ export type Company = {
 ```typescript
 type CarProfileRow = {
   id: string;
-  profile_key: string;  // Stable identity: fw:boardId, MAC, or wifi:uuid
+  profile_key: string; // Stable identity: fw:boardId, MAC, or wifi:uuid
   car_name: string;
   unique_id: string;
   settings: Record<string, unknown>;
@@ -324,4 +324,4 @@ The website uses Tailwind CSS with responsive prefixes:
 
 _Document generated: 2026-11-09_
 _Total docs in website repo: WEBSITE_ADMIN_COMPLETE.md, ADMIN_UI_BLUEPRINT.md, APP_WEBSITE_UI_COMPARISON.md, ADMIN_COHERENCE.md_
-_Both repos: TypeScript 0 errors, green CI on all tests (955 mobile + 301 website)_
+_Both repos: TypeScript 0 errors, green CI on all tests (982 mobile + 301 website)_
