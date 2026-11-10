@@ -153,20 +153,17 @@ export async function PUT(request: Request) {
 }
 
 // DELETE accounts from the admin Users tab.
-// Owner can delete any user; admin can delete staff-level users; staff cannot delete users.
+// ONLY the owner (genumsolutions@gmail.com) can delete users.
+// Admins and staff cannot delete users from the admin panel.
 export async function DELETE(request: Request) {
-  if (!(await isAdminRequest()))
-    return NextResponse.json({ error: "Only administrators can delete users." }, { status: 403 });
+  if (!(await isOwnerRequest()))
+    return NextResponse.json({ error: "Only the owner can delete users." }, { status: 403 });
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY)
     return NextResponse.json({ error: "Service role key is not configured." }, { status: 503 });
   const body = await request.json().catch(() => null);
   const userId = String(body?.userId || "");
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) {
     return NextResponse.json({ error: "A valid user id is required." }, { status: 400 });
-  }
-  const current = await getSessionUser();
-  if (current && current.id === userId) {
-    return NextResponse.json({ error: "You cannot delete your own account." }, { status: 400 });
   }
   try {
     const db = createServiceClient();
