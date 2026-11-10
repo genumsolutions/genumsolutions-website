@@ -39,13 +39,18 @@ type Props = {
   canDelete: boolean;
   currentRole: "staff" | "admin" | "owner";
 };
-
-function uniqueById<T extends { id?: string; profile_key?: string; robot_id?: string }>(
-  rows: T[]
-): T[] {
+function uniqueById<
+  T extends { id?: string; profile_key?: string; robot_id?: string; unique_id?: string },
+>(rows: T[]): T[] {
   const seen = new Set<string>();
   return rows.filter((row) => {
-    const key = String(row.id ?? row.profile_key ?? row.robot_id ?? JSON.stringify(row));
+    const key = String(
+      (row as { unique_id?: string }).unique_id ||
+        row.id ||
+        row.profile_key ||
+        row.robot_id ||
+        JSON.stringify(row)
+    );
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
