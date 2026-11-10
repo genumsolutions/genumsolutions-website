@@ -3,7 +3,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
-import { createClient } from "../../lib/supabase/server";
 import { useRouter } from "next/navigation";
 import { initials } from "../lib/identity";
 import { readLocalCart, unionQuantities, writeLocalCart } from "../lib/cart-client";
@@ -109,21 +108,26 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
   const [isSignedIn, setIsSignedIn] = useState<boolean>(false);
 
   useEffect(() => {
-    // Probe the session on mount — if already signed in, redirect home
-    // so the auth panel doesn't show for logged-in users.
-    ;(async () => {
-      try {
-        const supa = createClient();
-        const { data } = await supa.auth.getSession();
-        setIsSignedIn(!!data?.session);
-        if (data?.session && router.pathname === "/login") {
-          router.replace("/");
-        }
-      } catch {
-        setIsSignedIn(false);
-      }
-    })();
-  }, []);
+    // Probe the session on mount — if already signed in, redirect home so the
+    // auth panel never shows for logged-in users. This uses the same
+    // server-side probe as the header, because the cookie-bound Supabase client
+    // lives in lib/supabase/server and cannot be imported into a client
+    // component.
+    let active = true;
+    fetch("/api/auth/session", { cache: "no-store" })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        if (!active || !data?.user) return;
+        setIsSignedIn(true);
+        router.replace("/");
+      })
+      .catch(() => {
+        // Offline or logged out: leave the form visible.
+      });
+    return () => {
+      active = false;
+    };
+  }, [router]);
 
   useEffect(() => {
     const supabaseError = readSupabaseError();
@@ -141,9 +145,9 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
     }
   }, []);
 
-  // If already signed in, don't show the auth panel — redirect home
+  // If already signed in, don't show the auth panel — the effect above has
+  // already started the redirect home.
   if (isSignedIn) {
-    router.replace("/");
     return null;
   }
 
