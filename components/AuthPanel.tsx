@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
+import { createClient } from "../../lib/supabase/server";
 import { useRouter } from "next/navigation";
 import { initials } from "../lib/identity";
 import { readLocalCart, unionQuantities, writeLocalCart } from "../lib/cart-client";
@@ -105,6 +106,24 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
   const [busy, setBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
+  const [isSignedIn, setIsSignedIn] = useState<boolean>(false);
+
+  useEffect(() => {
+    // Probe the session on mount — if already signed in, redirect home
+    // so the auth panel doesn't show for logged-in users.
+    ;(async () => {
+      try {
+        const supa = createClient();
+        const { data } = await supa.auth.getSession();
+        setIsSignedIn(!!data?.session);
+        if (data?.session && router.pathname === "/login") {
+          router.replace("/");
+        }
+      } catch {
+        setIsSignedIn(false);
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     const supabaseError = readSupabaseError();
@@ -121,6 +140,12 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
       setError(callbackErrors[problem]);
     }
   }, []);
+
+  // If already signed in, don't show the auth panel — redirect home
+  if (isSignedIn) {
+    router.replace("/");
+    return null;
+  }
 
   function switchMode(next: Mode) {
     setMode(next);
