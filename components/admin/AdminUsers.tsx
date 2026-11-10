@@ -205,7 +205,9 @@ function UserProjectProfiles({
           <ul className="mt-2 space-y-2">
             {robotProfiles.map((robot) => (
               <li key={robot.robot_id} className="rounded-lg border border-line bg-white p-3">
-                <p className="truncate text-xs font-bold">{robot.robot_name || robot.robot_id}</p>
+                <p className="truncate text-xs font-bold">
+                  {robot.robot_name || "Untitled robot profile"}
+                </p>
                 <p className="truncate text-[11px] text-slate-500">
                   {Object.keys(robot.settings || {}).length} saved settings · updated{" "}
                   {new Date(robot.updated_at).toLocaleDateString()}
