@@ -78,6 +78,57 @@ jobs:
       - name: Build
         run: npm run build
 
+  # Catalog parity — the app ships a GENERATED copy of THIS repo's fallback
+  # catalog (lib/catalog-data.ts + lib/catalog-extras-data.ts). The app repo
+  # regenerates and diffs that copy in its own CI, but that check only runs on
+  # app pushes: a website-only catalog change never triggers it, so the two
+  # surfaces could drift silently (wrong /about numbers offline). This job
+  # closes that gap by regenerating the app's copy FROM this checkout and
+  # failing when the committed copy differs.
+  catalog-parity:
+    name: App bundled catalog matches this repo
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout website
+        uses: actions/checkout@v5
+
+      # Public repo, so the job's default token can clone it.
+      - name: Checkout app
+        uses: actions/checkout@v5
+        with:
+          repository: genumsolutions/genumsolutions-app
+          path: app
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/mobile/package-lock.json
+
+      - name: Install app dependencies
+        working-directory: app/mobile
+        run: npm ci
+
+      # The generator lives in the app and imports this repo's data files
+      # directly, so no website build/install is needed. Path: from
+      # app/mobile, "../.." is the workspace root (this website checkout).
+      - name: Regenerate the app catalog from this checkout
+        working-directory: app/mobile
+        run: npx --yes tsx scripts/generate-bundled-catalog.mts --website ../..
+
+      - name: Fail when the app copy is stale
+        working-directory: app
+        run: |
+          if ! git diff --quiet -- mobile/src/config/bundledProducts.ts; then
+            echo "::error::mobile/src/config/bundledProducts.ts is stale — this website catalog change is not mirrored into the app. From genumsolutions-app/mobile run 'npx tsx scripts/generate-bundled-catalog.mts' and commit the result."
+            git diff --stat -- mobile/src/config/bundledProducts.ts
+            git --no-pager diff -- mobile/src/config/bundledProducts.ts | head -80
+            exit 1
+          fi
+          echo "app bundled catalog matches this website's fallback catalog"
+
   edge-relay:
     name: Edge function typecheck (car-relay)
     runs-on: ubuntu-latest
