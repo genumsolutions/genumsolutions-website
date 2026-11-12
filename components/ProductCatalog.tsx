@@ -139,6 +139,19 @@ export default function ProductCatalog({
     syncUrl({ inStock: next, page: 1 });
   }
 
+  const hasActiveFilters =
+    category !== "All" || query.trim() !== "" || sort !== "featured" || maxPrice > 0 || inStock;
+
+  function clearAllFilters() {
+    setCategory("All");
+    setQuery("");
+    setSort("featured");
+    setMaxPrice(0);
+    setInStock(false);
+    setPage(1);
+    router.replace("/products", { scroll: false });
+  }
+
   function loadMore() {
     const next = page + 1;
     setPage(next);
@@ -227,6 +240,15 @@ export default function ProductCatalog({
             />
             In stock only
           </label>
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={clearAllFilters}
+              className="min-h-[44px] rounded-full border border-navy/20 bg-mist px-4 py-2 text-sm font-bold text-navy transition hover:border-navy hover:bg-white"
+            >
+              Clear all filters
+            </button>
+          )}
           <span className="text-xs text-muted">{filtered.length} total</span>
         </div>
 
@@ -255,16 +277,13 @@ export default function ProductCatalog({
             <p className="mt-2 text-sm text-muted">
               Try a different search term or browse another category.
             </p>
-            {(maxPrice > 0 || inStock || sort !== "featured") && (
+            {hasActiveFilters && (
               <button
-                onClick={() => {
-                  chooseMaxPrice(0);
-                  toggleInStock(false);
-                  chooseSort("featured");
-                }}
+                type="button"
+                onClick={clearAllFilters}
                 className="mt-4 rounded-full border border-navy px-5 py-2 text-xs font-black text-navy transition hover:bg-mist"
               >
-                Clear price &amp; stock filters
+                Clear all filters
               </button>
             )}
           </div>
