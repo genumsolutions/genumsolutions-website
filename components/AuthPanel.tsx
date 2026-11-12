@@ -231,7 +231,7 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
         setVerifyPurpose("signup");
         switchMode("verify");
         setNotice(
-          `Registered. We emailed a one-time code to ${registered} - enter it below, or open the link in that email.`
+          `Registered. Open the confirmation link we emailed to ${registered} to finish registering, then sign in. If that email includes a code, you can enter it below.`
         );
         setBusy(false);
         return;
@@ -293,8 +293,8 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
       button: "Register",
     },
     verify: {
-      title: "Enter your code.",
-      body: "We emailed a one-time code. Enter it here, or open the link in that email.",
+      title: "Confirm your email.",
+      body: "Open the confirmation link we sent, or enter a code if your email includes one.",
       button: "Confirm code",
     },
     forgot: {
