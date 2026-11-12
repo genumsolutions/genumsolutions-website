@@ -5,7 +5,15 @@ import { formatNPR } from "../../lib/catalog";
 import { inputClass } from "../../lib/styles";
 import type { OrderPage } from "./admin-types";
 import { STATUSES, PAGE_SIZE } from "./admin-types";
-import { Pager, formatTimestamp } from "./admin-helpers";
+import {
+  EmptyState,
+  LoadingRow,
+  Pager,
+  formatTimestamp,
+  panelCard,
+  panelHeader,
+  panelRow,
+} from "./admin-helpers";
 
 // Detail fields shown in the expandable row (app-parity: the app's Orders tab
 // shows the full items list + address + provider + timestamps on the card).
@@ -77,14 +85,8 @@ export default function AdminOrders({ canDelete }: { canDelete: boolean }) {
   }
 
   return (
-    <section
-      role="tabpanel"
-      id="panel-orders"
-      aria-labelledby="tab-orders"
-      aria-label="Customer orders"
-      className="mt-4 space-y-4"
-    >
-      <div className="flex flex-col gap-3 border-t-2 border-ink bg-white p-6 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
+    <section aria-label="Customer orders" className="mt-4 space-y-4">
+      <div className={`${panelCard} ${panelHeader}`}>
         <h2 className="font-display text-xl font-bold">Customer orders</h2>
         <label className="ml-auto text-sm font-bold text-slate-500">
           Search buyer
@@ -103,7 +105,7 @@ export default function AdminOrders({ canDelete }: { canDelete: boolean }) {
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             aria-label="Filter by status"
-            className="ml-2 border border-line px-3 py-2 text-sm font-bold"
+            className="ml-2 rounded-lg border border-line px-3 py-2 text-sm font-bold"
           >
             <option value="">All</option>
             {STATUSES.map((s) => (
@@ -115,22 +117,20 @@ export default function AdminOrders({ canDelete }: { canDelete: boolean }) {
         </label>
         <button
           onClick={() => void loadOrders(1)}
-          className="bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark"
+          className="rounded-lg bg-navy px-4 py-2.5 text-xs font-black text-white transition hover:bg-navy-dark"
         >
           Apply
         </button>
       </div>
       {!loaded ? (
-        <p className="text-sm text-slate-500" role="status">
-          Loading…
-        </p>
+        <LoadingRow />
       ) : orderData.orders.length === 0 ? (
-        <p className="text-sm text-slate-500">No orders found.</p>
+        <EmptyState>No orders match this search yet.</EmptyState>
       ) : (
         <>
           <ul className="space-y-3">
             {orderData.orders.map((order) => (
-              <li key={order.id} className="border border-line bg-white p-4">
+              <li key={order.id} className={panelRow}>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-sm font-black">
@@ -152,7 +152,7 @@ export default function AdminOrders({ canDelete }: { canDelete: boolean }) {
                       value={order.status}
                       onChange={(e) => setOrderStatus(order.id, e.target.value)}
                       aria-label={`Status for ${order.id.slice(0, 8)}`}
-                      className="border border-line px-2 py-1 text-xs font-bold"
+                      className="min-h-[36px] rounded-lg border border-line px-2.5 py-1 text-xs font-bold"
                     >
                       {STATUSES.map((s) => (
                         <option key={s} value={s}>
@@ -165,14 +165,14 @@ export default function AdminOrders({ canDelete }: { canDelete: boolean }) {
                         setExpandedId((current) => (current === order.id ? null : order.id))
                       }
                       aria-expanded={expandedId === order.id}
-                      className="border border-line px-2 py-1 text-xs font-bold text-navy transition hover:border-navy"
+                      className="min-h-[36px] rounded-lg border border-line px-3 py-1 text-xs font-bold text-navy transition hover:border-navy"
                     >
                       {expandedId === order.id ? "Hide" : "Details"}
                     </button>
                     {canDelete && (
                       <button
                         onClick={() => deleteOrder(order.id)}
-                        className="border border-red-200 px-2 py-1 text-xs font-bold text-red-600 transition hover:bg-red-50"
+                        className="min-h-[36px] rounded-lg border border-red-200 px-3 py-1 text-xs font-bold text-red-600 transition hover:bg-red-50"
                       >
                         Delete
                       </button>

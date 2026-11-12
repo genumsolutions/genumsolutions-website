@@ -15,7 +15,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { inputClass } from "../../lib/styles";
-import { Pager } from "./admin-helpers";
+import { Pager, panelCard, panelHeader } from "./admin-helpers";
 
 type Kind = "training" | "pilot" | "curriculum";
 
@@ -170,8 +170,8 @@ export default function AdminRows({
   const shown = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
-    <section aria-label={`${singular}s`} className="min-w-0 border-t-2 border-ink bg-white p-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+    <section aria-label={`${singular}s`} className={panelCard}>
+      <div className={`${panelHeader} border-b border-line pb-4`}>
         <div className="min-w-0">
           <h2 className="font-display text-xl font-bold">
             {caption || `${singular}s`} ({rows.length})
@@ -180,7 +180,7 @@ export default function AdminRows({
         </div>
         <button
           onClick={() => setEditing({ ...emptyRow })}
-          className="mt-2 bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy/90"
+          className="rounded-lg bg-navy px-4 py-2.5 text-xs font-black text-white transition hover:bg-navy/90"
         >
           + New {singular.toLowerCase()}
         </button>
@@ -349,30 +349,30 @@ export default function AdminRows({
                 )}
               </span>
             </span>
-            <span className="flex shrink-0 gap-2">
+            <span className="flex shrink-0 flex-wrap items-center gap-3">
               <button
                 onClick={() => setPreviewing(r)}
-                className="text-xs font-bold text-navy underline"
+                className="flex min-h-[36px] items-center px-1 text-xs font-bold text-navy underline"
               >
                 Preview
               </button>
               <button
                 onClick={() => setEditing({ ...r })}
-                className="text-xs font-bold text-navy underline"
+                className="flex min-h-[36px] items-center px-1 text-xs font-bold text-navy underline"
               >
                 Edit
               </button>
               <button
                 onClick={() => void toggleVisibility(r)}
                 disabled={busy}
-                className="text-xs font-bold text-ink underline disabled:opacity-60"
+                className="flex min-h-[36px] items-center px-1 text-xs font-bold text-ink underline disabled:opacity-60"
               >
                 {r.active === false ? "Show" : "Hide"}
               </button>
               {canDelete && (
                 <button
                   onClick={() => void remove(r.id)}
-                  className="text-xs font-bold text-red-600 underline"
+                  className="flex min-h-[36px] items-center px-1 text-xs font-bold text-red-600 underline"
                 >
                   Delete
                 </button>

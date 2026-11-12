@@ -104,12 +104,7 @@ export default function AdminServices({ setMessage, canDelete }: Props) {
 
   return (
     <>
-      <div
-        role="tabpanel"
-        id="panel-services"
-        aria-labelledby="tab-services"
-        className="mt-4 grid min-w-0 gap-4 xl:grid-cols-[1fr_1.3fr]"
-      >
+      <div className="mt-4 grid min-w-0 gap-4 xl:grid-cols-[1fr_1.3fr]">
         <section aria-label="Service list" className={panelListSection}>
           <PanelCard>
             <h2 className={panelTitle}>Services ({filteredServices.length})</h2>

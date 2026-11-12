@@ -18,18 +18,12 @@ export default function AdminFinance() {
   }, []);
 
   return (
-    <section
-      role="tabpanel"
-      id="panel-finance"
-      aria-labelledby="tab-finance"
-      aria-label="Finance overview"
-      className="mt-4 space-y-6"
-    >
+    <section aria-label="Finance overview" className="mt-4 space-y-4">
       <PanelCard>
         <h2 className={panelTitle}>Finance &amp; Transactions</h2>
         {stats && (
           <div className="mt-4 grid gap-4 sm:grid-cols-3">
-            <div className="rounded border border-line p-4">
+            <div className="rounded-lg border border-line bg-mist p-4">
               <p className="text-xs font-black uppercase tracking-widest text-slate-400">
                 Total Revenue
               </p>
@@ -37,7 +31,7 @@ export default function AdminFinance() {
                 {formatNPR(stats.revenue)}
               </p>
             </div>
-            <div className="rounded border border-line p-4">
+            <div className="rounded-lg border border-line bg-mist p-4">
               <p className="text-xs font-black uppercase tracking-widest text-slate-400">
                 Revenue Today
               </p>
@@ -45,7 +39,7 @@ export default function AdminFinance() {
                 {formatNPR(stats.revenueToday)}
               </p>
             </div>
-            <div className="rounded border border-line p-4">
+            <div className="rounded-lg border border-line bg-mist p-4">
               <p className="text-xs font-black uppercase tracking-widest text-slate-400">
                 Transactions
               </p>
@@ -72,7 +66,7 @@ export default function AdminFinance() {
               { key: "cancelled", label: "Cancelled", count: stats.cancelledOrders },
             ].map(({ key, label, count }) => {
               return (
-                <div key={key} className="rounded border border-line px-3 py-2 text-center">
+                <div key={key} className="rounded-lg border border-line px-3 py-2 text-center">
                   <p className="text-xs font-black uppercase tracking-widest text-slate-400">
                     {label}
                   </p>

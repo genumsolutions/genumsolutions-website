@@ -324,13 +324,7 @@ function AppLogSection() {
 
 export default function AdminLogs() {
   return (
-    <section
-      role="tabpanel"
-      id="panel-system-logs"
-      aria-labelledby="tab-system-logs"
-      aria-label="System logs"
-      className="mt-4 space-y-4"
-    >
+    <section aria-label="System logs" className="space-y-4">
       <CrashSection />
       <AppLogSection />
     </section>

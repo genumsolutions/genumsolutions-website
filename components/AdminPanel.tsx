@@ -196,7 +196,7 @@ export default function AdminPanel({ initialProducts, currentRole }: Props) {
       {message && (
         <p
           role="status"
-          className="mt-4 border-l-4 border-navy bg-white px-4 py-3 text-sm font-bold text-ink"
+          className="mt-4 rounded-xl border border-line border-l-4 border-l-navy bg-white px-4 py-3 text-sm font-bold text-ink"
         >
           {message}
         </p>
@@ -222,6 +222,13 @@ export default function AdminPanel({ initialProducts, currentRole }: Props) {
               id={`panel-${panelId(name)}`}
               aria-labelledby={`tab-${panelId(name)}`}
               aria-hidden={tabIndex !== i}
+              // Inactive panels stay mounted (state survives) but are zero-
+              // height, so their controls were still reachable by Tab. `inert`
+              // removes them from focus order and the a11y tree for real.
+              {...({ inert: tabIndex === i ? undefined : "" } as Record<
+                string,
+                string | undefined
+              >)}
               className={`w-full shrink-0 ${tabIndex === i ? "" : "h-0 overflow-hidden"}`}
             >
               {visited.has(i) ? renderPanel(name) : null}

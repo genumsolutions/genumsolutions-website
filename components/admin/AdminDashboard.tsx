@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { formatNPR } from "../../lib/catalog";
 import type { DashboardStats, Analytics } from "./admin-types";
-import { Stat } from "./admin-helpers";
+import { Stat, panelCard } from "./admin-helpers";
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -24,12 +24,7 @@ export default function AdminDashboard() {
   }, []);
 
   return (
-    <section
-      role="tabpanel"
-      aria-labelledby="tab-dashboard"
-      aria-label="Dashboard overview"
-      className="mt-4 space-y-4"
-    >
+    <section aria-label="Dashboard overview" className="mt-4 space-y-4">
       <h2 className="font-display text-2xl font-bold text-ink">Dashboard</h2>
       {!stats ? (
         <p className="text-sm text-slate-500" role="status">
@@ -83,7 +78,7 @@ export default function AdminDashboard() {
             />
           </div>
           {analytics && analytics.topPaths.length > 0 && (
-            <div className="border-t-2 border-ink bg-white p-6">
+            <div className={panelCard}>
               <h3 className="font-display text-lg font-bold">Top Pages (30 days)</h3>
               <ul className="mt-3 divide-y divide-line">
                 {analytics.topPaths.slice(0, 10).map((pv) => (
@@ -101,7 +96,7 @@ export default function AdminDashboard() {
             </div>
           )}
           {analytics && analytics.viewsByDay.length > 0 && (
-            <div className="border-t-2 border-ink bg-white p-6">
+            <div className={panelCard}>
               <h3 className="font-display text-lg font-bold">Daily Traffic (30 days)</h3>
               <div className="mt-3 flex items-end gap-1" style={{ height: 120 }}>
                 {analytics.viewsByDay.map((d) => {

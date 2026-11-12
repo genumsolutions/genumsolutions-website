@@ -103,13 +103,7 @@ export default function AdminUserLogs() {
   }
 
   return (
-    <section
-      role="tabpanel"
-      id="panel-user-logs"
-      aria-labelledby="tab-user-logs"
-      aria-label="User logs"
-      className="mt-4 space-y-4"
-    >
+    <section aria-label="User logs" className="space-y-4">
       <PanelCard>
         <h2 className={panelTitle}>User activity logs</h2>
         <p className="mt-1 text-xs text-slate-500">

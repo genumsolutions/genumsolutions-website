@@ -376,6 +376,19 @@ html[data-theme="dim"] .shadow-xl {
   }
 }
 
+/* U-UI2 (2026-11-12): one visible keyboard-focus ring for every interactive
+   element. Icon-only header controls, the theme/cart buttons and the admin
+   row actions had no shared focus style, so tabbing through the console or
+   the nav lost track of where focus was. */
+:where(a, button, summary, [role="button"], [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline: 2px solid var(--brand-navy);
+  outline-offset: 2px;
+}
+html[data-theme="dim"]
+  :where(a, button, summary, [role="button"], [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline-color: #a5c0f5;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

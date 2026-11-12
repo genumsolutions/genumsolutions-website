@@ -3,7 +3,15 @@
 import { useEffect, useState } from "react";
 import type { Message } from "./admin-types";
 import { PAGE_SIZE } from "./admin-types";
-import { EmptyState, LoadingRow, Pager, formatTimestamp, panelTitle } from "./admin-helpers";
+import {
+  EmptyState,
+  LoadingRow,
+  Pager,
+  formatTimestamp,
+  panelCard,
+  panelHeader,
+  panelTitle,
+} from "./admin-helpers";
 
 // C4 (2026-09-23): newsletter opt-ins listed in the Messages panel.
 type Subscriber = { id: string; email: string; source: string; status: string; created_at: string };
@@ -106,21 +114,15 @@ export default function AdminMessages({ setMessage: _setMessage, canDelete }: Pr
   }
 
   return (
-    <section
-      role="tabpanel"
-      id="panel-messages"
-      aria-labelledby="tab-messages"
-      aria-label="Customer messages"
-      className="mt-4 space-y-4"
-    >
-      <div className="flex flex-col gap-3 border-t-2 border-ink bg-white p-6 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
+    <section aria-label="Customer messages" className="mt-4 space-y-4">
+      <div className={`${panelCard} ${panelHeader}`}>
         <h2 className={panelTitle}>Messages</h2>
         <label className="ml-auto text-sm font-bold text-slate-500">
           Status
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="ml-2 border border-line px-3 py-2 text-sm font-bold"
+            className="ml-2 rounded-lg border border-line px-3 py-2 text-sm font-bold"
           >
             <option value="">All</option>
             <option value="new">New</option>
@@ -129,7 +131,7 @@ export default function AdminMessages({ setMessage: _setMessage, canDelete }: Pr
         </label>
         <button
           onClick={() => void loadMessages(1)}
-          className="bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark"
+          className="rounded-lg bg-navy px-4 py-2.5 text-xs font-black text-white transition hover:bg-navy-dark"
         >
           Apply
         </button>
@@ -144,7 +146,7 @@ export default function AdminMessages({ setMessage: _setMessage, canDelete }: Pr
             {messages.map((msg) => (
               <li
                 key={msg.id}
-                className={`border bg-white p-4 ${msg.status === "new" ? "border-l-4 border-l-navy border-line" : "border-line"}`}
+                className={`rounded-lg border border-line bg-white p-4 ${msg.status === "new" ? "border-l-4 border-l-navy" : ""}`}
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="min-w-0 flex-1">
@@ -159,7 +161,7 @@ export default function AdminMessages({ setMessage: _setMessage, canDelete }: Pr
                     {msg.status === "new" && (
                       <button
                         onClick={() => markReplied(msg.id)}
-                        className="border border-line px-3 py-1.5 text-xs font-bold text-navy transition hover:border-navy"
+                        className="min-h-[36px] rounded-lg border border-line px-3 text-xs font-bold text-navy transition hover:border-navy"
                       >
                         Mark replied
                       </button>
@@ -172,7 +174,7 @@ export default function AdminMessages({ setMessage: _setMessage, canDelete }: Pr
                     {canDelete && (
                       <button
                         onClick={() => deleteMessage(msg.id)}
-                        className="border border-red-200 px-3 py-1.5 text-xs font-bold text-red-600 transition hover:bg-red-50"
+                        className="min-h-[36px] rounded-lg border border-red-200 px-3 text-xs font-bold text-red-600 transition hover:bg-red-50"
                       >
                         Delete
                       </button>
@@ -193,11 +195,11 @@ export default function AdminMessages({ setMessage: _setMessage, canDelete }: Pr
       )}
 
       {/* C4 (2026-09-23): Newsletter opt-ins — staff read, admin delete. */}
-      <div className="flex flex-col gap-3 border-t-2 border-ink bg-white p-6 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
+      <div className={`${panelCard} ${panelHeader}`}>
         <h2 className={panelTitle}>Newsletter subscribers</h2>
         <button
           onClick={() => void loadSubscribers(1)}
-          className="bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark"
+          className="rounded-lg bg-navy px-4 py-2.5 text-xs font-black text-white transition hover:bg-navy-dark"
         >
           Refresh
         </button>
@@ -212,7 +214,7 @@ export default function AdminMessages({ setMessage: _setMessage, canDelete }: Pr
             {subscribers.map((sub) => (
               <li
                 key={sub.id}
-                className="flex flex-wrap items-center justify-between gap-2 border border-line bg-white p-3"
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-white p-4"
               >
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-bold">{sub.email}</p>

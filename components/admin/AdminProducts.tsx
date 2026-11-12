@@ -372,12 +372,7 @@ export default function AdminProducts({
 
   return (
     <>
-      <div
-        role="tabpanel"
-        id={`panel-${kind === "models" ? "models" : "electronic"}`}
-        aria-labelledby={`tab-${kind === "models" ? "models" : "electronic"}`}
-        className="mt-4 grid min-w-0 gap-4 xl:grid-cols-[1fr_1.3fr]"
-      >
+      <div className="mt-4 grid min-w-0 gap-4 xl:grid-cols-[1fr_1.3fr]">
         <section aria-label={`${tabLabel} list`} className={panelListSection}>
           <PanelCard>
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -549,7 +544,7 @@ export default function AdminProducts({
               </div>
             )}
             {demand.length > 0 && (
-              <div className="mt-3 rounded border border-line bg-navy/[0.03] p-3">
+              <div className="mt-3 rounded-lg border border-line bg-navy/[0.03] p-3">
                 <p className="text-xs leading-snug text-muted">
                   <strong className="text-ink">Not readable yet:</strong> staff have pasted{" "}
                   {demand
@@ -673,7 +668,7 @@ export default function AdminProducts({
                     type="button"
                     disabled={uploading}
                     onClick={() => fileInput.current?.click()}
-                    className="bg-navy px-4 py-2 text-xs font-black text-white disabled:opacity-60"
+                    className="rounded-lg bg-navy px-4 py-2.5 text-xs font-black text-white transition hover:bg-navy-dark disabled:opacity-60"
                   >
                     {uploading ? "Uploading..." : "Upload"}
                   </button>

@@ -83,11 +83,21 @@ export function focusEditor(id: string) {
 // these in one place keeps every panel looking consistent.
 // ---------------------------------------------------------------
 
-export const panelCard = "min-w-0 border-t-2 border-ink bg-white p-4";
+// U-UI2 (2026-11-12): admin surfaces used a 2px ink top rule and square
+// corners, so every panel read as a stack of black bars and the padding
+// alternated p-4 / p-6 between neighbours. Admin cards now share one quiet
+// anatomy — rounded hairline card, p-5, a bottom-ruled header row — the same
+// shape as `Stat` above, so tabs line up with each other and with the app.
+export const panelCard = "min-w-0 rounded-xl border border-line bg-white p-5";
 export const panelListSection = "min-w-0 space-y-4";
-export const editorCard = "min-w-0 overflow-hidden border-t-2 border-ink bg-white p-4";
-export const editorCardTitle = "font-display text-2xl font-bold text-ink";
-export const panelTitle = "font-display text-xl font-bold text-ink";
+export const editorCard = "min-w-0 overflow-hidden rounded-xl border border-line bg-white p-5";
+export const editorCardTitle = "font-display text-xl font-bold text-ink";
+export const panelTitle = "font-display text-lg font-bold text-ink";
+/** Header row: title on the left, filters/actions on the right. */
+export const panelHeader =
+  "flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between";
+/** Compact list row used by orders / messages / subscribers. */
+export const panelRow = "rounded-lg border border-line bg-white p-4";
 
 export function PanelCard({
   children,
@@ -114,7 +124,13 @@ export function EmptyState({
   children: React.ReactNode;
   className?: string;
 }) {
-  return <p className={`py-3 text-sm text-slate-500 ${className}`.trim()}>{children}</p>;
+  return (
+    <p
+      className={`rounded-lg border border-dashed border-line bg-white px-4 py-6 text-center text-sm text-slate-500 ${className}`.trim()}
+    >
+      {children}
+    </p>
+  );
 }
 
 /** The standard inline row actions (Edit / Preview / Hide / Delete / …). */

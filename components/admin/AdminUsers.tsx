@@ -346,13 +346,7 @@ export default function AdminUsers({ setMessage, canDelete, currentRole }: Props
   });
 
   return (
-    <section
-      role="tabpanel"
-      id="panel-users"
-      aria-labelledby="tab-users"
-      aria-label="User management"
-      className="mt-4 space-y-4"
-    >
+    <section aria-label="User management" className="mt-4 space-y-4">
       <div className="mb-3">
         <p className="text-xs font-black uppercase tracking-widest text-navy">User Directory</p>
         <p className="mt-1 text-xs text-slate-500">
@@ -368,7 +362,7 @@ export default function AdminUsers({ setMessage, canDelete, currentRole }: Props
           />
           <button
             onClick={() => setSearch("")}
-            className="bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark"
+            className="rounded-lg bg-navy px-4 py-2.5 text-xs font-black text-white transition hover:bg-navy-dark"
           >
             Clear
           </button>

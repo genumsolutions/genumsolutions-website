@@ -117,13 +117,7 @@ export default function AdminProfileEntries() {
   }
 
   return (
-    <section
-      role="tabpanel"
-      id="panel-profile-entries"
-      aria-labelledby="tab-profile-entries"
-      aria-label="Profile entries"
-      className="mt-4 space-y-4"
-    >
+    <section aria-label="Profile entries" className="space-y-4">
       <PanelCard>
         <h2 className={panelTitle}>User profile entries</h2>
         <p className="mt-1 text-xs text-slate-500">

@@ -6,7 +6,7 @@ import Image from "next/image";
 import { inputClass } from "../../lib/styles";
 import type { Product } from "./admin-types";
 import { emptyProduct, PAGE_SIZE } from "./admin-types";
-import { Pager, focusEditor, editorCard, editorCardTitle } from "./admin-helpers";
+import { Pager, focusEditor, editorCard, editorCardTitle, panelCard } from "./admin-helpers";
 
 type Props = {
   products: Product[];
@@ -411,14 +411,9 @@ export default function AdminProjectPackages({
 
   return (
     <>
-      <div
-        role="tabpanel"
-        id="panel-project-packages"
-        aria-labelledby="tab-project-packages"
-        className="mt-4 grid min-w-0 gap-4 xl:grid-cols-[1fr_1.3fr]"
-      >
-        <section aria-label="Project package list" className="min-w-0 space-y-6">
-          <div className="min-w-0 border-t-2 border-ink bg-white p-6">
+      <div className="mt-4 grid min-w-0 gap-4 xl:grid-cols-[1fr_1.3fr]">
+        <section aria-label="Project package list" className="min-w-0 space-y-4">
+          <div className={panelCard}>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="font-display text-xl font-bold">
                 Project Packages ({filteredProjects.length})

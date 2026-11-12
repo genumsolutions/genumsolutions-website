@@ -43,14 +43,16 @@ export default function AdminLogsHub() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center gap-2" role="tablist" aria-label="Log sections">
+      {/* A filter group, not a tablist: the three panels are separate
+          regions, so announcing them as tabs without tabpanels was wrong. */}
+      <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Log sections">
         {SECTIONS.map((item) => (
           <button
             key={item.id}
-            role="tab"
-            aria-selected={section === item.id}
+            type="button"
+            aria-pressed={section === item.id}
             onClick={() => setSection(item.id)}
-            className={`rounded-full border px-4 py-1.5 text-xs font-black transition ${
+            className={`min-h-[36px] rounded-full border px-4 text-xs font-black transition ${
               section === item.id
                 ? "border-navy bg-navy text-white"
                 : "border-line bg-white text-navy hover:border-navy"

@@ -96,25 +96,15 @@ export default function AdminSettings({ setMessage, canDelete: _canDelete }: Pro
   }
 
   return (
-    <div
-      role="tabpanel"
-      id="panel-settings"
-      aria-labelledby="tab-settings"
-      className="mt-4 space-y-4"
-    >
-      <div
-        className="flex flex-wrap gap-2"
-        role="tablist"
-        aria-label="Company information sections"
-      >
+    <div className="mt-4 space-y-4">
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Company information sections">
         {SECTIONS.map((item) => (
           <button
             key={item.id}
             type="button"
-            role="tab"
-            aria-selected={section === item.id}
+            aria-pressed={section === item.id}
             onClick={() => setSection(item.id)}
-            className={`rounded-full border px-4 py-1.5 text-xs font-black transition ${
+            className={`min-h-[36px] rounded-full border px-4 text-xs font-black transition ${
               section === item.id
                 ? "border-navy bg-navy text-white"
                 : "border-line bg-white text-navy hover:border-navy"
