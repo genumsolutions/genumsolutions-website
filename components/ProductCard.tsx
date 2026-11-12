@@ -19,9 +19,16 @@ export default function ProductCard({ product }: { product: Product }) {
   const media = galleryImages(product)[0] ?? fallbackMedia.src;
   const { has, toggle } = useCollection();
   const saved = has(product.id);
+  const stock = typeof product.stock === "number" ? product.stock : 0;
+  const outOfStock = stock <= 0;
+  const lowStock = stock > 0 && stock <= 3;
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-sm transition hover:shadow-md">
+    <div
+      className={`group relative flex flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-sm transition hover:shadow-md ${
+        outOfStock ? "opacity-90" : ""
+      }`}
+    >
       <Link
         href={`/products/${product.id}`}
         aria-label={`Open ${product.name}`}
@@ -32,8 +39,20 @@ export default function ProductCard({ product }: { product: Product }) {
           alt={product.name}
           fill
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-          className="object-contain transition duration-500 group-hover:scale-105"
+          className={`object-contain transition duration-500 group-hover:scale-105 ${
+            outOfStock ? "grayscale-[30%]" : ""
+          }`}
         />
+        {outOfStock && (
+          <span className="absolute left-2 top-2 rounded-full bg-ink/80 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-white">
+            Out of stock
+          </span>
+        )}
+        {lowStock && (
+          <span className="absolute left-2 top-2 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-white">
+            Only {stock} left
+          </span>
+        )}
       </Link>
       <Link
         href={`/products/${product.id}`}
@@ -46,7 +65,16 @@ export default function ProductCard({ product }: { product: Product }) {
         <span className="line-clamp-2 min-h-[2.4em] break-words text-[13px] font-bold leading-tight text-ink [overflow-wrap:anywhere]">
           {product.name}
         </span>
-        <span className="mt-0.5 block text-xs font-black text-navy">{product.priceLabel}</span>
+        <span className="mt-0.5 flex items-center justify-between gap-2 text-xs font-black text-navy">
+          <span>{product.priceLabel}</span>
+          {outOfStock ? (
+            <span className="font-bold text-muted">Unavailable</span>
+          ) : lowStock ? (
+            <span className="font-bold text-amber-700">Low stock</span>
+          ) : (
+            <span className="font-bold text-emerald-700">In stock</span>
+          )}
+        </span>
       </Link>
       <button
         type="button"
