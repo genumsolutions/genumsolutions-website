@@ -1,0 +1,348 @@
+{
+  "generatedAt": "2026-11-12T19:12:27.768Z",
+  "source": "data/catalog-lost-2026-09-23.json -> notRestored",
+  "instructions": "Set priceNpr (number, NPR) for each kit you want to restore. Leave null to skip. The old price/priceLabel was a combined 'cost / hours' figure and is kept for reference only; priceNpr is the value that will be used on insert. After pricing, share this file so the kits can be inserted (insert-only) and verified.",
+  "seedNote": null,
+  "kits": [
+    {
+      "id": "excel-solar-tracking-system",
+      "name": "Solar Tracking System",
+      "category": "Pre-packaged Kits",
+      "description": "Maximize solar efficiency. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+      "specs": [
+        "Modes: Autonomous / IoT",
+        "How it works: Autonomous: dual-axis tracking; IoT: dashboard monitoring",
+        "Components: ESP32, LDR sensors (x4), servo motors (x2), solar panel, frame, battery",
+        "Sensors: 4 LDR",
+        "Best use: Maximize solar efficiency"
+      ],
+      "priceNpr": null,
+      "referencePrice": 4000,
+      "referencePriceLabel": "From NPR 4,000 · quote by scope",
+      "status": "needs-price"
+    },
+    {
+      "id": "excel-smart-irrigation-system",
+      "name": "Smart Irrigation System",
+      "category": "Pre-packaged Kits",
+      "description": "Water conservation in agriculture. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+      "specs": [
+        "Modes: Autonomous / IoT / Manual",
+        "How it works: Autonomous: soil moisture-based watering; IoT: remote control; Manual: override via app",
+        "Components: ESP32, soil moisture sensors (x2), water pump, relay, tubing, battery, mobile app",
+        "Sensors: 2 soil moisture",
+        "Best use: Water conservation in agriculture"
+      ],
+      "priceNpr": null,
+      "referencePrice": 4500,
+      "referencePriceLabel": "From NPR 4,500 · quote by scope",
+      "status": "needs-price"
+    },
+    {
+      "id": "excel-mini-wind-turbine-monitor",
+      "name": "Mini Wind Turbine Monitor",
+      "category": "Sensors & Modules",
+      "description": "Renewable energy education. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+      "specs": [
+        "Modes: Autonomous / IoT",
+        "How it works: Autonomous: RPM sensing; IoT: data logging",
+        "Components: Mini wind turbine, RPM sensor, ESP32, battery, WiFi module",
+        "Sensors: 1 RPM sensor",
+        "Best use: Renewable energy education"
+      ],
+      "priceNpr": null,
+      "referencePrice": 5000,
+      "referencePriceLabel": "From NPR 5,000 · quote by scope",
+      "status": "needs-price"
+    },
+    {
+      "id": "excel-smart-lighting-system",
+      "name": "Smart Lighting System",
+      "category": "Controllers & Boards",
+      "description": "Home automation. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+      "specs": [
+        "Modes: Manual / Voice / IoT",
+        "How it works: Manual: switch; Voice: assistant control; IoT: app-based control",
+        "Components: ESP32, relay module, PIR sensor, LDR, smart assistant integration",
+        "Sensors: 1 PIR, 1 LDR",
+        "Best use: Home automation"
+      ],
+      "priceNpr": null,
+      "referencePrice": 3000,
+      "referencePriceLabel": "From NPR 3,000 · quote by scope",
+      "status": "needs-price"
+    },
+    {
+      "id": "excel-home-security-system",
+      "name": "Home Security System",
+      "category": "Sensors & Modules",
+      "description": "Home safety and surveillance. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+      "specs": [
+        "Modes: Autonomous / IoT / Alert",
+        "How it works: Autonomous: motion detection; IoT: remote monitoring; Alert: SMS/email",
+        "Components: ESP32-CAM, PIR sensors (x2), GSM module, buzzer, battery",
+        "Sensors: 2 PIR, 1 camera",
+        "Best use: Home safety and surveillance"
+      ],
+      "priceNpr": null,
+      "referencePrice": 5500,
+      "referencePriceLabel": "From NPR 5,500 · quote by scope",
+      "status": "needs-price"
+    },
+    {
+      "id": "excel-smart-door-lock",
+      "name": "Smart Door Lock",
+      "category": "Pre-packaged Kits",
+      "description": "Smart home entry system. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+      "specs": [
+        "Modes: Manual / App / Biometric",
+        "How it works: Manual: keypad; App: mobile unlock; Biometric: fingerprint sensor",
+        "Components: ESP32, fingerprint sensor, keypad, servo motor, relay, battery",
+        "Sensors: 1 fingerprint",
+        "Best use: Smart home entry system"
+      ],
+      "priceNpr": null,
+      "referencePrice": 6000,
+      "referencePriceLabel": "From NPR 6,000 · quote by scope",
+      "status": "needs-price"
+    },
+    {
+      "id": "excel-face-recognition-attendance-system",
+      "name": "Face Recognition Attendance System",
+      "category": "Controllers & Boards",
+      "description": "School/office attendance. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+      "specs": [
+        "Modes: Autonomous / Camera / IoT",
+        "How it works: Autonomous: face detection; Camera: ESP32-CAM; IoT: attendance logging",
+        "Components: ESP32-CAM, SD card, WiFi module, battery",
+        "Sensors: 1 camera",
+        "Best use: School/office attendance"
+      ],
+      "priceNpr": null,
+      "referencePrice": 7000,
+      "referencePriceLabel": "From NPR 7,000 · quote by scope",
+      "status": "needs-price"
+    },
+    {
+      "id": "excel-object-detection-robot-arm",
+      "name": "Object Detection Robot Arm",
+      "category": "Pre-packaged Kits",
+      "description": "AI robotics education. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+      "specs": [
+        "Modes: Autonomous / Camera / Manual",
+        "How it works: Autonomous: ML-based detection; Camera: vision input; Manual: joystick control",
+        "Components: ESP32-CAM, robotic arm kit, servos, camera, ML model",
+        "Sensors: 1 camera, 1 color sensor",
+        "Best use: AI robotics education"
+      ],
+      "priceNpr": null,
+      "referencePrice": 6500,
+      "referencePriceLabel": "From NPR 6,500 · quote by scope",
+      "status": "needs-price"
+    },
+    {
+      "id": "excel-ai-powered-sorting-machine",
+      "name": "AI-Powered Sorting Machine",
+      "category": "Pre-packaged Kits",
+      "description": "Smart manufacturing demo. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+      "specs": [
+        "Modes: Autonomous / Camera / IoT",
+        "How it works: Autonomous: object classification; Camera: vision input; IoT: data logging",
+        "Components: ESP32-CAM, color sensor, servo motors, conveyor belt, WiFi module",
+        "Sensors: 1 camera, 1 color sensor",
+        "Best use: Smart manufacturing demo"
+      ],
+      "priceNpr": null,
+      "referencePrice": 12000,
+      "referencePriceLabel": "From NPR 12,000 · quote by scope",
+      "status": "needs-price"
+    },
+    {
+      "id": "excel-quadcopter-diy-kit",
+      "name": "Quadcopter DIY Kit",
+      "category": "Pre-packaged Kits",
+      "description": "Drone education and demos. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+      "specs": [
+        "Modes: Manual / Remote / Autonomous",
+        "How it works: Manual: joystick; Remote: app; Autonomous: GPS path",
+        "Components: Brushless motors, ESCs, flight controller, GPS, frame, battery, transmitter",
+        "Sensors: 1 GPS, 1 gyro",
+        "Best use: Drone education and demos"
+      ],
+      "priceNpr": null,
+      "referencePrice": 14000,
+      "referencePriceLabel": "From NPR 14,000 · quote by scope",
+      "status": "needs-price"
+    },
+    {
+      "id": "excel-autonomous-drone-navigation",
+      "name": "Autonomous Drone Navigation",
+      "category": "Pre-packaged Kits",
+      "description": "Autonomous flight projects. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+      "specs": [
+        "Modes: Autonomous / GPS / Obstacle Avoidance",
+        "How it works: Autonomous: pre-set route; GPS: location tracking; Obstacle: ultrasonic sensors",
+        "Components: Drone kit, GPS module, ultrasonic sensors, flight controller",
+        "Sensors: 1 GPS, 2 ultrasonic",
+        "Best use: Autonomous flight projects"
+      ],
+      "priceNpr": null,
+      "referencePrice": 18000,
+      "referencePriceLabel": "From NPR 18,000 · quote by scope",
+      "status": "needs-price"
+    },
+    {
+      "id": "excel-agricultural-drone",
+      "name": "Agricultural Drone",
+      "category": "Pre-packaged Kits",
+      "description": "Smart farming. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+      "specs": [
+        "Modes: Remote / Autonomous / IoT",
+        "How it works: Remote: app control; Autonomous: GPS path; IoT: data logging",
+        "Components: Drone frame, GPS, sprayer, ESP32, battery, sensors",
+        "Sensors: 1 GPS, 1 flow sensor",
+        "Best use: Smart farming"
+      ],
+      "priceNpr": null,
+      "referencePrice": 18000,
+      "referencePriceLabel": "From NPR 18,000 · quote by scope",
+      "status": "needs-price"
+    },
+    {
+      "id": "excel-electronics-learning-board",
+      "name": "Electronics Learning Board",
+      "category": "Tools & Fabrication",
+      "description": "STEM education. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+      "specs": [
+        "Modes: Manual / Interactive",
+        "How it works: Manual: switch-based; Interactive: sensor-based experiments",
+        "Components: Breadboard, LEDs, resistors, sensors, Arduino, jumper wires",
+        "Sensors: Varies (IR, LDR, temp)",
+        "Best use: STEM education"
+      ],
+      "priceNpr": null,
+      "referencePrice": 3500,
+      "referencePriceLabel": "From NPR 3,500 · quote by scope",
+      "status": "needs-price"
+    },
+    {
+      "id": "excel-mini-weather-station",
+      "name": "Mini Weather Station",
+      "category": "Sensors & Modules",
+      "description": "Weather education. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+      "specs": [
+        "Modes: Autonomous / IoT",
+        "How it works: Autonomous: sensor logging; IoT: online dashboard",
+        "Components: ESP32, DHT11, BMP180, rain sensor, WiFi module",
+        "Sensors: 1 temp/humidity, 1 pressure, 1 rain",
+        "Best use: Weather education"
+      ],
+      "priceNpr": null,
+      "referencePrice": 3500,
+      "referencePriceLabel": "From NPR 3,500 · quote by scope",
+      "status": "needs-price"
+    },
+    {
+      "id": "excel-diy-oscilloscope",
+      "name": "DIY Oscilloscope",
+      "category": "Tools & Fabrication",
+      "description": "Electronics lab tool. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+      "specs": [
+        "Modes: Manual / Visual",
+        "How it works: Manual: probe signals; Visual: waveform display",
+        "Components: Arduino UNO, resistors, capacitors, OLED display, probes",
+        "Sensors: Analog input",
+        "Best use: Electronics lab tool"
+      ],
+      "priceNpr": null,
+      "referencePrice": 3500,
+      "referencePriceLabel": "From NPR 3,500 · quote by scope",
+      "status": "needs-price"
+    },
+    {
+      "id": "excel-smart-traffic-management",
+      "name": "Smart Traffic Management",
+      "category": "Controllers & Boards",
+      "description": "Reduce congestion, improve safety. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+      "specs": [
+        "Modes: IoT / Remote / Autonomous",
+        "How it works: Autonomous: sensor-based traffic control; IoT: cloud dashboard",
+        "Components: ESP32, IR sensors (x4), relays, cloud dashboard",
+        "Sensors: 4 IR",
+        "Best use: Reduce congestion, improve safety"
+      ],
+      "priceNpr": null,
+      "referencePrice": 3500,
+      "referencePriceLabel": "From NPR 3,500 · quote by scope",
+      "status": "needs-price"
+    },
+    {
+      "id": "excel-smart-waste-bin",
+      "name": "Smart Waste Bin",
+      "category": "Sensors & Modules",
+      "description": "Smart waste management. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+      "specs": [
+        "Modes: IoT / Autonomous",
+        "How it works: Autonomous: fill detection; IoT: cloud monitoring; Alert: GSM/WiFi notifications",
+        "Components: ESP32, ultrasonic sensor, GSM/WiFi module, battery",
+        "Sensors: 1 ultrasonic",
+        "Best use: Smart waste management"
+      ],
+      "priceNpr": null,
+      "referencePrice": 3500,
+      "referencePriceLabel": "From NPR 3,500 · quote by scope",
+      "status": "needs-price"
+    },
+    {
+      "id": "excel-smart-parking-system",
+      "name": "Smart Parking System",
+      "category": "Sensors & Modules",
+      "description": "Reduce parking search time. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+      "specs": [
+        "Modes: IoT / Remote / Autonomous",
+        "How it works: IoT: app-based info; Remote: user app; Autonomous: sensor detection",
+        "Components: ESP32, IR sensors (x2), ultrasonic sensors (x2), mobile app",
+        "Sensors: 2 IR, 2 ultrasonic",
+        "Best use: Reduce parking search time"
+      ],
+      "priceNpr": null,
+      "referencePrice": 3500,
+      "referencePriceLabel": "From NPR 3,500 · quote by scope",
+      "status": "needs-price"
+    },
+    {
+      "id": "excel-air-quality-monitoring",
+      "name": "Air Quality Monitoring",
+      "category": "Sensors & Modules",
+      "description": "Urban pollution tracking. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+      "specs": [
+        "Modes: IoT / Autonomous",
+        "How it works: IoT: cloud dashboard; Autonomous: continuous monitoring",
+        "Components: ESP32, MQ135, MQ7, DHT11, WiFi module",
+        "Sensors: 3 gas sensors",
+        "Best use: Urban pollution tracking"
+      ],
+      "priceNpr": null,
+      "referencePrice": 3500,
+      "referencePriceLabel": "From NPR 3,500 · quote by scope",
+      "status": "needs-price"
+    },
+    {
+      "id": "excel-smart-street-lighting",
+      "name": "Smart Street Lighting",
+      "category": "Controllers & Boards",
+      "description": "Sustainable city lighting. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+      "specs": [
+        "Modes: Autonomous / IoT",
+        "How it works: Autonomous: motion/LDR control; IoT: remote monitoring",
+        "Components: ESP32, LDR, PIR sensors (x2), relay module",
+        "Sensors: 1 LDR, 2 PIR",
+        "Best use: Sustainable city lighting"
+      ],
+      "priceNpr": null,
+      "referencePrice": 3500,
+      "referencePriceLabel": "From NPR 3,500 · quote by scope",
+      "status": "needs-price"
+    }
+  ]
+}

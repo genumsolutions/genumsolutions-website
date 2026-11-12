@@ -162,9 +162,15 @@ each extra row also tends to drag its own copy of a photo into the bucket.
 | Resource         | Used   | Allowance | Note                                                                     |
 | ---------------- | ------ | --------- | ------------------------------------------------------------------------ |
 | Database         | 15 MB  | 500 MB    | 3% — text only, restored rows cost almost nothing                        |
-| Storage          | 125 MB | 1 GB      | 12% — `app-releases` trimmed to current + one previous (4 objects)       |
-| `product-images` | 5.7 MB | —         | 62 objects (shared photos copied per product), 0 missing references      |
+| Storage          | 124 MB | 1 GB      | 12.1% — `app-releases` trimmed to current + one previous (4 objects)     |
+| `product-images` | 5.1 MB | —         | 56 objects, 0 missing, 0 unreferenced (after sweep + per-product copies) |
 | Storage egress   | —      | 5 GB / mo | One APK download is ~40 MB: ~125 downloads exhaust the month's allowance |
+
+- App-release retention is enforced by `npm run releases:trim` (dry-run; `--apply` to delete). Run on each publish.
+- Catalog/storage health is checked by `npm run health:check` (`limits` + `images:verify` + `catalog:dupes --strict`).
+- Product photo gaps are listed in `docs/PHOTO_AUDIT.md` (`npm run photos:audit -- --out docs/PHOTO_AUDIT.md`).
+- 20 unpriced Excel-import kits await pricing in `data/kits-to-price.json` (`npm run kits:template` regenerates it from the recovery seed).
+- Catalog residue reviewed 2026-11-12: `test-product-1`/`test-product-2` deleted; `lord-shiva-statue` kept hidden as a retired name-duplicate of `lord-shiva-statue-seated-blessing-pose-3d-print`.
 
 `app-releases` is the one bucket that can still take the site down: at ~40 MB
 each, a handful of builds eat storage and the free plan's 5 GB egress is only

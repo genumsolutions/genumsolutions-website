@@ -30,6 +30,8 @@
     "catalog:dupes": "tsx scripts/catalog-dupes.ts",
     "health:check": "node scripts/health-check.mjs",
     "releases:trim": "tsx scripts/releases-trim.ts",
+    "photos:audit": "tsx scripts/audit-product-photos.ts",
+    "kits:template": "tsx scripts/prepare-kits-template.ts",
     "images:verify": "tsx scripts/verify-images.ts",
     "images:sweep": "tsx scripts/sweep-images.ts",
     "snapshot:catalog-extras": "node scripts/snapshot-catalog-extras.mjs"
