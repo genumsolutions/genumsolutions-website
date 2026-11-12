@@ -155,3 +155,47 @@ jobs:
         run: deno check supabase/functions/car-relay/index.ts
       # Formatting is NOT re-checked here: prettier owns it repo-wide (a second
       # formatter with different defaults would be a second source of truth).
+
+  # Live schema drift — every table and column in supabase/schema.sql must exist
+  # in the DEPLOYED database. The 2026-11-07 project move left 6 of 39 tables and
+  # no profiles.tier; the combined select(role, tier) then failed as a whole, so
+  # every staff/admin account resolved as a customer and signed-in users saw the
+  # signup form. Typecheck, lint and 318 tests all stayed green because nothing
+  # here ever looked at the live project. `scripts/db-drift-check.mjs` does,
+  # through PostgREST (404/PGRST205 = missing table, 400/42703 = missing column).
+  #
+  # Deliberately NOT part of `npm run test:ci`: that suite must stay offline and
+  # reproducible. This job only needs Node (no npm ci - the script has no deps).
+  # It skips, with a warning, when the Supabase secrets are unavailable (forks,
+  # Dependabot) instead of failing for a reason the author cannot fix.
+  db-drift:
+    name: Live database matches schema.sql
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Check for Supabase credentials
+        id: creds
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_KEY" ]; then
+            echo "::warning::NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are not available to this run, so the live schema was NOT checked."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check the live database against schema.sql
+        if: steps.creds.outputs.ready == 'true'
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: npm run db:drift
