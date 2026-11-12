@@ -145,15 +145,18 @@ each extra row also tends to drag its own copy of a photo into the bucket.
 | Resource         | Used   | Allowance | Note                                                                     |
 | ---------------- | ------ | --------- | ------------------------------------------------------------------------ |
 | Database         | 15 MB  | 500 MB    | 3% — text only, restored rows cost almost nothing                        |
-| Storage          | 164 MB | 1 GB      | 16% — but **159 MB of it is 5 APK objects in `app-releases`**            |
-| `product-images` | 4.6 MB | —         | 52 objects, 0 missing references                                         |
-| Storage egress   | —      | 5 GB / mo | One APK download is ~30 MB: ~170 downloads exhaust the month's allowance |
+| Storage          | 125 MB | 1 GB      | 12% — `app-releases` trimmed to current + one previous (4 objects)       |
+| `product-images` | 5.7 MB | —         | 62 objects (shared photos copied per product), 0 missing references      |
+| Storage egress   | —      | 5 GB / mo | One APK download is ~40 MB: ~125 downloads exhaust the month's allowance |
 
-`app-releases` is the one bucket that can still take the site down: five builds
-at ~30 MB each are 16% of storage, and the free plan's 5 GB egress is only about
-170 downloads per month. Keep at most the current release plus one previous
-build there, and treat an old APK as dead weight rather than history — the app
-can be rebuilt from its git tag.
+`app-releases` is the one bucket that can still take the site down: at ~40 MB
+each, a handful of builds eat storage and the free plan's 5 GB egress is only
+about ~125 downloads per month. **Retention rule:** keep exactly the current
+release artifacts (`release.json`, `genum-solutions-latest.apk`, and the
+versioned APK it names) plus **one** previous versioned APK — delete every older
+build. An old APK is dead weight, not history; the app can be rebuilt from its
+git tag. (Applied 2026-11-12: trimmed to `release.json` + `latest` + `3.4.0` +
+`3.3.0`, dropped `3.2.9`, freeing ~40 MB.)
 
 `npm run backup` writes `backups/<timestamp>/` (gitignored) with one JSON file
 per table declared in `supabase/schema.sql`, a storage manifest, and — with
