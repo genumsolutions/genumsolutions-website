@@ -54,6 +54,9 @@ maintenance so storefront, admin, and future tooling behave consistently.
 - Product cards show availability (in stock / low stock / out of stock) and must
   stay readable (wrapped names, consistent text block height). Keep catalog and
   detail availability messaging aligned.
+- Product structured data (`components/ProductJsonLd.tsx`) must reflect the same
+  rules: retail in-stock → `InStock`, retail out-of-stock → `OutOfStock`,
+  project packages → `PreOrder` (quote/scoped). Keep price/URL/image accurate.
 
 ## Related tooling
 
