@@ -30,6 +30,7 @@ export default function ProjectsCatalog({
 }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("All");
+  const [inStockOnly, setInStockOnly] = useState(false);
   const [page, setPage] = useState(1);
   const { count } = useCart();
 
@@ -54,6 +55,7 @@ export default function ProjectsCatalog({
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return allProjects.filter((p) => {
+      if (inStockOnly && (p.stock ?? 0) <= 0) return false;
       if (category !== "All") {
         const selected = category.trim().toLowerCase();
         const pc = String(p.project_category ?? "")
@@ -66,7 +68,7 @@ export default function ProjectsCatalog({
         .toLowerCase()
         .includes(needle);
     });
-  }, [allProjects, category, query]);
+  }, [allProjects, category, query, inStockOnly]);
 
   const { items, totalPages, hasMore } = useMemo(() => paginate(filtered, page), [filtered, page]);
 
@@ -107,8 +109,8 @@ export default function ProjectsCatalog({
       </div>
 
       {/* Category selector — the SIX canonical project categories. */}
-      {categoryOptions.length > 0 && (
-        <div className="mt-4">
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        {categoryOptions.length > 0 && (
           <label className="flex min-h-[44px] w-full items-center gap-2 rounded-full border border-line bg-white px-4 text-sm font-bold text-muted shadow-sm sm:w-64">
             <span className="sr-only">Filter projects by category</span>
             <select
@@ -120,17 +122,36 @@ export default function ProjectsCatalog({
               aria-label="Filter projects by category"
               className="w-full bg-transparent py-2 text-sm font-bold outline-none"
             >
-              <option value="All">All categories ({filtered.length})</option>
+              <option value="All">All categories</option>
               {categoryOptions.map((item) => (
                 <option key={item.id} value={item.name}>
-                  {item.name} ({allProjects.filter((p) => p.project_category === item.name).length})
-                  {item.comingSoon ? " — coming soon" : ""}
+                  {item.name} (
+                  {
+                    allProjects.filter(
+                      (p) =>
+                        p.project_category === item.name && (!inStockOnly || (p.stock ?? 0) > 0)
+                    ).length
+                  }
+                  ){item.comingSoon ? " — coming soon" : ""}
                 </option>
               ))}
             </select>
           </label>
-        </div>
-      )}
+        )}
+        <label className="flex min-h-[44px] cursor-pointer items-center gap-2 rounded-full border border-line bg-white px-4 py-2 text-sm font-bold text-muted shadow-sm">
+          <input
+            type="checkbox"
+            checked={inStockOnly}
+            onChange={(e) => {
+              setInStockOnly(e.target.checked);
+              setPage(1);
+            }}
+            aria-label="Show in-stock projects only"
+            className="h-4 w-4 accent-navy"
+          />
+          In stock only
+        </label>
+      </div>
 
       {/* 2 per row on phones (owner: match the app), up to 5 at xl. */}
       <div className="mt-5 grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
