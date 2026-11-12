@@ -51,6 +51,47 @@ const statusStyles: Record<string, string> = {
   cancelled: "bg-red-100 text-red-700",
 };
 
+const ORDER_STEPS = ["pending", "paid", "fulfilled"] as const;
+
+function OrderStatusTimeline({ status }: { status: string }) {
+  if (status === "cancelled") {
+    return (
+      <p className="mt-3 text-xs font-bold text-red-700">
+        This order was cancelled. Contact support if you need help.
+      </p>
+    );
+  }
+  const currentIndex = Math.max(0, ORDER_STEPS.indexOf(status as (typeof ORDER_STEPS)[number]));
+  const labels: Record<string, string> = {
+    pending: "Placed",
+    paid: "Paid",
+    fulfilled: "Fulfilled",
+  };
+  return (
+    <ol className="mt-3 grid grid-cols-3 gap-2" aria-label="Order progress">
+      {ORDER_STEPS.map((step, index) => {
+        const done = index <= currentIndex;
+        const current = index === currentIndex;
+        return (
+          <li key={step} className="min-w-0">
+            <div
+              className={`h-1.5 rounded-full ${done ? "bg-navy" : "bg-slate-200"}`}
+              aria-hidden="true"
+            />
+            <p
+              className={`mt-1 text-[10px] font-black uppercase tracking-wide ${
+                current ? "text-navy" : done ? "text-slate-700" : "text-slate-400"
+              }`}
+            >
+              {labels[step]}
+            </p>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
 function SectionCard({ title, id, children }: { title: string; id?: string; children: ReactNode }) {
   return (
     <section id={id} className="rounded-2xl border border-line bg-white p-6 shadow-card sm:p-8">
@@ -312,6 +353,7 @@ export default function AccountPanel() {
                       <span className="font-black text-ink">{formatNPR(order.totalNpr)}</span>
                     </div>
                   </div>
+                  <OrderStatusTimeline status={order.status} />
                   <ul className="mt-2 space-y-1 text-xs leading-5 text-slate-600">
                     {order.items.map((item) => (
                       <li key={`${order.id}-${item.name}`} className="truncate">
