@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { inputClass } from "../../lib/styles";
+import { isAdminRole, isOwnerRole } from "../../lib/roles";
 import type { UserPage, ManagedUser } from "./admin-types";
 import { PAGE_SIZE } from "./admin-types";
 import { Pager } from "./admin-helpers";
@@ -233,7 +234,7 @@ function UserProjectProfiles({
   );
 }
 
-export default function AdminUsers({ setMessage, canDelete, currentRole: _currentRole }: Props) {
+export default function AdminUsers({ setMessage, canDelete, currentRole }: Props) {
   const [userData, setUserData] = useState<
     UserPage & { users: (ManagedUser & { tier?: string })[] }
   >({
@@ -245,11 +246,74 @@ export default function AdminUsers({ setMessage, canDelete, currentRole: _curren
   const userQuery = "";
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [search, setSearch] = useState("");
+  const [busyUserId, setBusyUserId] = useState("");
+  // Same role matrix as the app's admin Users tab:
+  //   staff  -> view + tier
+  //   admin  -> + change role (customer/staff/admin)
+  //   owner  -> + delete the account
+  const canEditRoles = isAdminRole(currentRole);
+  const canDeleteUser = isOwnerRole(currentRole);
 
   useEffect(() => {
     void loadUsers(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  async function patchUser(
+    body: Record<string, unknown>,
+    method: "PATCH" | "PUT" | "DELETE",
+    okMessage: string
+  ): Promise<boolean> {
+    const response = await fetch("/api/admin/users", {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      setMessage(result.error || "Could not update the user.");
+      return false;
+    }
+    setMessage(okMessage);
+    await loadUsers(userData.page || 1);
+    return true;
+  }
+
+  async function changeRole(userId: string, role: "customer" | "staff" | "admin") {
+    if (busyUserId) return;
+    setBusyUserId(userId);
+    try {
+      await patchUser({ userId, role }, "PATCH", "Role updated.");
+    } finally {
+      setBusyUserId("");
+    }
+  }
+
+  async function changeTier(userId: string, tier: "free" | "pro") {
+    if (busyUserId) return;
+    setBusyUserId(userId);
+    try {
+      await patchUser({ userId, tier }, "PUT", "Tier updated.");
+    } finally {
+      setBusyUserId("");
+    }
+  }
+
+  async function deleteAccount(userId: string, email: string) {
+    if (busyUserId) return;
+    if (
+      !window.confirm(
+        `Permanently delete ${email}? This removes the account and all related data. This cannot be undone.`
+      )
+    )
+      return;
+    setBusyUserId(userId);
+    try {
+      await patchUser({ userId }, "DELETE", "User deleted.");
+    } finally {
+      setBusyUserId("");
+    }
+  }
 
   async function loadUsers(page: number) {
     setLoaded(false);
@@ -345,6 +409,63 @@ export default function AdminUsers({ setMessage, canDelete, currentRole: _curren
                 >
                   {expanded[user.id] ? "Hide projects" : "Show projects"}
                 </button>
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span
+                  className={`rounded px-2 py-0.5 text-[10px] font-black uppercase ${
+                    user.role === "owner"
+                      ? "bg-ink text-white"
+                      : user.role === "admin"
+                        ? "bg-amber-100 text-amber-700"
+                        : user.role === "staff"
+                          ? "bg-navy text-white"
+                          : "bg-sky text-navy"
+                  }`}
+                >
+                  {user.role || "customer"}
+                </span>
+                <span
+                  className={`rounded px-2 py-0.5 text-[10px] font-black uppercase ${
+                    user.tier === "pro" ? "bg-emerald-100 text-emerald-700" : "bg-mist text-muted"
+                  }`}
+                >
+                  {user.tier || "free"}
+                </span>
+                {canEditRoles && user.role !== "owner" && (
+                  <label className="text-[11px] font-bold text-slate-500">
+                    Role{" "}
+                    <select
+                      value={user.role || "customer"}
+                      disabled={busyUserId === user.id}
+                      onChange={(e) =>
+                        void changeRole(user.id, e.target.value as "customer" | "staff" | "admin")
+                      }
+                      className="ml-1 rounded-lg border border-line bg-white px-2 py-1 text-[11px] font-bold text-ink"
+                    >
+                      <option value="customer">Customer</option>
+                      <option value="staff">Staff</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </label>
+                )}
+                <button
+                  type="button"
+                  disabled={busyUserId === user.id}
+                  onClick={() => void changeTier(user.id, user.tier === "pro" ? "free" : "pro")}
+                  className="rounded-full border border-line px-3 py-1 text-[11px] font-bold text-navy transition hover:border-navy disabled:opacity-60"
+                >
+                  {user.tier === "pro" ? "Make free" : "Make pro"}
+                </button>
+                {canDeleteUser && user.role !== "owner" && (
+                  <button
+                    type="button"
+                    disabled={busyUserId === user.id}
+                    onClick={() => void deleteAccount(user.id, user.email)}
+                    className="rounded-full border border-red-200 px-3 py-1 text-[11px] font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-60"
+                  >
+                    Delete account
+                  </button>
+                )}
               </div>
               {expanded[user.id] && (
                 <UserProjectProfiles

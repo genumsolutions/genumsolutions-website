@@ -55,7 +55,10 @@ export async function POST(request: Request) {
     }
 
     // Keep only one active session for this account across all devices/browsers.
-    await enforceSingleSession(data.user.id);
+    // Fire-and-forget: this costs one list plus N deletes against GoTrue and
+    // never affects the cookies in this response, so awaiting it only made
+    // sign-in slower.
+    void enforceSingleSession(data.user.id);
 
     return NextResponse.json({ ok: true, role });
   } catch {

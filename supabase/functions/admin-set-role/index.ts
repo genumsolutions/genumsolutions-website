@@ -14,9 +14,11 @@
 //
 // Body (JSON): { userId, role?: 'customer' | 'staff' | 'admin' | 'owner', tier?: 'free' | 'pro' }
 //   - At least one of role/tier must be present (both may be sent).
-// Auth: the caller's bearer token must resolve to a profile with
-//       role 'admin' or 'owner'. An admin can never demote THEMSELVES
-//       (lockout guard). Every change is logged to activity_log.
+// Auth: the caller's bearer token must resolve to a staff/admin/owner
+//       profile. Role changes need admin+ (same as the website PATCH);
+//       tier-only changes need staff+ (same as the website PUT). An admin
+//       can never demote THEMSELVES (lockout guard). Every change is
+//       logged to activity_log.
 //
 // Deploy (dashboard or CLI):
 //   supabase functions deploy admin-set-role
@@ -68,9 +70,9 @@ serve(async (req) => {
       .select("role")
       .eq("id", callerId)
       .maybeSingle();
-    if (callerProfile?.role !== "admin" && callerProfile?.role !== "owner") {
-      return json({ error: "Only admins can change roles." }, 403);
-    }
+    const callerRole = callerProfile?.role;
+    const isStaff = callerRole === "staff" || callerRole === "admin" || callerRole === "owner";
+    const isAdmin = callerRole === "admin" || callerRole === "owner";
 
     // 2) Validate the request. role and tier are both optional but at least
     //    one must be present (the app sends whichever its toggle changed).
@@ -78,6 +80,13 @@ serve(async (req) => {
     const userId = String(body?.userId || "");
     const role = body?.role ?? null;
     const tier = body?.tier ?? null;
+
+    // Mirror the website /api/admin/users gates: role changes are admin+,
+    // tier-only changes are staff+, so both clients behave identically.
+    if (!isStaff) return json({ error: "Only staff can change tiers." }, 403);
+    if (!isAdmin && role !== null) {
+      return json({ error: "Only admins can change roles." }, 403);
+    }
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) {
       return json({ error: "A valid user id is required." }, 400);
     }

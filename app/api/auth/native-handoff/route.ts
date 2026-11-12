@@ -58,7 +58,8 @@ export async function POST(request: NextRequest) {
     }
 
     // This native sign-in becomes the account's one active session.
-    await enforceSingleSession(user.id);
+    // Non-blocking: the app is waiting on this response to finish sign-in.
+    void enforceSingleSession(user.id);
 
     let name = user.email.split("@")[0];
     let role: string = isOwnerEmail(user.email) ? "owner" : "customer";

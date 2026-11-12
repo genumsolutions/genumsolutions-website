@@ -193,11 +193,9 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
         setBusy(false);
         return;
       }
-      try {
-        await mergeLocalCart();
-      } catch {
-        /* non-blocking: proceed even if cart merge fails */
-      }
+      // Fire-and-forget: the cart provider reconciles on the next page load,
+      // so waiting here only delayed the redirect.
+      void mergeLocalCart();
       // U-24 (2026-09-24): staff/admin/owner all land on the admin home.
       router.replace(isStaffRole(result.role) ? "/admin" : "/account");
       router.refresh();
