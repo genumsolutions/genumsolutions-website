@@ -117,14 +117,18 @@ select count(*) from pg_tables p
 -- guard triggers must exist on the LIVE database
 select tgname, tgrelid::regclass::text as on_table
   from pg_trigger where tgname in ('profiles_protect_role', 'profiles_protect_tier',
-                                   'protect_owner_account', 'block_new_google_account')
+                                   'protect_owner_account')
    and not tgisinternal;
+
+-- and confirm the retired Google guard is GONE
+select count(*) from pg_trigger where tgname = 'block_new_google_account';
 ```
 
 Behavioural checks (the ones that actually caught the bug):
 
 - owner account delete → `BLOCKED: The owner account cannot be deleted.`, `auth.users` count unchanged
-- brand-new Google identity → `No account found. Create an account before signing in with Google.`
+- brand-new Google identity → account is created and signed in (Google is a registration path);
+  the row must still exist afterwards, never created-then-deleted
 - anon `GET /rest/v1/profiles` → `[]` (RLS on, no policy for anon)
 - admin JWT → sees all profiles; customer JWT → only their own
 
@@ -136,8 +140,9 @@ Behavioural checks (the ones that actually caught the bug):
   admins (service role / `postgres`) can change either; a user cannot self-promote.
 - `protect_owner_account` `BEFORE DELETE` on `auth.users` — the owner row can never be deleted, from
   any client or edge function.
-- `block_new_google_account` `BEFORE INSERT` on `auth.users` — Google sign-in cannot create an
-  account; an existing account signs in normally (no insert), email signup is untouched.
+- **No `block_new_google_account` trigger.** It was removed on 2026-11-12 because it refused every
+  brand-new Google row, which broke Google registration. `schema.sql` keeps the `drop trigger` /
+  `drop function` statements so an old database converges — do **not** re-add the guard.
 - RLS on 38 of 39 tables with the canonical `is_staff()` / `is_admin()` policies.
 - The `product-images` storage bucket + its policies.
 - `public.is_admin()` / `public.is_staff()` helpers — every policy depends on them, so if those are
@@ -165,8 +170,9 @@ Behavioural checks (the ones that actually caught the bug):
 After the 2026-11-07 project move, only 6 of 39 tables existed and `profiles.tier` was absent, which
 is what hid staff/admin access. Applied the full `schema.sql` via Path B: **489 statements applied,
 0 failures** (after resuming past a 429 window), live database now at **39 tables**, `profiles` 3
-rows, `products` 17, `categories` 11, `services` 6. Added `protect_owner_account` and
-`block_new_google_account` to `schema.sql` in the same pass so a future re-provision keeps them.
+rows, `products` 17, `categories` 11, `services` 6. Added `protect_owner_account` to `schema.sql`
+in the same pass so a future re-provision keeps it. (`block_new_google_account` was added in that
+same pass and removed later the same day — see `TRACKS/AUTH-REGISTRATION.md`; its drops remain.)
 `npm run db:drift` was written here and validated in both directions against
 `information_schema.columns` (39/39 tables, 0 columns unparsed) and against deliberately broken
 selects (missing column → `42703`, missing table → `PGRST205`). It was later extended to verify RLS,

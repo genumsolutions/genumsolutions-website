@@ -9,6 +9,20 @@ restore, NOT a mirror, so it will fall behind `main` as new work lands — re-sy
 `git push origin main:dev` whenever the owner wants a fresh restore point).
 CI: `ci.yml` on `main` · `sync-app-fallback.yml` on `main` + 6h cron.
 
+> • **2026-11-12 (late) — GOOGLE SIGN-UP: REMOVED THE CREATE-THEN-DELETE GUARD.** Reported symptom:
+> a new account existed for a few minutes, then vanished, sign-in failed, and the customer was asked to
+> sign up again. Cause: "Google sign-in must never register" was enforced _after_ Supabase had created the
+> row — the web callback deleted any user younger than 5 minutes unless a `genum_google_intent` cookie said
+> signup, and the app deleted its own fresh row through `/api/auth/google/fresh`. The intent hint is
+> best-effort (blocked/expired cookie, host differing from `NEXT_PUBLIC_SITE_URL`, direct OAuth URL, app
+> online/offline), so genuine Google registrations were removed. **Google is now one path on both surfaces:
+> a verified Google identity signs in, and registers if the address has no account.** Removed the callback
+> delete + `no_account` message, the intent cookie, the whole `app/api/auth/google/fresh` route, the app's
+> `discardUnregisteredGoogleAccount`/`isRejectingGoogleSignIn` machinery and its AppContext session gate.
+> `tests/auth-registration.test.ts` now pins "no deleteUser/no_account/fresh route" instead of the guard.
+> Docs corrected in `TRACKS/AUTH-REGISTRATION.md`, and `TRACKS/DB-PROVISIONING.md` no longer tells a future
+> re-provision to re-add `block_new_google_account` (the landmine behind the earlier outage).
+>
 > • **2026-11-12 — FREE-TIER GUARD + CI SKIP INSTEAD OF RED X.** Everything runs on free plans, so
 > `npm run limits` (`scripts/free-tier-usage.mjs`) now prints live usage against the Supabase Free ceilings:
 > DB **13.9 MB / 500 MB**, storage **161.9 MB / 1 GB** (`app-releases` 159 MB — four ~40 MB APKs — plus

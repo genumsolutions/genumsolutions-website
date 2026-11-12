@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient, createServiceClient } from "../../../lib/supabase/server";
+import { createClient } from "../../../lib/supabase/server";
 import { enforceSingleSession } from "../../../lib/single-session";
 
 function redirectWithCookies(url: string) {
@@ -13,39 +13,20 @@ function redirectWithCookies(url: string) {
   return response;
 }
 
-/**
- * A Google trip started from the SIGN-IN form must never create an account.
- * Supabase cannot attach metadata to a browser OAuth sign-in, so the intent is
- * carried in a cookie and the brand-new row is removed here instead. Existing
- * accounts are unaffected (their created_at is older than the window), and
- * "Sign up with Google" carries intent=signup so it may create one.
- */
-async function rejectUnregisteredGoogleUser(
-  userId: string,
-  createdAt: string | undefined,
-  intent: string
-): Promise<boolean> {
-  if (intent === "signup") return false;
-  const age = Date.now() - new Date(createdAt || 0).getTime();
-  if (!Number.isFinite(age) || age > 5 * 60_000) return false;
-  try {
-    await createServiceClient().auth.admin.deleteUser(userId);
-    return true;
-  } catch {
-    // If the delete fails the row stays, but the visitor is still told to
-    // register - never hand out a session for an unregistered Google sign-in.
-    return true;
-  }
-}
-
 // Supabase redirects here after Google OAuth sign-in and password-recovery emails.
 // Handles the PKCE ?code= flow and the legacy token_hash email-link format.
+//
+// Google is a first-class registration path: an OAuth sign-in for an address
+// with no row yet creates the account and signs it in. The site must never
+// create-then-delete a "fresh" account to enforce sign-in-only semantics: that
+// guard silently removed real sign-ups whenever its intent hint was missing
+// (cookie dropped, different host, expired trip), and the account disappeared
+// minutes after registration.
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const tokenHash = searchParams.get("token_hash");
   const type = searchParams.get("type");
-  const googleIntent = request.cookies.get("genum_google_intent")?.value || "signin";
 
   // GoTrue can send failures as query params (error + error_description).
   // Forward both to the login page so the real reason is visible instead of
@@ -55,9 +36,7 @@ export async function GET(request: NextRequest) {
     const detail = searchParams.get("error_description") || searchParams.get("error_code") || "";
     console.error("[auth/callback] OAuth error from provider:", oauthError, detail);
     const params = new URLSearchParams({ error: "google", detail });
-    const res = redirectWithCookies(`${origin}/login?${params.toString()}`);
-    res.cookies.delete("genum_google_intent");
-    return res;
+    return redirectWithCookies(`${origin}/login?${params.toString()}`);
   }
 
   // Only allow relative next paths to avoid open redirects.
@@ -84,21 +63,8 @@ export async function GET(request: NextRequest) {
     if (code) {
       const { data, error } = await supabase.auth.exchangeCodeForSession(code);
       if (!error) {
-        if (
-          data.user?.id &&
-          (await rejectUnregisteredGoogleUser(data.user.id, data.user.created_at, googleIntent))
-        ) {
-          // Drop the session cookies exchangeCodeForSession just wrote so the
-          // rejected Google sign-in never looks logged in, even briefly.
-          await supabase.auth.signOut().catch(() => {});
-          const refused = redirectWithCookies(`${origin}/login?error=no_account`);
-          refused.cookies.delete("genum_google_intent");
-          return refused;
-        }
         if (data.user?.id) void enforceSingleSession(data.user.id);
-        const done = redirectWithCookies(`${origin}${next}`);
-        done.cookies.delete("genum_google_intent");
-        return done;
+        return redirectWithCookies(`${origin}${next}`);
       }
       console.error(
         "[auth/callback] code exchange failed:",

@@ -16,8 +16,6 @@ const callbackErrors: Record<string, string> = {
   link: "That email link is invalid, expired, or already used. Start again to get a fresh one.",
   google: "Google sign-in failed or was cancelled.",
   config: "Google sign-in is not configured yet. Use email and password for now.",
-  no_account:
-    "No account found for that Google address. Sign up first, then use Google to sign in.",
 };
 
 // Supabase can send failures as URL hash params (e.g.
@@ -146,13 +144,11 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
     const problem = new URLSearchParams(window.location.search).get("error");
     if (supabaseError?.description) {
       const prefix =
-        problem === "no_account"
-          ? callbackErrors.no_account
-          : problem === "config"
-            ? callbackErrors.config
-            : problem === "google" || supabaseError.code === "google"
-              ? callbackErrors.google
-              : "Sign-in failed.";
+        problem === "config"
+          ? callbackErrors.config
+          : problem === "google" || supabaseError.code === "google"
+            ? callbackErrors.google
+            : "Sign-in failed.";
       setError(`${prefix} Reason: ${supabaseError.description}`);
     } else if (problem && callbackErrors[problem]) {
       setError(callbackErrors[problem]);
@@ -498,7 +494,7 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
                   <span className="h-px flex-1 bg-line" />
                 </div>
                 <a
-                  href={mode === "signup" ? "/api/auth/google?intent=signup" : "/api/auth/google"}
+                  href="/api/auth/google"
                   onClick={() => setGoogleBusy(true)}
                   aria-disabled={googleBusy}
                   className="flex w-full items-center justify-center gap-3 rounded-lg border-2 border-line bg-white px-5 py-3.5 text-sm font-bold text-ink transition hover:border-navy hover:bg-navy-light"
