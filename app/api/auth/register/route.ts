@@ -11,7 +11,7 @@ export async function POST(request: Request) {
   const limit = checkRateLimit(`register:${clientIp(request)}`, 5, 60_000);
   if (!limit.allowed) {
     return NextResponse.json(
-      { error: "Too many sign-up attempts. Please wait a minute and try again." },
+      { error: "Too many registration attempts. Please wait a minute and try again." },
       { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } }
     );
   }
@@ -30,11 +30,18 @@ export async function POST(request: Request) {
     );
   }
 
+  // Registration is the one flow that must prove the address is real, so the
+  // confirmation link returns to this host's callback (localhost rounds-trip
+  // locally) and lands on the account page once the address is verified.
+  const origin = new URL(request.url).origin;
   try {
     const { data, error } = await createClient().auth.signUp({
       email,
       password,
-      options: { data: { name } },
+      options: {
+        data: { name },
+        emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent("/account?welcome=1")}`,
+      },
     });
 
     if (error) {
@@ -42,14 +49,15 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error: exists
-            ? "An account with that email already exists."
-            : "Could not create the account. Try again.",
+            ? "That email is already registered. Sign in instead."
+            : "Could not register. Try again.",
         },
         { status: exists ? 409 : 500 }
       );
     }
-    // Email confirmation is disabled in this Supabase project, so a session is returned
-    // immediately. If confirmation is ever enabled, tell the UI to show the notice.
+    // With email confirmation on (the project default for a real store), signUp
+    // returns no session: the UI shows the "check your email" notice and offers
+    // a resend instead of pretending the user is signed in.
     if (!data.session) return NextResponse.json({ ok: true, needsEmailConfirmation: true });
     if (data.user?.id) await enforceSingleSession(data.user.id);
     return NextResponse.json({ ok: true });

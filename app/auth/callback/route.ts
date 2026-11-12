@@ -13,17 +13,10 @@ export async function GET(request: NextRequest) {
   // GoTrue can send failures as query params (error + error_description).
   // Forward both to the login page so the real reason is visible instead of
   // a generic "email link invalid" message.
-  //
-  // A brand-new Google user is refused by the block_new_google_account DB
-  // trigger; GoTrue surfaces that as "Database error saving new user". Show
-  // the real reason (no account yet) instead of a generic Google failure.
-  const noAccount = (detail: string) =>
-    /database error saving new user|signups not allowed/i.test(detail || "");
   const oauthError = searchParams.get("error");
   if (oauthError && !code && !tokenHash) {
     const detail = searchParams.get("error_description") || searchParams.get("error_code") || "";
     console.error("[auth/callback] OAuth error from provider:", oauthError, detail);
-    if (noAccount(detail)) return NextResponse.redirect(`${origin}/login?error=no_account`);
     const params = new URLSearchParams({ error: "google", detail });
     return NextResponse.redirect(`${origin}/login?${params.toString()}`);
   }
@@ -37,9 +30,13 @@ export async function GET(request: NextRequest) {
   } catch {
     // Malformed encoding: keep raw, validation below will reject it.
   }
-  // OAuth (code) sign-ins without an explicit next land on /account;
-  // email-link flows (token_hash) keep /reset-password as their default.
-  const fallback = code ? "/account" : "/reset-password";
+  // Landing by flow: OAuth and a confirmed registration land on /account (the
+  // registration email is the first sign-in, so it must not dead-end on a
+  // password-reset form); password recovery still lands on /reset-password.
+  const fallback =
+    code || type === "signup" || type === "invite" || type === "magiclink"
+      ? "/account?welcome=1"
+      : "/reset-password";
   if (!searchParams.get("next")) rawNext = fallback;
   const next = /^\/[^/\\]/.test(rawNext) ? rawNext : fallback;
 
@@ -58,7 +55,6 @@ export async function GET(request: NextRequest) {
         error?.status
       );
       const detail = error?.message || "";
-      if (noAccount(detail)) return NextResponse.redirect(`${origin}/login?error=no_account`);
       const params = new URLSearchParams({ error: "google", detail });
       return NextResponse.redirect(`${origin}/login?${params.toString()}`);
     } else if (

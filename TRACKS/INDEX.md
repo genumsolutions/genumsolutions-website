@@ -9,6 +9,19 @@ restore, NOT a mirror, so it will fall behind `main` as new work lands — re-sy
 `git push origin main:dev` whenever the owner wants a fresh restore point).
 CI: `ci.yml` on `main` · `sync-app-fallback.yml` on `main` + 6h cron.
 
+> • **2026-11-12 — REGISTRATION: GOOGLE ALLOWED, "REGISTER" COPY, EMAIL CONFIRMATION.** Google registration
+> was broken by the `block_new_google_account` trigger added hours earlier (every new Google row raised "No
+> account found", which reads like a login failure), so the trigger + function were dropped from both the live
+> project and `schema.sql` (the drops stay, so a re-provision converges) and the `no_account` message is gone
+> from the website callback/AuthPanel and the app's `mapAuthError`. Signup copy is now **Register** on both
+> surfaces (`New here? Register`, `Register your account.`), with the Google button labelled by intent:
+> **Register with Google** on the register form, **Continue with Google** on the sign-in form. First
+> registration now requires a confirmed address: `mailer_autoconfirm` is **false** (was true, so no
+> confirmation mail was ever sent), `register` sends `emailRedirectTo` to `/auth/callback?next=/account?welcome=1`,
+> the callback lands on `/account` with an "Email confirmed" notice (recovery still goes to `/reset-password`),
+> and both surfaces offer **Resend confirmation email** via the new `/api/auth/resend` route. Google rows arrive
+> with `email_verified = true`, so they are never asked to confirm again. Documentation: **`TRACKS/AUTH-REGISTRATION.md`**.
+
 > • **2026-11-12 — SHARED DATABASE RE-PROVISIONED (6 → 39 TABLES) + DRIFT GUARD.** The 2026-11-07 move
 > left only six tables, so `profiles.tier` did not exist and the combined `select(role, tier)` failed as
 > a whole: every staff/admin profile read returned null, role fell back to `customer` (no Admin entry in

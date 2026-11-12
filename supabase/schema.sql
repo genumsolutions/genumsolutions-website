@@ -111,25 +111,16 @@ create trigger protect_owner_account
 before delete on auth.users
 for each row execute function public.protect_owner_account();
 
--- Google is sign-in only (owner request, 2026-11-12): a brand-new Google
--- account is refused before any profile row exists, so tapping "Continue with
--- Google" can never silently create an account. Existing Google accounts are
--- NOT affected - they already have an auth.users row, so no insert happens.
--- Email/password signup is unaffected (provider = 'email').
-create or replace function public.block_new_google_account()
-returns trigger security definer set search_path = public as $$
-begin
-  if coalesce(new.raw_app_meta_data->>'provider', '') = 'google' then
-    raise exception 'No account found. Create an account before signing in with Google.';
-  end if;
-  return new;
-end;
-$$ language plpgsql;
-
+-- Google registration is allowed (revised 2026-11-12). The earlier
+-- "sign-in only" guard (block_new_google_account) refused every brand-new
+-- Google row, so "Register with Google" failed with the same "no account"
+-- message a failed sign-in gives - indistinguishable from an outage. Google
+-- is now a first-class registration path (an id-token/OAuth row arrives with
+-- email_verified = true, so it needs no confirmation email); email/password
+-- registration still requires confirmation. Drop the old guard here so a
+-- re-provision of an existing database converges on the same behaviour.
 drop trigger if exists block_new_google_account on auth.users;
-create trigger block_new_google_account
-before insert on auth.users
-for each row execute function public.block_new_google_account();
+drop function if exists public.block_new_google_account();
 
 -- ===== PRODUCTS =====
 create table if not exists public.products (

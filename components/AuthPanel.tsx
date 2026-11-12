@@ -15,8 +15,6 @@ const callbackErrors: Record<string, string> = {
   link: "That email link is invalid, expired, or already used. Start again to get a fresh one.",
   google: "Google sign-in failed or was cancelled.",
   config: "Google sign-in is not configured yet. Use email and password for now.",
-  no_account:
-    "No account found for that Google address. Create an account first, then sign in with Google.",
 };
 
 // Supabase can send failures as URL hash params (e.g.
@@ -104,6 +102,9 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
   const [mode, setMode] = useState<Mode>(initialMode);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  // Set when registration needs a confirmed email address, so the sign-in
+  // notice can offer a resend instead of leaving the user stuck.
+  const [pendingEmail, setPendingEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
@@ -143,13 +144,11 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
     const problem = new URLSearchParams(window.location.search).get("error");
     if (supabaseError?.description) {
       const prefix =
-        problem === "no_account"
-          ? callbackErrors.no_account
-          : problem === "config"
-            ? callbackErrors.config
-            : problem === "google" || supabaseError.code === "google"
-              ? callbackErrors.google
-              : "Sign-in failed.";
+        problem === "config"
+          ? callbackErrors.config
+          : problem === "google" || supabaseError.code === "google"
+            ? callbackErrors.google
+            : "Sign-in failed.";
       setError(`${prefix} Reason: ${supabaseError.description}`);
     } else if (problem && callbackErrors[problem]) {
       setError(callbackErrors[problem]);
@@ -214,8 +213,9 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
         return;
       }
       if (result.needsEmailConfirmation) {
+        setPendingEmail(String(form.email || ""));
         switchMode("signin");
-        setNotice("Account created. Check your email and confirm your address, then sign in.");
+        setNotice("Registered. Check your email and confirm your address, then sign in.");
         setBusy(false);
         return;
       }
@@ -231,6 +231,29 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
     }
   }
 
+  // First registration needs a confirmed email; without this the "check your
+  // email" notice was a dead end when the message never arrived.
+  async function resendConfirmation() {
+    if (!pendingEmail) return;
+    setBusy(true);
+    setError("");
+    try {
+      const response = await fetch("/api/auth/resend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: pendingEmail }),
+      });
+      if (!response.ok) throw new Error("resend failed");
+      setNotice(
+        `Confirmation email sent to ${pendingEmail}. If it is not there in a minute, check spam.`
+      );
+    } catch {
+      setNotice("Could not resend just now. Please try again in a few minutes.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const copy: Record<Mode, { title: string; body: string; button: string }> = {
     signin: {
       title: "Welcome back.",
@@ -238,9 +261,9 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
       button: "Sign in",
     },
     signup: {
-      title: "Create your account.",
-      body: "One account for orders, saved builds, and support - free, and ready in under a minute.",
-      button: "Create account",
+      title: "Register your account.",
+      body: "Register once for orders, saved builds, and support - free, and ready in under a minute.",
+      button: "Register",
     },
     forgot: {
       title: "Reset your password.",
@@ -318,12 +341,22 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
               </p>
             )}
             {notice && (
-              <p
+              <div
                 role="status"
                 className="mt-5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700"
               >
-                {notice}
-              </p>
+                <p>{notice}</p>
+                {pendingEmail && (
+                  <button
+                    type="button"
+                    onClick={resendConfirmation}
+                    disabled={busy}
+                    className="mt-2 block text-xs font-black uppercase tracking-widest underline transition hover:opacity-70 disabled:opacity-60"
+                  >
+                    Resend confirmation email
+                  </button>
+                )}
+              </div>
             )}
 
             <form onSubmit={submit}>
@@ -406,7 +439,11 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
                   className="flex w-full items-center justify-center gap-3 rounded-lg border-2 border-line bg-white px-5 py-3.5 text-sm font-bold text-ink transition hover:border-navy hover:bg-navy-light"
                 >
                   {GoogleIcon}
-                  {googleBusy ? "Connecting…" : "Continue with Google"}
+                  {googleBusy
+                    ? "Connecting…"
+                    : mode === "signup"
+                      ? "Register with Google"
+                      : "Continue with Google"}
                 </a>
               </>
             )}
@@ -418,7 +455,7 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
                   onClick={() => switchMode("signup")}
                   className="block text-sm font-semibold text-navy transition hover:text-navy-dark"
                 >
-                  New here? Create a customer account
+                  New here? Register
                 </button>
               )}
               {mode !== "signin" && (

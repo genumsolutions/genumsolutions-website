@@ -69,8 +69,18 @@ export default function AccountPanel() {
   const { clear } = useCart();
   const [busy, setBusy] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
+  // A registration confirmation lands here with ?welcome=1, so the customer sees
+  // that the email link worked instead of an unexplained account page.
+  const [justConfirmed, setJustConfirmed] = useState(false);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("welcome") === "1") {
+      setJustConfirmed(true);
+      params.delete("welcome");
+      const query = params.toString();
+      window.history.replaceState({}, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
+    }
     // R6 fix: probe the session first — /api/orders 401s for guests, which
     // spammed the browser console on every signed-out /account visit (and
     // failed the scheduled UX audit's console-error check). Guests render the
@@ -161,6 +171,14 @@ export default function AccountPanel() {
   return (
     <main className="grid-paper min-h-[70vh]">
       <div className="mx-auto max-w-5xl space-y-6 px-5 py-12 lg:px-8">
+        {justConfirmed && (
+          <p
+            role="status"
+            className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700"
+          >
+            Email confirmed - your registration is complete.
+          </p>
+        )}
         <header className="border-t-4 border-navy bg-white p-6 sm:p-8">
           <div className="flex flex-wrap items-center justify-between gap-5">
             <div className="flex items-center gap-4">
