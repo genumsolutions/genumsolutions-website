@@ -2771,3 +2771,22 @@ comment on policy "staff read user activity log" on public.user_activity_log is
   'Admins read every user''s activity log from the app admin panel.';
 comment on policy "staff read user profile entries" on public.user_profile_entries is
   'Admins read every user''s profile entries from the app admin panel.';
+
+-- ===== AUTH FAILURE TRACKING (2026-11-12) =====
+-- "Suspicious sign-in" is decided server-side: three failed password attempts
+-- for the same address inside 15 minutes makes the next attempt require an
+-- emailed code (see app/api/auth/login/route.ts). Counters live in the
+-- database because serverless instances do not share memory.
+-- RLS is enabled with NO policies on purpose: only the service role reads or
+-- writes this table, and no client can enumerate other people's attempts.
+create table if not exists public.auth_failures (
+  id bigint generated always as identity primary key,
+  email text not null,
+  ip text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists auth_failures_email_time_idx
+  on public.auth_failures (email, created_at desc);
+
+alter table public.auth_failures enable row level security;

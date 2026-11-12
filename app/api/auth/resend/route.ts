@@ -25,14 +25,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
 
   const origin = new URL(request.url).origin;
+  const purpose = body.purpose === "signin" ? "signin" : "signup";
+  const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent("/account?welcome=1")}`;
   try {
-    await createClient().auth.resend({
-      type: "signup",
-      email,
-      options: {
-        emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent("/account?welcome=1")}`,
-      },
-    });
+    if (purpose === "signin") {
+      // Suspicious sign-in: re-send the one-time sign-in email. Never creates an
+      // account (shouldCreateUser:false), so it cannot be used to probe for one.
+      await createClient().auth.signInWithOtp({
+        email,
+        options: { shouldCreateUser: false, emailRedirectTo: redirectTo },
+      });
+    } else {
+      await createClient().auth.resend({
+        type: "signup",
+        email,
+        options: { emailRedirectTo: redirectTo },
+      });
+    }
   } catch {
     // Swallow provider errors - the generic ok below covers them.
   }

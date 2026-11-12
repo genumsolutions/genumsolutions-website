@@ -1,8 +1,26 @@
 import { NextResponse } from "next/server";
-import { createClient, supabaseConfigured } from "../../../../lib/supabase/server";
-import { isOwnerEmail, isValidAdminRole } from "../../../../lib/roles";
+import {
+  createClient,
+  createServiceClient,
+  supabaseConfigured,
+} from "../../../../lib/supabase/server";
+import { resolveSignInRole } from "../../../../lib/auth-role";
 import { checkRateLimit, clientIp } from "../../../../lib/rate-limit";
 import { enforceSingleSession } from "../../../../lib/single-session";
+
+// Attempts inside this window make an address "suspicious": from then on a
+// password alone is not enough and the visitor has to prove the mailbox.
+const SUSPICIOUS_WINDOW_MS = 15 * 60_000;
+const SUSPICIOUS_ATTEMPTS = 3;
+
+/** Service-role client for the failure counter, or null when unavailable. */
+function counter() {
+  try {
+    return createServiceClient();
+  } catch {
+    return null;
+  }
+}
 
 // Canonical email + password sign-in. Returns the caller's role so the UI
 // can route admins to /admin and customers to /account.
@@ -31,35 +49,79 @@ export async function POST(request: Request) {
 
   try {
     const supabase = createClient();
+    const db = counter();
+
+    // Suspicion is counted in the database, not in memory: serverless instances
+    // do not share state, so an in-memory counter would forget an attacker as
+    // soon as the next instance served the request.
+    let failures = 0;
+    if (db) {
+      try {
+        const { count } = await db
+          .from("auth_failures")
+          .select("*", { count: "exact", head: true })
+          .eq("email", email)
+          .gte("created_at", new Date(Date.now() - SUSPICIOUS_WINDOW_MS).toISOString());
+        failures = count ?? 0;
+      } catch {
+        failures = 0;
+      }
+    }
+
+    if (failures >= SUSPICIOUS_ATTEMPTS) {
+      // Refuse the password entirely for a suspicious address and send a
+      // one-time email instead. shouldCreateUser:false keeps this from becoming
+      // an account-existence oracle.
+      const sendLimit = checkRateLimit(`login-code:${email}`, 1, 120_000);
+      if (sendLimit.allowed) {
+        await supabase.auth.signInWithOtp({
+          email,
+          options: { shouldCreateUser: false, emailRedirectTo: undefined },
+        });
+      }
+      return NextResponse.json({
+        requiresVerification: true,
+        email,
+        message: "Too many failed attempts. Enter the code we emailed you to continue.",
+      });
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error || !data.user)
+    if (error || !data.user) {
+      if (db) {
+        try {
+          await db.from("auth_failures").insert({ email, ip: clientIp(request) });
+          // Opportunistic pruning keeps a free-tier table from growing forever.
+          if (Math.random() < 0.05) {
+            await db
+              .from("auth_failures")
+              .delete()
+              .lt("created_at", new Date(Date.now() - 24 * 60 * 60_000).toISOString());
+          }
+        } catch {
+          // Counting is best-effort; the throttle above still applies.
+        }
+      }
       return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
+    }
 
     // Start the single-session cleanup now so it overlaps the profile lookup:
     // the request waits for the slower of the two, not for both in series.
     // (Vercel may freeze unawaited work after the response, so it still runs
     // inside the request.)
     const singleSession = enforceSingleSession(data.user.id);
-
-    let role = "customer";
-    if (isOwnerEmail(data.user.email)) {
-      // The main account is owner by definition, even if profiles.role is stale.
-      role = "owner";
-    } else {
-      try {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", data.user.id)
-          .maybeSingle();
-        // U-24 (2026-09-24): staff/admin/owner are all admin-capable; the header
-        // routes any of them to /admin. Server RBAC never trusts this value.
-        if (profile && isValidAdminRole(profile.role)) role = profile.role;
-      } catch {
-        // Profile lookup is best-effort; default to customer.
-      }
+    const role = await resolveSignInRole(supabase, data.user);
+    if (db) {
+      // Cleanup is best-effort and never worth blocking the redirect on.
+      void db
+        .from("auth_failures")
+        .delete()
+        .eq("email", email)
+        .then(
+          () => {},
+          () => {}
+        );
     }
-
     await singleSession;
 
     return NextResponse.json({ ok: true, role });

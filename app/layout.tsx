@@ -6,6 +6,8 @@ import { CartProvider } from "../components/cart-provider";
 import PageViewTracker from "../components/PageViewTracker";
 import ServiceWorkerRegister from "../components/ServiceWorkerRegister";
 import WebVitals from "../components/WebVitals";
+import { Suspense } from "react";
+import AuthNotice from "../components/AuthNotice";
 import { getCompany } from "../lib/company-store";
 import { inlineThemeAttributeValue } from "../lib/theme";
 import "./globals.css";
@@ -99,6 +101,9 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <PageViewTracker />
         <WebVitals />
         <ServiceWorkerRegister />
+        <Suspense fallback={null}>
+          <AuthNotice />
+        </Suspense>
         <CartProvider>{children}</CartProvider>
       </body>
     </html>

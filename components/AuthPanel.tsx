@@ -9,12 +9,15 @@ import { readLocalCart, unionQuantities, writeLocalCart } from "../lib/cart-clie
 import { inputClass } from "../lib/styles";
 import { isStaffRole } from "../lib/roles";
 
-type Mode = "signin" | "signup" | "forgot";
+type Mode = "signin" | "signup" | "forgot" | "verify";
+type VerifyPurpose = "signup" | "signin";
 
 const callbackErrors: Record<string, string> = {
   link: "That email link is invalid, expired, or already used. Start again to get a fresh one.",
   google: "Google sign-in failed or was cancelled.",
   config: "Google sign-in is not configured yet. Use email and password for now.",
+  no_account:
+    "No account found for that Google address. Register first, then use Google to sign in.",
 };
 
 // Supabase can send failures as URL hash params (e.g.
@@ -105,6 +108,8 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
   // Set when registration needs a confirmed email address, so the sign-in
   // notice can offer a resend instead of leaving the user stuck.
   const [pendingEmail, setPendingEmail] = useState("");
+  // Why the code step is showing: a first registration, or a suspicious sign-in.
+  const [verifyPurpose, setVerifyPurpose] = useState<VerifyPurpose>("signup");
   const [busy, setBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
@@ -144,11 +149,13 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
     const problem = new URLSearchParams(window.location.search).get("error");
     if (supabaseError?.description) {
       const prefix =
-        problem === "config"
-          ? callbackErrors.config
-          : problem === "google" || supabaseError.code === "google"
-            ? callbackErrors.google
-            : "Sign-in failed.";
+        problem === "no_account"
+          ? callbackErrors.no_account
+          : problem === "config"
+            ? callbackErrors.config
+            : problem === "google" || supabaseError.code === "google"
+              ? callbackErrors.google
+              : "Sign-in failed.";
       setError(`${prefix} Reason: ${supabaseError.description}`);
     } else if (problem && callbackErrors[problem]) {
       setError(callbackErrors[problem]);
@@ -194,12 +201,18 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
         ? "/api/auth/login"
         : mode === "signup"
           ? "/api/auth/register"
-          : "/api/auth/reset";
+          : mode === "verify"
+            ? "/api/auth/verify"
+            : "/api/auth/reset";
+    const payload =
+      mode === "verify"
+        ? { email: pendingEmail, token: String(form.code || ""), purpose: verifyPurpose }
+        : form;
     try {
       const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -213,9 +226,22 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
         return;
       }
       if (result.needsEmailConfirmation) {
-        setPendingEmail(String(form.email || ""));
-        switchMode("signin");
-        setNotice("Registered. Check your email and confirm your address, then sign in.");
+        const registered = String(form.email || "");
+        setPendingEmail(registered);
+        setVerifyPurpose("signup");
+        switchMode("verify");
+        setNotice(
+          `Registered. We emailed a one-time code to ${registered} - enter it below, or open the link in that email.`
+        );
+        setBusy(false);
+        return;
+      }
+      if (result.requiresVerification) {
+        // Suspicious sign-in: the password alone is not enough this time.
+        setPendingEmail(String(result.email || form.email || ""));
+        setVerifyPurpose("signin");
+        switchMode("verify");
+        setNotice(result.message || "For your security, enter the one-time code we emailed you.");
         setBusy(false);
         return;
       }
@@ -223,7 +249,10 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
       // so waiting here only delayed the redirect.
       void mergeLocalCart();
       // U-24 (2026-09-24): staff/admin/owner all land on the admin home.
-      router.replace(isStaffRole(result.role) ? "/admin" : "/account");
+      const dest = isStaffRole(result.role) ? "/admin" : "/account";
+      const toast =
+        mode === "verify" ? (verifyPurpose === "signup" ? "registered" : "signed_in") : "signed_in";
+      router.replace(`${dest}${dest.includes("?") ? "&" : "?"}auth=${toast}`);
       router.refresh();
     } catch {
       setError("Network error. Please try again.");
@@ -241,12 +270,10 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
       const response = await fetch("/api/auth/resend", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: pendingEmail }),
+        body: JSON.stringify({ email: pendingEmail, purpose: verifyPurpose }),
       });
       if (!response.ok) throw new Error("resend failed");
-      setNotice(
-        `Confirmation email sent to ${pendingEmail}. If it is not there in a minute, check spam.`
-      );
+      setNotice(`Email sent to ${pendingEmail}. If it is not there in a minute, check spam.`);
     } catch {
       setNotice("Could not resend just now. Please try again in a few minutes.");
     } finally {
@@ -264,6 +291,11 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
       title: "Register your account.",
       body: "Register once for orders, saved builds, and support - free, and ready in under a minute.",
       button: "Register",
+    },
+    verify: {
+      title: "Enter your code.",
+      body: "We emailed a one-time code. Enter it here, or open the link in that email.",
+      button: "Confirm code",
     },
     forgot: {
       title: "Reset your password.",
@@ -353,7 +385,7 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
                     disabled={busy}
                     className="mt-2 block text-xs font-black uppercase tracking-widest underline transition hover:opacity-70 disabled:opacity-60"
                   >
-                    Resend confirmation email
+                    Resend email
                   </button>
                 )}
               </div>
@@ -372,18 +404,36 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
                   />
                 </label>
               )}
-              <label className={`${labelClass} mt-5 block`}>
-                Email
-                <input
-                  name="email"
-                  type="email"
-                  required
-                  autoComplete="email"
-                  className={`mt-2 w-full ${inputClass}`}
-                />
-              </label>
+              {mode !== "verify" && (
+                <label className={`${labelClass} mt-5 block`}>
+                  Email
+                  <input
+                    name="email"
+                    type="email"
+                    required
+                    autoComplete="email"
+                    className={`mt-2 w-full ${inputClass}`}
+                  />
+                </label>
+              )}
 
-              {mode !== "forgot" && (
+              {mode === "verify" && (
+                <label className={`${labelClass} mt-5 block`}>
+                  Code sent to {pendingEmail}
+                  <input
+                    name="code"
+                    inputMode="numeric"
+                    pattern="\\d{6,10}"
+                    maxLength={10}
+                    required
+                    autoComplete="one-time-code"
+                    placeholder="12345678"
+                    className={`mt-2 w-full ${inputClass} tracking-[.4em]`}
+                  />
+                </label>
+              )}
+
+              {mode !== "forgot" && mode !== "verify" && (
                 <label className={`${labelClass} mt-5 block`}>
                   Password
                   <span className="relative mt-2 block">
@@ -425,7 +475,7 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
               </button>
             </form>
 
-            {mode !== "forgot" && (
+            {mode !== "forgot" && mode !== "verify" && (
               <>
                 <div className="my-6 flex items-center gap-3 text-xs font-bold uppercase tracking-widest text-muted">
                   <span className="h-px flex-1 bg-line" />
@@ -433,7 +483,7 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
                   <span className="h-px flex-1 bg-line" />
                 </div>
                 <a
-                  href="/api/auth/google"
+                  href={mode === "signup" ? "/api/auth/google?intent=register" : "/api/auth/google"}
                   onClick={() => setGoogleBusy(true)}
                   aria-disabled={googleBusy}
                   className="flex w-full items-center justify-center gap-3 rounded-lg border-2 border-line bg-white px-5 py-3.5 text-sm font-bold text-ink transition hover:border-navy hover:bg-navy-light"
@@ -474,6 +524,15 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
                   className="block text-sm font-semibold text-navy transition hover:text-navy-dark"
                 >
                   Back to sign in
+                </button>
+              )}
+              {mode === "verify" && (
+                <button
+                  type="button"
+                  onClick={() => switchMode("signin")}
+                  className="block text-sm font-semibold text-navy transition hover:text-navy-dark"
+                >
+                  Use a different email
                 </button>
               )}
             </div>
