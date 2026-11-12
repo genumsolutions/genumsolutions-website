@@ -9,6 +9,20 @@ restore, NOT a mirror, so it will fall behind `main` as new work lands — re-sy
 `git push origin main:dev` whenever the owner wants a fresh restore point).
 CI: `ci.yml` on `main` · `sync-app-fallback.yml` on `main` + 6h cron.
 
+> • **2026-11-12 — SHARED DATABASE RE-PROVISIONED (6 → 39 TABLES) + DRIFT GUARD.** The 2026-11-07 move
+> left only six tables, so `profiles.tier` did not exist and the combined `select(role, tier)` failed as
+> a whole: every staff/admin profile read returned null, role fell back to `customer` (no Admin entry in
+> app or website) and signed-in users were shown the signup form. Applied the whole `supabase/schema.sql`
+> through the Management API (one statement per request, 489/489 ok after a 429 pause): **39 tables**,
+> `profiles` 3 rows, `products` 17, `categories` 11, `services` 6. Added `protect_owner_account` (the owner
+> row cannot be deleted from any client, web route or edge function) and `block_new_google_account`
+> (Google sign-in cannot create an account) to `schema.sql`, plus tier-independent role reads in both
+> clients and a `/login?error=no_account` message. New **`npm run db:drift`**
+> (`scripts/db-drift-check.mjs`) compares the live project against `schema.sql` table-and-column and exits
+> 1 on drift; procedure, apply paths and verification queries: **`TRACKS/DB-PROVISIONING.md`**.
+> Committed `93b939e` (web) / `8d67096` (app), pushed; website build and OTA bundle verified live,
+> `admin-delete-user` redeployed (v2).
+
 > • **2026-11-07 — SUPABASE PROJECT MOVE: `bkylfnlybtsujwzropru` → `jxgmbodzkmxanuwfaqxo`.** The old
 > project no longer resolves (DNS), so every reference was repointed in both repos: web `lib/company.ts`
 > (APK + manifest URLs), `next.config.mjs` (image host + CSP `img-src`/`connect-src`), `tests/product-image.test.ts`,

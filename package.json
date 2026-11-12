@@ -20,6 +20,7 @@
     "seed:company": "tsx scripts/seed-company.ts",
     "db:apply": "tsx scripts/apply-schema.ts",
     "db:apply:seed": "tsx scripts/apply-schema.ts --seed",
+    "db:drift": "node scripts/db-drift-check.mjs",
     "prepare": "husky",
     "images:optimize": "tsx scripts/optimize-images.ts",
     "backup": "tsx scripts/backup.ts",
