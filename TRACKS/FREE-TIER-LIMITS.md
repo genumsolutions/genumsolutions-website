@@ -17,9 +17,9 @@ ceilings — run it before a busy week, not after a failure.
 Storage detail: `app-releases` 159.0 MB across 5 objects (4 APKs at ~39.8 MB
 plus `release.json`), `product-images` 2.9 MB across 29 objects.
 
-Other auth limits in place: signup/verify 30 per 5 min, token refresh 150 per
-5 min, anonymous 30 per 5 min, OTP 30 per 5 min — all per IP, all far above
-this store's traffic.
+Rate limits in force, all per IP and all far above this store's traffic — signup
+and verify 30 per 5 min, token refresh 150 per 5 min, anonymous 30 per 5 min,
+and OTP 30 per 5 min.
 
 ## The only limit that breaks production
 

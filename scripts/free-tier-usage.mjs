@@ -50,7 +50,8 @@ async function sql(query) {
     headers,
     body: JSON.stringify({ query }),
   });
-  if (!response.ok) throw new Error(`SQL ${response.status}: ${(await response.text()).slice(0, 200)}`);
+  if (!response.ok)
+    throw new Error(`SQL ${response.status}: ${(await response.text()).slice(0, 200)}`);
   return response.json();
 }
 
@@ -87,10 +88,15 @@ row("Database", Math.round(dbBytes / 1048576), CEILINGS.dbMb, "MB");
 row("Storage", Math.round(storage.b / 1048576), CEILINGS.storageMb, "MB");
 row("Auth users (MAU)", users, CEILINGS.mau, "users");
 console.log(`\n  Storage by bucket:`);
-for (const b of buckets) console.log(`    ${b.bucket_id.padEnd(18)} ${String(b.objects).padStart(4)} objects ${String(b.mb).padStart(8)} MB`);
+for (const b of buckets)
+  console.log(
+    `    ${b.bucket_id.padEnd(18)} ${String(b.objects).padStart(4)} objects ${String(b.mb).padStart(8)} MB`
+  );
 
 const emailCap = auth.rate_limit_email_sent;
-console.log(`\n  Auth email            ${emailCap}/hour  ${auth.smtp_host ? "custom SMTP" : "BUILT-IN sender"}`);
+console.log(
+  `\n  Auth email            ${emailCap}/hour  ${auth.smtp_host ? "custom SMTP" : "BUILT-IN sender"}`
+);
 if (!auth.smtp_host) {
   console.log(
     `  ! Without custom SMTP the ${emailCap}/hour cap cannot be raised: registrations past\n` +
@@ -99,4 +105,6 @@ if (!auth.smtp_host) {
   );
 }
 console.log(`  Confirmation required  ${auth.mailer_autoconfirm ? "no (auto-confirm)" : "yes"}`);
-console.log(`  Other auth limits      signup/verify ${auth.rate_limit_verify}/5min, refresh ${auth.rate_limit_token_refresh}/5min\n`);
+console.log(
+  `  Other auth limits      signup/verify ${auth.rate_limit_verify}/5min, refresh ${auth.rate_limit_token_refresh}/5min\n`
+);
