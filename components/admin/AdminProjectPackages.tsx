@@ -246,6 +246,7 @@ export default function AdminProjectPackages({
   const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
   const [projectCategory, setProjectCategory] = useState("All");
   const [projectQuery, setProjectQuery] = useState("");
+  const [stockFilter, setStockFilter] = useState<"all" | "in" | "low" | "out">("all");
   const [projectPage, setProjectPage] = useState(1);
   const [busy, setBusy] = useState(false);
 
@@ -334,11 +335,16 @@ export default function AdminProjectPackages({
   const filteredProjects = projectProducts.filter((item) => {
     const matchesCategory = projectCategory === "All" || item.category === projectCategory;
     const needle = projectQuery.trim().toLowerCase();
-    return (
-      matchesCategory &&
-      (!needle ||
-        `${item.name} ${item.sku} ${item.id} ${item.description}`.toLowerCase().includes(needle))
-    );
+    const matchesQuery =
+      !needle ||
+      `${item.name} ${item.sku} ${item.id} ${item.description}`.toLowerCase().includes(needle);
+    const stock = Number(item.stock) || 0;
+    const matchesStock =
+      stockFilter === "all" ||
+      (stockFilter === "out" && stock <= 0) ||
+      (stockFilter === "low" && stock > 0 && stock <= 3) ||
+      (stockFilter === "in" && stock > 3);
+    return matchesCategory && matchesQuery && matchesStock;
   });
   const totalPages = Math.max(1, Math.ceil(filteredProjects.length / PAGE_SIZE));
   const shownProjects = filteredProjects.slice(
@@ -449,51 +455,92 @@ export default function AdminProjectPackages({
               aria-label="Search project packages"
               className={`mt-3 w-full ${inputClass}`}
             />
+            <select
+              value={stockFilter}
+              onChange={(e) => {
+                setStockFilter(e.target.value as "all" | "in" | "low" | "out");
+                setProjectPage(1);
+              }}
+              aria-label="Stock filter"
+              className={`mt-3 w-full sm:w-44 ${inputClass}`}
+            >
+              <option value="all">All stock</option>
+              <option value="in">In stock (&gt;3)</option>
+              <option value="low">Low stock (1–3)</option>
+              <option value="out">Out of stock (0)</option>
+            </select>
             <div className="mt-3 divide-y divide-line">
-              {shownProjects.map((item) => (
-                <div key={item.id} className={`${cardRow} items-center`}>
-                  <div className={cardRowText}>
-                    <span className="block">
-                      <strong>{item.name}</strong>{" "}
-                      <span className="text-slate-400">{item.sku}</span>
-                    </span>
-                    <span className="text-[10px] font-black uppercase tracking-wide text-gold">
-                      {item.inventoryType || "Catalog"} · {item.priceLabel}
+              {shownProjects.map((item) => {
+                const stock = Number(item.stock) || 0;
+                const stockLabel =
+                  stock <= 0
+                    ? "Out of stock"
+                    : stock <= 3
+                      ? `Low stock (${stock})`
+                      : `In stock (${stock})`;
+                const stockClass =
+                  stock <= 0
+                    ? "bg-red-100 text-red-700"
+                    : stock <= 3
+                      ? "bg-amber-100 text-amber-800"
+                      : "bg-emerald-100 text-emerald-700";
+                return (
+                  <div key={item.id} className={`${cardRow} items-center`}>
+                    <div className={cardRowText}>
+                      <span className="block">
+                        <strong>{item.name}</strong>{" "}
+                        <span className="text-slate-400">{item.sku}</span>
+                      </span>
+                      <span className="text-[10px] font-black uppercase tracking-wide text-gold">
+                        {item.inventoryType || "Catalog"} · {item.priceLabel}
+                      </span>
+                      <span className="mt-1 flex flex-wrap items-center gap-2">
+                        <span
+                          className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${stockClass}`}
+                        >
+                          {stockLabel}
+                        </span>
+                        {item.active === false && (
+                          <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-slate-600">
+                            Hidden
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                    <span className="flex shrink-0 flex-wrap gap-2">
+                      <button
+                        onClick={() => {
+                          setProduct(item);
+                          focusEditor("project-package-editor");
+                        }}
+                        className="text-xs font-bold text-navy underline"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => setPreviewProduct(item)}
+                        className="text-xs font-bold text-slate-500 underline"
+                      >
+                        Preview
+                      </button>
+                      <button
+                        onClick={() => void toggleProductVisibility(item)}
+                        className="text-xs font-bold text-ink underline"
+                      >
+                        {item.active === false ? "Show" : "Hide"}
+                      </button>
+                      {canDelete && (
+                        <button
+                          onClick={() => removeProduct(item.id)}
+                          className="text-xs font-bold text-red-600 underline"
+                        >
+                          Delete
+                        </button>
+                      )}
                     </span>
                   </div>
-                  <span className="flex shrink-0 flex-wrap gap-2">
-                    <button
-                      onClick={() => {
-                        setProduct(item);
-                        focusEditor("project-package-editor");
-                      }}
-                      className="text-xs font-bold text-navy underline"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => setPreviewProduct(item)}
-                      className="text-xs font-bold text-slate-500 underline"
-                    >
-                      Preview
-                    </button>
-                    <button
-                      onClick={() => void toggleProductVisibility(item)}
-                      className="text-xs font-bold text-ink underline"
-                    >
-                      {item.active === false ? "Show" : "Hide"}
-                    </button>
-                    {canDelete && (
-                      <button
-                        onClick={() => removeProduct(item.id)}
-                        className="text-xs font-bold text-red-600 underline"
-                      >
-                        Delete
-                      </button>
-                    )}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
               {shownProjects.length === 0 && (
                 <p className="py-3 text-sm text-slate-500">
                   No project packages match &ldquo;{projectQuery}&rdquo;.
