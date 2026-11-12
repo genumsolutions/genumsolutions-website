@@ -332,7 +332,9 @@ export default function AccountPanel() {
                 <div key={order.id} className="border border-line p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
-                      <p className="font-bold text-ink">#{order.id.slice(0, 8).toUpperCase()}</p>
+                      <p className="font-bold text-ink" title={order.id}>
+                        #{order.id.slice(0, 8).toUpperCase()}
+                      </p>
                       <p className="truncate text-xs text-slate-500">
                         {new Date(order.createdAt).toLocaleDateString()} ·{" "}
                         {order.provider === "cod"
@@ -341,7 +343,9 @@ export default function AccountPanel() {
                             ? "eSewa"
                             : order.provider === "khalti"
                               ? "Khalti"
-                              : order.provider}
+                              : order.provider}{" "}
+                        · {order.items.reduce((sum, i) => sum + i.quantity, 0)} item
+                        {order.items.reduce((sum, i) => sum + i.quantity, 0) === 1 ? "" : "s"}
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
@@ -356,11 +360,27 @@ export default function AccountPanel() {
                   <OrderStatusTimeline status={order.status} />
                   <ul className="mt-2 space-y-1 text-xs leading-5 text-slate-600">
                     {order.items.map((item) => (
-                      <li key={`${order.id}-${item.name}`} className="truncate">
-                        {item.quantity} × {item.name}
+                      <li
+                        key={`${order.id}-${item.name}`}
+                        className="flex items-center justify-between gap-3"
+                      >
+                        <span className="min-w-0 truncate">
+                          {item.quantity} × {item.name}
+                        </span>
+                        <span className="shrink-0 font-semibold text-ink">
+                          {formatNPR(item.price * item.quantity)}
+                        </span>
                       </li>
                     ))}
                   </ul>
+                  <div className="mt-3 border-t border-line pt-3">
+                    <Link
+                      href={`/contact?order=${encodeURIComponent(order.id)}`}
+                      className="text-xs font-bold text-navy underline underline-offset-2 transition hover:text-navy-dark"
+                    >
+                      Contact support about this order
+                    </Link>
+                  </div>
                 </div>
               ))}
             </div>
