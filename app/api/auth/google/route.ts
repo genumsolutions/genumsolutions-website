@@ -11,7 +11,8 @@ export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   if (!supabaseConfigured()) return NextResponse.redirect(`${origin}/login?error=config`);
 
-  const intent = searchParams.get("intent") === "register" ? "register" : "signin";
+  const rawIntent = searchParams.get("intent");
+  const intent = rawIntent === "signup" || rawIntent === "register" ? "signup" : "signin";
   const rawNext = searchParams.get("next") || "/account";
   const next = /^\/[^/\\]/.test(rawNext) ? rawNext : "/account";
 
