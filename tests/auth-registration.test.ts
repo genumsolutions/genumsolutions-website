@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-// Registration and sign-in rules (2026-11-12): "Register with Google" may
+// Sign-up and sign-in rules (2026-11-12): "Sign up with Google" may
 // create an account, but "Continue with Google" on the sign-in form must not -
-// the callback refuses a brand-new row unless the intent cookie says register.
-// A first registration confirms by emailed code (or link, on the default free
+// the callback refuses a brand-new row unless the intent cookie says signup.
+// A first sign-up confirms by emailed code (or link, on the default free
 // mailer). Suspicious sign-in also requires an emailed code. These guards pin
 // the behaviour on BOTH surfaces.
 const panel = readFileSync(resolve(__dirname, "../components/AuthPanel.tsx"), "utf8");
@@ -15,31 +15,31 @@ const callback = readFileSync(resolve(__dirname, "../app/auth/callback/route.ts"
 const google = readFileSync(resolve(__dirname, "../app/api/auth/google/route.ts"), "utf8");
 const schema = readFileSync(resolve(__dirname, "../supabase/schema.sql"), "utf8");
 
-describe("registration flow", () => {
+describe("sign-up flow", () => {
   it("never blocks a brand-new Google account at the database", () => {
     expect(schema).not.toMatch(/create trigger block_new_google_account/i);
     expect(schema).not.toMatch(/create or replace function public\.block_new_google_account/i);
   });
 
   it("refuses to register via the sign-in form's Google button", () => {
-    expect(google).toContain("intent=register");
+    expect(google).toContain("intent=signup");
     expect(callback).toContain("no_account");
-    expect(panel).toContain('"/api/auth/google?intent=register"');
+    expect(panel).toContain('"/api/auth/google?intent=signup"');
   });
 
   it("labels Google by intent, on the same button in both modes", () => {
-    expect(panel).toContain('? "Register with Google"');
+    expect(panel).toContain('? "Sign up with Google"');
     expect(panel).toContain(': "Continue with Google"');
   });
 
-  it("says Register instead of create an account", () => {
-    expect(panel).toContain('button: "Register"');
-    expect(panel).toContain("New here? Register");
+  it("says Sign up instead of create an account", () => {
+    expect(panel).toContain('button: "Sign up"');
+    expect(panel).toContain("New here? Sign up");
     expect(panel).not.toContain("Create account");
     expect(panel).not.toContain("Create your account");
   });
 
-  it("sends a first registration through email confirmation", () => {
+  it("sends a first sign-up through email confirmation", () => {
     expect(register).toContain("emailRedirectTo");
     expect(register).toContain("/auth/callback?next=");
     expect(register).toContain("needsEmailConfirmation: true");

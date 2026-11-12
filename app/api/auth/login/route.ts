@@ -97,7 +97,23 @@ export async function POST(request: Request) {
 
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error || !data.user) {
-      if (db) {
+      const msg = error?.message || "";
+      // "Email not confirmed" is not a wrong password - never count it as a
+      // failed attempt (that would lock the account behind the suspicion flow)
+      // and tell the user exactly what to do.
+      if (/email not confirmed/i.test(msg)) {
+        return jsonWithCookies(
+          {
+            error:
+              "Please confirm your email before signing in. Check your inbox for the confirmation link.",
+            needsEmailConfirmation: true,
+            email,
+          },
+          { status: 403 }
+        );
+      }
+      const invalidCredentials = /invalid login credentials/i.test(msg);
+      if (db && (invalidCredentials || !msg)) {
         try {
           await db.from("auth_failures").insert({ email, ip: clientIp(request) });
           // Opportunistic pruning keeps a free-tier table from growing forever.
@@ -111,7 +127,10 @@ export async function POST(request: Request) {
           // Counting is best-effort; the throttle above still applies.
         }
       }
-      return jsonWithCookies({ error: "Invalid email or password." }, { status: 401 });
+      return jsonWithCookies(
+        { error: invalidCredentials || !msg ? "Invalid email or password." : msg },
+        { status: 401 }
+      );
     }
 
     // Start the single-session cleanup now so it overlaps the profile lookup:

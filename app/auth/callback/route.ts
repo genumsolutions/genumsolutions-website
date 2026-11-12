@@ -18,14 +18,14 @@ function redirectWithCookies(url: string) {
  * Supabase cannot attach metadata to a browser OAuth sign-in, so the intent is
  * carried in a cookie and the brand-new row is removed here instead. Existing
  * accounts are unaffected (their created_at is older than the window), and
- * "Register with Google" carries intent=register so it may create one.
+ * "Sign up with Google" carries intent=signup so it may create one.
  */
 async function rejectUnregisteredGoogleUser(
   userId: string,
   createdAt: string | undefined,
   intent: string
 ): Promise<boolean> {
-  if (intent === "register") return false;
+  if (intent === "signup") return false;
   const age = Date.now() - new Date(createdAt || 0).getTime();
   if (!Number.isFinite(age) || age > 5 * 60_000) return false;
   try {

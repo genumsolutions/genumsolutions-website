@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 const MESSAGES: Record<string, string> = {
   signed_in: "Signed in successfully.",
-  registered: "Registration complete. You're signed in.",
+  signed_up: "Sign-up complete. You're signed in.",
   signed_out: "Signed out.",
 };
 

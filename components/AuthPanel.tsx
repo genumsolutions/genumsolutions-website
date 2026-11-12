@@ -17,7 +17,7 @@ const callbackErrors: Record<string, string> = {
   google: "Google sign-in failed or was cancelled.",
   config: "Google sign-in is not configured yet. Use email and password for now.",
   no_account:
-    "No account found for that Google address. Register first, then use Google to sign in.",
+    "No account found for that Google address. Sign up first, then use Google to sign in.",
 };
 
 // Supabase can send failures as URL hash params (e.g.
@@ -216,6 +216,14 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
+        if (result.needsEmailConfirmation) {
+          const address = String(result.email || form.email || "");
+          setPendingEmail(address);
+          setVerifyPurpose("signup");
+          setError(result.error || "Please confirm your email before signing in.");
+          setBusy(false);
+          return;
+        }
         setError(result.error || "Something went wrong. Please try again.");
         setBusy(false);
         return;
@@ -231,7 +239,7 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
         setVerifyPurpose("signup");
         switchMode("verify");
         setNotice(
-          `Registered. Open the confirmation link we emailed to ${registered} to finish registering, then sign in. If that email includes a code, you can enter it below.`
+          `Signed up. Open the confirmation link we emailed to ${registered} to finish signing up, then sign in. If that email includes a code, you can enter it below.`
         );
         setBusy(false);
         return;
@@ -251,7 +259,7 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
       // U-24 (2026-09-24): staff/admin/owner all land on the admin home.
       const dest = isStaffRole(result.role) ? "/admin" : "/account";
       const toast =
-        mode === "verify" ? (verifyPurpose === "signup" ? "registered" : "signed_in") : "signed_in";
+        mode === "verify" ? (verifyPurpose === "signup" ? "signed_up" : "signed_in") : "signed_in";
       router.replace(`${dest}${dest.includes("?") ? "&" : "?"}auth=${toast}`);
       router.refresh();
     } catch {
@@ -288,9 +296,9 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
       button: "Sign in",
     },
     signup: {
-      title: "Register your account.",
-      body: "Register once for orders, saved builds, and support - free, and ready in under a minute.",
-      button: "Register",
+      title: "Sign up for an account.",
+      body: "Sign up once for orders, saved builds, and support - free, and ready in under a minute.",
+      button: "Sign up",
     },
     verify: {
       title: "Confirm your email.",
@@ -365,12 +373,22 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
             <p className="mt-3 text-sm leading-6 text-muted">{copy[mode].body}</p>
 
             {error && (
-              <p
+              <div
                 role="alert"
                 className="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700"
               >
-                {error}
-              </p>
+                <p>{error}</p>
+                {pendingEmail && mode === "signin" && (
+                  <button
+                    type="button"
+                    onClick={resendConfirmation}
+                    disabled={busy}
+                    className="mt-2 block text-xs font-black uppercase tracking-widest underline transition hover:opacity-70 disabled:opacity-60"
+                  >
+                    Resend confirmation email
+                  </button>
+                )}
+              </div>
             )}
             {notice && (
               <div
@@ -483,7 +501,7 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
                   <span className="h-px flex-1 bg-line" />
                 </div>
                 <a
-                  href={mode === "signup" ? "/api/auth/google?intent=register" : "/api/auth/google"}
+                  href={mode === "signup" ? "/api/auth/google?intent=signup" : "/api/auth/google"}
                   onClick={() => setGoogleBusy(true)}
                   aria-disabled={googleBusy}
                   className="flex w-full items-center justify-center gap-3 rounded-lg border-2 border-line bg-white px-5 py-3.5 text-sm font-bold text-ink transition hover:border-navy hover:bg-navy-light"
@@ -492,7 +510,7 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
                   {googleBusy
                     ? "Connecting…"
                     : mode === "signup"
-                      ? "Register with Google"
+                      ? "Sign up with Google"
                       : "Continue with Google"}
                 </a>
               </>
@@ -505,7 +523,7 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
                   onClick={() => switchMode("signup")}
                   className="block text-sm font-semibold text-navy transition hover:text-navy-dark"
                 >
-                  New here? Register
+                  New here? Sign up
                 </button>
               )}
               {mode !== "signin" && (
