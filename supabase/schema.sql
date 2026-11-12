@@ -2074,3 +2074,671 @@ drop policy if exists "admin delete user profile entries" on public.user_profile
 create policy "admin delete user profile entries" on public.user_profile_entries
   for delete to authenticated
   using (public.is_admin());
+
+-- =====================================================================
+-- MIGRATION CONSOLIDATION (2026-11-12)
+--
+-- The sections below were applied to the live project only through
+-- supabase/migrations/*.sql and were missing from this file. They are copied
+-- here verbatim in effect (structure + RLS + functions + triggers) so this
+-- file is once again a complete, replayable snapshot of the database.
+--
+-- Deliberately NOT copied: row data (device_models catalogue rows,
+-- robo_car_modes_flags seed, robo_car_modes label updates, the one-off
+-- fresh-start deletes). Seeds stay in their migrations; this file describes
+-- shape, not contents.
+-- =====================================================================
+
+-- ===== PROFILES ENRICHMENT (20261001120000_device_registry) =====
+alter table public.profiles add column if not exists avatar_url text;
+alter table public.profiles add column if not exists avatar_color text;
+alter table public.profiles add column if not exists city text;
+alter table public.profiles add column if not exists country text;
+alter table public.profiles add column if not exists timezone text;
+alter table public.profiles add column if not exists units text;
+alter table public.profiles add column if not exists locale text;
+alter table public.profiles add column if not exists last_seen_at timestamptz;
+alter table public.profiles add column if not exists onboarding_step text;
+
+-- ===== DEVICE REGISTRY (20261001120000_device_registry) =====
+-- device_models is the canonical model catalogue (6 fleet models).
+-- Public read so the website and the app's anon key can both use it,
+-- staff-only write, exactly like robo_car_modes.
+create table if not exists public.device_models (
+  id text primary key,
+  display_name text not null,
+  repo text not null default '',
+  fw_name text not null default '',
+  fw_version text not null default '',
+  -- FROZEN advertised identity. Recorded for the pairing screen so the user
+  -- can match what Bluetooth announces; never used to RE-ADVERTISE a name.
+  bt_name text,
+  ap_ssid text,
+  ap_ip text,
+  ap_subnet text,
+  transports jsonb not null default '[]'::jsonb,
+  sort_order integer not null default 100,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.device_models enable row level security;
+
+drop policy if exists "public read device_models" on public.device_models;
+create policy "public read device_models"
+  on public.device_models for select using (true);
+drop policy if exists "staff insert device_models" on public.device_models;
+create policy "staff insert device_models"
+  on public.device_models for insert with check (public.is_staff());
+drop policy if exists "staff update device_models" on public.device_models;
+create policy "staff update device_models"
+  on public.device_models for update using (public.is_staff());
+drop policy if exists "admin delete device_models" on public.device_models;
+create policy "admin delete device_models"
+  on public.device_models for delete using (public.is_admin());
+
+create index if not exists device_models_sort_idx
+  on public.device_models (sort_order, display_name);
+
+-- devices is ONE physical unit, shared across every user. unique_id reuses
+-- the app's EXISTING resolution rule (fw:<boardId> / <bt-mac> / wifi:<ssid>)
+-- and is the same string the app persists as car_profiles.profile_key.
+create table if not exists public.devices (
+  id uuid primary key default gen_random_uuid(),
+  unique_id text not null unique,
+  model_id text references public.device_models(id) on delete set null,
+  -- What the unit last REPORTED, not what we assume.
+  fw_version text not null default '',
+  -- Owner-assigned label for the unit itself, shown when there is exactly one
+  -- owner. user_devices.display_name wins whenever it is set.
+  nickname text not null default '',
+  last_seen_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists devices_model_idx on public.devices (model_id);
+create index if not exists devices_last_seen_idx
+  on public.devices (last_seen_at desc nulls last);
+
+-- user_devices is the per-user, per-unit name: car_profiles is keyed by
+-- (user_id, profile_key), so without this two users could hold conflicting
+-- names for the SAME physical car.
+create table if not exists public.user_devices (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  device_id uuid not null references public.devices(id) on delete cascade,
+  display_name text not null default '',
+  is_favourite boolean not null default false,
+  notes text not null default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key (user_id, device_id)
+);
+
+create index if not exists user_devices_device_idx
+  on public.user_devices (device_id);
+
+-- RLS for devices + user_devices. The "owner read devices" policy queries
+-- user_devices, and Postgres compiles a policy body at CREATE time, so this
+-- must stay AFTER both tables exist.
+alter table public.devices enable row level security;
+alter table public.user_devices enable row level security;
+
+drop policy if exists "owner read devices" on public.devices;
+create policy "owner read devices"
+  on public.devices for select using (
+    public.is_staff()
+    or exists (
+      select 1 from public.user_devices ud
+      where ud.device_id = devices.id and ud.user_id = auth.uid()
+    )
+  );
+-- NOTE: the original migration named this "owner insert devices" while the
+-- body allowed staff only. 20261001140000 renamed it; "owner insert devices"
+-- is intentionally never created here, or a re-run would fail.
+drop policy if exists "owner insert devices" on public.devices;
+drop policy if exists "staff insert devices" on public.devices;
+create policy "staff insert devices"
+  on public.devices for insert with check (public.is_staff());
+drop policy if exists "staff update devices" on public.devices;
+create policy "staff update devices"
+  on public.devices for update using (public.is_staff());
+drop policy if exists "admin delete devices" on public.devices;
+create policy "admin delete devices"
+  on public.devices for delete using (public.is_admin());
+
+drop policy if exists "own read user_devices" on public.user_devices;
+create policy "own read user_devices"
+  on public.user_devices for select
+  using (user_id = auth.uid() or public.is_staff());
+drop policy if exists "own insert user_devices" on public.user_devices;
+create policy "own insert user_devices"
+  on public.user_devices for insert
+  with check (user_id = auth.uid());
+drop policy if exists "own update user_devices" on public.user_devices;
+create policy "own update user_devices"
+  on public.user_devices for update
+  using (user_id = auth.uid() or public.is_staff());
+drop policy if exists "own delete user_devices" on public.user_devices;
+create policy "own delete user_devices"
+  on public.user_devices for delete
+  using (user_id = auth.uid() or public.is_admin());
+
+-- updated_at triggers (same shape as car_profiles).
+create or replace function public.touch_device_models()
+returns trigger set search_path = public as $$
+begin new.updated_at = now(); return new; end;
+$$ language plpgsql;
+
+drop trigger if exists device_models_touch on public.device_models;
+create trigger device_models_touch before update on public.device_models
+for each row execute function public.touch_device_models();
+
+create or replace function public.touch_devices()
+returns trigger set search_path = public as $$
+begin new.updated_at = now(); return new; end;
+$$ language plpgsql;
+
+drop trigger if exists devices_touch on public.devices;
+create trigger devices_touch before update on public.devices
+for each row execute function public.touch_devices();
+
+create or replace function public.touch_user_devices()
+returns trigger set search_path = public as $$
+begin new.updated_at = now(); return new; end;
+$$ language plpgsql;
+
+drop trigger if exists user_devices_touch on public.user_devices;
+create trigger user_devices_touch before update on public.user_devices
+for each row execute function public.touch_user_devices();
+
+-- ===== DEVICE RELAY TOKEN DIGESTS (20261005130000_relay_token_digest) =====
+-- One peppered SHA-256 digest per physical unit (U-94 Internet method).
+-- A separate table on purpose: `devices` is readable by every owner, and
+-- Postgres cannot column-revoke a table-level SELECT. RLS enabled with NO
+-- policies means client roles get nothing; service_role bypasses RLS.
+create table if not exists public.device_relay_tokens (
+  device_id uuid primary key references public.devices(id) on delete cascade,
+  -- 64 lowercase hex chars: the output of SHA-256. Constrained so a truncated
+  -- or placeholder digest can never be stored and read as "configured".
+  token_digest text not null check (token_digest ~ '^[0-9a-f]{64}$'),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.device_relay_tokens enable row level security;
+
+-- Belt and braces: even if a policy is ever added by mistake, the client roles
+-- hold no privileges on this table at all.
+revoke all on table public.device_relay_tokens from anon;
+revoke all on table public.device_relay_tokens from authenticated;
+
+create or replace function public.touch_device_relay_tokens()
+returns trigger set search_path = public as $$
+begin new.updated_at = now(); return new; end;
+$$ language plpgsql;
+
+drop trigger if exists device_relay_tokens_touch on public.device_relay_tokens;
+create trigger device_relay_tokens_touch before update on public.device_relay_tokens
+for each row execute function public.touch_device_relay_tokens();
+
+comment on table public.device_relay_tokens is
+  'One peppered SHA-256 relay-token digest per physical unit (U-94 Internet method). Service-role only: RLS is enabled with no policies, so no client role can read or write it. Never store the token itself.';
+comment on column public.device_relay_tokens.token_digest is
+  'SHA-256 hex of RELAY_TOKEN_PEPPER + ''genum-relay:v1:<boardIdHex>'' + token. Written only by the car-relay edge function on an authenticated enroll request from an owner who has claimed that unit.';
+
+-- ===== ROBO CAR MODE FLAGS (20261001130000_mode_labels_and_planned_flags) =====
+-- Marks the modes whose firmware does not exist yet, so the app can never
+-- imply a car that is not built.
+create table if not exists public.robo_car_modes_flags (
+  mode_id text primary key references public.robo_car_modes(id) on delete cascade,
+  is_planned boolean not null default false,
+  firmware_repo text,
+  note text not null default '',
+  updated_at timestamptz not null default now()
+);
+
+alter table public.robo_car_modes_flags enable row level security;
+drop policy if exists "public read robo_car_modes_flags" on public.robo_car_modes_flags;
+create policy "public read robo_car_modes_flags"
+  on public.robo_car_modes_flags for select using (true);
+drop policy if exists "staff write robo_car_modes_flags" on public.robo_car_modes_flags;
+create policy "staff write robo_car_modes_flags"
+  on public.robo_car_modes_flags for update using (public.is_staff());
+drop policy if exists "staff insert robo_car_modes_flags" on public.robo_car_modes_flags;
+create policy "staff insert robo_car_modes_flags"
+  on public.robo_car_modes_flags for insert with check (public.is_staff());
+
+-- ===== DEVICE CRASH REPORTS (20261008180000_device_crash_reports) =====
+-- Crash/reset telemetry the app syncs from the car on connect, for fleet
+-- firmware diagnostics. board_id is the firmware ESP.getEfuseMac() last-6 hex.
+create table if not exists public.device_crash_reports (
+  id uuid primary key default gen_random_uuid(),
+  device_id uuid references public.devices(id) on delete set null,
+  board_id text not null default '',
+  model_id text,
+  fw_version text not null default '',
+  app_version text not null default '',
+  platform text not null default '',
+  connection_method text not null default '',
+  ssid text,
+  ip text,
+  reset_reason text,
+  boot_count integer,
+  crash_count integer,
+  last_crash_phase text,
+  last_crash_heap integer,
+  free_heap integer,
+  uptime_ms bigint,
+  status_json jsonb,
+  has_crash boolean not null default false,
+  reported_at timestamptz not null default now(),
+  synced_at timestamptz not null default now(),
+  sync_status text not null default 'synced'
+    check (sync_status in ('pending', 'synced', 'failed')),
+  user_id uuid references auth.users(id) on delete set null,
+  -- text, not uuid: the app mints an opaque per-link id and must never be
+  -- forced to shape it as a uuid to report a diagnostic.
+  session_id text
+);
+
+alter table public.device_crash_reports enable row level security;
+
+create index if not exists device_crash_reports_board_idx
+  on public.device_crash_reports (board_id, reported_at desc);
+create index if not exists device_crash_reports_device_idx
+  on public.device_crash_reports (device_id, reported_at desc);
+create index if not exists device_crash_reports_user_idx
+  on public.device_crash_reports (user_id, reported_at desc);
+create index if not exists device_crash_reports_crash_idx
+  on public.device_crash_reports (has_crash, reported_at desc);
+
+drop policy if exists "read own crash reports" on public.device_crash_reports;
+create policy "read own crash reports"
+  on public.device_crash_reports for select
+  using (auth.uid() = user_id or public.is_staff() or public.is_admin());
+
+drop policy if exists "insert crash reports" on public.device_crash_reports;
+create policy "insert crash reports"
+  on public.device_crash_reports for insert
+  with check (true);
+
+drop policy if exists "staff manage crash reports" on public.device_crash_reports;
+create policy "staff manage crash reports"
+  on public.device_crash_reports for update
+  using (public.is_staff() or public.is_admin());
+
+-- 20261109_admin_manage_rls: the app reads with the signed-in admin session,
+-- so service-role-only access left its System Logs panel empty.
+drop policy if exists "staff read crash reports" on public.device_crash_reports;
+create policy "staff read crash reports" on public.device_crash_reports
+  for select to authenticated
+  using (public.is_staff());
+
+drop policy if exists "admin delete crash reports" on public.device_crash_reports;
+create policy "admin delete crash reports" on public.device_crash_reports
+  for delete to authenticated
+  using (public.is_admin());
+
+comment on table public.device_crash_reports is
+  'Crash/reset telemetry the app syncs from the car on connect, for fleet firmware diagnostics.';
+
+-- ===== APP LOGS (20261012100000_app_logs) =====
+-- Warn/error ring-buffer rows flushed from the app, readable by staff/admin.
+create table if not exists public.app_logs (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete set null,
+  device_id uuid references public.devices(id) on delete set null,
+  app_version text not null default '',
+  platform text not null default '',
+  scope text not null default '',
+  level text not null default 'error'
+    check (level in ('info', 'warn', 'error')),
+  message text not null default '',
+  detail jsonb,
+  created_at timestamptz not null default now()
+);
+
+alter table public.app_logs enable row level security;
+
+create index if not exists app_logs_created_idx
+  on public.app_logs (created_at desc);
+create index if not exists app_logs_level_idx
+  on public.app_logs (level, created_at desc);
+create index if not exists app_logs_scope_idx
+  on public.app_logs (scope, created_at desc);
+create index if not exists app_logs_user_idx
+  on public.app_logs (user_id, created_at desc);
+
+drop policy if exists "read own app logs" on public.app_logs;
+create policy "read own app logs"
+  on public.app_logs for select
+  using (auth.uid() = user_id or public.is_staff() or public.is_admin());
+
+drop policy if exists "insert own app logs" on public.app_logs;
+create policy "insert own app logs"
+  on public.app_logs for insert
+  with check (user_id is null or auth.uid() = user_id);
+
+drop policy if exists "staff manage app logs" on public.app_logs;
+create policy "staff manage app logs"
+  on public.app_logs for update
+  using (public.is_staff() or public.is_admin());
+
+drop policy if exists "staff delete app logs" on public.app_logs;
+create policy "staff delete app logs"
+  on public.app_logs for delete
+  using (public.is_staff() or public.is_admin());
+
+-- 20261109_admin_manage_rls: matching read policy + explicit admin delete.
+drop policy if exists "staff read app logs" on public.app_logs;
+create policy "staff read app logs" on public.app_logs
+  for select to authenticated
+  using (public.is_staff());
+
+drop policy if exists "admin delete app logs" on public.app_logs;
+create policy "admin delete app logs" on public.app_logs
+  for delete to authenticated
+  using (public.is_admin());
+
+comment on table public.app_logs is
+  'Warn/error ring-buffer rows flushed from the app; read by staff/admin for diagnostics across the fleet.';
+
+-- ===== REGISTER DEVICE RPC (20261001140000, fixed by 20261001160000,
+--       rate limited by 20261001170000 — this is the final shape) =====
+-- SECURITY DEFINER so owners can claim units without a blanket INSERT policy
+-- on the shared devices table. A reported model_id fills a gap only; it never
+-- overwrites a curated value. New units are rate limited per account;
+-- re-claiming a unit you already own is not.
+create or replace function public.register_device(
+  p_unique_id text,
+  p_model_id  text default null,
+  p_fw_version text default null
+) returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_device_id uuid;
+  v_recent_links integer;
+  v_already_owned boolean;
+  c_max_new_devices_per_hour constant integer := 10;
+begin
+  if auth.uid() is null then
+    raise exception 'not signed in';
+  end if;
+
+  -- Reject empty/oversized identities rather than storing junk that would
+  -- later fail the app's own resolveProfileKey rules.
+  if p_unique_id is null or length(btrim(p_unique_id)) = 0 or length(p_unique_id) > 128 then
+    raise exception 'invalid unique_id';
+  end if;
+
+  -- model_id is a foreign key; validate up front so a typo is a clear error
+  -- instead of a constraint violation with a worse message. The argument is
+  -- still inserted on a fresh row, so this check has to stay even though an
+  -- existing curated value now wins the conflict.
+  if p_model_id is not null and not exists (
+    select 1 from public.device_models where id = p_model_id
+  ) then
+    raise exception 'unknown model_id: %', p_model_id;
+  end if;
+
+  -- Rate limit, and only for units this account does not already own. An
+  -- existing owner refreshing last_seen_at is never rate limited.
+  select exists (
+    select 1
+    from public.user_devices ud
+    join public.devices d on d.id = ud.device_id
+    where ud.user_id = auth.uid() and d.unique_id = btrim(p_unique_id)
+  ) into v_already_owned;
+
+  if not coalesce(v_already_owned, false) then
+    select count(*)::integer into v_recent_links
+    from public.user_devices
+    where user_id = auth.uid()
+      and created_at > now() - interval '1 hour';
+
+    if v_recent_links >= c_max_new_devices_per_hour then
+      raise exception 'too many new devices added in the last hour (limit %) - try again later',
+        c_max_new_devices_per_hour;
+    end if;
+  end if;
+
+  -- Upsert on unique_id. The UPDATE branch only ever refreshes fields a
+  -- device legitimately reports about ITSELF; no owner-controlled text
+  -- (nickname) and no user-scoped data can be set from here.
+  insert into public.devices as d (unique_id, model_id, fw_version, last_seen_at)
+  values (btrim(p_unique_id), p_model_id, coalesce(p_fw_version, ''), now())
+  on conflict (unique_id) do update
+    set last_seen_at = now(),
+        -- A reported model only fills a gap; it never overwrites a value a
+        -- staff member curated, and null means "did not say".
+        -- coalesce() returns its first non-null argument, so d.model_id MUST
+        -- come first here. Getting this backwards is what 20261001140000 did.
+        model_id = coalesce(d.model_id, excluded.model_id),
+        fw_version = case
+          when excluded.fw_version <> '' then excluded.fw_version
+          else d.fw_version
+        end
+  returning id into v_device_id;
+
+  -- Link to the CALLER. auth.uid() is not a parameter, so this cannot be
+  -- used to add a device to someone else's garage.
+  insert into public.user_devices (user_id, device_id, display_name)
+  values (auth.uid(), v_device_id, '')
+  on conflict (user_id, device_id) do update
+    set updated_at = now();
+
+  return v_device_id;
+end;
+$$;
+
+-- Only signed-in users may call it. anon must not be able to mint devices.
+revoke execute on function public.register_device(text, text, text) from public;
+revoke execute on function public.register_device(text, text, text) from anon;
+grant execute on function public.register_device(text, text, text) to authenticated;
+
+comment on function public.register_device(text, text, text) is
+  'Register/refresh a physical unit by its stable unique_id and link it to the calling user. SECURITY DEFINER so owners can claim units without a blanket INSERT policy on the shared devices table. A reported model_id fills a gap only. New units are rate limited per account; re-claiming a unit you already own is not.';
+
+-- ===== RETENTION (20261013120000_phase7c_fresh_start_cleanup) =====
+create or replace function public.purge_old_crash_reports()
+returns integer
+language plpgsql
+set search_path = public
+as $$
+declare
+  deleted_count integer;
+begin
+  delete from public.device_crash_reports
+  where reported_at < now() - interval '30 days';
+  get diagnostics deleted_count = row_count;
+  return deleted_count;
+end;
+$$;
+
+create or replace function public.purge_old_app_logs()
+returns integer
+language plpgsql
+set search_path = public
+as $$
+declare
+  deleted_count integer;
+begin
+  delete from public.app_logs
+  where created_at < now() - interval '30 days';
+  get diagnostics deleted_count = row_count;
+  return deleted_count;
+end;
+$$;
+
+grant execute on function public.purge_old_crash_reports() to authenticated;
+grant execute on function public.purge_old_app_logs() to authenticated;
+
+comment on function public.purge_old_crash_reports() is
+  'Deletes device_crash_reports rows older than 30 days. Call manually or schedule via pg_cron.';
+comment on function public.purge_old_app_logs() is
+  'Deletes app_logs rows older than 30 days. Call manually or schedule via pg_cron.';
+
+-- ===== USER LOG WRITERS (20261109_user_logs_writers) =====
+-- One trigger per table covers both clients (Next route and direct Supabase),
+-- so the User Logs / Profile Entries panels cannot drift from the data.
+create or replace function public.mirror_car_profile()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  car_type_id constant uuid := '00000000-0000-0000-0000-000000000001';
+  entry_body jsonb;
+begin
+  if tg_op = 'DELETE' then
+    delete from public.user_profile_entries
+     where user_id = old.user_id
+       and body ->> 'profile_key' = old.profile_key
+       and type_id = car_type_id;
+
+    insert into public.user_activity_log (user_id, action, entity_type, entity_id, details)
+    values (old.user_id, 'car_profile_deleted', 'car_profile', null,
+            jsonb_build_object('profile_key', old.profile_key, 'car_name', old.car_name));
+    return old;
+  end if;
+
+  entry_body := jsonb_build_object(
+    'profile_key', new.profile_key,
+    'car_name', new.car_name,
+    'unique_id', new.unique_id,
+    'settings', new.settings
+  );
+
+  update public.user_profile_entries
+     set title = coalesce(nullif(new.car_name, ''), new.profile_key),
+         body = entry_body,
+         updated_at = now()
+   where user_id = new.user_id
+     and body ->> 'profile_key' = new.profile_key
+     and type_id = car_type_id;
+
+  if not found then
+    insert into public.user_profile_entries (user_id, type_id, title, body, created_at, updated_at)
+    values (new.user_id, car_type_id,
+            coalesce(nullif(new.car_name, ''), new.profile_key),
+            entry_body, new.created_at, now());
+  end if;
+
+  insert into public.user_activity_log (user_id, action, entity_type, entity_id, details)
+  values (new.user_id, 'car_profile_saved', 'car_profile', new.id,
+          jsonb_build_object('profile_key', new.profile_key, 'car_name', new.car_name));
+
+  return new;
+end
+$$;
+
+drop trigger if exists mirror_car_profile_on_write on public.car_profiles;
+create trigger mirror_car_profile_on_write
+  after insert or update on public.car_profiles
+  for each row execute function public.mirror_car_profile();
+
+drop trigger if exists mirror_car_profile_on_delete on public.car_profiles;
+create trigger mirror_car_profile_on_delete
+  after delete on public.car_profiles
+  for each row execute function public.mirror_car_profile();
+
+create or replace function public.log_order_activity()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.user_id is null then
+    return new;
+  end if;
+
+  if tg_op = 'INSERT' then
+    insert into public.user_activity_log (user_id, action, entity_type, entity_id, details)
+    values (new.user_id, 'order_placed', 'order', new.id,
+            jsonb_build_object('total_npr', new.total_npr, 'status', new.status,
+                               'provider', new.provider));
+  elsif new.status is distinct from old.status then
+    insert into public.user_activity_log (user_id, action, entity_type, entity_id, details)
+    values (new.user_id, 'order_status_changed', 'order', new.id,
+            jsonb_build_object('from', old.status, 'to', new.status));
+  end if;
+
+  return new;
+end
+$$;
+
+drop trigger if exists log_order_activity_on_write on public.orders;
+create trigger log_order_activity_on_write
+  after insert or update of status on public.orders
+  for each row execute function public.log_order_activity();
+
+comment on function public.mirror_car_profile() is
+  'Keeps user_profile_entries + user_activity_log in step with car_profiles for both clients.';
+comment on function public.log_order_activity() is
+  'Records per-user order activity for the admin User Logs panel.';
+
+-- ===== ADMIN MANAGE RLS (20261109_admin_manage_rls +
+--       20261109_admin_update_profiles) =====
+-- The website reads these tables with the service-role key; the app uses the
+-- signed-in admin session, so without these the app panels show only the
+-- admin's own rows and edits silently change nothing.
+drop policy if exists "staff read car profiles" on public.car_profiles;
+create policy "staff read car profiles" on public.car_profiles
+  for select to authenticated
+  using (public.is_staff());
+
+drop policy if exists "admin delete car profiles" on public.car_profiles;
+create policy "admin delete car profiles" on public.car_profiles
+  for delete to authenticated
+  using (public.is_admin());
+
+drop policy if exists "admin insert" on public.car_profiles;
+create policy "admin insert" on public.car_profiles
+  for insert to authenticated
+  with check (public.is_admin());
+
+drop policy if exists "admin update" on public.car_profiles;
+create policy "admin update" on public.car_profiles
+  for update to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
+drop policy if exists "staff read robot settings" on public.robot_user_settings;
+create policy "staff read robot settings" on public.robot_user_settings
+  for select to authenticated
+  using (public.is_staff());
+
+drop policy if exists "admin delete robot settings" on public.robot_user_settings;
+create policy "admin delete robot settings" on public.robot_user_settings
+  for delete to authenticated
+  using (public.is_admin());
+
+drop policy if exists "admin insert" on public.robot_user_settings;
+create policy "admin insert" on public.robot_user_settings
+  for insert to authenticated
+  with check (public.is_admin());
+
+drop policy if exists "admin update" on public.robot_user_settings;
+create policy "admin update" on public.robot_user_settings
+  for update to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
+-- 20261109_user_logs_staff_rls: profile entry types stay service-role
+-- writable; admin delete keeps the app's panel able to remove a custom type.
+drop policy if exists "staff delete profile entry types" on public.profile_entry_types;
+drop policy if exists "admin delete profile entry types" on public.profile_entry_types;
+create policy "admin delete profile entry types" on public.profile_entry_types
+  for delete to authenticated
+  using (public.is_admin());
+
+comment on policy "staff read user activity log" on public.user_activity_log is
+  'Admins read every user''s activity log from the app admin panel.';
+comment on policy "staff read user profile entries" on public.user_profile_entries is
+  'Admins read every user''s profile entries from the app admin panel.';
