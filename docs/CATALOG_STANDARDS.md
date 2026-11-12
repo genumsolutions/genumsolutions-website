@@ -23,7 +23,8 @@ maintenance so storefront, admin, and future tooling behave consistently.
 
 - Set **stock** to the on-hand purchasable quantity (integer, `0` = out of stock
   for retail items). Keep it updated as inventory changes so cards, filters, and
-  detail pages stay accurate.
+  detail pages stay accurate. Admin product lists show stock badges (in/low/out)
+  and a stock filter to help find items that need restock or hiding.
 - Use **Hide/Show** for visibility; use **category/product type** consistently
   with the catalog scopes in `lib/catalog.ts` (`components`, `models`, `cars`,
   `projects`) so items appear in the correct public section.
