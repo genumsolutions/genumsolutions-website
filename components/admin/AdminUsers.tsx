@@ -416,7 +416,7 @@ export default function AdminUsers({ setMessage, canDelete, currentRole }: Props
                     user.role === "owner"
                       ? "bg-ink text-white"
                       : user.role === "admin"
-                        ? "bg-amber-100 text-amber-700"
+                        ? "bg-amber-100 text-amber-800"
                         : user.role === "staff"
                           ? "bg-navy text-white"
                           : "bg-sky text-navy"
