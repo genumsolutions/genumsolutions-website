@@ -9,6 +9,17 @@ restore, NOT a mirror, so it will fall behind `main` as new work lands — re-sy
 `git push origin main:dev` whenever the owner wants a fresh restore point).
 CI: `ci.yml` on `main` · `sync-app-fallback.yml` on `main` + 6h cron.
 
+> • **2026-11-12 — FREE-TIER GUARD + CI SKIP INSTEAD OF RED X.** Everything runs on free plans, so
+> `npm run limits` (`scripts/free-tier-usage.mjs`) now prints live usage against the Supabase Free ceilings:
+> DB **13.9 MB / 500 MB**, storage **161.9 MB / 1 GB** (`app-releases` 159 MB — four ~40 MB APKs — plus
+> `product-images` 2.9 MB), **3 / 50,000 MAU**. The one limit that breaks production is auth email:
+> **2/hour** on the built-in sender, so the 3rd registration in an hour fails until custom SMTP exists.
+> Storage rule: each release adds ~40 MB of APK, so keep latest + two versions and prune older ones
+> (`3.2.9`, `3.3.0` = ~79 MB reclaimable). The `db-drift` CI job also stopped failing when its secrets are
+> absent (GitHub only lets repo admins add them, so a red X was a to-do, not a defect) — it warns, writes a
+> run-summary note and skips; with secrets present it still fails on any live/schema mismatch.
+> Details: **`TRACKS/FREE-TIER-LIMITS.md`**.
+
 > • **2026-11-12 — REGISTRATION: GOOGLE ALLOWED, "REGISTER" COPY, EMAIL CONFIRMATION.** Google registration
 > was broken by the `block_new_google_account` trigger added hours earlier (every new Google row raised "No
 > account found", which reads like a login failure), so the trigger + function were dropped from both the live
