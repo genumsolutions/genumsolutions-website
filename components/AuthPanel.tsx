@@ -15,6 +15,8 @@ const callbackErrors: Record<string, string> = {
   link: "That email link is invalid, expired, or already used. Start again to get a fresh one.",
   google: "Google sign-in failed or was cancelled.",
   config: "Google sign-in is not configured yet. Use email and password for now.",
+  no_account:
+    "No account found for that Google address. Create an account first, then sign in with Google.",
 };
 
 // Supabase can send failures as URL hash params (e.g.
@@ -141,11 +143,13 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
     const problem = new URLSearchParams(window.location.search).get("error");
     if (supabaseError?.description) {
       const prefix =
-        problem === "config"
-          ? callbackErrors.config
-          : problem === "google" || supabaseError.code === "google"
-            ? callbackErrors.google
-            : "Sign-in failed.";
+        problem === "no_account"
+          ? callbackErrors.no_account
+          : problem === "config"
+            ? callbackErrors.config
+            : problem === "google" || supabaseError.code === "google"
+              ? callbackErrors.google
+              : "Sign-in failed.";
       setError(`${prefix} Reason: ${supabaseError.description}`);
     } else if (problem && callbackErrors[problem]) {
       setError(callbackErrors[problem]);

@@ -93,6 +93,44 @@ create trigger profiles_protect_role
 before update on public.profiles
 for each row execute function public.protect_role_column();
 
+-- The owner account is permanent (owner request, 2026-11-12): no client, no
+-- edge function and no SQL session may delete it, so the single owner can
+-- never be removed by accident. Matches lib/roles.ts OWNER_EMAIL.
+create or replace function public.protect_owner_account()
+returns trigger security definer set search_path = public as $$
+begin
+  if lower(old.email) = 'genumsolutions@gmail.com' then
+    raise exception 'The owner account cannot be deleted.';
+  end if;
+  return old;
+end;
+$$ language plpgsql;
+
+drop trigger if exists protect_owner_account on auth.users;
+create trigger protect_owner_account
+before delete on auth.users
+for each row execute function public.protect_owner_account();
+
+-- Google is sign-in only (owner request, 2026-11-12): a brand-new Google
+-- account is refused before any profile row exists, so tapping "Continue with
+-- Google" can never silently create an account. Existing Google accounts are
+-- NOT affected - they already have an auth.users row, so no insert happens.
+-- Email/password signup is unaffected (provider = 'email').
+create or replace function public.block_new_google_account()
+returns trigger security definer set search_path = public as $$
+begin
+  if coalesce(new.raw_app_meta_data->>'provider', '') = 'google' then
+    raise exception 'No account found. Create an account before signing in with Google.';
+  end if;
+  return new;
+end;
+$$ language plpgsql;
+
+drop trigger if exists block_new_google_account on auth.users;
+create trigger block_new_google_account
+before insert on auth.users
+for each row execute function public.block_new_google_account();
+
 -- ===== PRODUCTS =====
 create table if not exists public.products (
   id text primary key,

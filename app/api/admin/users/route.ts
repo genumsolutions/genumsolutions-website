@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { isAdminRequest, isOwnerRequest, isStaffRequest } from "../../../../lib/admin";
+import { isOwnerEmail } from "../../../../lib/roles";
 import { createServiceClient, getSessionUser } from "../../../../lib/supabase/server";
 import { logActivity } from "../../../../lib/activity";
 import {
@@ -39,11 +40,25 @@ export async function GET(request: Request) {
     if (hasMore) users = users.slice(0, limit);
 
     const ids = users.map((user) => user.id);
-    const { data: profiles } = await db
+    // `tier` is optional on the shared database: a missing column fails the
+    // whole select (42703), which silently listed every account as a free
+    // customer. Retry without it so roles always come through.
+    const withTier = await db
       .from("profiles")
       .select("id, name, phone, address, role, tier")
       .in("id", ids);
-    const profileById = new Map((profiles || []).map((profile) => [profile.id, profile]));
+    const profileRows: Array<{
+      id: string;
+      name?: string | null;
+      phone?: string | null;
+      address?: string | null;
+      role?: string | null;
+      tier?: string | null;
+    }> = withTier.error
+      ? ((await db.from("profiles").select("id, name, phone, address, role").in("id", ids)).data ??
+        [])
+      : (withTier.data ?? []);
+    const profileById = new Map(profileRows.map((profile) => [profile.id, profile]));
 
     let rows = users.map((user) => {
       const profile = profileById.get(user.id);
@@ -167,6 +182,19 @@ export async function DELETE(request: Request) {
   }
   try {
     const db = createServiceClient();
+    // The owner account is permanent: never deletable by anyone (including
+    // itself). Mirrors the native app's admin-delete-user edge function.
+    const current = await getSessionUser();
+    if (current?.id === userId)
+      return NextResponse.json({ error: "You cannot delete your own account." }, { status: 400 });
+    const { data: target } = await db.auth.admin.getUserById(userId);
+    const { data: targetProfile } = await db
+      .from("profiles")
+      .select("role")
+      .eq("id", userId)
+      .maybeSingle();
+    if (isOwnerEmail(target?.user?.email) || targetProfile?.role === "owner")
+      return NextResponse.json({ error: "The owner account cannot be deleted." }, { status: 403 });
     const { error } = await db.auth.admin.deleteUser(userId);
     if (error)
       return NextResponse.json(

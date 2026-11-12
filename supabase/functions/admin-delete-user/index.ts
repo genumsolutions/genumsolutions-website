@@ -23,6 +23,10 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 const supabaseUrl = Deno.env.get("NEXT_PUBLIC_SUPABASE_URL") || Deno.env.get("SUPABASE_URL") || "";
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 
+// The sole owner account (role, not id) — permanent, never deletable. Kept in
+// sync with the website's lib/roles.ts OWNER_EMAIL.
+const OWNER_EMAIL = "genumsolutions@gmail.com";
+
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
     headers: { "Content-Type": "application/json" },
@@ -60,7 +64,10 @@ serve(async (req) => {
       .select("role")
       .eq("id", callerId)
       .maybeSingle();
-    if (callerProfile?.role !== "owner") {
+    const callerEmail = String(userData?.user?.email ?? "")
+      .trim()
+      .toLowerCase();
+    if (callerProfile?.role !== "owner" && callerEmail !== OWNER_EMAIL) {
       return json({ error: "Only the owner can delete users." }, 403);
     }
 
@@ -72,6 +79,21 @@ serve(async (req) => {
     }
     if (userId === callerId) {
       return json({ error: "You cannot delete your own account." }, 400);
+    }
+
+    // The owner account is permanent: hide it from every delete path, not just
+    // the UI. Checked by email AND role so a stale profile can't expose it.
+    const { data: targetUser } = await adminClient.auth.admin.getUserById(userId);
+    const { data: targetProfile } = await adminClient
+      .from("profiles")
+      .select("role")
+      .eq("id", userId)
+      .maybeSingle();
+    const targetEmail = String(targetUser?.user?.email ?? "")
+      .trim()
+      .toLowerCase();
+    if (targetProfile?.role === "owner" || targetEmail === OWNER_EMAIL) {
+      return json({ error: "The owner account cannot be deleted." }, 403);
     }
 
     // 3) Delete via the service role (auth.users is invisible to the anon
