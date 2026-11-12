@@ -10,16 +10,20 @@
 // in the test suite noticed: tests/db-contract.test.ts only checks table names
 // mentioned in source, not the deployed database.
 //
-// This script checks the deployed database itself, table by table and column by
-// column, using PostgREST (no DB password needed). Missing table -> 404
-// (PGRST205); missing column -> 400 (42703/PGRST204).
+// Checks, in order:
+//   1. Tables + columns, via PostgREST (no DB password). Missing table -> 404
+//      (PGRST205); missing column -> 400 (42703/PGRST204).
+//   2. RLS, policies and guard triggers, via the Supabase Management API SQL
+//      endpoint when SUPABASE_ACCESS_TOKEN (or SUPABASE_MANAGEMENT_TOKEN) is
+//      available. This catches a table that exists but has RLS/policies/triggers
+//      dropped — the shape of bug the column check alone cannot see.
 //
 // Usage:
-//   npm run db:drift                # exits 1 on any missing table/column
-//   npm run db:drift -- --verbose   # also list every table that passed
+//   npm run db:drift                # exits 1 on any drift
+//   npm run db:drift -- --verbose   # also list every table/check that passed
 //
-// Credentials: reuses NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY
-// (preferred, so RLS/grants can't hide a table) or the anon key from .env.local.
+// Credentials: NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (preferred)
+// or the anon key for (1); SUPABASE_ACCESS_TOKEN for (2).
 // =====================================================================
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -212,6 +216,124 @@ function parseSchema(sql) {
   return tables;
 }
 
+/**
+ * Parse the security surface schema.sql declares: tables with RLS enabled,
+ * policies, and user triggers (including the auth.users guards). Policies on
+ * storage.objects are ignored — pg_policies does not expose them.
+ */
+function parseSchemaSecurity(sql) {
+  const rlsTables = new Set();
+  const policies = [];
+  const triggers = [];
+
+  for (const raw of splitStatements(sql)) {
+    const s = withoutComments(raw).replace(/\s+/g, " ").trim();
+
+    let m =
+      /^alter table (?:only )?(?:public\.)?("?[A-Za-z_][\w$]*"?) enable row level security/i.exec(
+        s
+      );
+    if (m) rlsTables.add(m[1].replace(/"/g, ""));
+
+    m =
+      /^create policy ("[^"]+"|[A-Za-z_][\w$]*) on (?!storage\.objects\b)(?:public\.)?("?[A-Za-z_][\w$]*"?)/i.exec(
+        s
+      );
+    if (m) policies.push({ name: m[1].replace(/"/g, ""), table: m[2].replace(/"/g, "") });
+
+    m =
+      /^create trigger ("?[A-Za-z_][\w$]*"?) .* on ((?:auth|public)\.)?("?[A-Za-z_][\w$]*"?) .* execute (?:function|procedure) (?:public\.)?("?[A-Za-z_][\w$]*"?)/i.exec(
+        s
+      );
+    if (m) {
+      triggers.push({
+        name: m[1].replace(/"/g, ""),
+        schema: (m[2] || "public.").replace(".", ""),
+        table: m[3].replace(/"/g, ""),
+        func: m[4].replace(/"/g, ""),
+      });
+    }
+  }
+
+  return { rlsTables, policies, triggers };
+}
+
+async function queryManagement(ref, accessToken, query) {
+  const res = await fetch(`https://api.supabase.com/v1/projects/${ref}/database/query`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ query }),
+  });
+  const text = await res.text();
+  if (!res.ok)
+    throw new Error(`Management API ${res.status}: ${text.replace(/\s+/g, " ").slice(0, 200)}`);
+  return JSON.parse(text);
+}
+
+async function checkSecurity(ref, accessToken, sql, verbose) {
+  const expected = parseSchemaSecurity(sql);
+  const [liveRlsOff, livePolicies, liveTriggers] = await Promise.all([
+    queryManagement(
+      ref,
+      accessToken,
+      `select t.tablename from pg_tables t join pg_class c on c.relname = t.tablename
+       join pg_namespace n on n.oid = c.relnamespace and n.nspname = t.schemaname
+       where t.schemaname = 'public' and c.relrowsecurity = false`
+    ),
+    queryManagement(
+      ref,
+      accessToken,
+      `select tablename, policyname from pg_policies where schemaname = 'public'`
+    ),
+    queryManagement(
+      ref,
+      accessToken,
+      `select n.nspname as schema_name, c.relname as table_name, tg.tgname as trigger_name, p.proname as func_name
+       from pg_trigger tg
+       join pg_class c on c.oid = tg.tgrelid
+       join pg_namespace n on n.oid = c.relnamespace
+       join pg_proc p on p.oid = tg.tgfoid
+       where not tg.tgisinternal and n.nspname in ('public', 'auth')`
+    ),
+  ]);
+
+  const liveRlsOffSet = new Set(liveRlsOff.map((r) => r.tablename));
+  const livePolicySet = new Set(livePolicies.map((r) => `${r.tablename}\0${r.policyname}`));
+  const liveTriggerSet = new Set(
+    liveTriggers.map((r) => `${r.schema_name}\0${r.table_name}\0${r.trigger_name}`)
+  );
+
+  const missingRls = [];
+  for (const table of [...expected.rlsTables].sort()) {
+    if (liveRlsOffSet.has(table)) missingRls.push(table);
+    else if (verbose) console.log(`  ok  RLS ${table}`);
+  }
+
+  const missingPolicies = [];
+  const sortedPolicies = [...expected.policies].sort(
+    (a, b) => a.table.localeCompare(b.table) || a.name.localeCompare(b.name)
+  );
+  for (const p of sortedPolicies) {
+    if (!livePolicySet.has(`${p.table}\0${p.name}`)) missingPolicies.push(`${p.table}: ${p.name}`);
+    else if (verbose) console.log(`  ok  policy ${p.table}: ${p.name}`);
+  }
+
+  const missingTriggers = [];
+  const sortedTriggers = [...expected.triggers].sort(
+    (a, b) =>
+      a.schema.localeCompare(b.schema) ||
+      a.table.localeCompare(b.table) ||
+      a.name.localeCompare(b.name)
+  );
+  for (const t of sortedTriggers) {
+    if (!liveTriggerSet.has(`${t.schema}\0${t.table}\0${t.name}`)) {
+      missingTriggers.push(`${t.schema}.${t.table}: ${t.name}`);
+    } else if (verbose) console.log(`  ok  trigger ${t.schema}.${t.table}: ${t.name}`);
+  }
+
+  return { missingRls, missingPolicies, missingTriggers, expected };
+}
+
 async function main() {
   loadEnvFile();
 
@@ -298,25 +420,57 @@ async function main() {
   for (const table of unreadable) console.log(`  unreadable      ${table} (columns not checked)`);
   for (const problem of problems) console.log(`  ERROR           ${problem}`);
 
-  const failed = missingTables.length + missingColumns.length + problems.length;
+  let securityFailed = 0;
+  let securitySkipped = false;
+  const accessToken =
+    process.env.SUPABASE_ACCESS_TOKEN || process.env.SUPABASE_MANAGEMENT_TOKEN || "";
+
+  if (accessToken) {
+    console.log(`\nSecurity checks — RLS, policies, triggers (auth: management token)\n`);
+    try {
+      const sec = await checkSecurity(ref, accessToken, readFileSync(schemaPath, "utf8"), verbose);
+      for (const t of sec.missingRls)
+        console.log(`  RLS OFF         ${t} (expected row level security enabled)`);
+      for (const p of sec.missingPolicies) console.log(`  MISSING POLICY  ${p}`);
+      for (const t of sec.missingTriggers) console.log(`  MISSING TRIGGER ${t}`);
+      securityFailed =
+        sec.missingRls.length + sec.missingPolicies.length + sec.missingTriggers.length;
+      if (!securityFailed) {
+        console.log(
+          `  OK: RLS on ${sec.expected.rlsTables.size} tables, ${sec.expected.policies.length} policies, ${sec.expected.triggers.length} triggers present.`
+        );
+      }
+    } catch (err) {
+      problems.push(`security: ${err?.message || err}`);
+      console.log(`  ERROR           security checks: ${err?.message || err}`);
+    }
+  } else {
+    securitySkipped = true;
+    console.log(
+      `\nSecurity checks skipped (no SUPABASE_ACCESS_TOKEN / SUPABASE_MANAGEMENT_TOKEN). ` +
+        `Set one to verify RLS, policies and guard triggers.`
+    );
+  }
+
+  const failed = missingTables.length + missingColumns.length + problems.length + securityFailed;
   if (failed) {
     console.log(
       `\nDRIFT: ${missingTables.length} missing table(s), ${missingColumns.length} missing column(s), ` +
-        `${problems.length} error(s). Apply supabase/schema.sql (npm run db:apply, or see ` +
-        `TRACKS/DB-PROVISIONING.md).`
+        `${securityFailed} security issue(s), ${problems.length} error(s). ` +
+        `Apply supabase/schema.sql (npm run db:apply, or see TRACKS/DB-PROVISIONING.md).`
     );
     process.exit(1);
   }
 
   console.log(
-    `\nOK: all ${expected.size} tables present` +
-      (missingColumns.length ? "" : " with every schema.sql column") +
+    `\nOK: all ${expected.size} tables present with every schema.sql column` +
+      (securitySkipped ? " (security checks skipped)" : ", RLS/policies/triggers verified") +
       (unreadable.length ? ` (${unreadable.length} unreadable table(s) skipped)` : "") +
       "."
   );
 }
 
-export { parseSchema, splitStatements };
+export { parseSchema, parseSchemaSecurity, splitStatements };
 
 // Only run when executed directly, so tests can import the parser.
 if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {

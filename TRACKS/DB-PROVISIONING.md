@@ -29,17 +29,20 @@ column or table is still fatal**, so check the database rather than trusting the
 
 ```bash
 cd genumsolutions-website
-npm run db:drift            # exits 1 on any missing table/column
+npm run db:drift            # exits 1 on any drift
 npm run db:drift -- --verbose
 ```
 
-The check parses `supabase/schema.sql` (tables + every column, from `create table` bodies and
-`alter table … add column`) and probes the deployed database through PostgREST:
+The check parses `supabase/schema.sql` and runs in two passes:
 
-- `200` → table and all columns exist
-- `404` + `PGRST205` → **missing table**
-- `400` + `42703` (`column X does not exist`) / `PGRST204` → **missing column**
-- `401/403` + `42501` → table exists but the key cannot read it (column list not verified)
+1. **Tables + columns** (PostgREST, no DB password). Probes every expected column: `404/PGRST205` →
+   missing table, `400/42703|PGRST204` → missing column, `401/403/42501` → table exists but the key
+   cannot read it (reported, not failed).
+2. **RLS, policies and guard triggers** (Management API SQL, when `SUPABASE_ACCESS_TOKEN` or
+   `SUPABASE_MANAGEMENT_TOKEN` is set). Verifies every table schema.sql enables RLS on still has it,
+   every public policy exists, and every user trigger exists — including `protect_owner_account` /
+   `block_new_google_account` on `auth.users` and `profiles_protect_role` / `profiles_protect_tier`.
+   Without an access token this pass is skipped with a note (the table/column result still holds).
 
 It uses `SUPABASE_SERVICE_ROLE_KEY` when present (preferred — RLS and grants cannot hide a table),
 otherwise the anon key, both from `.env.local`. It is deliberately **not** part of `test:ci`: the
@@ -152,6 +155,8 @@ Behavioural checks (the ones that actually caught the bug):
   fills canonical rows. A table that exists with the wrong row count is a seed problem, not drift.
 - **The `pg_net` order-status push trigger** (`supabase/order-status-push-trigger.sql`) — needs the
   anon key substitution documented in that file.
+- **Storage-object policies.** The RLS/policy pass covers `pg_policies` in `public`; the
+  `product-images` bucket policies live on `storage.objects` and are not verified by the drift check.
 
 ---
 
@@ -164,4 +169,6 @@ rows, `products` 17, `categories` 11, `services` 6. Added `protect_owner_account
 `block_new_google_account` to `schema.sql` in the same pass so a future re-provision keeps them.
 `npm run db:drift` was written here and validated in both directions against
 `information_schema.columns` (39/39 tables, 0 columns unparsed) and against deliberately broken
-selects (missing column → `42703`, missing table → `PGRST205`).
+selects (missing column → `42703`, missing table → `PGRST205`). It was later extended to verify RLS,
+public policies and guard triggers via the Management API when an access token is present (38 RLS
+tables, 141 policies, 15 triggers against the live project).
