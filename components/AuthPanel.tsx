@@ -106,6 +106,7 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
   const [showPassword, setShowPassword] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
   const [isSignedIn, setIsSignedIn] = useState<boolean>(false);
+  const [checkingSession, setCheckingSession] = useState(true);
 
   useEffect(() => {
     // Probe the session on mount — if already signed in, redirect home so the
@@ -117,12 +118,18 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
     fetch("/api/auth/session", { cache: "no-store" })
       .then((response) => (response.ok ? response.json() : null))
       .then((data) => {
-        if (!active || !data?.user) return;
-        setIsSignedIn(true);
-        router.replace("/");
+        if (!active) return;
+        if (data?.user) {
+          setIsSignedIn(true);
+          router.replace("/");
+          return;
+        }
       })
       .catch(() => {
         // Offline or logged out: leave the form visible.
+      })
+      .finally(() => {
+        if (active) setCheckingSession(false);
       });
     return () => {
       active = false;
@@ -149,6 +156,21 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
   // already started the redirect home.
   if (isSignedIn) {
     return null;
+  }
+
+  // Avoid flashing the sign-in/create-account form while we probe for an
+  // existing session (e.g. just after login or on a direct /login visit).
+  if (checkingSession) {
+    return (
+      <main className="grid-paper min-h-[calc(100vh-64px)]">
+        <div className="mx-auto flex min-h-[calc(100vh-64px)] w-full max-w-6xl items-center justify-center px-5 py-14 lg:px-8">
+          <div className="stamp-ring w-full max-w-md border-t-4 border-navy bg-white p-8 text-center">
+            <p className="font-display text-lg font-bold text-ink">Checking your account…</p>
+            <p className="mt-2 text-sm text-muted">Please wait a moment.</p>
+          </div>
+        </div>
+      </main>
+    );
   }
 
   function switchMode(next: Mode) {

@@ -126,18 +126,22 @@ export function inStockOnly(list: Product[], only: boolean): Product[] {
 export type CatalogScope = "components" | "models" | "cars" | "projects";
 
 export function applyScope(all: Product[], scope: string): Product[] {
+  const norm = (v: unknown) => String(v ?? "").trim().toLowerCase();
   if (scope === "models")
-    return all.filter((p) => p.category?.trim().toLowerCase() === "3d models");
+    return all.filter((p) => norm(p.category) === "3d models");
   if (scope === "cars") return all.filter((p) => p.project_category === "Robo Car");
   if (scope === "projects")
     return all.filter(
-      (p) => p.productType === "Project package" || p.category === "Pre-packaged Kits"
+      (p) =>
+        norm(p.productType) === "project package" ||
+        norm(p.category) === "pre-packaged kits" ||
+        norm(p.category) === "prepackaged kits",
     );
   return all.filter(
     (p) =>
-      !["Robot Cars", "Pre-packaged Kits"].includes(p.category) &&
-      p.category?.trim().toLowerCase() !== "3d models" &&
-      p.productType !== "Project package"
+      !["robot cars", "pre-packaged kits", "prepackaged kits"].includes(norm(p.category)) &&
+      norm(p.category) !== "3d models" &&
+      norm(p.productType) !== "project package",
   );
 }
 
