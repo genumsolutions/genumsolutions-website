@@ -35,6 +35,12 @@ export async function POST(request: Request) {
     if (error || !data.user)
       return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
 
+    // Start the single-session cleanup now so it overlaps the profile lookup:
+    // the request waits for the slower of the two, not for both in series.
+    // (Vercel may freeze unawaited work after the response, so it still runs
+    // inside the request.)
+    const singleSession = enforceSingleSession(data.user.id);
+
     let role = "customer";
     if (isOwnerEmail(data.user.email)) {
       // The main account is owner by definition, even if profiles.role is stale.
@@ -54,11 +60,7 @@ export async function POST(request: Request) {
       }
     }
 
-    // Keep only one active session for this account across all devices/browsers.
-    // Fire-and-forget: this costs one list plus N deletes against GoTrue and
-    // never affects the cookies in this response, so awaiting it only made
-    // sign-in slower.
-    void enforceSingleSession(data.user.id);
+    await singleSession;
 
     return NextResponse.json({ ok: true, role });
   } catch {

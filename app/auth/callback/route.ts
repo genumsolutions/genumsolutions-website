@@ -41,8 +41,7 @@ export async function GET(request: NextRequest) {
     if (code) {
       const { data, error } = await supabase.auth.exchangeCodeForSession(code);
       if (!error) {
-        // Non-blocking: single-session cleanup must not delay the redirect.
-        if (data.user?.id) void enforceSingleSession(data.user.id);
+        if (data.user?.id) await enforceSingleSession(data.user.id);
         return NextResponse.redirect(`${origin}${next}`);
       }
       console.error(
@@ -60,8 +59,7 @@ export async function GET(request: NextRequest) {
     ) {
       const { data, error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
       if (!error) {
-        // Non-blocking: single-session cleanup must not delay the redirect.
-        if (data.user?.id) void enforceSingleSession(data.user.id);
+        if (data.user?.id) await enforceSingleSession(data.user.id);
         return NextResponse.redirect(`${origin}${next}`);
       }
     }
