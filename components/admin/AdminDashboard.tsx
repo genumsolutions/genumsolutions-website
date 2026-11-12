@@ -48,7 +48,11 @@ export default function AdminDashboard() {
             <Stat
               label="Products"
               value={stats.totalProducts}
-              sub={stats.lowStockProducts > 0 ? `${stats.lowStockProducts} low stock` : "Stock OK"}
+              sub={
+                stats.lowStockProducts > 0 || (stats.outOfStockProducts ?? 0) > 0
+                  ? `${stats.lowStockProducts} low stock · ${stats.outOfStockProducts ?? 0} out of stock`
+                  : "Stock OK"
+              }
             />
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

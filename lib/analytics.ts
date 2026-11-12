@@ -93,6 +93,7 @@ export async function getDashboardStats(): Promise<{
   revenueToday: number;
   totalProducts: number;
   lowStockProducts: number;
+  outOfStockProducts: number;
   totalMessages: number;
   unreadMessages: number;
   totalTransactions: number;
@@ -118,6 +119,7 @@ export async function getDashboardStats(): Promise<{
     paidOrdersRowsResult,
     productsTotalResult,
     productsLowStockResult,
+    productsOutOfStockResult,
     messagesTotalResult,
     messagesUnreadResult,
     transactionsTotalResult,
@@ -142,6 +144,7 @@ export async function getDashboardStats(): Promise<{
       .select("*", { count: "exact", head: true })
       .gt("stock", 0)
       .lte("stock", 3),
+    supabase.from("products").select("*", { count: "exact", head: true }).lte("stock", 0),
     supabase.from("customer_messages").select("*", { count: "exact", head: true }),
     supabase
       .from("customer_messages")
@@ -191,6 +194,7 @@ export async function getDashboardStats(): Promise<{
     revenueToday,
     totalProducts: productsTotalResult.count ?? 0,
     lowStockProducts: productsLowStockResult.count ?? 0,
+    outOfStockProducts: productsOutOfStockResult.count ?? 0,
     totalMessages: messagesTotalResult.count ?? 0,
     unreadMessages: messagesUnreadResult.count ?? 0,
     totalTransactions: transactionsTotalResult.count ?? 0,

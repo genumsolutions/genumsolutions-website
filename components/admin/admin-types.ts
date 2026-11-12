@@ -97,6 +97,7 @@ export type DashboardStats = {
   revenueToday: number;
   totalProducts: number;
   lowStockProducts: number;
+  outOfStockProducts: number;
   totalMessages: number;
   unreadMessages: number;
   totalTransactions: number;
