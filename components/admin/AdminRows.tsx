@@ -14,7 +14,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { inputClass } from "../../lib/styles";
+import { inputClass, cardRow, cardRowText } from "../../lib/styles";
 import { Pager, panelCard, panelHeader } from "./admin-helpers";
 
 type Kind = "training" | "pilot" | "curriculum";
@@ -173,7 +173,7 @@ export default function AdminRows({
     <section aria-label={`${singular}s`} className={panelCard}>
       <div className={`${panelHeader} border-b border-line pb-4`}>
         <div className="min-w-0">
-          <h2 className="font-display text-xl font-bold">
+          <h2 className="font-display text-xl font-bold break-words">
             {caption || `${singular}s`} ({rows.length})
           </h2>
           {hint && <p className="mt-1 text-xs text-slate-500">{hint}</p>}
@@ -340,9 +340,9 @@ export default function AdminRows({
 
       <div className="mt-4 divide-y divide-line">
         {shown.map((r) => (
-          <div key={r.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-            <span className="min-w-0 flex-1">
-              <span className="block text-sm">
+          <div key={r.id} className={cardRow}>
+            <span className={cardRowText}>
+              <span className="block">
                 <strong>{safe(r)}</strong>{" "}
                 {kind === "curriculum" && r.ageBand && (
                   <span className="text-slate-400">({r.ageBand})</span>
@@ -410,7 +410,9 @@ export default function AdminRows({
                     ? "Pilot cost"
                     : "Training"}
               </p>
-              <h2 className="mt-2 font-display text-xl font-bold text-ink">{safe(previewing)}</h2>
+              <h2 className="mt-2 break-words font-display text-xl font-bold text-ink">
+                {safe(previewing)}
+              </h2>
               {kind === "curriculum" && previewing.skills?.length ? (
                 <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-slate-700">
                   {(previewing.skills as string[]).map((s, i) => (
@@ -418,7 +420,7 @@ export default function AdminRows({
                   ))}
                 </ul>
               ) : (
-                <p className="mt-4 text-sm leading-6 text-slate-600">
+                <p className="mt-4 break-words text-sm leading-6 text-slate-600">
                   {(previewing as { description?: string }).description ||
                     (previewing as { note?: string }).note ||
                     (previewing.item ?? "")}

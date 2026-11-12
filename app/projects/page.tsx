@@ -4,6 +4,7 @@ import { ArrowRight } from "lucide-react";
 import PageIntro from "../../components/PageIntro";
 import PageShell from "../../components/PageShell";
 import ProjectsCatalog from "../../components/ProjectsCatalog";
+import ProjectTypes from "../../components/ProjectTypes";
 import { getManagedProducts } from "../../lib/content-store";
 import { getProjectCategories } from "../../lib/project-categories-store";
 import { applyScope } from "../../lib/catalog";
@@ -24,7 +25,12 @@ export default async function ProjectsPage() {
   // every 3D-model and electronics row to /projects hidden inside
   // ProjectsCatalog's props. Scope SERVER-SIDE (applyScope keeps Project
   // packages; the includeKits path re-adds Pre-packaged Kits client-side).
-  const products = applyScope(await getManagedProducts(), "projects");
+  const allProducts = await getManagedProducts();
+  const products = applyScope(allProducts, "projects");
+  // ProjectTypes only needs ids, and it must see rows that `projects` scope
+  // drops (kit-package builds such as the Bluetooth and multimode cars), or a
+  // real project would read "in the workshop" while its product is live.
+  const productIds = allProducts.map((product) => product.id);
   const categories = await getProjectCategories();
   const categoryEntries = categories.map((c) => ({
     id: c.id,
@@ -46,6 +52,13 @@ export default async function ProjectsPage() {
           Test & control on the IoT Controller
           <ArrowRight size={15} aria-hidden="true" />
         </Link>
+      </div>
+      {/* The build families from the repo root (2WD1M, 4WD4M, self-balancing,
+          wireless, remote, obstacle, path-follow, dustbin) before the catalog
+          grid, so the page covers every project type and not only the rows
+          that happen to be for sale today. */}
+      <div className="py-8 sm:py-10">
+        <ProjectTypes productIds={productIds} />
       </div>
       <ProjectsCatalog products={products} categories={categoryEntries} includeKits />
     </PageShell>

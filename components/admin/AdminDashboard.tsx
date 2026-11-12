@@ -86,7 +86,7 @@ export default function AdminDashboard() {
                     key={pv.path}
                     className="flex items-center justify-between gap-3 py-2 text-sm"
                   >
-                    <span className="min-w-0 truncate font-mono text-xs text-slate-600">
+                    <span className="min-w-0 break-all font-mono text-xs text-slate-600">
                       {pv.path}
                     </span>
                     <span className="shrink-0 font-bold">{pv.count} views</span>

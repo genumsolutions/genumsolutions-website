@@ -150,7 +150,7 @@ export default function AdminMessages({ setMessage: _setMessage, canDelete }: Pr
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-bold">
+                    <p className="break-words text-sm font-bold [overflow-wrap:anywhere]">
                       {msg.name} <span className="font-normal text-slate-500">· {msg.email}</span>
                     </p>
                     <p className="mt-1 text-xs text-slate-400">{formatTimestamp(msg.created_at)}</p>
@@ -217,7 +217,9 @@ export default function AdminMessages({ setMessage: _setMessage, canDelete }: Pr
                 className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-white p-4"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-bold">{sub.email}</p>
+                  <p className="break-words text-sm font-bold [overflow-wrap:anywhere]">
+                    {sub.email}
+                  </p>
                   <p className="mt-0.5 text-xs text-slate-400">
                     {formatTimestamp(sub.created_at)} · via {sub.source}
                   </p>

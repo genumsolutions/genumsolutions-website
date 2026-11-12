@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
-import { inputClass } from "../../lib/styles";
+import { inputClass, cardRow, cardRowText } from "../../lib/styles";
 import type { Product } from "./admin-types";
 import { emptyProduct, PAGE_SIZE } from "./admin-types";
 import { Pager, focusEditor, editorCard, editorCardTitle, panelCard } from "./admin-helpers";
@@ -447,12 +447,9 @@ export default function AdminProjectPackages({
             />
             <div className="mt-3 divide-y divide-line">
               {shownProjects.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex flex-wrap items-center justify-between gap-2 py-2"
-                >
-                  <div className="min-w-0 flex-1">
-                    <span className="block line-clamp-2 text-sm">
+                <div key={item.id} className={`${cardRow} items-center`}>
+                  <div className={cardRowText}>
+                    <span className="block">
                       <strong>{item.name}</strong>{" "}
                       <span className="text-slate-400">{item.sku}</span>
                     </span>
@@ -555,7 +552,7 @@ export default function AdminProjectPackages({
                   return (
                     <li
                       key={link.productId}
-                      className="flex flex-wrap items-center justify-between gap-2 rounded border border-line px-3 py-2"
+                      className={`${cardRow} items-center rounded border border-line px-3 py-2`}
                     >
                       <span className="min-w-0 flex-1 truncate text-sm font-bold text-ink">
                         {linked?.name ?? link.productId}
@@ -688,10 +685,10 @@ export default function AdminProjectPackages({
                 <p className="truncate text-xs font-black uppercase tracking-widest text-navy">
                   {previewProduct.badge || "Project Package"}
                 </p>
-                <h2 className="mt-2 line-clamp-2 font-display text-xl font-bold leading-snug text-ink">
+                <h2 className="mt-2 break-words font-display text-xl font-bold leading-snug text-ink">
                   {previewProduct.name}
                 </h2>
-                <p className="mt-2 line-clamp-2 flex-1 text-sm leading-6 text-muted">
+                <p className="mt-2 break-words text-sm leading-6 text-muted">
                   {previewProduct.note || previewProduct.description}
                 </p>
                 <div className="mt-5 flex items-center justify-between gap-3">

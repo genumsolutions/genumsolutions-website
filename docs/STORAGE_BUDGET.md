@@ -83,7 +83,77 @@ bug; an unreferenced one is just weight).
 One live import smoke test through the deployed edge function: an 810 KB source
 photo stored at **154 KB**, 1600 px, JPEG.
 
+## Recovering lost rows (and why it keeps happening)
+
+The database was rebuilt from scratch after oversized images filled the free
+allowance, and the rebuild did not carry the old catalog across: on 2026-11-12
+the live project held 17 products, 0 journal posts, 0 training programs and 0
+curriculum rows, while `backups/2026-11-09T09-38-58/` still had 59 of them. The
+images were gone with them — 43 product rows pointed at storage objects that no
+longer existed, and the old project (`bkylfnlybtsujwzropru`) no longer resolves,
+so nothing could be fetched from there.
+
+The 38 rows that only existed in git history are kept in
+`data/catalog-lost-2026-09-23.json`. That file is **versioned** (unlike
+`backups/`, which holds dumps with profile data and stays gitignored), so the
+recovered catalog survives a fresh clone.
+
+Two scripts apply the recovery, and both are insert-only and dry-run by default:
+
+```bash
+npm run db:restore -- --dry-run          # what the newest backup would add
+npm run db:restore -- --apply            # insert missing rows, skip existing ids
+npm run catalog:restore -- --dry-run     # the 38 products recovered from git
+npm run catalog:restore -- --apply       # insert them + upload their photos
+npm run catalog:restore -- --heal-images # repoint rows at missing files
+npm run catalog:restore -- --heal-images --apply
+```
+
+Restores never update or delete a live row: a restore that overwrote current
+edits would be worse than the loss it repairs. Where two ids describe the same
+product (`lord-shiva-statue` vs `lord-shiva-statue-seated-blessing-pose-3d-print`)
+both are kept and the newer one is retired by `catalog:dupes`.
+
+`--heal-images` resolves a dead `image_url` three ways, cheapest first: an object
+with the same stem and another extension (the `.jpg` that became `.webp`), the
+surviving original in `public/media/products/`, then the protected placeholder.
+It also prunes gallery entries that point at deleted objects. After it ran, the
+bucket was 52 objects / 4.6 MB with **0 missing references**.
+
+## Keeping the row count and the byte count down
+
+The rule of thumb: bytes are the scarce resource, and repeated rows are what
+multiply them. Two mechanisms, both reversible:
+
+- **`npm run catalog:dupes`** reports two families of repeat — the same product
+  entered twice (same normalised name) and shared data (`sku`/photo used by more
+  than one product, which needs a real fix rather than a hide). `--apply` sets
+  `active = false` on the newer copy of a name group and appends a note; it never
+  deletes a row, so the admin panel can bring it back.
+- **`npm run images:sweep -- --delete`** removes objects no row references, after
+  the fail-closed checks described above. Run `images:verify` first.
+
+Before adding a product, check it is not already there:
+`npm run catalog:dupes` lists name, SKU and photo collisions in one pass. Prefer
+editing an existing row (new variant, updated price) over inserting a near-copy —
+each extra row also tends to drag its own copy of a photo into the bucket.
+
 ## Backups
+
+## Current headroom (measured 2026-11-12)
+
+| Resource         | Used   | Allowance | Note                                                                     |
+| ---------------- | ------ | --------- | ------------------------------------------------------------------------ |
+| Database         | 15 MB  | 500 MB    | 3% — text only, restored rows cost almost nothing                        |
+| Storage          | 164 MB | 1 GB      | 16% — but **159 MB of it is 5 APK objects in `app-releases`**            |
+| `product-images` | 4.6 MB | —         | 52 objects, 0 missing references                                         |
+| Storage egress   | —      | 5 GB / mo | One APK download is ~30 MB: ~170 downloads exhaust the month's allowance |
+
+`app-releases` is the one bucket that can still take the site down: five builds
+at ~30 MB each are 16% of storage, and the free plan's 5 GB egress is only about
+170 downloads per month. Keep at most the current release plus one previous
+build there, and treat an old APK as dead weight rather than history — the app
+can be rebuilt from its git tag.
 
 `npm run backup` writes `backups/<timestamp>/` (gitignored) with one JSON file
 per table declared in `supabase/schema.sql`, a storage manifest, and — with

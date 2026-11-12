@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { inputClass } from "../../lib/styles";
+import { inputClass, cardRow, cardRowText } from "../../lib/styles";
 import type { Service } from "./admin-types";
 import { emptyService } from "./admin-types";
 import {
@@ -129,12 +129,9 @@ export default function AdminServices({ setMessage, canDelete }: Props) {
                 )}
                 <div className="mt-3 divide-y divide-line">
                   {filteredServices.map((s) => (
-                    <div
-                      key={s.id}
-                      className="flex flex-wrap items-center justify-between gap-2 py-2"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <span className="block line-clamp-2 text-sm">
+                    <div key={s.id} className={`${cardRow} items-center`}>
+                      <div className={cardRowText}>
+                        <span className="block">
                           <strong>{s.name}</strong>{" "}
                           <span className="text-slate-400">{s.priceLabel}</span>
                         </span>

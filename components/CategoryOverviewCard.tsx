@@ -47,7 +47,7 @@ export default function CategoryOverviewCard({ category }: { category: ProjectCa
             {category.hardware.map((item) => (
               <li
                 key={item}
-                className="whitespace-nowrap rounded-full bg-mist px-3 py-1.5 text-xs font-bold text-navy"
+                className="max-w-full break-words rounded-full bg-mist px-3 py-1.5 text-xs font-bold text-navy"
               >
                 {item}
               </li>

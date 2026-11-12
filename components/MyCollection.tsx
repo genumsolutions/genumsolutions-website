@@ -88,10 +88,10 @@ export default function MyCollection() {
               </Link>
               <Link
                 href={item.href}
-                className="block px-2 pb-2 pt-1.5"
+                className="block px-3 pb-3 pt-2"
                 aria-label={`Open ${item.name}`}
               >
-                <span className="block truncate text-[13px] font-bold leading-tight text-ink">
+                <span className="line-clamp-2 min-h-[2.4em] break-words text-[13px] font-bold leading-tight text-ink [overflow-wrap:anywhere]">
                   {item.name}
                 </span>
                 <span className="mt-0.5 block text-xs font-black text-navy">

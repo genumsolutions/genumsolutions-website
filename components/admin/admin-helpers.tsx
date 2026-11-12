@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { cardClass } from "../../lib/styles";
 
 export function Pager({
   page,
@@ -88,16 +89,20 @@ export function focusEditor(id: string) {
 // alternated p-4 / p-6 between neighbours. Admin cards now share one quiet
 // anatomy — rounded hairline card, p-5, a bottom-ruled header row — the same
 // shape as `Stat` above, so tabs line up with each other and with the app.
-export const panelCard = "min-w-0 rounded-xl border border-line bg-white p-5";
+// 2026-11-12: the shared card standard lives in lib/styles.ts (cardClass).
+// Admin cards inherit it rather than re-declaring padding, so every tab — and
+// every card on the storefront — has the same p-5 and the same wrap rules:
+// a long title/SKU/URL breaks inside the card instead of pushing past it.
+export const panelCard = cardClass;
 export const panelListSection = "min-w-0 space-y-4";
-export const editorCard = "min-w-0 overflow-hidden rounded-xl border border-line bg-white p-5";
+export const editorCard = cardClass;
 export const editorCardTitle = "font-display text-xl font-bold text-ink";
 export const panelTitle = "font-display text-lg font-bold text-ink";
 /** Header row: title on the left, filters/actions on the right. */
 export const panelHeader =
   "flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between";
 /** Compact list row used by orders / messages / subscribers. */
-export const panelRow = "rounded-lg border border-line bg-white p-4";
+export const panelRow = "min-w-0 break-words rounded-lg border border-line bg-white p-4";
 
 export function PanelCard({
   children,
@@ -126,7 +131,7 @@ export function EmptyState({
 }) {
   return (
     <p
-      className={`rounded-lg border border-dashed border-line bg-white px-4 py-6 text-center text-sm text-slate-500 ${className}`.trim()}
+      className={`min-w-0 break-words rounded-lg border border-dashed border-line bg-white px-4 py-6 text-center text-sm text-slate-500 ${className}`.trim()}
     >
       {children}
     </p>
@@ -177,7 +182,11 @@ export function SaveBar({
   children: React.ReactNode;
   className?: string;
 }) {
-  return <div className={`mt-5 flex gap-3 ${className}`.trim()}>{children}</div>;
+  // 2026-11-12: flex-wrap — two long buttons used to push past the card edge
+  // on a phone; they now stack instead.
+  return (
+    <div className={`mt-5 flex flex-wrap items-center gap-3 ${className}`.trim()}>{children}</div>
+  );
 }
 
 export function EditorCard({

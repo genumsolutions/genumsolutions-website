@@ -1,0 +1,1220 @@
+{
+  "createdAt": "2026-11-12T18:12:46.705Z",
+  "source": "genumsolutions-website@e602959^ lib/catalog-data.ts (the catalog replaced by the U-13 inventory rewrite on 2026-09-23)",
+  "why": "The rebuild dropped these rows. The original Supabase project (bkylfnlybtsujwzropru) no longer resolves, so this git extract is the only surviving copy of the data; the photos survive in public/media/products.",
+  "counts": {
+    "products": 38,
+    "pendingReview": 20
+  },
+  "products": [
+    {
+      "id": "esp32-dev-board",
+      "name": "ESP32 Development Board",
+      "category": "Controllers & Boards",
+      "projectCategory": null,
+      "price": 1850,
+      "priceLabel": "NPR 1,850",
+      "sku": "GEN-ESP-0001",
+      "productType": "Retail kit",
+      "inventoryType": "Catalog",
+      "note": "Wi-Fi and Bluetooth ready",
+      "description": "A connected development board for web control, IoT experiments, sensors, and compact robot projects.",
+      "specs": [
+        "Wi-Fi and Bluetooth",
+        "Dual-core MCU",
+        "GPIO, ADC, and PWM support",
+        "USB programming cable"
+      ],
+      "stock": 16,
+      "color": "from-[#dff4ec] to-[#79c7a8]",
+      "badge": "Core inventory",
+      "image": "/media/products/esp32-dev-board.jpg",
+      "carModeId": null
+    },
+    {
+      "id": "dc-geared-motor-pair",
+      "name": "DC Geared Motor Pair",
+      "category": "Motors & Motion",
+      "projectCategory": null,
+      "price": 890,
+      "priceLabel": "NPR 890",
+      "sku": "GEN-MOT-0001",
+      "productType": "Retail kit",
+      "inventoryType": "Catalog",
+      "note": "Reliable motion, ready to wire",
+      "description": "A matched pair of compact geared motors for robot cars, mechanisms, and classroom prototypes.",
+      "specs": [
+        "2 geared DC motors",
+        "3–6V operating range",
+        "Mounting hardware",
+        "Bench-tested before dispatch"
+      ],
+      "stock": 37,
+      "color": "from-[#f1e9ff] to-[#c4a8ef]",
+      "badge": null,
+      "image": "/media/products/dc-geared-motor-pair.jpg",
+      "carModeId": null
+    },
+    {
+      "id": "sg90-servo-pair",
+      "name": "SG90 Micro Servo Pair",
+      "category": "Motors & Motion",
+      "projectCategory": null,
+      "price": 650,
+      "priceLabel": "NPR 650",
+      "sku": "GEN-MOT-0002",
+      "productType": "Retail kit",
+      "inventoryType": "Catalog",
+      "note": "Compact positioning motion",
+      "description": "Small servo motors for steering, sensor mounts, robotic arms, and interactive mechanisms.",
+      "specs": [
+        "2 micro servos",
+        "180-degree movement",
+        "Servo horns and screws",
+        "5V operation"
+      ],
+      "stock": 22,
+      "color": "from-[#fff1cf] to-[#f1c875]",
+      "badge": null,
+      "image": "/media/products/sg90-servo-pair.jpg",
+      "carModeId": null
+    },
+    {
+      "id": "sensor-starter-pack",
+      "name": "Sensor & Module Starter Pack",
+      "category": "Sensors & Modules",
+      "projectCategory": null,
+      "price": 2200,
+      "priceLabel": "NPR 2,200",
+      "sku": "GEN-SEN-0002",
+      "productType": "Retail kit",
+      "inventoryType": "Catalog",
+      "note": "15 hands-on experiments",
+      "description": "A tidy collection of common sensor modules for Arduino and ESP32 experiments.",
+      "specs": [
+        "15 sensor and module boards",
+        "Breadboard and jumper wires",
+        "Project card deck",
+        "Arduino and ESP32 compatible"
+      ],
+      "stock": 24,
+      "color": "from-[#e8f3ef] to-[#a9d9c6]",
+      "badge": "Classroom pack",
+      "image": "/media/products/sensor-starter-pack.jpg",
+      "carModeId": null
+    },
+    {
+      "id": "18650-battery-pack",
+      "name": "18650 Li-ion Battery Pack",
+      "category": "Power & Charging",
+      "projectCategory": null,
+      "price": 950,
+      "priceLabel": "NPR 950",
+      "sku": "GEN-PWR-0001",
+      "productType": "Retail kit",
+      "inventoryType": "Catalog",
+      "note": "Portable project power",
+      "description": "A protected rechargeable battery pack for mobile robotics and low-voltage prototypes.",
+      "specs": [
+        "Protected Li-ion cells",
+        "Project connector lead",
+        "Insulated holder",
+        "Use with a suitable charger"
+      ],
+      "stock": 20,
+      "color": "from-[#ffe3d6] to-[#f1a17e]",
+      "badge": null,
+      "image": "/media/products/18650-battery-pack.jpg",
+      "carModeId": null
+    },
+    {
+      "id": "li-ion-charger",
+      "name": "Li-ion Battery Charger",
+      "category": "Power & Charging",
+      "projectCategory": null,
+      "price": 750,
+      "priceLabel": "NPR 750",
+      "sku": "GEN-PWR-0002",
+      "productType": "Retail kit",
+      "inventoryType": "Catalog",
+      "note": "Charge project batteries safely",
+      "description": "A compact charger for compatible Li-ion project battery packs.",
+      "specs": [
+        "Charging indicator",
+        "Protected charging circuit",
+        "USB input",
+        "Compatibility guidance included"
+      ],
+      "stock": 14,
+      "color": "from-[#fff1cf] to-[#f1c875]",
+      "badge": null,
+      "image": "/media/products/li-ion-charger.jpg",
+      "carModeId": null
+    },
+    {
+      "id": "robot-wheel-set",
+      "name": "Rubber Robot Wheel Set",
+      "category": "Mechanical Parts",
+      "projectCategory": null,
+      "price": 420,
+      "priceLabel": "NPR 420",
+      "sku": "GEN-MEC-0001",
+      "productType": "Retail kit",
+      "inventoryType": "Catalog",
+      "note": "Grip for mobile builds",
+      "description": "A pair of rubber wheels for small robot cars and motorized mechanisms.",
+      "specs": [
+        "2 rubber wheels",
+        "Motor shaft adapters",
+        "Balanced tread",
+        "Compatible with geared motors"
+      ],
+      "stock": 26,
+      "color": "from-[#e9e0ff] to-[#b79be9]",
+      "badge": null,
+      "image": "/media/products/robot-wheel-set.jpg",
+      "carModeId": null
+    },
+    {
+      "id": "chassis-fastener-pack",
+      "name": "Chassis & Fastener Pack",
+      "category": "Mechanical Parts",
+      "projectCategory": null,
+      "price": 780,
+      "priceLabel": "NPR 780",
+      "sku": "GEN-MEC-0002",
+      "productType": "Retail kit",
+      "inventoryType": "Catalog",
+      "note": "Build a clean mechanical base",
+      "description": "A practical selection of chassis plates, spacers, screws, nuts, and mounting hardware.",
+      "specs": [
+        "Acrylic chassis plates",
+        "M3 spacers and screws",
+        "Nuts and washers",
+        "Assembly guide"
+      ],
+      "stock": 11,
+      "color": "from-[#dfeaff] to-[#9fbaff]",
+      "badge": null,
+      "image": "/media/products/chassis-fastener-pack.jpg",
+      "carModeId": null
+    },
+    {
+      "id": "dupont-jst-cable-pack",
+      "name": "Dupont & JST Cable Pack",
+      "category": "Connectors & Cables",
+      "projectCategory": null,
+      "price": 360,
+      "priceLabel": "NPR 360",
+      "sku": "GEN-CON-0001",
+      "productType": "Retail kit",
+      "inventoryType": "Catalog",
+      "note": "Connect modules without friction",
+      "description": "Common jumper and JST leads for breadboards, sensors, controllers, and battery connections.",
+      "specs": [
+        "Male-male Dupont leads",
+        "Male-female Dupont leads",
+        "JST battery leads",
+        "Organized cable set"
+      ],
+      "stock": 32,
+      "color": "from-[#dff4ec] to-[#79c7a8]",
+      "badge": null,
+      "image": "/media/products/dupont-jst-cable-pack.jpg",
+      "carModeId": null
+    },
+    {
+      "id": "soldering-tool-kit",
+      "name": "Soldering & Prototype Tool Kit",
+      "category": "Tools & Fabrication",
+      "projectCategory": null,
+      "price": 2450,
+      "priceLabel": "NPR 2,450",
+      "sku": "GEN-TOL-0001",
+      "productType": "Retail kit",
+      "inventoryType": "Catalog",
+      "note": "Make and repair with confidence",
+      "description": "A beginner-friendly tool set for soldering, wiring, assembly, and prototype maintenance.",
+      "specs": [
+        "Temperature-controlled iron",
+        "Solder and flux",
+        "Wire cutter and tweezers",
+        "Safety stand and sponge"
+      ],
+      "stock": 7,
+      "color": "from-[#f1e9ff] to-[#c4a8ef]",
+      "badge": null,
+      "image": "/media/products/soldering-tool-kit.jpg",
+      "carModeId": null
+    },
+    {
+      "id": "pla-filament",
+      "name": "PLA Maker Filament · 1 kg",
+      "category": "3D Printing Materials",
+      "projectCategory": null,
+      "price": 2850,
+      "priceLabel": "NPR 2,850",
+      "sku": "GEN-3DP-0001",
+      "productType": "Material",
+      "inventoryType": "Catalog",
+      "note": "Reliable prints, clean finish",
+      "description": "Everyday PLA filament for prototypes, enclosures, classroom parts, and useful physical models.",
+      "specs": [
+        "1.75 mm diameter",
+        "1 kg spool",
+        "Low-odor PLA material",
+        "195–215°C suggested nozzle temperature"
+      ],
+      "stock": 14,
+      "color": "from-[#ffe3d6] to-[#f1a17e]",
+      "badge": "Maker essential",
+      "image": "/media/products/pla-filament.jpg",
+      "carModeId": null
+    },
+    {
+      "id": "petg-filament",
+      "name": "PETG Maker Filament · 1 kg",
+      "category": "3D Printing Materials",
+      "projectCategory": null,
+      "price": 3200,
+      "priceLabel": "NPR 3,200",
+      "sku": "GEN-3DP-0002",
+      "productType": "Material",
+      "inventoryType": "Catalog",
+      "note": "Stronger functional prints",
+      "description": "Durable PETG filament for functional parts, brackets, prototypes, and workshop fixtures.",
+      "specs": [
+        "1.75 mm diameter",
+        "1 kg spool",
+        "Good layer adhesion",
+        "230–250°C suggested nozzle temperature"
+      ],
+      "stock": 8,
+      "color": "from-[#dce8ff] to-[#7e9ff2]",
+      "badge": null,
+      "image": "/media/products/petg-filament.jpg",
+      "carModeId": null
+    },
+    {
+      "id": "printer-care-kit",
+      "name": "3D Printer Care Kit",
+      "category": "Tools & Fabrication",
+      "projectCategory": null,
+      "price": 1650,
+      "priceLabel": "NPR 1,650",
+      "sku": "GEN-3DP-0003",
+      "productType": "Retail kit",
+      "inventoryType": "Catalog",
+      "note": "Keep the next layer honest",
+      "description": "A practical maintenance kit for calibration, cleaning, and small FDM printer repairs.",
+      "specs": [
+        "Nozzle cleaning needles",
+        "Brass brush and tweezers",
+        "Bed leveling cards",
+        "PTFE tube and cutter"
+      ],
+      "stock": 9,
+      "color": "from-[#e9e0ff] to-[#b79be9]",
+      "badge": null,
+      "image": "/media/products/printer-care-kit.jpg",
+      "carModeId": null
+    },
+    {
+      "id": "esp8266-board",
+      "name": "ESP8266 Development Board",
+      "category": "Controllers & Boards",
+      "projectCategory": null,
+      "price": 0,
+      "priceLabel": "Request quote",
+      "sku": "GEN-ESP-0002",
+      "productType": "Retail kit",
+      "inventoryType": "Catalog",
+      "note": "Wi-Fi for compact IoT builds",
+      "description": "A compact Wi-Fi development board for connected sensors and small automation projects.",
+      "specs": [
+        "ESP8266 board",
+        "Wi-Fi connectivity",
+        "USB programming connection"
+      ],
+      "stock": 0,
+      "color": "from-[#dce8ff] to-[#7e9ff2]",
+      "badge": null,
+      "image": "/media/products/esp8266-board.jpg",
+      "carModeId": null
+    },
+    {
+      "id": "stm32-board",
+      "name": "STM32 Development Board",
+      "category": "Controllers & Boards",
+      "projectCategory": null,
+      "price": 0,
+      "priceLabel": "Request quote",
+      "sku": "GEN-STM-0001",
+      "productType": "Retail kit",
+      "inventoryType": "Catalog",
+      "note": "Advanced embedded control",
+      "description": "An STM32 board for learners and teams working with higher-performance embedded control.",
+      "specs": [
+        "STM32 microcontroller board",
+        "Digital and analog I/O",
+        "Embedded development support"
+      ],
+      "stock": 0,
+      "color": "from-[#e9e0ff] to-[#b79be9]",
+      "badge": null,
+      "image": "/media/products/stm32-board.jpg",
+      "carModeId": null
+    },
+    {
+      "id": "raspberry-pi-board",
+      "name": "Raspberry Pi Board",
+      "category": "Controllers & Boards",
+      "projectCategory": null,
+      "price": 0,
+      "priceLabel": "Request quote",
+      "sku": "GEN-RPI-0001",
+      "productType": "Retail kit",
+      "inventoryType": "Catalog",
+      "note": "Linux edge computing platform",
+      "description": "A Raspberry Pi platform for dashboards, vision, automation gateways, and networked projects.",
+      "specs": [
+        "Raspberry Pi computer board",
+        "Linux-capable platform",
+        "USB and network connectivity"
+      ],
+      "stock": 0,
+      "color": "from-[#ffe3d6] to-[#f1a17e]",
+      "badge": null,
+      "image": "/media/products/raspberry-pi-board.jpg",
+      "carModeId": null
+    },
+    {
+      "id": "stepper-motor",
+      "name": "Stepper Motor",
+      "category": "Motors & Motion",
+      "projectCategory": null,
+      "price": 0,
+      "priceLabel": "Request quote",
+      "sku": "GEN-MOT-0005",
+      "productType": "Retail kit",
+      "inventoryType": "Catalog",
+      "note": "Precise incremental motion",
+      "description": "A stepper motor for positioning, mechanisms, and automation experiments.",
+      "specs": [
+        "Stepper motor",
+        "Incremental positioning",
+        "Driver required for operation"
+      ],
+      "stock": 0,
+      "color": "from-[#fff1cf] to-[#f1c875]",
+      "badge": null,
+      "image": "/media/products/stepper-motor.jpg",
+      "carModeId": null
+    },
+    {
+      "id": "bldc-motor",
+      "name": "BLDC Motor",
+      "category": "Motors & Motion",
+      "projectCategory": null,
+      "price": 0,
+      "priceLabel": "Request quote",
+      "sku": "GEN-MOT-0006",
+      "productType": "Retail kit",
+      "inventoryType": "Catalog",
+      "note": "Efficient high-speed motion",
+      "description": "A brushless motor for drone, fan, and advanced motion projects.",
+      "specs": [
+        "Brushless DC motor",
+        "ESC required",
+        "High-speed motion platform"
+      ],
+      "stock": 0,
+      "color": "from-[#ffe3d6] to-[#f1a17e]",
+      "badge": null,
+      "image": "/media/products/bldc-motor.jpg",
+      "carModeId": null
+    },
+    {
+      "id": "bo-motor",
+      "name": "BO Gear Motor",
+      "category": "Motors & Motion",
+      "projectCategory": null,
+      "price": 0,
+      "priceLabel": "Request quote",
+      "sku": "GEN-MOT-0007",
+      "productType": "Retail kit",
+      "inventoryType": "Catalog",
+      "note": "Robot-car drive motor",
+      "description": "A small BO geared motor matched to the Arduino robot-car builds in the source projects.",
+      "specs": [
+        "BO geared motor",
+        "Low-voltage operation",
+        "Robot-car mounting format"
+      ],
+      "stock": 0,
+      "color": "from-[#f1e9ff] to-[#c4a8ef]",
+      "badge": null,
+      "image": "/media/products/bo-motor.jpg",
+      "carModeId": null
+    },
+    {
+      "id": "hc06-bluetooth",
+      "name": "HC-06 Bluetooth Module",
+      "category": "Communication Modules",
+      "projectCategory": null,
+      "price": 0,
+      "priceLabel": "Request quote",
+      "sku": "GEN-COM-0001",
+      "productType": "Retail kit",
+      "inventoryType": "Catalog",
+      "note": "Phone control for Arduino cars",
+      "description": "A serial Bluetooth module used by the Arduino robot-car source projects for manual control.",
+      "specs": [
+        "HC-06 serial Bluetooth",
+        "UART interface",
+        "Phone pairing support"
+      ],
+      "stock": 0,
+      "color": "from-[#dce8ff] to-[#7e9ff2]",
+      "badge": null,
+      "image": "/media/products/hc06-bluetooth.jpg",
+      "carModeId": null
+    },
+    {
+      "id": "lipo-battery-pack",
+      "name": "LiPo Battery Pack",
+      "category": "Power & Charging",
+      "projectCategory": null,
+      "price": 0,
+      "priceLabel": "Request quote",
+      "sku": "GEN-PWR-0003",
+      "productType": "Retail kit",
+      "inventoryType": "Catalog",
+      "note": "Lightweight mobile power",
+      "description": "A rechargeable LiPo pack for mobile robotics and drone-related projects.",
+      "specs": [
+        "LiPo battery pack",
+        "Lightweight energy storage",
+        "Use with compatible charger and BMS"
+      ],
+      "stock": 0,
+      "color": "from-[#ffe3d6] to-[#f1a17e]",
+      "badge": null,
+      "image": "/media/products/lipo-battery-pack.jpg",
+      "carModeId": null
+    },
+    {
+      "id": "dc-dc-converter",
+      "name": "DC-DC Converter",
+      "category": "Power & Charging",
+      "projectCategory": null,
+      "price": 0,
+      "priceLabel": "Request quote",
+      "sku": "GEN-PWR-0004",
+      "productType": "Retail kit",
+      "inventoryType": "Catalog",
+      "note": "Stable project voltage",
+      "description": "A voltage converter for powering controllers, sensors, displays, and motor systems safely.",
+      "specs": [
+        "DC-DC converter",
+        "Input/output voltage regulation",
+        "Project power integration"
+      ],
+      "stock": 0,
+      "color": "from-[#fff1cf] to-[#f1c875]",
+      "badge": null,
+      "image": "/media/products/dc-dc-converter.jpg",
+      "carModeId": null
+    },
+    {
+      "id": "battery-bms",
+      "name": "Battery Management System",
+      "category": "Power & Charging",
+      "projectCategory": null,
+      "price": 0,
+      "priceLabel": "Request quote",
+      "sku": "GEN-PWR-0005",
+      "productType": "Retail kit",
+      "inventoryType": "Catalog",
+      "note": "Protected rechargeable packs",
+      "description": "A BMS module for monitoring and protecting compatible rechargeable battery packs.",
+      "specs": [
+        "Battery protection board",
+        "Charge and discharge protection",
+        "Pack integration support"
+      ],
+      "stock": 0,
+      "color": "from-[#fff1cf] to-[#f1c875]",
+      "badge": null,
+      "image": "/media/products/battery-bms.jpg",
+      "carModeId": null
+    },
+    {
+      "id": "omni-wheel-set",
+      "name": "Omni Wheel Set",
+      "category": "Mechanical Parts",
+      "projectCategory": null,
+      "price": 0,
+      "priceLabel": "Request quote",
+      "sku": "GEN-MEC-0003",
+      "productType": "Retail kit",
+      "inventoryType": "Catalog",
+      "note": "Omnidirectional motion",
+      "description": "Omni wheels for advanced mobile robot bases and maneuverability experiments.",
+      "specs": [
+        "Omni wheels",
+        "Multi-direction rollers",
+        "Robot chassis compatible"
+      ],
+      "stock": 0,
+      "color": "from-[#e9e0ff] to-[#b79be9]",
+      "badge": null,
+      "image": "/media/products/omni-wheel-set.jpg",
+      "carModeId": null
+    },
+    {
+      "id": "caster-wheel",
+      "name": "Robot Caster Wheel",
+      "category": "Mechanical Parts",
+      "projectCategory": null,
+      "price": 0,
+      "priceLabel": "Request quote",
+      "sku": "GEN-MEC-0004",
+      "productType": "Retail kit",
+      "inventoryType": "Catalog",
+      "note": "Stable third-point support",
+      "description": "A caster for two-wheel robot platforms and balanced mobile chassis.",
+      "specs": [
+        "Caster wheel",
+        "Mounting plate",
+        "Mobile chassis support"
+      ],
+      "stock": 0,
+      "color": "from-[#e9e0ff] to-[#b79be9]",
+      "badge": null,
+      "image": "/media/products/caster-wheel.jpg",
+      "carModeId": null
+    },
+    {
+      "id": "breadboard-jumper-set",
+      "name": "Breadboard & Jumper Wire Set",
+      "category": "Connectors & Cables",
+      "projectCategory": null,
+      "price": 0,
+      "priceLabel": "Request quote",
+      "sku": "GEN-CON-0002",
+      "productType": "Retail kit",
+      "inventoryType": "Catalog",
+      "note": "Prototype without soldering",
+      "description": "A breadboard and jumper set for classroom circuits, sensor experiments, and quick tests.",
+      "specs": [
+        "Solderless breadboard",
+        "Male and female jumper wires",
+        "Prototype-ready layout"
+      ],
+      "stock": 0,
+      "color": "from-[#dff4ec] to-[#79c7a8]",
+      "badge": null,
+      "image": "/media/products/breadboard-jumper-set.jpg",
+      "carModeId": null
+    },
+    {
+      "id": "xt60-power-connectors",
+      "name": "XT60 Power Connectors",
+      "category": "Connectors & Cables",
+      "projectCategory": null,
+      "price": 0,
+      "priceLabel": "Request quote",
+      "sku": "GEN-CON-0003",
+      "productType": "Retail kit",
+      "inventoryType": "Catalog",
+      "note": "Secure battery connection",
+      "description": "High-current connectors for battery-powered robotics and drone projects.",
+      "specs": [
+        "XT60 connector pair",
+        "High-current power connection",
+        "Polarity-aware assembly"
+      ],
+      "stock": 0,
+      "color": "from-[#ffe3d6] to-[#f1a17e]",
+      "badge": null,
+      "image": "/media/products/xt60-power-connectors.jpg",
+      "carModeId": null
+    },
+    {
+      "id": "multimeter",
+      "name": "Digital Multimeter",
+      "category": "Tools & Fabrication",
+      "projectCategory": null,
+      "price": 0,
+      "priceLabel": "Request quote",
+      "sku": "GEN-TOL-0002",
+      "productType": "Retail kit",
+      "inventoryType": "Catalog",
+      "note": "Measure before debugging",
+      "description": "A practical multimeter for voltage, continuity, resistance, and safe electronics troubleshooting.",
+      "specs": [
+        "Digital multimeter",
+        "Voltage and continuity modes",
+        "Test leads"
+      ],
+      "stock": 0,
+      "color": "from-[#fff1cf] to-[#f1c875]",
+      "badge": null,
+      "image": "/media/products/multimeter.jpg",
+      "carModeId": null
+    },
+    {
+      "id": "abs-filament",
+      "name": "ABS Maker Filament · 1 kg",
+      "category": "3D Printing Materials",
+      "projectCategory": null,
+      "price": 0,
+      "priceLabel": "Request quote",
+      "sku": "GEN-3DP-0004",
+      "productType": "Retail kit",
+      "inventoryType": "Catalog",
+      "note": "Durable printed parts",
+      "description": "ABS filament for stronger functional prototypes and workshop parts where suitable ventilation is available.",
+      "specs": [
+        "1.75 mm diameter",
+        "1 kg spool",
+        "Higher-temperature printing material"
+      ],
+      "stock": 0,
+      "color": "from-[#dce8ff] to-[#7e9ff2]",
+      "badge": null,
+      "image": "/media/products/abs-filament.jpg",
+      "carModeId": null
+    },
+    {
+      "id": "arduino-multimode-robot-car",
+      "name": "Arduino Multimode Robot Car",
+      "category": "Robot Cars",
+      "projectCategory": "Robo Car",
+      "price": 0,
+      "priceLabel": "Request quote",
+      "sku": "GEN-CAR-0001",
+      "productType": "Retail kit",
+      "inventoryType": "Inhouse",
+      "note": "Bluetooth, obstacle avoidance, and path-learning platform",
+      "description": "The canonical Arduino Uno robot car from the modular source projects, consolidated from the near-duplicate final, final2, final3, and base versions.",
+      "specs": [
+        "Arduino Uno",
+        "HC-06 Bluetooth module",
+        "L298N motor driver",
+        "4 BO motors",
+        "3 HC-SR04 ultrasonic sensors",
+        "Buzzer and mode switch",
+        "Bluetooth manual control and obstacle avoidance"
+      ],
+      "stock": 0,
+      "color": "from-[#dce8ff] to-[#7e9ff2]",
+      "badge": "Canonical build",
+      "image": null,
+      "carModeId": null
+    },
+    {
+      "id": "esp32-bluetooth-robot-car",
+      "name": "ESP32 Bluetooth Robot Car",
+      "category": "Robot Cars",
+      "projectCategory": "Robo Car",
+      "price": 0,
+      "priceLabel": "Request quote",
+      "sku": "GEN-CAR-0002",
+      "productType": "Retail kit",
+      "inventoryType": "Inhouse",
+      "note": "Simple phone-controlled teaching car",
+      "description": "A distinct ESP32 Bluetooth car for MIT App Inventor teaching, manual driving, OLED status, and failsafe stopping.",
+      "specs": [
+        "ESP32",
+        "L298N motor driver",
+        "DC motors, chassis, and wheels",
+        "1.3-inch SH1106 OLED",
+        "Battery pack",
+        "Manual stop switch",
+        "Phone Bluetooth control"
+      ],
+      "stock": 0,
+      "color": "from-[#dff4ec] to-[#79c7a8]",
+      "badge": "Teaching build",
+      "image": null,
+      "carModeId": null
+    },
+    {
+      "id": "esp32-wifi-web-robot-car",
+      "name": "ESP32 Wi-Fi Web Robot Car",
+      "category": "Robot Cars",
+      "projectCategory": "Robo Car",
+      "price": 0,
+      "priceLabel": "Request quote",
+      "sku": "GEN-CAR-0003",
+      "productType": "Retail kit",
+      "inventoryType": "Inhouse",
+      "note": "Browser and WebSocket control",
+      "description": "A separate ESP32 Wi-Fi robot car for browser dashboards, WebServer control, WebSocket commands, and OLED telemetry.",
+      "specs": [
+        "ESP32",
+        "L298N motor driver",
+        "DC motor and chassis assembly",
+        "OLED display",
+        "Wi-Fi WebServer and WebSocket control",
+        "Browser control interface"
+      ],
+      "stock": 0,
+      "color": "from-[#f1e9ff] to-[#c4a8ef]",
+      "badge": "Web control build",
+      "image": null,
+      "carModeId": null
+    },
+    {
+      "id": "obstacle-us-basic",
+      "name": "Ultrasonic Obstacle Avoidance Project",
+      "category": "Robot Cars",
+      "projectCategory": "Robo Car",
+      "price": 0,
+      "priceLabel": "Request quote",
+      "sku": "GEN-CAR-0007",
+      "productType": "Project package",
+      "inventoryType": "Inhouse",
+      "note": "Ultrasonic sensor-based obstacle avoidance",
+      "description": "Robot car that autonomously avoids obstacles using HC-SR04 ultrasonic sensor with ESP32.",
+      "specs": [
+        "ESP32",
+        "HC-SR04 ultrasonic sensor",
+        "L298N motor driver",
+        "2 BO motors"
+      ],
+      "stock": 0,
+      "color": "from-[#dce8ff] to-[#7e9ff2]",
+      "badge": "obstacle-us",
+      "image": null,
+      "carModeId": "obstacle-us"
+    },
+    {
+      "id": "obstacle-ir-basic",
+      "name": "IR Obstacle Avoidance Project",
+      "category": "Robot Cars",
+      "projectCategory": "Robo Car",
+      "price": 0,
+      "priceLabel": "Request quote",
+      "sku": "GEN-CAR-0008",
+      "productType": "Project package",
+      "inventoryType": "Inhouse",
+      "note": "IR sensor-based obstacle avoidance",
+      "description": "Robot car that avoids obstacles using IR sensor with ESP32 control.",
+      "specs": [
+        "ESP32",
+        "IR obstacle sensor",
+        "L298N motor driver",
+        "2 BO motors"
+      ],
+      "stock": 0,
+      "color": "from-[#dff4ec] to-[#79c7a8]",
+      "badge": "obstacle-ir",
+      "image": null,
+      "carModeId": "obstacle-ir"
+    },
+    {
+      "id": "website-client-basic",
+      "name": "Wi-Fi Client Control Project",
+      "category": "Robot Cars",
+      "projectCategory": "Robo Car",
+      "price": 0,
+      "priceLabel": "Request quote",
+      "sku": "GEN-CAR-0009",
+      "productType": "Project package",
+      "inventoryType": "Inhouse",
+      "note": "WiFi client control mode",
+      "description": "ESP32 WiFi client car that connects to web dashboard for remote control operations.",
+      "specs": [
+        "ESP32",
+        "WiFi module",
+        "L298N motor driver",
+        "2 BO motors"
+      ],
+      "stock": 0,
+      "color": "from-[#f1e9ff] to-[#c4a8ef]",
+      "badge": "website-client",
+      "image": null,
+      "carModeId": "website-client"
+    },
+    {
+      "id": "website-server-basic",
+      "name": "Wi-Fi Server Control Project",
+      "category": "Robot Cars",
+      "projectCategory": "Robo Car",
+      "price": 0,
+      "priceLabel": "Request quote",
+      "sku": "GEN-CAR-0010",
+      "productType": "Project package",
+      "inventoryType": "Inhouse",
+      "note": "WiFi server control mode",
+      "description": "ESP32 WiFi server car that hosts web interface for browser-based control.",
+      "specs": [
+        "ESP32",
+        "WiFi module",
+        "L298N motor driver",
+        "2 BO motors"
+      ],
+      "stock": 0,
+      "color": "from-[#dce8ff] to-[#7e9ff2]",
+      "badge": "website-server",
+      "image": null,
+      "carModeId": "website-server"
+    },
+    {
+      "id": "path-follow-basic",
+      "name": "IR Path Following Project",
+      "category": "Robot Cars",
+      "projectCategory": "Robo Car",
+      "price": 0,
+      "priceLabel": "Request quote",
+      "sku": "GEN-CAR-0011",
+      "productType": "Project package",
+      "inventoryType": "Inhouse",
+      "note": "Line/path following capability",
+      "description": "Robot car with path following using sensors and ESP32 navigation control.",
+      "specs": [
+        "ESP32",
+        "Infrared sensors",
+        "L298N motor driver",
+        "2 BO motors"
+      ],
+      "stock": 0,
+      "color": "from-[#dff4ec] to-[#79c7a8]",
+      "badge": "path-follow",
+      "image": null,
+      "carModeId": "path-follow"
+    },
+    {
+      "id": "rf-manual-basic",
+      "name": "RF Manual Control Project",
+      "category": "Robot Cars",
+      "projectCategory": "Robo Car",
+      "price": 0,
+      "priceLabel": "Request quote",
+      "sku": "GEN-CAR-0012",
+      "productType": "Project package",
+      "inventoryType": "Inhouse",
+      "note": "RF remote control mode",
+      "description": "Robot car with RF remote manual control using 433MHz RF module and UNO-compatible controller.",
+      "specs": [
+        "UNO or ESP32",
+        "433MHz RF module",
+        "L298N motor driver",
+        "2 BO motors"
+      ],
+      "stock": 0,
+      "color": "from-[#dce8ff] to-[#7e9ff2]",
+      "badge": "rf-manual",
+      "image": null,
+      "carModeId": "rf-manual"
+    }
+  ],
+  "notRestored": {
+    "reason": "Pre-packaged project kits from the Excel import keep a combined \"cost / hours\" figure and no per-unit price. They are listed here so nothing is lost, but they need owner pricing before they can be sold.",
+    "items": [
+      {
+        "id": "excel-solar-tracking-system",
+        "name": "Solar Tracking System",
+        "price": 4000,
+        "priceLabel": "From NPR 4,000 · quote by scope",
+        "category": "Pre-packaged Kits",
+        "description": "Maximize solar efficiency. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+        "specs": [
+          "Modes: Autonomous / IoT",
+          "How it works: Autonomous: dual-axis tracking; IoT: dashboard monitoring",
+          "Components: ESP32, LDR sensors (x4), servo motors (x2), solar panel, frame, battery",
+          "Sensors: 4 LDR",
+          "Best use: Maximize solar efficiency"
+        ]
+      },
+      {
+        "id": "excel-smart-irrigation-system",
+        "name": "Smart Irrigation System",
+        "price": 4500,
+        "priceLabel": "From NPR 4,500 · quote by scope",
+        "category": "Pre-packaged Kits",
+        "description": "Water conservation in agriculture. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+        "specs": [
+          "Modes: Autonomous / IoT / Manual",
+          "How it works: Autonomous: soil moisture-based watering; IoT: remote control; Manual: override via app",
+          "Components: ESP32, soil moisture sensors (x2), water pump, relay, tubing, battery, mobile app",
+          "Sensors: 2 soil moisture",
+          "Best use: Water conservation in agriculture"
+        ]
+      },
+      {
+        "id": "excel-mini-wind-turbine-monitor",
+        "name": "Mini Wind Turbine Monitor",
+        "price": 5000,
+        "priceLabel": "From NPR 5,000 · quote by scope",
+        "category": "Sensors & Modules",
+        "description": "Renewable energy education. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+        "specs": [
+          "Modes: Autonomous / IoT",
+          "How it works: Autonomous: RPM sensing; IoT: data logging",
+          "Components: Mini wind turbine, RPM sensor, ESP32, battery, WiFi module",
+          "Sensors: 1 RPM sensor",
+          "Best use: Renewable energy education"
+        ]
+      },
+      {
+        "id": "excel-smart-lighting-system",
+        "name": "Smart Lighting System",
+        "price": 3000,
+        "priceLabel": "From NPR 3,000 · quote by scope",
+        "category": "Controllers & Boards",
+        "description": "Home automation. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+        "specs": [
+          "Modes: Manual / Voice / IoT",
+          "How it works: Manual: switch; Voice: assistant control; IoT: app-based control",
+          "Components: ESP32, relay module, PIR sensor, LDR, smart assistant integration",
+          "Sensors: 1 PIR, 1 LDR",
+          "Best use: Home automation"
+        ]
+      },
+      {
+        "id": "excel-home-security-system",
+        "name": "Home Security System",
+        "price": 5500,
+        "priceLabel": "From NPR 5,500 · quote by scope",
+        "category": "Sensors & Modules",
+        "description": "Home safety and surveillance. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+        "specs": [
+          "Modes: Autonomous / IoT / Alert",
+          "How it works: Autonomous: motion detection; IoT: remote monitoring; Alert: SMS/email",
+          "Components: ESP32-CAM, PIR sensors (x2), GSM module, buzzer, battery",
+          "Sensors: 2 PIR, 1 camera",
+          "Best use: Home safety and surveillance"
+        ]
+      },
+      {
+        "id": "excel-smart-door-lock",
+        "name": "Smart Door Lock",
+        "price": 6000,
+        "priceLabel": "From NPR 6,000 · quote by scope",
+        "category": "Pre-packaged Kits",
+        "description": "Smart home entry system. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+        "specs": [
+          "Modes: Manual / App / Biometric",
+          "How it works: Manual: keypad; App: mobile unlock; Biometric: fingerprint sensor",
+          "Components: ESP32, fingerprint sensor, keypad, servo motor, relay, battery",
+          "Sensors: 1 fingerprint",
+          "Best use: Smart home entry system"
+        ]
+      },
+      {
+        "id": "excel-face-recognition-attendance-system",
+        "name": "Face Recognition Attendance System",
+        "price": 7000,
+        "priceLabel": "From NPR 7,000 · quote by scope",
+        "category": "Controllers & Boards",
+        "description": "School/office attendance. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+        "specs": [
+          "Modes: Autonomous / Camera / IoT",
+          "How it works: Autonomous: face detection; Camera: ESP32-CAM; IoT: attendance logging",
+          "Components: ESP32-CAM, SD card, WiFi module, battery",
+          "Sensors: 1 camera",
+          "Best use: School/office attendance"
+        ]
+      },
+      {
+        "id": "excel-object-detection-robot-arm",
+        "name": "Object Detection Robot Arm",
+        "price": 6500,
+        "priceLabel": "From NPR 6,500 · quote by scope",
+        "category": "Pre-packaged Kits",
+        "description": "AI robotics education. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+        "specs": [
+          "Modes: Autonomous / Camera / Manual",
+          "How it works: Autonomous: ML-based detection; Camera: vision input; Manual: joystick control",
+          "Components: ESP32-CAM, robotic arm kit, servos, camera, ML model",
+          "Sensors: 1 camera, 1 color sensor",
+          "Best use: AI robotics education"
+        ]
+      },
+      {
+        "id": "excel-ai-powered-sorting-machine",
+        "name": "AI-Powered Sorting Machine",
+        "price": 12000,
+        "priceLabel": "From NPR 12,000 · quote by scope",
+        "category": "Pre-packaged Kits",
+        "description": "Smart manufacturing demo. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+        "specs": [
+          "Modes: Autonomous / Camera / IoT",
+          "How it works: Autonomous: object classification; Camera: vision input; IoT: data logging",
+          "Components: ESP32-CAM, color sensor, servo motors, conveyor belt, WiFi module",
+          "Sensors: 1 camera, 1 color sensor",
+          "Best use: Smart manufacturing demo"
+        ]
+      },
+      {
+        "id": "excel-quadcopter-diy-kit",
+        "name": "Quadcopter DIY Kit",
+        "price": 14000,
+        "priceLabel": "From NPR 14,000 · quote by scope",
+        "category": "Pre-packaged Kits",
+        "description": "Drone education and demos. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+        "specs": [
+          "Modes: Manual / Remote / Autonomous",
+          "How it works: Manual: joystick; Remote: app; Autonomous: GPS path",
+          "Components: Brushless motors, ESCs, flight controller, GPS, frame, battery, transmitter",
+          "Sensors: 1 GPS, 1 gyro",
+          "Best use: Drone education and demos"
+        ]
+      },
+      {
+        "id": "excel-autonomous-drone-navigation",
+        "name": "Autonomous Drone Navigation",
+        "price": 18000,
+        "priceLabel": "From NPR 18,000 · quote by scope",
+        "category": "Pre-packaged Kits",
+        "description": "Autonomous flight projects. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+        "specs": [
+          "Modes: Autonomous / GPS / Obstacle Avoidance",
+          "How it works: Autonomous: pre-set route; GPS: location tracking; Obstacle: ultrasonic sensors",
+          "Components: Drone kit, GPS module, ultrasonic sensors, flight controller",
+          "Sensors: 1 GPS, 2 ultrasonic",
+          "Best use: Autonomous flight projects"
+        ]
+      },
+      {
+        "id": "excel-agricultural-drone",
+        "name": "Agricultural Drone",
+        "price": 18000,
+        "priceLabel": "From NPR 18,000 · quote by scope",
+        "category": "Pre-packaged Kits",
+        "description": "Smart farming. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+        "specs": [
+          "Modes: Remote / Autonomous / IoT",
+          "How it works: Remote: app control; Autonomous: GPS path; IoT: data logging",
+          "Components: Drone frame, GPS, sprayer, ESP32, battery, sensors",
+          "Sensors: 1 GPS, 1 flow sensor",
+          "Best use: Smart farming"
+        ]
+      },
+      {
+        "id": "excel-electronics-learning-board",
+        "name": "Electronics Learning Board",
+        "price": 3500,
+        "priceLabel": "From NPR 3,500 · quote by scope",
+        "category": "Tools & Fabrication",
+        "description": "STEM education. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+        "specs": [
+          "Modes: Manual / Interactive",
+          "How it works: Manual: switch-based; Interactive: sensor-based experiments",
+          "Components: Breadboard, LEDs, resistors, sensors, Arduino, jumper wires",
+          "Sensors: Varies (IR, LDR, temp)",
+          "Best use: STEM education"
+        ]
+      },
+      {
+        "id": "excel-mini-weather-station",
+        "name": "Mini Weather Station",
+        "price": 3500,
+        "priceLabel": "From NPR 3,500 · quote by scope",
+        "category": "Sensors & Modules",
+        "description": "Weather education. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+        "specs": [
+          "Modes: Autonomous / IoT",
+          "How it works: Autonomous: sensor logging; IoT: online dashboard",
+          "Components: ESP32, DHT11, BMP180, rain sensor, WiFi module",
+          "Sensors: 1 temp/humidity, 1 pressure, 1 rain",
+          "Best use: Weather education"
+        ]
+      },
+      {
+        "id": "excel-diy-oscilloscope",
+        "name": "DIY Oscilloscope",
+        "price": 3500,
+        "priceLabel": "From NPR 3,500 · quote by scope",
+        "category": "Tools & Fabrication",
+        "description": "Electronics lab tool. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+        "specs": [
+          "Modes: Manual / Visual",
+          "How it works: Manual: probe signals; Visual: waveform display",
+          "Components: Arduino UNO, resistors, capacitors, OLED display, probes",
+          "Sensors: Analog input",
+          "Best use: Electronics lab tool"
+        ]
+      },
+      {
+        "id": "excel-smart-traffic-management",
+        "name": "Smart Traffic Management",
+        "price": 3500,
+        "priceLabel": "From NPR 3,500 · quote by scope",
+        "category": "Controllers & Boards",
+        "description": "Reduce congestion, improve safety. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+        "specs": [
+          "Modes: IoT / Remote / Autonomous",
+          "How it works: Autonomous: sensor-based traffic control; IoT: cloud dashboard",
+          "Components: ESP32, IR sensors (x4), relays, cloud dashboard",
+          "Sensors: 4 IR",
+          "Best use: Reduce congestion, improve safety"
+        ]
+      },
+      {
+        "id": "excel-smart-waste-bin",
+        "name": "Smart Waste Bin",
+        "price": 3500,
+        "priceLabel": "From NPR 3,500 · quote by scope",
+        "category": "Sensors & Modules",
+        "description": "Smart waste management. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+        "specs": [
+          "Modes: IoT / Autonomous",
+          "How it works: Autonomous: fill detection; IoT: cloud monitoring; Alert: GSM/WiFi notifications",
+          "Components: ESP32, ultrasonic sensor, GSM/WiFi module, battery",
+          "Sensors: 1 ultrasonic",
+          "Best use: Smart waste management"
+        ]
+      },
+      {
+        "id": "excel-smart-parking-system",
+        "name": "Smart Parking System",
+        "price": 3500,
+        "priceLabel": "From NPR 3,500 · quote by scope",
+        "category": "Sensors & Modules",
+        "description": "Reduce parking search time. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+        "specs": [
+          "Modes: IoT / Remote / Autonomous",
+          "How it works: IoT: app-based info; Remote: user app; Autonomous: sensor detection",
+          "Components: ESP32, IR sensors (x2), ultrasonic sensors (x2), mobile app",
+          "Sensors: 2 IR, 2 ultrasonic",
+          "Best use: Reduce parking search time"
+        ]
+      },
+      {
+        "id": "excel-air-quality-monitoring",
+        "name": "Air Quality Monitoring",
+        "price": 3500,
+        "priceLabel": "From NPR 3,500 · quote by scope",
+        "category": "Sensors & Modules",
+        "description": "Urban pollution tracking. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+        "specs": [
+          "Modes: IoT / Autonomous",
+          "How it works: IoT: cloud dashboard; Autonomous: continuous monitoring",
+          "Components: ESP32, MQ135, MQ7, DHT11, WiFi module",
+          "Sensors: 3 gas sensors",
+          "Best use: Urban pollution tracking"
+        ]
+      },
+      {
+        "id": "excel-smart-street-lighting",
+        "name": "Smart Street Lighting",
+        "price": 3500,
+        "priceLabel": "From NPR 3,500 · quote by scope",
+        "category": "Controllers & Boards",
+        "description": "Sustainable city lighting. This scoped project package follows the components and operating modes listed in the Excel catalog.",
+        "specs": [
+          "Modes: Autonomous / IoT",
+          "How it works: Autonomous: motion/LDR control; IoT: remote monitoring",
+          "Components: ESP32, LDR, PIR sensors (x2), relay module",
+          "Sensors: 1 LDR, 2 PIR",
+          "Best use: Sustainable city lighting"
+        ]
+      }
+    ]
+  }
+}

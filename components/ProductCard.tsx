@@ -38,9 +38,12 @@ export default function ProductCard({ product }: { product: Product }) {
       <Link
         href={`/products/${product.id}`}
         aria-label={`Open ${product.name}`}
-        className="block px-2 pb-2 pt-1.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
+        className="block px-3 pb-3 pt-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
       >
-        <span className="block truncate text-[13px] font-bold leading-tight text-ink">
+        {/* 2026-11-12 card standard: two lines of wrap instead of one truncated
+            line, so a long product name stays readable and every card in the
+            grid keeps the same text block height. */}
+        <span className="line-clamp-2 min-h-[2.4em] break-words text-[13px] font-bold leading-tight text-ink [overflow-wrap:anywhere]">
           {product.name}
         </span>
         <span className="mt-0.5 block text-xs font-black text-navy">{product.priceLabel}</span>

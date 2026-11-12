@@ -31,16 +31,23 @@ export default function ArticleCard({
   children,
   variant = "default",
 }: ArticleCardProps) {
+  // 2026-11-12 card standard (lib/styles.ts): min-w-0 + break-words so long
+  // titles, tags and URLs wrap inside the card instead of widening it, and the
+  // same p-5 padding as every other card on the site.
   const base =
     variant === "rounded"
-      ? "rounded-2xl border border-line bg-white p-5 sm:p-6"
-      : "border-t-2 border-ink bg-white p-5 sm:p-6";
+      ? "min-w-0 max-w-full break-words rounded-2xl border border-line bg-white p-5"
+      : "min-w-0 max-w-full break-words border-t-2 border-ink bg-white p-5";
 
   return (
     <article className={`${base} flex flex-col`}>
       {tag && <p className="text-xs font-black uppercase tracking-widest text-navy">{tag}</p>}
-      <h3 className="mt-4 font-display text-lg font-bold leading-snug sm:text-xl">{title}</h3>
-      {description && <p className="mt-2 flex-1 text-sm leading-6 text-slate-600">{description}</p>}
+      <h3 className="mt-4 break-words font-display text-lg font-bold leading-snug [overflow-wrap:anywhere] sm:text-xl">
+        {title}
+      </h3>
+      {description && (
+        <p className="mt-2 flex-1 break-words text-sm leading-6 text-slate-600">{description}</p>
+      )}
       {children}
       {href && cta && (
         <Link
