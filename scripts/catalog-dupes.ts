@@ -14,12 +14,14 @@
 //
 //   npm run catalog:dupes            # report only
 //   npm run catalog:dupes -- --apply # hide the repeats, keep the oldest
+//   npm run catalog:dupes -- --strict # exit 1 on actionable data-quality issues
 // =====================================================================
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createClient } from "@supabase/supabase-js";
 
 const apply = process.argv.includes("--apply");
+const strict = process.argv.includes("--strict");
 
 type Row = {
   id: string;
@@ -119,48 +121,57 @@ async function main() {
     console.log("");
   }
 
+  let activeRetires = 0;
   if (groups.length === 0) {
     console.log("No duplicate product names. Nothing to retire.");
-    return;
-  }
+  } else {
+    // Always keep the oldest row of a name group and retire the newer copies.
+    const retire = new Map<string, { row: Row; reason: string }>();
+    for (const group of groups) {
+      const [keep, ...rest] = group.rows;
+      if (!keep) continue;
+      for (const row of rest) {
+        if (row.id === keep.id) continue;
+        if (!retire.has(row.id))
+          retire.set(row.id, { row, reason: `same ${group.reason} as ${keep.id}` });
+      }
+    }
 
-  // Always keep the oldest row of a name group and retire the newer copies.
-  const retire = new Map<string, { row: Row; reason: string }>();
-  for (const group of groups) {
-    const [keep, ...rest] = group.rows;
-    if (!keep) continue;
-    for (const row of rest) {
-      if (row.id === keep.id) continue;
-      if (!retire.has(row.id))
-        retire.set(row.id, { row, reason: `same ${group.reason} as ${keep.id}` });
+    for (const { row, reason } of retire.values()) {
+      if (row.active) activeRetires += 1;
+      console.log(
+        `  ${row.active ? "RETIRE" : "already hidden"} ${row.id} — ${row.name} (${reason})`
+      );
+    }
+
+    console.log(`\n${retire.size} repeat row(s). Nothing is deleted; --apply hides them.`);
+    if (apply) {
+      let hidden = 0;
+      for (const { row, reason } of retire.values()) {
+        const note = [
+          row.id,
+          `Retired as a duplicate (${reason}) on ${new Date().toISOString().slice(0, 10)}.`,
+        ]
+          .filter(Boolean)
+          .join(" ");
+        const { error: updateError } = await db
+          .from("products")
+          .update({ active: false, note })
+          .eq("id", row.id);
+        if (updateError) console.warn(`  ! ${row.id}: ${updateError.message}`);
+        else hidden += 1;
+      }
+      console.log(`\nHid ${hidden} repeat row(s). They can be re-activated in the admin panel.`);
+      activeRetires = 0;
     }
   }
 
-  for (const { row, reason } of retire.values()) {
-    console.log(
-      `  ${row.active ? "RETIRE" : "already hidden"} ${row.id} — ${row.name} (${reason})`
+  if (strict && (warnings.length > 0 || activeRetires > 0)) {
+    console.error(
+      `\nStrict check failed: ${warnings.length} warning(s), ${activeRetires} active name-duplicate row(s) to retire.`
     );
+    process.exit(1);
   }
-
-  console.log(`\n${retire.size} repeat row(s). Nothing is deleted; --apply hides them.`);
-  if (!apply) return;
-
-  let hidden = 0;
-  for (const { row, reason } of retire.values()) {
-    const note = [
-      row.id,
-      `Retired as a duplicate (${reason}) on ${new Date().toISOString().slice(0, 10)}.`,
-    ]
-      .filter(Boolean)
-      .join(" ");
-    const { error: updateError } = await db
-      .from("products")
-      .update({ active: false, note })
-      .eq("id", row.id);
-    if (updateError) console.warn(`  ! ${row.id}: ${updateError.message}`);
-    else hidden += 1;
-  }
-  console.log(`\nHid ${hidden} repeat row(s). They can be re-activated in the admin panel.`);
 }
 
 void main().catch((error) => {

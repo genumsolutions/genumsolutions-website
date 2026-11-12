@@ -28,6 +28,8 @@
     "db:restore": "tsx scripts/restore-backup.ts",
     "catalog:restore": "tsx scripts/restore-catalog.ts",
     "catalog:dupes": "tsx scripts/catalog-dupes.ts",
+    "health:check": "node scripts/health-check.mjs",
+    "releases:trim": "tsx scripts/releases-trim.ts",
     "images:verify": "tsx scripts/verify-images.ts",
     "images:sweep": "tsx scripts/sweep-images.ts",
     "snapshot:catalog-extras": "node scripts/snapshot-catalog-extras.mjs"

@@ -50,7 +50,24 @@ npm run images:verify                  # fail if a product points at a missing f
 npm run images:sweep                   # list files no row references (dry run)
 npm run images:sweep -- --delete       # remove those files
 npm run backup -- --with-images        # snapshot every table + the image bytes
+npm run health:check                   # guardrail: limits + images:verify + catalog:dupes --strict
+npm run releases:trim                  # dry-run app-releases retention (current + one previous)
+npm run releases:trim -- --apply       # delete old APK builds per the retention rule
 ```
+
+`health:check` is the single guardrail command: it runs `limits`, `images:verify`,
+and `catalog:dupes --strict` and exits non-zero on missing image references,
+SKU/photo/test-residue warnings, or active name-duplicate rows to retire. It needs
+live DB/storage credentials (and `SUPABASE_ACCESS_TOKEN` for `limits`; pass
+`--skip-limits` if that token is unavailable). Run it before/after bulk catalog
+changes and in CI when secrets are available. Pre-commit stays fast/offline (lint
+only); run `health:check` manually or in a scheduled/credentialed job to catch
+storage growth and collisions early.
+
+`releases:trim` reads `release.json` from the `app-releases` bucket to identify
+the current versioned APK and refuses to delete anything if it cannot. Dry-run by
+default; pass `--apply` to remove builds beyond the current + one previous. Run it
+on each app publish.
 
 `images:optimize` writes the new URL to every `products` row _before_ deleting
 the original, so an interrupted run leaves the storefront serving the old file
