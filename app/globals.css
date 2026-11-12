@@ -181,7 +181,8 @@ html[data-theme="dim"] .text-emerald-600 {
   color: #6ee7b7 !important;
 }
 html[data-theme="dim"] .text-amber-700,
-html[data-theme="dim"] .text-amber-800 {
+html[data-theme="dim"] .text-amber-800,
+html[data-theme="dim"] .text-amber-900 {
   color: #fcd34d !important;
 }
 /* Favourite-star accent (garage): amber-500 is only 1.9:1 on the dim surface. */
@@ -224,6 +225,9 @@ html[data-theme="dim"] .border-gold {
 }
 html[data-theme="dim"] .border-emerald-200 {
   border-color: #065f46 !important;
+}
+html[data-theme="dim"] .border-amber-200 {
+  border-color: #92400e !important;
 }
 html[data-theme="dim"] .border-slate-500,
 html[data-theme="dim"] .hover\:border-slate-500:hover {

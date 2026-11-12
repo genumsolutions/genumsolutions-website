@@ -9,18 +9,25 @@ export type PricedCart = {
 };
 
 // Re-prices client-sent cart lines against the database - never trust client prices.
+// Only active, in-stock, directly purchasable retail items (not project packages)
+// are accepted; quantities are clamped to available stock.
 export async function priceRequestedItems(requested: unknown): Promise<PricedCart | null> {
   if (!Array.isArray(requested)) return null;
   const catalog = await getManagedProducts();
   const priced = requested
     .map((item: { productId?: string; quantity?: number }) => {
       const product = catalog.find((entry) => entry.id === item?.productId);
-      if (!product || product.price <= 0) return null;
+      if (!product) return null;
+      if (product.active === false) return null;
+      if (product.productType === "Project package") return null;
+      if ((product.stock ?? 0) <= 0 || product.price <= 0) return null;
+      const stock = Math.max(0, Math.floor(Number(product.stock) || 0));
+      const requestedQty = Math.max(1, Math.floor(Number(item?.quantity) || 0));
       return {
         productId: product.id,
         name: product.name,
         price: product.price,
-        quantity: Math.max(1, Math.min(99, Math.floor(Number(item?.quantity) || 0))),
+        quantity: Math.max(1, Math.min(99, Math.min(requestedQty, stock))),
       };
     })
     .filter(Boolean)

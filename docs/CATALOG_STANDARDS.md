@@ -61,6 +61,19 @@ maintenance so storefront, admin, and future tooling behave consistently.
   rules: retail in-stock → `InStock`, retail out-of-stock → `OutOfStock`,
   project packages → `PreOrder` (quote/scoped). Keep price/URL/image accurate.
 
+## Checkout and ordering
+
+- Only **active, in-stock, directly purchasable (non–project-package)** retail
+  items with a valid price may be checked out. Quantities are clamped to available
+  stock.
+- The server always re-prices and validates cart lines from the catalog
+  (`lib/checkout.ts` `priceRequestedItems`, used by COD and gateway checkout
+  routes); client-sent prices/names are not trusted.
+- The checkout UI must clearly flag unavailable cart lines (out of stock, hidden,
+  quote-only, or missing) and block payment until they are removed, so orders
+  cannot be placed for unavailable items. Keep messaging consistent with product
+  cards/detail/admin.
+
 ## Related tooling
 
 - `docs/STORAGE_BUDGET.md` — image/storage budget and measured headroom.

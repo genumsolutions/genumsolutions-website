@@ -43,18 +43,45 @@ export default function CheckoutPage() {
       .catch(() => undefined);
   }, []);
 
-  // Stock-aware view model: unknown products drop out, quantities clamp.
-  const items = useMemo(
-    () =>
-      lines
-        .map((line) => {
-          const product = products.find((item) => item.id === line.productId);
-          if (!product || product.stock === 0) return null;
-          return { product, quantity: Math.min(line.quantity, product.stock) };
-        })
-        .filter(Boolean) as { product: Product; quantity: number }[],
-    [lines, products]
-  );
+  const { purchasable, unavailable } = useMemo(() => {
+    const purchasable: { product: Product; quantity: number }[] = [];
+    const unavailable: { lineId: string; name: string; reason: string }[] = [];
+    for (const line of lines) {
+      const product = products.find((item) => item.id === line.productId);
+      if (!product) {
+        unavailable.push({
+          lineId: line.productId,
+          name: "Unknown item",
+          reason: "No longer listed.",
+        });
+        continue;
+      }
+      if (product.active === false) {
+        unavailable.push({
+          lineId: line.productId,
+          name: product.name,
+          reason: "No longer available.",
+        });
+        continue;
+      }
+      if (product.productType === "Project package") {
+        unavailable.push({
+          lineId: line.productId,
+          name: product.name,
+          reason: "Quote-only package (not purchasable in checkout).",
+        });
+        continue;
+      }
+      if ((product.stock ?? 0) <= 0 || product.price <= 0) {
+        unavailable.push({ lineId: line.productId, name: product.name, reason: "Out of stock." });
+        continue;
+      }
+      const qty = Math.max(1, Math.min(line.quantity, product.stock));
+      purchasable.push({ product, quantity: qty });
+    }
+    return { purchasable, unavailable };
+  }, [lines, products]);
+  const items = purchasable;
   const total = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
 
   function changeQuantity(productId: string, quantity: number) {
@@ -68,6 +95,10 @@ export default function CheckoutPage() {
     }
     if (!account) {
       setMessage("Sign in to place your order - your build list is saved automatically.");
+      return false;
+    }
+    if (unavailable.length) {
+      setMessage("Remove unavailable items from your build list before checkout.");
       return false;
     }
     if (!items.length) {
@@ -275,19 +306,41 @@ export default function CheckoutPage() {
             </Link>
           </div>
         ) : items.length === 0 && lines.length > 0 ? (
-          <div className="mt-10 rounded-2xl border border-dashed border-gold bg-white p-8 text-center">
-            <h2 className="font-display text-xl font-bold">
-              Some items in your build list are no longer available.
+          <div className="mt-10 rounded-2xl border border-dashed border-gold bg-white p-8">
+            <h2 className="font-display text-xl font-bold text-center">
+              No purchasable items in your build list
             </h2>
-            <p className="mt-2 text-sm text-muted">
-              They were removed because they are out of stock or no longer listed.
+            <p className="mt-2 text-center text-sm text-muted">
+              The items below can’t be checked out right now. Remove them or browse alternatives.
             </p>
-            <Link
-              href="/products"
-              className="mt-5 inline-block rounded-lg bg-navy px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-navy-dark"
-            >
-              Browse alternatives
-            </Link>
+            <ul className="mt-5 space-y-2">
+              {unavailable.map((item) => (
+                <li
+                  key={item.lineId}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-mist/40 px-4 py-3"
+                >
+                  <div className="min-w-0">
+                    <p className="font-bold text-ink">{item.name}</p>
+                    <p className="text-sm text-red-700">{item.reason}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => changeQuantity(item.lineId, 0)}
+                    className="rounded-lg border border-line px-3 py-2 text-xs font-bold text-red-700 transition hover:border-red-300"
+                  >
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-5 text-center">
+              <Link
+                href="/products"
+                className="inline-block rounded-lg bg-navy px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-navy-dark"
+              >
+                Browse alternatives
+              </Link>
+            </div>
           </div>
         ) : items.length === 0 ? (
           <div className="mt-10 rounded-2xl border border-dashed border-line bg-white p-12 text-center">
@@ -303,6 +356,37 @@ export default function CheckoutPage() {
           <div className="mt-8 grid gap-8 sm:mt-10 sm:gap-10 lg:grid-cols-[1.1fr_.9fr]">
             {/* Items + payment first — the info the customer needs most. */}
             <section aria-label="Order summary and payment" className="space-y-4 lg:order-last">
+              {unavailable.length > 0 && (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+                  <h2 className="font-display text-lg font-bold text-ink">
+                    Unavailable items ({unavailable.length})
+                  </h2>
+                  <p className="mt-1 text-sm text-amber-900">
+                    Remove these items to continue — checkout is blocked while unavailable items
+                    remain in your build list.
+                  </p>
+                  <ul className="mt-3 space-y-2">
+                    {unavailable.map((item) => (
+                      <li
+                        key={item.lineId}
+                        className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-white/70 px-3 py-2"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-ink">{item.name}</p>
+                          <p className="text-xs text-red-700">{item.reason}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => changeQuantity(item.lineId, 0)}
+                          className="text-xs font-bold text-red-700 underline"
+                        >
+                          Remove
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               <div className="rounded-2xl border border-line bg-white p-6">
                 <h2 className="mb-2 font-display text-lg font-bold">Build list ({items.length})</h2>
                 {items.map(({ product, quantity }) => (
@@ -365,21 +449,21 @@ export default function CheckoutPage() {
                 <div className="mt-5 hidden gap-3 lg:grid">
                   <button
                     onClick={() => payNepal("esewa")}
-                    disabled={busy}
+                    disabled={busy || unavailable.length > 0}
                     className="rounded-lg bg-navy px-5 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-navy-dark disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     Pay with eSewa
                   </button>
                   <button
                     onClick={() => payNepal("khalti")}
-                    disabled={busy}
+                    disabled={busy || unavailable.length > 0}
                     className="rounded-lg bg-navy px-5 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-navy-dark disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     Pay with Khalti
                   </button>
                   <button
                     onClick={payCod}
-                    disabled={busy}
+                    disabled={busy || unavailable.length > 0}
                     className="rounded-lg border-2 border-dashed border-line px-5 py-3.5 text-sm font-bold text-muted transition hover:border-ink hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     Reserve order · Pay on delivery
@@ -398,14 +482,14 @@ export default function CheckoutPage() {
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   <button
                     onClick={() => payNepal("esewa")}
-                    disabled={busy}
+                    disabled={busy || unavailable.length > 0}
                     className="rounded-lg bg-navy px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-navy-dark disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     eSewa
                   </button>
                   <button
                     onClick={() => payNepal("khalti")}
-                    disabled={busy}
+                    disabled={busy || unavailable.length > 0}
                     className="rounded-lg bg-navy px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-navy-dark disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     Khalti
@@ -413,7 +497,7 @@ export default function CheckoutPage() {
                 </div>
                 <button
                   onClick={payCod}
-                  disabled={busy}
+                  disabled={busy || unavailable.length > 0}
                   className="mt-2 w-full rounded-lg border-2 border-dashed border-line px-4 py-2.5 text-sm font-bold text-muted transition hover:border-ink hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Pay on delivery

@@ -1,27 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "../../../lib/supabase/server";
 import { createOrder, listOrders, logTransaction } from "../../../lib/orders";
-import type { OrderItem, Order } from "../../../lib/customer";
-
-function sanitizeItems(raw: unknown): OrderItem[] {
-  if (!Array.isArray(raw)) return [];
-  return raw
-    .filter(
-      (item) =>
-        item &&
-        typeof item.productId === "string" &&
-        typeof item.name === "string" &&
-        Number.isFinite(item.price) &&
-        Number.isFinite(item.quantity)
-    )
-    .map((item) => ({
-      productId: item.productId.slice(0, 120),
-      name: item.name.slice(0, 200),
-      price: Math.max(0, Math.round(item.price)),
-      quantity: Math.max(1, Math.min(99, Math.floor(item.quantity))),
-    }))
-    .slice(0, 50);
-}
+import type { Order } from "../../../lib/customer";
+import { priceRequestedItems, readCustomerFields } from "../../../lib/checkout";
 
 export async function GET() {
   const user = await getSessionUser();
@@ -30,7 +11,9 @@ export async function GET() {
 }
 
 // Creates a pending order. Used directly for cash-on-delivery; the eSewa/Khalti checkout routes
-// creates its order server-side and only redirects to the gateway afterwards.
+// create their orders server-side and only redirect to the gateway afterwards.
+// Items/prices are always re-priced server-side against the catalog so unavailable
+// (out-of-stock, inactive, or non-purchasable) items cannot be ordered.
 export async function POST(request: Request) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Sign in to place your order." }, { status: 401 });
@@ -38,16 +21,15 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   if (!body) return NextResponse.json({ error: "Invalid request." }, { status: 400 });
 
-  const items = sanitizeItems(body.items);
-  if (!items.length)
-    return NextResponse.json({ error: "Your build list is empty." }, { status: 400 });
-  const totalNpr = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const cart = await priceRequestedItems(body.items);
+  if (!cart)
+    return NextResponse.json(
+      { error: "No purchasable items in your build list." },
+      { status: 400 }
+    );
 
-  const name = String(body.customer?.name || "").trim();
-  const email = String(body.customer?.email || "").trim();
-  const phone = String(body.customer?.phone || "").trim();
-  const address = String(body.customer?.address || "").trim();
-  if (!name || !email || !address)
+  const customer = readCustomerFields(body, user.email);
+  if (!customer.customerName || !customer.email || !customer.address)
     return NextResponse.json(
       { error: "Add your name, email, and delivery address." },
       { status: 400 }
@@ -58,13 +40,10 @@ export async function POST(request: Request) {
   ) as Order["provider"];
   const order = await createOrder({
     userId: user.id,
-    items,
-    totalNpr,
+    items: cart.priced,
+    totalNpr: cart.totalNpr,
     provider,
-    customerName: name,
-    email,
-    phone,
-    address,
+    ...customer,
   });
   if (!order)
     return NextResponse.json({ error: "Could not save the order. Try again." }, { status: 500 });
@@ -73,7 +52,7 @@ export async function POST(request: Request) {
       orderId: order.id,
       userId: user.id,
       provider: "cod",
-      amountNpr: totalNpr,
+      amountNpr: cart.totalNpr,
       status: "initiated",
       rawPayload: { note: "cash on delivery reserved" },
     });
