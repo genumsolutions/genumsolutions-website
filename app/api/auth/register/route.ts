@@ -1,7 +1,16 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { createClient, supabaseConfigured } from "../../../../lib/supabase/server";
 import { checkRateLimit, clientIp } from "../../../../lib/rate-limit";
 import { enforceSingleSession } from "../../../../lib/single-session";
+
+function jsonWithCookies(body: unknown, init?: Parameters<typeof NextResponse.json>[1]) {
+  const res = NextResponse.json(body, init);
+  try {
+    for (const c of cookies().getAll()) res.cookies.set(c);
+  } catch {}
+  return res;
+}
 
 // Creates a customer account with email + password (works for Gmail or any address).
 export async function POST(request: Request) {
@@ -58,9 +67,9 @@ export async function POST(request: Request) {
     // With email confirmation on (the project default for a real store), signUp
     // returns no session: the UI shows the "check your email" notice and offers
     // a resend instead of pretending the user is signed in.
-    if (!data.session) return NextResponse.json({ ok: true, needsEmailConfirmation: true });
+    if (!data.session) return jsonWithCookies({ ok: true, needsEmailConfirmation: true });
     if (data.user?.id) await enforceSingleSession(data.user.id);
-    return NextResponse.json({ ok: true });
+    return jsonWithCookies({ ok: true });
   } catch {
     return NextResponse.json(
       { error: "Accounts are temporarily unavailable. Try again." },

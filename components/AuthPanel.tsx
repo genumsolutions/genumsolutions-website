@@ -114,14 +114,12 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
   const [showPassword, setShowPassword] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
   const [isSignedIn, setIsSignedIn] = useState<boolean>(false);
-  const [checkingSession, setCheckingSession] = useState(true);
+  const [checkingSession, setCheckingSession] = useState(false);
 
   useEffect(() => {
-    // Probe the session on mount — if already signed in, redirect home so the
-    // auth panel never shows for logged-in users. This uses the same
-    // server-side probe as the header, because the cookie-bound Supabase client
-    // lives in lib/supabase/server and cannot be imported into a client
-    // component.
+    // Probe in the background so the form renders immediately (the login page
+    // felt slow when this blocked the whole screen). If the visitor is already
+    // signed in we redirect home; guests just keep the form they already see.
     let active = true;
     fetch("/api/auth/session", { cache: "no-store" })
       .then((response) => (response.ok ? response.json() : null))
@@ -130,7 +128,6 @@ export default function AuthPanel({ initialMode = "signin" }: { initialMode?: Mo
         if (data?.user) {
           setIsSignedIn(true);
           router.replace("/");
-          return;
         }
       })
       .catch(() => {
