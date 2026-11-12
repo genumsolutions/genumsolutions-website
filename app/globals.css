@@ -180,6 +180,7 @@ html[data-theme="dim"] .text-emerald-800,
 html[data-theme="dim"] .text-emerald-600 {
   color: #6ee7b7 !important;
 }
+html[data-theme="dim"] .text-amber-700,
 html[data-theme="dim"] .text-amber-800 {
   color: #fcd34d !important;
 }
