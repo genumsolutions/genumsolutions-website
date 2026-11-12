@@ -37,8 +37,12 @@ export default function ProjectsCatalog({
     () =>
       products.filter((p) => {
         if (p.active === false) return false;
-        const type = String(p.productType ?? "").trim().toLowerCase();
-        const cat = String(p.category ?? "").trim().toLowerCase();
+        const type = String(p.productType ?? "")
+          .trim()
+          .toLowerCase();
+        const cat = String(p.category ?? "")
+          .trim()
+          .toLowerCase();
         const isKit = cat === "pre-packaged kits" || cat === "prepackaged kits";
         // U-44: Pre-packaged Kits ride the projects page (owner decision).
         if (includeKits && isKit) return true;
@@ -52,11 +56,15 @@ export default function ProjectsCatalog({
     return allProjects.filter((p) => {
       if (category !== "All") {
         const selected = category.trim().toLowerCase();
-        const pc = String(p.project_category ?? "").trim().toLowerCase();
+        const pc = String(p.project_category ?? "")
+          .trim()
+          .toLowerCase();
         if (pc !== selected) return false;
       }
       if (!needle) return true;
-      return `${p.name ?? ""} ${p.note ?? ""} ${p.description ?? ""}`.toLowerCase().includes(needle);
+      return `${p.name ?? ""} ${p.note ?? ""} ${p.description ?? ""}`
+        .toLowerCase()
+        .includes(needle);
     });
   }, [allProjects, category, query]);
 
