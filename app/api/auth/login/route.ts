@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import {
   createClient,
   createServiceClient,
@@ -24,9 +25,17 @@ function counter() {
 
 // Canonical email + password sign-in. Returns the caller's role so the UI
 // can route admins to /admin and customers to /account.
+function jsonWithCookies(body: unknown, init?: Parameters<typeof NextResponse.json>[1]) {
+  const res = NextResponse.json(body, init);
+  try {
+    for (const c of cookies().getAll()) res.cookies.set(c);
+  } catch {}
+  return res;
+}
+
 export async function POST(request: Request) {
   if (!supabaseConfigured())
-    return NextResponse.json({ error: "Accounts are not configured." }, { status: 503 });
+    return jsonWithCookies({ error: "Accounts are not configured." }, { status: 503 });
 
   const body = await request.json().catch(() => ({}));
   const email = String(body.email || "")
@@ -34,13 +43,13 @@ export async function POST(request: Request) {
     .toLowerCase();
   const password = String(body.password || "");
   if (!email || !password)
-    return NextResponse.json({ error: "Email and password are required." }, { status: 400 });
+    return jsonWithCookies({ error: "Email and password are required." }, { status: 400 });
 
   // Throttle per IP and per account to slow credential stuffing.
   for (const key of [`login-ip:${clientIp(request)}`, `login-acct:${email}`]) {
     const limit = checkRateLimit(key, 10, 60_000);
     if (!limit.allowed) {
-      return NextResponse.json(
+      return jsonWithCookies(
         { error: "Too many sign-in attempts. Please wait a minute and try again." },
         { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } }
       );
@@ -79,7 +88,7 @@ export async function POST(request: Request) {
           options: { shouldCreateUser: false, emailRedirectTo: undefined },
         });
       }
-      return NextResponse.json({
+      return jsonWithCookies({
         requiresVerification: true,
         email,
         message: "Too many failed attempts. Enter the code we emailed you to continue.",
@@ -102,7 +111,7 @@ export async function POST(request: Request) {
           // Counting is best-effort; the throttle above still applies.
         }
       }
-      return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
+      return jsonWithCookies({ error: "Invalid email or password." }, { status: 401 });
     }
 
     // Start the single-session cleanup now so it overlaps the profile lookup:
@@ -122,11 +131,11 @@ export async function POST(request: Request) {
           () => {}
         );
     }
-    await singleSession;
+    void singleSession.catch(() => {});
 
-    return NextResponse.json({ ok: true, role });
+    return jsonWithCookies({ ok: true, role });
   } catch {
-    return NextResponse.json(
+    return jsonWithCookies(
       { error: "Accounts are temporarily unavailable. Try again." },
       { status: 503 }
     );

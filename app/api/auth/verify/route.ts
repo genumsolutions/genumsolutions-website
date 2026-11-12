@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import {
   createServiceClient,
   createClient,
@@ -20,9 +21,17 @@ import { enforceSingleSession } from "../../../../lib/single-session";
 // configured: Supabase Free with the default sender refuses template edits, so
 // the default email stays link-only. The panel therefore offers "code or link"
 // and this endpoint accepts the code as soon as the template has one.
+function jsonWithCookies(body: unknown, init?: Parameters<typeof NextResponse.json>[1]) {
+  const res = NextResponse.json(body, init);
+  try {
+    for (const c of cookies().getAll()) res.cookies.set(c);
+  } catch {}
+  return res;
+}
+
 export async function POST(request: Request) {
   if (!supabaseConfigured())
-    return NextResponse.json({ error: "Accounts are not configured." }, { status: 503 });
+    return jsonWithCookies({ error: "Accounts are not configured." }, { status: 503 });
 
   const body = await request.json().catch(() => ({}));
   const email = String(body.email || "")
@@ -32,13 +41,13 @@ export async function POST(request: Request) {
   const purpose = body.purpose === "signin" ? "signin" : "signup";
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !/^\d{6,10}$/.test(token)) {
-    return NextResponse.json({ error: "Enter the code from your email." }, { status: 400 });
+    return jsonWithCookies({ error: "Enter the code from your email." }, { status: 400 });
   }
 
   // A code is short by design, so guessing has to be throttled per address.
   const limit = checkRateLimit(`verify:${clientIp(request)}:${email}`, 10, 60_000);
   if (!limit.allowed) {
-    return NextResponse.json(
+    return jsonWithCookies(
       { error: "Too many code attempts. Please wait a minute and try again." },
       { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } }
     );
@@ -50,7 +59,7 @@ export async function POST(request: Request) {
       purpose === "signin" ? { type: "email", email, token } : { type: "signup", email, token }
     );
     if (error || !data.user) {
-      return NextResponse.json(
+      return jsonWithCookies(
         { error: "That code is invalid or has expired. Send a new one." },
         { status: 400 }
       );
@@ -66,9 +75,9 @@ export async function POST(request: Request) {
       // Counter cleanup is best-effort; the window expires on its own.
     }
 
-    return NextResponse.json({ ok: true, role });
+    return jsonWithCookies({ ok: true, role });
   } catch {
-    return NextResponse.json(
+    return jsonWithCookies(
       { error: "Accounts are temporarily unavailable. Try again." },
       { status: 503 }
     );

@@ -1,6 +1,17 @@
+import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient, createServiceClient } from "../../../lib/supabase/server";
 import { enforceSingleSession } from "../../../lib/single-session";
+
+function redirectWithCookies(url: string) {
+  const response = NextResponse.redirect(url);
+  try {
+    for (const cookie of cookies().getAll()) response.cookies.set(cookie);
+  } catch {
+    // Best effort: the redirect still happens.
+  }
+  return response;
+}
 
 /**
  * A Google trip started from the SIGN-IN form must never create an account.
@@ -44,7 +55,9 @@ export async function GET(request: NextRequest) {
     const detail = searchParams.get("error_description") || searchParams.get("error_code") || "";
     console.error("[auth/callback] OAuth error from provider:", oauthError, detail);
     const params = new URLSearchParams({ error: "google", detail });
-    return NextResponse.redirect(`${origin}/login?${params.toString()}`);
+    const res = redirectWithCookies(`${origin}/login?${params.toString()}`);
+    res.cookies.delete("genum_google_intent");
+    return res;
   }
 
   // Only allow relative next paths to avoid open redirects.
@@ -75,12 +88,15 @@ export async function GET(request: NextRequest) {
           data.user?.id &&
           (await rejectUnregisteredGoogleUser(data.user.id, data.user.created_at, googleIntent))
         ) {
-          const refused = NextResponse.redirect(`${origin}/login?error=no_account`);
+          // Drop the session cookies exchangeCodeForSession just wrote so the
+          // rejected Google sign-in never looks logged in, even briefly.
+          await supabase.auth.signOut().catch(() => {});
+          const refused = redirectWithCookies(`${origin}/login?error=no_account`);
           refused.cookies.delete("genum_google_intent");
           return refused;
         }
-        if (data.user?.id) await enforceSingleSession(data.user.id);
-        const done = NextResponse.redirect(`${origin}${next}`);
+        if (data.user?.id) void enforceSingleSession(data.user.id);
+        const done = redirectWithCookies(`${origin}${next}`);
         done.cookies.delete("genum_google_intent");
         return done;
       }
@@ -92,19 +108,19 @@ export async function GET(request: NextRequest) {
       );
       const detail = error?.message || "";
       const params = new URLSearchParams({ error: "google", detail });
-      return NextResponse.redirect(`${origin}/login?${params.toString()}`);
+      return redirectWithCookies(`${origin}/login?${params.toString()}`);
     } else if (
       tokenHash &&
       (type === "recovery" || type === "signup" || type === "invite" || type === "magiclink")
     ) {
       const { data, error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
       if (!error) {
-        if (data.user?.id) await enforceSingleSession(data.user.id);
-        return NextResponse.redirect(`${origin}${next}`);
+        if (data.user?.id) void enforceSingleSession(data.user.id);
+        return redirectWithCookies(`${origin}${next}`);
       }
     }
   } catch {
     // Unconfigured Supabase or network hiccup - fall through to the failure redirect.
   }
-  return NextResponse.redirect(`${origin}/login?error=link`);
+  return redirectWithCookies(`${origin}/login?error=link`);
 }
