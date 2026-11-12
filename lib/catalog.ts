@@ -131,19 +131,22 @@ export function applyScope(all: Product[], scope: string): Product[] {
       .trim()
       .toLowerCase();
   if (scope === "models") return all.filter((p) => norm(p.category) === "3d models");
-  if (scope === "cars") return all.filter((p) => p.project_category === "Robo Car");
+  if (scope === "cars")
+    return all.filter((p) => norm(p.project_category) === "robo car");
   if (scope === "projects")
     return all.filter(
       (p) =>
         norm(p.productType) === "project package" ||
         norm(p.category) === "pre-packaged kits" ||
-        norm(p.category) === "prepackaged kits"
+        norm(p.category) === "prepackaged kits",
     );
   return all.filter(
     (p) =>
-      !["robot cars", "pre-packaged kits", "prepackaged kits"].includes(norm(p.category)) &&
+      !["robot cars", "pre-packaged kits", "prepackaged kits"].includes(
+        norm(p.category),
+      ) &&
       norm(p.category) !== "3d models" &&
-      norm(p.productType) !== "project package"
+      norm(p.productType) !== "project package",
   );
 }
 
@@ -152,12 +155,20 @@ export function applyScope(all: Product[], scope: string): Product[] {
 // kit that is not a package is listed with the cars. `components` is the
 // fallback (everything the other branches exclude).
 export function scopeForProduct(
-  product: Pick<Product, "category" | "productType" | "project_category">
+  product: Pick<Product, "category" | "productType" | "project_category">,
 ): CatalogScope {
-  if (product.category?.trim().toLowerCase() === "3d models") return "models";
-  if (product.productType === "Project package" || product.category === "Pre-packaged Kits")
+  const norm = (v: unknown) =>
+    String(v ?? "")
+      .trim()
+      .toLowerCase();
+  if (norm(product.category) === "3d models") return "models";
+  if (
+    norm(product.productType) === "project package" ||
+    norm(product.category) === "pre-packaged kits" ||
+    norm(product.category) === "prepackaged kits"
+  )
     return "projects";
-  if (product.project_category === "Robo Car") return "cars";
+  if (norm(product.project_category) === "robo car") return "cars";
   return "components";
 }
 
