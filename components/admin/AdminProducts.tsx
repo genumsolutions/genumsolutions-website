@@ -122,7 +122,7 @@ export default function AdminProducts({
       // an empty primary key.
       id: productIdFromTitle(product.id),
       price: Number(product.price),
-      stock: Number(product.stock),
+      stock: Math.max(0, Math.round(Number(product.stock) || 0)),
       specs:
         typeof product.specs === "string"
           ? String(product.specs).split("\n").filter(Boolean)
@@ -576,6 +576,12 @@ export default function AdminProducts({
                       }
                       className={`mt-2 w-full ${inputClass}`}
                     />
+                    {key === "stock" && (
+                      <span className="mt-1 block text-xs font-normal text-muted">
+                        Retail items: set 0 to mark out of stock/unavailable for direct purchase.
+                        Project packages use quote flow regardless of stock.
+                      </span>
+                    )}
                   </label>
                 ))}
               <label className="min-w-0 text-sm font-bold capitalize">

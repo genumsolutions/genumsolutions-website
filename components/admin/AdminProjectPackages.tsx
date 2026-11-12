@@ -100,6 +100,10 @@ function ProjectEditor({
               onChange={(event) => setField("stock", Number(event.target.value))}
               className={`mt-2 w-full ${inputClass}`}
             />
+            <span className="mt-1 block text-xs font-normal text-muted">
+              Retail items: 0 shows as out of stock/unavailable for direct purchase. Project
+              packages use quote flow regardless of stock.
+            </span>
           </label>
           <label className="sm:col-span-2 text-sm font-bold">
             Full project description
@@ -353,7 +357,7 @@ export default function AdminProjectPackages({
       ...product,
       id: product.id.trim().toLowerCase().replace(/\s+/g, "-"),
       price: Number(product.price),
-      stock: Number(product.stock),
+      stock: Math.max(0, Math.round(Number(product.stock) || 0)),
       specs:
         typeof product.specs === "string"
           ? String(product.specs).split("\n").filter(Boolean)

@@ -23,7 +23,9 @@ export default function ProductDetailPro({
   const [added, setAdded] = useState(false);
   const [activeImage, setActiveImage] = useState(0);
   const { add } = useCart();
-  const isQuote = product.productType === "Project package" || product.stock === 0;
+  const isProjectPackage = product.productType === "Project package";
+  const isOutOfStock = !isProjectPackage && (product.stock ?? 0) <= 0;
+  const canPurchase = !isProjectPackage && (product.stock ?? 0) > 0;
   const related = relatedProducts(allProducts, product);
   const images = galleryImages(product);
   // U-24 (2026-09-24): canonical MakerWorld specs as rows; falls back to the
@@ -109,8 +111,8 @@ export default function ProductDetailPro({
   }, [added]);
 
   function addToBuildList() {
-    if (isQuote) return;
-    add(product.id, Math.min(quantity, product.stock));
+    if (!canPurchase) return;
+    add(product.id, Math.min(Math.max(1, quantity), product.stock));
     fetch("/api/habits", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -227,7 +229,7 @@ export default function ProductDetailPro({
               </span>
             </div>
             <div className="mt-6 flex flex-wrap items-center gap-3">
-              {!isQuote && (
+              {canPurchase && (
                 <div className="flex items-center rounded-full border border-line bg-white shadow-sm">
                   <button
                     onClick={() => setQuantity((value) => Math.max(1, value - 1))}
@@ -252,32 +254,52 @@ export default function ProductDetailPro({
                   </button>
                 </div>
               )}
-              <Link
-                href={isQuote ? "/contact" : "/checkout"}
-                onClick={isQuote ? undefined : addToBuildList}
-                className={`rounded-full px-6 py-3.5 text-sm font-black text-white transition ${added ? "bg-emerald-600" : "bg-navy hover:bg-navy-dark"}`}
-                aria-label={
-                  isQuote
-                    ? `Request a quote for ${product.name}`
-                    : added
+              {isProjectPackage ? (
+                <Link
+                  href="/contact"
+                  className="rounded-full bg-navy px-6 py-3.5 text-sm font-black text-white transition hover:bg-navy-dark"
+                  aria-label={`Request a quote for ${product.name}`}
+                >
+                  <span className="inline-flex items-center gap-1.5">
+                    Request a scoped quote
+                    <ArrowUpRight size={15} aria-hidden="true" />
+                  </span>
+                </Link>
+              ) : isOutOfStock ? (
+                <Link
+                  href="/contact"
+                  className="rounded-full bg-ink px-6 py-3.5 text-sm font-black text-white transition hover:bg-navy-dark"
+                  aria-label={`${product.name} is out of stock — ask about availability`}
+                >
+                  <span className="inline-flex items-center gap-1.5">
+                    Out of stock — ask about availability
+                    <ArrowUpRight size={15} aria-hidden="true" />
+                  </span>
+                </Link>
+              ) : (
+                <Link
+                  href="/checkout"
+                  onClick={addToBuildList}
+                  className={`rounded-full px-6 py-3.5 text-sm font-black text-white transition ${added ? "bg-emerald-600" : "bg-navy hover:bg-navy-dark"}`}
+                  aria-label={
+                    added
                       ? `${product.name} added to build list`
                       : `Add ${product.name} to build list`
-                }
-              >
-                <span className="inline-flex items-center gap-1.5">
-                  {isQuote
-                    ? "Request a scoped quote"
-                    : added
-                      ? "Added to build list"
-                      : "Add to build list"}
-                  {isQuote ? (
-                    <ArrowUpRight size={15} aria-hidden="true" />
-                  ) : added ? (
-                    <Check size={15} aria-hidden="true" />
-                  ) : null}
-                </span>
-              </Link>
+                  }
+                >
+                  <span className="inline-flex items-center gap-1.5">
+                    {added ? "Added to build list" : "Add to build list"}
+                    {added ? <Check size={15} aria-hidden="true" /> : null}
+                  </span>
+                </Link>
+              )}
             </div>
+            {isOutOfStock && (
+              <p className="mt-3 text-sm text-muted">
+                This item is currently unavailable for direct purchase. Contact us to ask about
+                restock timing or a backorder.
+              </p>
+            )}
           </div>
         </div>
 
@@ -297,7 +319,7 @@ export default function ProductDetailPro({
                   ? "Quote-based package"
                   : product.stock > 0
                     ? `In stock (${product.stock} unit${product.stock === 1 ? "" : "s"})`
-                    : "Out of stock — backorder on request",
+                    : "Out of stock — unavailable for direct purchase (ask about restock)",
               ],
               ["Delivery", product.delivery || "Nepal-wide courier"],
               ["Warranty", product.warranty || "7-day replacement"],
