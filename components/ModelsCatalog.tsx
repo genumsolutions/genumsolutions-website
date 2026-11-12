@@ -14,15 +14,17 @@ import ProductCard from "./ProductCard";
  */
 export default function ModelsCatalog({ products = [] }: { products?: Product[] }) {
   const [query, setQuery] = useState("");
+  const [inStockOnly, setInStockOnly] = useState(false);
   const [page, setPage] = useState(1);
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    if (!needle) return products;
-    return products.filter((p) =>
-      `${p.name} ${p.note} ${p.description}`.toLowerCase().includes(needle)
-    );
-  }, [products, query]);
+    return products.filter((p) => {
+      if (inStockOnly && (p.stock ?? 0) <= 0) return false;
+      if (!needle) return true;
+      return `${p.name} ${p.note} ${p.description}`.toLowerCase().includes(needle);
+    });
+  }, [products, query, inStockOnly]);
 
   const { items, totalPages, page: safePage } = paginate(filtered, page);
   // Keep the page in range when the list shrinks (search / deletion).
@@ -42,19 +44,34 @@ export default function ModelsCatalog({ products = [] }: { products?: Product[] 
   return (
     <div>
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <label className="flex w-full max-w-xs items-center gap-3 rounded-full border border-line bg-white px-4 py-2 text-sm text-muted">
-          <Search size={15} aria-hidden="true" />
-          <input
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setPage(1);
-            }}
-            className="w-full bg-transparent outline-none placeholder:text-muted"
-            placeholder="Search models"
-            aria-label="Search 3D products"
-          />
-        </label>
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center">
+          <label className="flex w-full max-w-xs items-center gap-3 rounded-full border border-line bg-white px-4 py-2 text-sm text-muted">
+            <Search size={15} aria-hidden="true" />
+            <input
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setPage(1);
+              }}
+              className="w-full bg-transparent outline-none placeholder:text-muted"
+              placeholder="Search models"
+              aria-label="Search 3D products"
+            />
+          </label>
+          <label className="flex min-h-[40px] cursor-pointer items-center gap-2 rounded-full border border-line bg-white px-4 py-2 text-sm font-bold text-muted shadow-sm">
+            <input
+              type="checkbox"
+              checked={inStockOnly}
+              onChange={(e) => {
+                setInStockOnly(e.target.checked);
+                setPage(1);
+              }}
+              aria-label="Show in-stock 3D products only"
+              className="h-4 w-4 accent-navy"
+            />
+            In stock only
+          </label>
+        </div>
         <span aria-live="polite" className="text-sm text-muted">
           {filtered.length} model{filtered.length === 1 ? "" : "s"} · page {safePage} of{" "}
           {totalPages}
