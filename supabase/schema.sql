@@ -2936,11 +2936,17 @@ insert into public.print_categories (id, name, description, sort_order) values
 on conflict (id) do nothing;
 
 insert into public.print_materials (id, name, description, rate_per_gram, note, sort_order) values
-  ('pla', 'PLA', 'The everyday choice: crisp detail, easy to print, best for display models, teaching aids and prototypes that will not sit in a hot car.', 0, 'Rate pending owner approval.', 1),
-  ('petg', 'PETG', 'Tougher and slightly flexible with better heat and water resistance — a good fit for brackets, jigs and parts that take a knock.', 0, 'Rate pending owner approval.', 2)
+  ('pla', 'PLA', 'The everyday choice: crisp detail, easy to print, best for display models, teaching aids and prototypes that will not sit in a hot car.', 12, 'Proposed NPR 12/g — pending owner approval.', 1),
+  ('petg', 'PETG', 'Tougher and slightly flexible with better heat and water resistance — a good fit for brackets, jigs and parts that take a knock.', 16, 'Proposed NPR 16/g — pending owner approval.', 2)
 on conflict (id) do nothing;
 
-insert into public.print_settings (id) values (1) on conflict (id) do nothing;
+insert into public.print_settings (id, minimum_order, bulk_tiers) values
+  (1, 350, '[{"minQty":10,"discountPercent":5},{"minQty":50,"discountPercent":10},{"minQty":100,"discountPercent":15}]'::jsonb)
+on conflict (id) do update set minimum_order = excluded.minimum_order, bulk_tiers = excluded.bulk_tiers;
+
+-- NOTE: pricing_status stays 'draft' (pending GENUM approval). The docx lists all
+-- prices as proposed / pending approval — do NOT set pricing_status = 'approved'
+-- here. The owner approves in Admin → 3D Products → Pricing when ready.
 
 -- ---- RLS ------------------------------------------------------------------
 alter table public.print_categories enable row level security;
