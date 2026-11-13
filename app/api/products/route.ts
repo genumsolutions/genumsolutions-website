@@ -13,7 +13,9 @@ import {
 
 export async function GET(request: NextRequest) {
   try {
-    const products = await getManagedProducts();
+    // `active: false` means hidden from the public catalog (docs/CATALOG_STANDARDS.md).
+    // getManagedProducts() uses the service role, so RLS does not hide these for us.
+    const products = (await getManagedProducts()).filter((p) => p.active !== false);
 
     const params = request.nextUrl.searchParams;
 

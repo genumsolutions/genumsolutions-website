@@ -5,7 +5,7 @@ import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { initials } from "../lib/identity";
-import { readLocalCart, unionQuantities, writeLocalCart } from "../lib/cart-client";
+import { mergeGuestCart, readLocalCart, writeLocalCart } from "../lib/cart-client";
 import { inputClass } from "../lib/styles";
 import { isStaffRole } from "../lib/roles";
 
@@ -80,7 +80,7 @@ async function mergeLocalCart() {
   try {
     const response = await fetch("/api/cart", { signal: controller.signal });
     const data = await response.json().catch(() => ({ cart: [] }));
-    const merged = unionQuantities(Array.isArray(data.cart) ? data.cart : [], localCart);
+    const merged = mergeGuestCart(Array.isArray(data.cart) ? data.cart : [], localCart);
     if (!merged.length) return;
     await fetch("/api/cart", {
       method: "PUT",

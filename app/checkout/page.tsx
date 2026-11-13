@@ -89,8 +89,14 @@ export default function CheckoutPage() {
   }
 
   function validate() {
-    if (!customer.name.trim() || !customer.email.trim() || !customer.address.trim()) {
-      setMessage("Add your name, email, and delivery address to continue.");
+    // Phone matches the app's checkout (and the delivery partner needs it).
+    if (
+      !customer.name.trim() ||
+      !customer.email.trim() ||
+      !customer.phone.trim() ||
+      !customer.address.trim()
+    ) {
+      setMessage("Add your name, email, phone, and delivery address to continue.");
       return false;
     }
     if (!account) {

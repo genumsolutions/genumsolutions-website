@@ -29,9 +29,9 @@ export async function POST(request: Request) {
     );
 
   const customer = readCustomerFields(body, user.email);
-  if (!customer.customerName || !customer.email || !customer.address)
+  if (!customer.customerName || !customer.email || !customer.phone || !customer.address)
     return NextResponse.json(
-      { error: "Add your name, email, and delivery address." },
+      { error: "Add your name, email, phone, and delivery address." },
       { status: 400 }
     );
 

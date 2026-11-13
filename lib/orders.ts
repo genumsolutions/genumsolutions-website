@@ -16,10 +16,30 @@ type OrderRow = {
   created_at: string;
 };
 
+/**
+ * Normalizes the shared `orders.items` JSON. Older app builds wrote
+ * `priceNpr` instead of the shared `price` key, which made those lines render
+ * as "NPR NaN" in the account page and admin orders. New writes always use
+ * `price`; this keeps historic rows readable.
+ */
+function normalizeItems(raw: unknown): OrderItem[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((entry) => {
+    const item = (entry ?? {}) as Partial<OrderItem>;
+    const price = Number(item.price ?? item.priceNpr);
+    return {
+      productId: String(item.productId ?? ""),
+      name: String(item.name ?? ""),
+      price: Number.isFinite(price) ? price : 0,
+      quantity: Math.max(0, Math.floor(Number(item.quantity) || 0)),
+    };
+  });
+}
+
 function rowToOrder(row: OrderRow): Order {
   return {
     id: row.id,
-    items: Array.isArray(row.items) ? (row.items as OrderItem[]) : [],
+    items: normalizeItems(row.items),
     totalNpr: row.total_npr,
     status: row.status,
     provider: row.provider,

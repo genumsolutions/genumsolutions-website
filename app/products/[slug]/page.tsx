@@ -22,7 +22,7 @@ export async function generateMetadata({
   params: { slug: string };
 }): Promise<Metadata> {
   const product = (await getManagedProducts()).find((item) => item.id === params.slug);
-  if (!product) return {};
+  if (!product || product.active === false) return {};
   const description = (product.note || product.description || "").slice(0, 155);
   return {
     title: product.name,
@@ -51,7 +51,9 @@ export default async function ProductPage({ params }: { params: { slug: string }
   // scopes) by detailCatalog() — the payload fix stays, the 404s go.
   const all = await getManagedProducts();
   const product = all.find((item) => item.id === params.slug);
-  if (!product) notFound();
+  // Hidden products must not be reachable by direct URL (or indexable via
+  // their canonical/metadata below), same rule as the catalogs.
+  if (!product || product.active === false) notFound();
   const products = detailCatalog(all, product);
   return (
     <>

@@ -18,7 +18,14 @@ export type Customer = {
   cart: CartLine[];
   messages: CustomerMessage[];
 };
-export type OrderItem = { productId: string; name: string; price: number; quantity: number };
+export type OrderItem = {
+  productId: string;
+  name: string;
+  price: number;
+  /** Legacy field written by older app builds; read-side fallback only. */
+  priceNpr?: number;
+  quantity: number;
+};
 export type Order = {
   id: string;
   items: OrderItem[];

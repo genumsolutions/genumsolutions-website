@@ -17,7 +17,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/journal",
     "/tools",
     "/contact",
-    "/checkout",
+    // /checkout is deliberately absent: robots.ts disallows it and it needs a cart.
     "/privacy",
     "/terms",
   ];
@@ -28,11 +28,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly" as const,
       priority: path === "" ? 1 : 0.7,
     })),
-    ...products.map((product) => ({
-      url: `${company.url}/products/${product.id}`,
-      lastModified: new Date(),
-      changeFrequency: "weekly" as const,
-      priority: 0.6,
-    })),
+    // Only visible products belong in the sitemap; hidden rows 404 on their
+    // detail route, so advertising them would submit dead URLs.
+    ...products
+      .filter((product) => product.active !== false)
+      .map((product) => ({
+        url: `${company.url}/products/${product.id}`,
+        lastModified: new Date(),
+        changeFrequency: "weekly" as const,
+        priority: 0.6,
+      })),
   ];
 }

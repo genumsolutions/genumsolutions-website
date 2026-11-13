@@ -36,16 +36,19 @@ export function clearLocalCart() {
   window.localStorage.removeItem(CART_KEY);
 }
 
-// Additive union used ONLY at sign-in time so nothing from either side is lost.
-export function unionQuantities(a: CartLine[], b: CartLine[]): CartLine[] {
-  const merged = new Map<string, number>();
-  [...a, ...b].forEach((line) => {
-    merged.set(line.productId, (merged.get(line.productId) || 0) + line.quantity);
-  });
-  return Array.from(merged.entries())
-    .map(([productId, quantity]) => ({
-      productId,
-      quantity: Math.min(MAX_QUANTITY_PER_LINE, quantity),
-    }))
-    .filter((line) => line.quantity > 0);
+/**
+ * Merge a guest cart into the signed-in cart at sign-in time.
+ *
+ * Same rule as CartProvider's reconcile and the native app's mergeCarts:
+ * the server cart is the source of truth per product, and guest lines for
+ * products the server does not have are appended. The previous additive
+ * union doubled a product that was already in the signed-in cart (guest 2 +
+ * server 2 became 4), which the providers then never corrected.
+ */
+export function mergeGuestCart(server: CartLine[], guest: CartLine[]): CartLine[] {
+  const serverIds = new Set(server.map((line) => line.productId));
+  return [
+    ...server,
+    ...guest.filter((line) => !serverIds.has(line.productId) && line.quantity > 0),
+  ];
 }
