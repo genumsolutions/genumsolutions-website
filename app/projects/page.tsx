@@ -27,10 +27,6 @@ export default async function ProjectsPage() {
   // packages; the includeKits path re-adds Pre-packaged Kits client-side).
   const allProducts = await getManagedProducts();
   const products = applyScope(allProducts, "projects");
-  // ProjectTypes only needs ids, and it must see rows that `projects` scope
-  // drops (kit-package builds such as the Bluetooth and multimode cars), or a
-  // real project would read "in the workshop" while its product is live.
-  const productIds = allProducts.map((product) => product.id);
   const categories = await getProjectCategories();
   const categoryEntries = categories.map((c) => ({
     id: c.id,
@@ -53,12 +49,11 @@ export default async function ProjectsPage() {
           <ArrowRight size={15} aria-hidden="true" />
         </Link>
       </div>
-      {/* The build families from the repo root (2WD1M, 4WD4M, self-balancing,
-          wireless, remote, obstacle, path-follow, dustbin) before the catalog
-          grid, so the page covers every project type and not only the rows
-          that happen to be for sale today. */}
-      <div className="py-8 sm:py-10">
-        <ProjectTypes productIds={productIds} />
+      {/* 2026-11-13: the build-family section is now a compact INDEX, not a
+          second card grid. Before, the same projects appeared as family cards
+          and again as package cards below; the catalogue is the only listing. */}
+      <div className="pt-8 sm:pt-10">
+        <ProjectTypes />
       </div>
       <ProjectsCatalog products={products} categories={categoryEntries} includeKits />
     </PageShell>

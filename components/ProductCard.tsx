@@ -14,6 +14,13 @@ import { useCollection } from "./collection-provider";
 // row on phones (owner: "just like the mobile app") up to 5 at xl.
 // The heart toggles the user collection (stopPropagation keeps the tap
 // from also navigating).
+function printMeta(product: Product): string {
+  if (!product.material && !product.weightGrams) return "";
+  return [product.material, product.weightGrams ? `${product.weightGrams} g` : ""]
+    .filter(Boolean)
+    .join(" · ");
+}
+
 export default function ProductCard({ product }: { product: Product }) {
   const fallbackMedia = getProductMedia(product.category);
   const media = galleryImages(product)[0] ?? fallbackMedia.src;
@@ -59,12 +66,25 @@ export default function ProductCard({ product }: { product: Product }) {
         aria-label={`Open ${product.name}`}
         className="block px-3 pb-3 pt-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
       >
+        {/* 2026-11-13: print rows carry their material/weight here so the 3D
+            catalogue answers "what is this and how big is it" without a click.
+            Other catalogs never set these fields, so they render unchanged. */}
+        {product.featuredPrint && (
+          <span className="mb-1 block text-[10px] font-black uppercase tracking-[0.18em] text-gold-dark">
+            Featured
+          </span>
+        )}
         {/* 2026-11-12 card standard: two lines of wrap instead of one truncated
             line, so a long product name stays readable and every card in the
             grid keeps the same text block height. */}
         <span className="line-clamp-2 min-h-[2.4em] break-words text-[13px] font-bold leading-tight text-ink [overflow-wrap:anywhere]">
           {product.name}
         </span>
+        {printMeta(product) && (
+          <span className="mt-0.5 block truncate text-[11px] font-medium text-muted">
+            {printMeta(product)}
+          </span>
+        )}
         <span className="mt-0.5 flex items-center justify-between gap-2 text-xs font-black text-navy">
           <span>{product.priceLabel}</span>
           {outOfStock ? (

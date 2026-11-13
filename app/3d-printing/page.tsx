@@ -4,7 +4,6 @@ import { ArrowUpRight } from "lucide-react";
 import ArticleCard from "../../components/ArticleCard";
 import ModelBrowser from "../../components/ModelBrowser";
 import ModelsCatalog from "../../components/ModelsCatalog";
-import ProductCard from "../../components/ProductCard";
 import PageShell from "../../components/PageShell";
 import PrintCalculator from "../../components/print/PrintCalculator";
 import PrintQuoteForm from "../../components/print/PrintQuoteForm";
@@ -73,7 +72,12 @@ async function getModels() {
 export default async function PrintingPage() {
   const [models, content] = await Promise.all([getModels(), getPrintContent()]);
   const promo = activePromotion(content.promotions);
-  const featured = models.filter((model) => model.featuredPrint);
+  // 2026-11-13: featured models used to render in their own row AND again in
+  // the catalogue directly below — the same photo and price twice. They now
+  // sort to the front of the single catalogue and carry a "Featured" marker.
+  const orderedModels = [...models].sort(
+    (a, b) => Number(b.featuredPrint === true) - Number(a.featuredPrint === true)
+  );
   const counts = models.reduce<Record<string, number>>((acc, model) => {
     const key = model.printCategory ?? "";
     if (key) acc[key] = (acc[key] ?? 0) + 1;
@@ -86,26 +90,9 @@ export default async function PrintingPage() {
     <PageShell>
       <PrintHero settings={content.settings} modelCount={models.length} />
       {promo && <PrintPromoBanner promo={promo} />}
-
-      {featured.length > 0 && (
-        <section className="mx-auto max-w-7xl px-5 pt-10 lg:px-8" aria-labelledby="print-featured">
-          <p className="text-xs font-black uppercase tracking-[.24em] text-navy">Featured</p>
-          <h2 id="print-featured" className="mt-2 font-display text-2xl font-bold sm:text-3xl">
-            Featured models.
-          </h2>
-          <div className="mt-5 grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {/* ProductCard is the shared catalog card; the featured row only
-                changes which rows appear, never how they look. */}
-            {featured.slice(0, 10).map((model) => (
-              <ProductCard key={model.id} product={model} />
-            ))}
-          </div>
-        </section>
-      )}
-
       <section
         id="catalogue"
-        className="mx-auto max-w-7xl scroll-mt-24 px-5 py-8 lg:px-8"
+        className="mx-auto max-w-7xl scroll-mt-24 px-5 pb-10 pt-10 lg:px-8 lg:pb-14"
         aria-label="3D Products catalogue"
       >
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
@@ -124,12 +111,10 @@ export default async function PrintingPage() {
             Have your own file? Send it instead
           </Link>
         </div>
-        <ModelsCatalog products={models} />
+        <ModelsCatalog products={orderedModels} />
       </section>
-
       <PrintCategories categories={content.categories} counts={counts} />
       <PrintMaterials materials={content.materials} intro={content.settings.materialsIntro} />
-
       {showCalculator ? (
         <PrintCalculator settings={content.settings} materials={content.materials} />
       ) : (
@@ -167,9 +152,7 @@ export default async function PrintingPage() {
           </div>
         </section>
       )}
-
       <PrintCustomServices />
-
       <section className="mx-auto max-w-7xl px-5 pt-10 lg:px-8">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {offers.map((offer) => (
@@ -184,7 +167,6 @@ export default async function PrintingPage() {
           ))}
         </div>
       </section>
-
       <div className="mx-auto max-w-7xl px-5 lg:px-8">
         <div className="mt-10 grid gap-6 border-y border-line py-8 sm:gap-8 lg:grid-cols-[.8fr_1.2fr]">
           <div>
@@ -221,10 +203,8 @@ export default async function PrintingPage() {
           </ol>
         </div>
       </div>
-
       <PrintQuoteForm materials={content.materials} />
       <PrintGallery items={content.gallery} />
-
       <div className="mx-auto max-w-7xl px-5 lg:px-8">
         <ModelBrowser />
 
@@ -243,7 +223,6 @@ export default async function PrintingPage() {
           </Link>
         </div>
       </div>
-
       <script
         type="application/ld+json"
         // Service + offer catalogue, not a product review claim.

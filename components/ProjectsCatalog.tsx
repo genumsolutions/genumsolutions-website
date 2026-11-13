@@ -83,8 +83,24 @@ export default function ProjectsCatalog({
   }, [categories, allProjects]);
 
   return (
-    <section className="mx-auto max-w-7xl px-5 py-10 sm:py-12 lg:px-8 lg:py-16">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+    <section className="mx-auto max-w-7xl px-5 pb-16 pt-10 sm:pt-12 lg:px-8 lg:pt-14">
+      {/* 2026-11-13: the catalogue now carries its own heading and count — the
+          page had two card grids with no clear "this is the list" signal. */}
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[.24em] text-navy">
+            Project packages
+          </p>
+          <h2 className="mt-2 font-display text-2xl font-bold sm:text-3xl">
+            Browse what is ready to build.
+          </h2>
+        </div>
+        <p className="text-sm font-bold text-muted" aria-live="polite">
+          {filtered.length} listing{filtered.length === 1 ? "" : "s"}
+        </p>
+      </div>
+
+      <div className="mt-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <label className="flex w-full max-w-xs items-center gap-3 rounded-full border border-line bg-white px-4 py-2 text-sm text-muted">
           <Search size={15} aria-hidden="true" />
           <input
@@ -98,14 +114,9 @@ export default function ProjectsCatalog({
             aria-label="Search projects"
           />
         </label>
-        <div className="flex items-center justify-between gap-6 text-sm text-muted">
-          <span>
-            {filtered.length} listing{filtered.length === 1 ? "" : "s"}
-          </span>
-          <span aria-live="polite" className="font-bold text-navy">
-            {count > 0 ? `${count} item${count === 1 ? "" : "s"} in build list` : "Quote by scope"}
-          </span>
-        </div>
+        <span aria-live="polite" className="text-sm font-bold text-navy lg:whitespace-nowrap">
+          {count > 0 ? `${count} item${count === 1 ? "" : "s"} in build list` : "Quote by scope"}
+        </span>
       </div>
 
       {/* Category selector — the SIX canonical project categories. */}

@@ -1,77 +1,47 @@
-import Link from "next/link";
-import { ArrowRight } from "lucide-react";
-import { PROJECT_TYPES, projectTypeProductIds } from "../lib/project-types";
-import { cardClass } from "../lib/styles";
+import { PROJECT_TYPES } from "../lib/project-types";
 
 /**
- * Every build family the workshop actually has, one card each.
+ * Compact index of every build family the workshop has source, firmware and a
+ * parts list for.
  *
- * Before this section, /projects only listed catalog rows: the obstacle,
- * path-follow, RF and Wi-Fi car projects existed in the repo and in the modes
- * table, but nothing on the page said so. Each card names the source folder, the
- * modes it covers, and — when the catalog has the row — links straight to the
- * package. A missing row reads "In the workshop" instead of pretending to be
- * for sale.
+ * It used to be a second grid of cards, each republishing a summary and a link
+ * to a package that then appeared AGAIN in the catalogue below — the owner
+ * flagged that as duplicate data on the projects page. The catalogue is now the
+ * only place a project is sold; this section only answers "what can the
+ * workshop build?" in one compact block, so a family with no package yet is
+ * still visible without pretending to be a listing.
  */
-export default function ProjectTypes({ productIds }: { productIds: string[] }) {
-  // Ids only: /projects deliberately does not ship the whole catalog across the
-  // RSC boundary, and a Set of ~100 short ids is what this section needs to
-  // know whether a build can be bought. Rows scoped out of the projects list
-  // (e.g. kit-package rows) still count as available.
-  const available = new Set(productIds);
-
+export default function ProjectTypes() {
   return (
-    <section className="mx-auto max-w-7xl px-5 pb-4 lg:px-8">
-      <div className="flex flex-col gap-1">
-        <h2 className="font-display text-xl font-bold text-ink sm:text-2xl">
-          Project types in the workshop
-        </h2>
-        <p className="max-w-2xl text-sm leading-6 text-muted">
-          Every build family GENUM has source, firmware and a parts list for. Project packages below
-          group them by application — Robo Car, Smart Home, Smart Farm, Smart City, Smart Dustbin
-          and Aerial Drones.
-        </p>
-      </div>
-
-      <div className="mt-4 grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {PROJECT_TYPES.map((type) => {
-          const product = projectTypeProductIds(type).find((id) => available.has(id));
-          return (
-            <article key={type.id} className={cardClass}>
-              <p className="break-words text-[10px] font-black uppercase tracking-[0.18em] text-navy">
-                {type.sourceFolder}
-              </p>
-              <h3 className="mt-2 break-words font-display text-base font-bold leading-snug text-ink">
+    <section className="mx-auto max-w-7xl px-5 lg:px-8" aria-labelledby="build-families-heading">
+      <div className="rounded-2xl border border-line bg-white p-5 sm:p-6">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2
+            id="build-families-heading"
+            className="font-display text-lg font-bold text-ink sm:text-xl"
+          >
+            Build families in the workshop
+          </h2>
+          <p className="text-xs font-bold text-muted">
+            {PROJECT_TYPES.length} families · packages listed below
+          </p>
+        </div>
+        <ul className="mt-4 grid gap-x-6 gap-y-2 sm:grid-cols-2 lg:grid-cols-4">
+          {PROJECT_TYPES.map((type) => (
+            <li key={type.id} className="min-w-0 border-t border-line pt-2">
+              <span className="block break-words text-sm font-bold leading-snug text-ink">
                 {type.name}
-              </h3>
-              <p className="mt-2 break-words text-sm leading-6 text-muted">{type.summary}</p>
-              {type.modes.length > 0 && (
-                <p className="mt-3 flex flex-wrap gap-1.5">
-                  {type.modes.map((mode) => (
-                    <span
-                      key={mode}
-                      className="rounded-full bg-mist px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-muted"
-                    >
-                      {mode}
-                    </span>
-                  ))}
-                </p>
-              )}
-              <p className="mt-3 text-xs font-bold">
-                {product ? (
-                  <Link
-                    href={`/products/${product}`}
-                    className="inline-flex items-center gap-1.5 text-navy hover:gap-2.5"
-                  >
-                    Open the package <ArrowRight size={13} aria-hidden="true" />
-                  </Link>
-                ) : (
-                  <span className="text-muted">In the workshop — quote by scope</span>
-                )}
-              </p>
-            </article>
-          );
-        })}
+              </span>
+              <span className="mt-0.5 block break-words text-[11px] font-medium leading-5 text-muted">
+                {type.modes.length > 0 ? type.modes.join(" · ") : type.sourceFolder}
+              </span>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-4 text-xs leading-5 text-muted">
+          Family without a package here? It is built to scope — send the requirement and we quote
+          the parts, firmware and build time together.
+        </p>
       </div>
     </section>
   );

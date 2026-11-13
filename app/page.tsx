@@ -1,11 +1,9 @@
 import Link from "next/link";
-import NextImage from "next/image";
 import type { Metadata } from "next";
-import { ArrowRight, ArrowUpRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import PageShell from "../components/PageShell";
 import HeroCarousel from "../components/HeroCarousel";
 import ProductCard from "../components/ProductCard";
-import { getProductMedia } from "../lib/product-media";
 import { getTrainingPrograms, getPilotCosts, getCurriculumHighlights } from "../lib/programs-store";
 import { getManagedProducts } from "../lib/content-store";
 import { getSiteContent } from "../lib/content-store";
@@ -102,29 +100,20 @@ export default async function HomePage() {
   // with the bundled lists as fallback — one company story on both surfaces.
   // U-38e: printing models come from the same "3D Models" catalog rows the
   // /3d-printing page shows, so the home strip never drifts from the vertical.
-  const [trainingPrograms, pilotCosts, curriculum, printModels, featuredElectronic] =
-    await Promise.all([
-      getTrainingPrograms(),
-      getPilotCosts(),
-      getCurriculumHighlights(),
-      getManagedProducts()
-        .then((products) =>
-          products.filter(
-            (p) => p.category?.trim().toLowerCase() === "3d models" && p.active !== false
-          )
-        )
-        .catch(() => []),
-      // U-46: in-stock electronic products with photos for the hero carousel
-      // (most-updated-first is not exposed on Product — stable name order).
-      getManagedProducts()
-        .then((products) =>
-          applyScope(products, "components")
-            .filter((p) => p.active !== false && p.stock > 0 && Boolean(p.image))
-            .sort((a, b) => a.name.localeCompare(b.name))
-        )
-        .catch(() => []),
-    ]);
-  const printShowcase = printModels.slice(0, 4);
+  const [trainingPrograms, pilotCosts, curriculum, featuredElectronic] = await Promise.all([
+    getTrainingPrograms(),
+    getPilotCosts(),
+    getCurriculumHighlights(),
+    // U-46: in-stock electronic products with photos for the hero carousel
+    // (most-updated-first is not exposed on Product — stable name order).
+    getManagedProducts()
+      .then((products) =>
+        applyScope(products, "components")
+          .filter((p) => p.active !== false && p.stock > 0 && Boolean(p.image))
+          .sort((a, b) => a.name.localeCompare(b.name))
+      )
+      .catch(() => []),
+  ]);
   // U-46: hero carousel slides — the newest 3D prints + electronic products
   // (already fetched above for the strips; no extra DB round-trip).
   // U-47v6 (owner: 3D residue in the landing-page product displays):
@@ -133,7 +122,13 @@ export default async function HomePage() {
   const heroProducts = featuredElectronic.slice(0, 4);
   // U-47 (owner, ecommerce-style home): an in-stock products strip right
   // under the hero — photo-led, straight to the page.
-  const bestSellers = featuredElectronic.slice(0, 8);
+  // 2026-11-13: the shelf used to repeat the four hero-carousel products.
+  // It now continues from where the carousel stops, so the landing page shows
+  // each product once.
+  const bestSellers =
+    featuredElectronic.length > 4
+      ? featuredElectronic.slice(4, 12)
+      : featuredElectronic.slice(0, 8);
 
   return (
     <PageShell>
@@ -274,58 +269,20 @@ export default async function HomePage() {
               ))}
             </div>
 
-            {printShowcase.length > 0 && (
-              <div className="mt-8">
-                <h3 className="font-display text-lg font-bold">Models we print</h3>
-                <ul className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
-                  {printShowcase.map((model) => {
-                    const media = model.image ?? getProductMedia(model.category).src;
-                    return (
-                      <li key={model.id}>
-                        <Link
-                          href={`/products/${model.id}`}
-                          className="group block overflow-hidden rounded-2xl border border-line bg-white transition hover:-translate-y-0.5 hover:border-navy hover:shadow-lg"
-                        >
-                          <span className="relative block aspect-square bg-mist">
-                            {model.image ? (
-                              <NextImage
-                                src={media}
-                                alt={model.name}
-                                fill
-                                sizes="(max-width: 640px) 50vw, 25vw"
-                                className="object-contain transition duration-500 group-hover:scale-105"
-                              />
-                            ) : null}
-                          </span>
-                          <span className="block p-3">
-                            <span className="line-clamp-1 block font-display text-xs font-bold text-ink">
-                              {model.name}
-                            </span>
-                            <span className="mt-1 flex items-center justify-between gap-2">
-                              <span className="text-xs font-bold text-navy">
-                                {model.priceLabel}
-                              </span>
-                              <ArrowUpRight
-                                size={13}
-                                aria-hidden="true"
-                                className="text-slate-400 transition group-hover:text-navy"
-                              />
-                            </span>
-                          </span>
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            )}
-
-            <Link
-              href="/contact"
-              className="mt-8 inline-flex h-12 items-center gap-2 rounded-full bg-navy px-6 text-sm font-black text-white transition hover:bg-navy-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
-            >
-              Send a file for a print review <ArrowRight size={15} aria-hidden="true" />
-            </Link>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link
+                href="/contact"
+                className="inline-flex h-12 items-center gap-2 rounded-full bg-navy px-6 text-sm font-black text-white transition hover:bg-navy-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
+              >
+                Send a file for a print review <ArrowRight size={15} aria-hidden="true" />
+              </Link>
+              <Link
+                href="/3d-printing"
+                className="inline-flex h-12 items-center rounded-full border border-line bg-white px-6 text-sm font-black text-ink transition hover:border-navy hover:text-navy"
+              >
+                Browse 3D prints
+              </Link>
+            </div>
           </div>
         </section>
 
