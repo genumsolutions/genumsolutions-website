@@ -159,14 +159,17 @@ export async function setProjectPricingApproval(values: {
   approvedBy: string;
 }): Promise<void> {
   if (!supabaseConfigured()) return;
+  // Upsert, not update: a project package created after the seed has no
+  // pricing row yet, and approving it must not silently affect zero rows.
+  // Every other column has a default, so the insert carries only these fields.
   const { error } = await createServiceClient()
     .from("project_pricing")
-    .update({
+    .upsert({
+      id: values.projectId,
       price_status: values.approved ? "approved" : "draft",
       price_approved_at: values.approved ? new Date().toISOString() : null,
       price_approved_by: values.approved ? values.approvedBy : "",
       updated_at: new Date().toISOString(),
-    })
-    .eq("id", values.projectId);
+    });
   if (error) throw error;
 }
