@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import { inputClass, cardRow, cardRowText } from "../../lib/styles";
+import { PROJECT_CATEGORIES } from "../../lib/project-catalog";
 import type { Product } from "./admin-types";
 import { emptyProduct, PAGE_SIZE } from "./admin-types";
 import { Pager, focusEditor, editorCard, editorCardTitle, panelCard } from "./admin-helpers";
@@ -80,6 +81,29 @@ function ProjectEditor({
                 </option>
               ))}
             </select>
+          </label>
+          <label className="text-sm font-bold">
+            Project category
+            <select
+              value={product.project_category || ""}
+              onChange={(event) => setField("project_category", event.target.value)}
+              className={`mt-2 w-full ${inputClass}`}
+              aria-label="Project category (groups projects on the public page)"
+            >
+              <option value="">— not set —</option>
+              {PROJECT_CATEGORIES.filter((c) => c.slug !== "remote-controller")
+                .slice()
+                .map((cat) => (
+                  <option key={cat.slug} value={cat.name}>
+                    {cat.name}
+                  </option>
+                ))}
+            </select>
+            <span className="mt-1 block text-xs font-normal text-muted">
+              Groups this project on the public /projects page: Robo Car, Smart Home, Smart Farm,
+              Smart City, Smart Dustbin, or Aerial Drones. Rolls up into the wheeled, smart, and
+              drone buckets the owner asked for.
+            </span>
           </label>
           <label className="text-sm font-bold">
             Price (NPR)
@@ -564,6 +588,7 @@ export default function AdminProjectPackages({
                 ...emptyProduct,
                 productType: "Project package",
                 category: "Project Packages",
+                project_category: "",
               })
             }
             busy={busy}

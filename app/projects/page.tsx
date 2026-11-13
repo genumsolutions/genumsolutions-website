@@ -4,7 +4,6 @@ import { ArrowRight } from "lucide-react";
 import PageIntro from "../../components/PageIntro";
 import PageShell from "../../components/PageShell";
 import ProjectsCatalog from "../../components/ProjectsCatalog";
-import ProjectTypes from "../../components/ProjectTypes";
 import { getManagedProducts } from "../../lib/content-store";
 import { getProjectCategories } from "../../lib/project-categories-store";
 import { applyScope } from "../../lib/catalog";
@@ -48,12 +47,6 @@ export default async function ProjectsPage() {
           Test & control on the IoT Controller
           <ArrowRight size={15} aria-hidden="true" />
         </Link>
-      </div>
-      {/* 2026-11-13: the build-family section is now a compact INDEX, not a
-          second card grid. Before, the same projects appeared as family cards
-          and again as package cards below; the catalogue is the only listing. */}
-      <div className="pt-8 sm:pt-10">
-        <ProjectTypes />
       </div>
       <ProjectsCatalog products={products} categories={categoryEntries} includeKits />
     </PageShell>
