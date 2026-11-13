@@ -7,6 +7,7 @@ import type {
   PrintGalleryItem,
   PrintMaterial,
   PrintPromotion,
+  PrintService,
   PrintSettings,
 } from "../../lib/print";
 
@@ -205,34 +206,12 @@ export function PrintMaterials({
   );
 }
 
-const CUSTOM_SERVICES = [
-  {
-    title: "Design for print",
-    text: "We prepare geometry, tolerances, supports and orientation so the first print is the right one.",
-  },
-  {
-    title: "File repair",
-    text: "Non-manifold meshes, missing walls and broken exports fixed before slicing.",
-  },
-  {
-    title: "Material guidance",
-    text: "PLA or PETG, wall count, infill and finish — chosen around how the part will be used.",
-  },
-  {
-    title: "Scaling and fitting",
-    text: "Resize a model while keeping clearances that still work in the real world.",
-  },
-  {
-    title: "Small-batch runs",
-    text: "Repeatable quantities for classroom sets, fixtures and product samples.",
-  },
-  {
-    title: "Post-processing",
-    text: "Support removal, clean-up and finish options discussed with the quote.",
-  },
-];
-
-export function PrintCustomServices() {
+// 2026-11-13 (business layer): the strip was hardcoded here, which meant the
+// owner could edit every other print section from the admin panel except this
+// one. It now renders print_services rows (Admin → 3D Products → Services) and
+// falls back to the bundled copy only when the table is empty.
+export function PrintCustomServices({ services }: { services: PrintService[] }) {
+  if (services.length === 0) return null;
   return (
     <section className="mx-auto max-w-7xl px-5 pt-10 lg:px-8" aria-labelledby="print-services">
       <p className="text-xs font-black uppercase tracking-[.24em] text-navy">
@@ -242,10 +221,17 @@ export function PrintCustomServices() {
         More than pressing start.
       </h2>
       <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {CUSTOM_SERVICES.map((service) => (
-          <article key={service.title} className="rounded-2xl border border-line bg-white p-5">
-            <h3 className="font-display text-base font-bold text-ink">{service.title}</h3>
-            <p className="mt-1 text-sm leading-6 text-muted">{service.text}</p>
+        {services.map((service) => (
+          <article key={service.id} className="rounded-2xl border border-line bg-white p-5">
+            <div className="flex items-start justify-between gap-3">
+              <h3 className="font-display text-base font-bold text-ink">{service.title}</h3>
+              {service.priceNote && (
+                <span className="shrink-0 text-xs font-black uppercase tracking-wider text-navy">
+                  {service.priceNote}
+                </span>
+              )}
+            </div>
+            <p className="mt-1 text-sm leading-6 text-muted">{service.description}</p>
           </article>
         ))}
       </div>

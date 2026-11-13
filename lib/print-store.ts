@@ -4,14 +4,17 @@ import {
   defaultPrintMaterials,
   defaultPrintSettings,
   isPrintQuoteStatus,
+  publishedPrintSettings,
   type PrintCategory,
   type PrintContent,
   type PrintGalleryItem,
   type PrintMaterial,
   type PrintPromotion,
   type PrintQuoteRequest,
+  type PrintService,
   type PrintSettings,
 } from "./print";
+import { defaultPrintCosting, type PrintCosting } from "./print-costing";
 
 // Server-side data access for the 3D print studio. Reads fall back to the
 // bundled defaults so the storefront renders even before the migration runs;
@@ -88,6 +91,9 @@ export function rowToSettings(row: Record<string, unknown> | null): PrintSetting
     disclaimer: str(row.disclaimer, defaultPrintSettings.disclaimer),
     heroImage: str(row.hero_image),
     materialsIntro: str(row.materials_intro, defaultPrintSettings.materialsIntro),
+    pricingStatus: row.pricing_status === "approved" ? "approved" : "draft",
+    pricingApprovedAt: iso(row.pricing_approved_at),
+    pricingApprovedBy: str(row.pricing_approved_by),
   };
 }
 
@@ -102,6 +108,72 @@ export function settingsToRow(settings: PrintSettings) {
     disclaimer: settings.disclaimer,
     hero_image: settings.heroImage,
     materials_intro: settings.materialsIntro,
+    pricing_status: settings.pricingStatus === "approved" ? "approved" : "draft",
+    pricing_approved_at: settings.pricingApprovedAt || null,
+    pricing_approved_by: settings.pricingApprovedBy ?? "",
+    updated_at: new Date().toISOString(),
+  };
+}
+
+function rowToService(row: Record<string, unknown>): PrintService {
+  return {
+    id: str(row.id),
+    title: str(row.title),
+    description: str(row.description),
+    priceNote: str(row.price_note),
+    sortOrder: num(row.sort_order, 1000),
+    active: bool(row.active, true),
+  };
+}
+
+function serviceToRow(item: Omit<PrintService, "id">) {
+  return {
+    title: item.title,
+    description: item.description,
+    price_note: item.priceNote,
+    sort_order: num(item.sortOrder, 1000),
+    active: item.active !== false,
+    updated_at: new Date().toISOString(),
+  };
+}
+
+export function rowToCosting(row: Record<string, unknown> | null): PrintCosting {
+  if (!row) return defaultPrintCosting;
+  return {
+    filamentCostPerGram: num(row.filament_cost_per_gram),
+    wastagePercent: num(row.wastage_percent, defaultPrintCosting.wastagePercent),
+    electricityRatePerKwh: num(row.electricity_rate_per_kwh),
+    printerWatts: num(row.printer_watts),
+    machineCost: num(row.machine_cost),
+    machineLifeHours: num(row.machine_life_hours),
+    maintenancePerHour: num(row.maintenance_per_hour),
+    labourPerHour: num(row.labour_per_hour),
+    packagingPerJob: num(row.packaging_per_job),
+    paymentFeePercent: num(row.payment_fee_percent),
+    overheadPerMonth: num(row.overhead_per_month),
+    monthlyOrderTarget: num(row.monthly_order_target),
+    targetMarginPercent: num(row.target_margin_percent, defaultPrintCosting.targetMarginPercent),
+    notes: str(row.notes),
+  };
+}
+
+function costingToRow(costing: PrintCosting) {
+  return {
+    id: 1,
+    filament_cost_per_gram: Math.max(0, num(costing.filamentCostPerGram)),
+    wastage_percent: Math.min(100, Math.max(0, Math.round(num(costing.wastagePercent)))),
+    electricity_rate_per_kwh: Math.max(0, num(costing.electricityRatePerKwh)),
+    printer_watts: Math.max(0, Math.round(num(costing.printerWatts))),
+    machine_cost: Math.max(0, Math.round(num(costing.machineCost))),
+    machine_life_hours: Math.max(0, Math.round(num(costing.machineLifeHours))),
+    maintenance_per_hour: Math.max(0, num(costing.maintenancePerHour)),
+    labour_per_hour: Math.max(0, num(costing.labourPerHour)),
+    packaging_per_job: Math.max(0, Math.round(num(costing.packagingPerJob))),
+    payment_fee_percent: Math.min(100, Math.max(0, num(costing.paymentFeePercent))),
+    overhead_per_month: Math.max(0, Math.round(num(costing.overheadPerMonth))),
+    monthly_order_target: Math.max(0, Math.round(num(costing.monthlyOrderTarget))),
+    target_margin_percent: Math.min(95, Math.max(0, Math.round(num(costing.targetMarginPercent)))),
+    notes: costing.notes.slice(0, 2000),
     updated_at: new Date().toISOString(),
   };
 }
@@ -186,6 +258,10 @@ export function rowToQuote(row: Record<string, unknown>): PrintQuoteRequest {
     fileUrls: strings(row.file_urls),
     status: isPrintQuoteStatus(status) ? status : "new",
     adminNotes: str(row.admin_notes),
+    quotedAmount: num(row.quoted_amount),
+    estimatedGrams: num(row.estimated_grams),
+    printHours: num(row.print_hours),
+    reprint: bool(row.reprint),
     createdAt: str(row.created_at),
   };
 }
@@ -201,32 +277,56 @@ export async function getPrintContent(
   const includeInactive = options.includeInactive === true;
   if (!supabaseConfigured()) return defaultPrintContent;
   const db = createServiceClient();
-  const [settingsResult, categoriesResult, materialsResult, promosResult, galleryResult] =
-    await Promise.all([
-      db.from("print_settings").select("*").eq("id", 1).maybeSingle(),
-      db.from("print_categories").select("*").order("sort_order", { ascending: true }),
-      db.from("print_materials").select("*").order("sort_order", { ascending: true }),
-      db.from("print_promotions").select("*").order("sort_order", { ascending: true }),
-      db.from("print_gallery").select("*").order("sort_order", { ascending: true }),
-    ]);
+  const [
+    settingsResult,
+    categoriesResult,
+    materialsResult,
+    promosResult,
+    galleryResult,
+    servicesResult,
+  ] = await Promise.all([
+    db.from("print_settings").select("*").eq("id", 1).maybeSingle(),
+    db.from("print_categories").select("*").order("sort_order", { ascending: true }),
+    db.from("print_materials").select("*").order("sort_order", { ascending: true }),
+    db.from("print_promotions").select("*").order("sort_order", { ascending: true }),
+    db.from("print_gallery").select("*").order("sort_order", { ascending: true }),
+    db.from("print_services").select("*").order("sort_order", { ascending: true }),
+  ]);
 
   if (settingsResult.error) console.warn("print_settings read failed", settingsResult.error);
   if (categoriesResult.error) console.warn("print_categories read failed", categoriesResult.error);
   if (materialsResult.error) console.warn("print_materials read failed", materialsResult.error);
   if (promosResult.error) console.warn("print_promotions read failed", promosResult.error);
   if (galleryResult.error) console.warn("print_gallery read failed", galleryResult.error);
+  if (servicesResult.error) console.warn("print_services read failed", servicesResult.error);
 
   // Published surfaces hide inactive rows; the admin panel passes
   // includeInactive so a hidden category/material can still be edited/restored.
   const categories = (categoriesResult.data ?? [])
     .map((row) => rowToCategory(row as Record<string, unknown>))
     .filter((item) => (includeInactive || item.active) && item.id);
+  const storedSettings = rowToSettings(
+    (settingsResult.data as Record<string, unknown> | null) ?? null
+  );
+  // Publication gate (2026-11-13 business layer): a typed rate is a DRAFT
+  // until an admin approves pricing. Customer surfaces get 0 ("on request")
+  // and the calculator off; the admin panel passes includeInactive and sees
+  // the real numbers.
   const materials = (materialsResult.data ?? [])
     .map((row) => rowToMaterial(row as Record<string, unknown>))
+    .filter((item) => (includeInactive || item.active) && item.id)
+    .map((item) =>
+      includeInactive || storedSettings.pricingStatus === "approved"
+        ? item
+        : { ...item, ratePerGram: 0 }
+    );
+  const settings = includeInactive ? storedSettings : publishedPrintSettings(storedSettings);
+  const services = (servicesResult.data ?? [])
+    .map((row) => rowToService(row as Record<string, unknown>))
     .filter((item) => (includeInactive || item.active) && item.id);
 
   return {
-    settings: rowToSettings((settingsResult.data as Record<string, unknown> | null) ?? null),
+    settings,
     categories: categories.length > 0 ? categories : defaultPrintCategoriesFallback(),
     materials: materials.length > 0 ? materials : defaultPrintMaterials,
     // Live-window filtering happens here as well as in RLS, because the
@@ -237,7 +337,59 @@ export async function getPrintContent(
     gallery: (galleryResult.data ?? [])
       .map((row) => rowToGallery(row as Record<string, unknown>))
       .filter((item) => (includeInactive || item.active) && item.image),
+    services: services.length > 0 ? services : defaultPrintContent.services,
   };
+}
+
+/** Internal costing sheet. Staff-only (the API route checks the role). */
+export async function getPrintCosting(): Promise<PrintCosting> {
+  if (!supabaseConfigured()) return defaultPrintCosting;
+  const { data, error } = await createServiceClient()
+    .from("print_costing")
+    .select("*")
+    .eq("id", 1)
+    .maybeSingle();
+  if (error) {
+    console.warn("print_costing read failed", error);
+    return defaultPrintCosting;
+  }
+  return rowToCosting((data as Record<string, unknown> | null) ?? null);
+}
+
+export async function savePrintCosting(costing: PrintCosting) {
+  const { error } = await createServiceClient().from("print_costing").upsert(costingToRow(costing));
+  if (error) throw error;
+}
+
+export async function savePrintService(item: Omit<PrintService, "id"> & { id?: string }) {
+  const db = createServiceClient();
+  const row = serviceToRow(item);
+  const query = item.id
+    ? db.from("print_services").update(row).eq("id", item.id).select("id").single()
+    : db.from("print_services").insert(row).select("id").single();
+  const { data, error } = await query;
+  if (error) throw error;
+  return String((data as { id?: string } | null)?.id ?? item.id ?? "");
+}
+
+export async function deletePrintService(id: string) {
+  const { error } = await createServiceClient().from("print_services").delete().eq("id", id);
+  if (error) throw error;
+}
+
+/** Approval / withdrawal of published rates, recorded for the audit trail. */
+export async function setPrintPricingApproval(values: { approved: boolean; approvedBy: string }) {
+  const { error } = await createServiceClient()
+    .from("print_settings")
+    .update({
+      pricing_status: values.approved ? "approved" : "draft",
+      pricing_approved_at: values.approved ? new Date().toISOString() : null,
+      pricing_approved_by: values.approved ? values.approvedBy : "",
+      calculator_enabled: values.approved,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", 1);
+  if (error) throw error;
 }
 
 function defaultPrintCategoriesFallback(): PrintCategory[] {
@@ -333,11 +485,25 @@ export async function deletePrintGalleryItem(id: string) {
 
 export async function updatePrintQuote(
   id: string,
-  values: { status?: string; adminNotes?: string }
+  values: {
+    status?: string;
+    adminNotes?: string;
+    quotedAmount?: number;
+    estimatedGrams?: number;
+    printHours?: number;
+    reprint?: boolean;
+  }
 ) {
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (values.status) patch.status = values.status;
   if (typeof values.adminNotes === "string") patch.admin_notes = values.adminNotes.slice(0, 4000);
+  if (typeof values.quotedAmount === "number")
+    patch.quoted_amount = Math.max(0, Math.round(values.quotedAmount));
+  if (typeof values.estimatedGrams === "number")
+    patch.estimated_grams = Math.max(0, Math.round(values.estimatedGrams));
+  if (typeof values.printHours === "number")
+    patch.print_hours = Math.max(0, Math.round(values.printHours * 100) / 100);
+  if (typeof values.reprint === "boolean") patch.reprint = values.reprint;
   const { error } = await createServiceClient()
     .from("print_quote_requests")
     .update(patch)

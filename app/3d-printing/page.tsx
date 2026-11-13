@@ -152,7 +152,7 @@ export default async function PrintingPage() {
           </div>
         </section>
       )}
-      <PrintCustomServices />
+      <PrintCustomServices services={content.services} />
       <section className="mx-auto max-w-7xl px-5 pt-10 lg:px-8">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {offers.map((offer) => (

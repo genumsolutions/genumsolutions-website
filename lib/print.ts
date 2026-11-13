@@ -33,6 +33,8 @@ export type PrintMaterial = {
 export type PrintFinishing = { id: string; name: string; amount: number };
 export type PrintBulkTier = { minQty: number; discountPercent: number };
 
+export type PrintPricingStatus = "draft" | "approved";
+
 export type PrintSettings = {
   calculatorEnabled: boolean;
   minimumOrder: number;
@@ -42,6 +44,24 @@ export type PrintSettings = {
   disclaimer: string;
   heroImage: string;
   materialsIntro: string;
+  /**
+   * 2026-11-13 (business layer): rates are only published once an admin has
+   * approved them. `draft` keeps every rate at "on request" on customer
+   * surfaces even if a number was typed into a material row.
+   */
+  pricingStatus: PrintPricingStatus;
+  pricingApprovedAt: string | null;
+  pricingApprovedBy: string;
+};
+
+/** A custom print service (the "more than pressing start" strip). */
+export type PrintService = {
+  id: string;
+  title: string;
+  description: string;
+  priceNote: string;
+  sortOrder: number;
+  active: boolean;
 };
 
 export type PrintPromotion = {
@@ -76,11 +96,13 @@ export const formatNPR = (value: number) => `NPR ${value.toLocaleString("en-IN")
 export const PRINT_QUOTE_STATUSES = [
   "new",
   "reviewing",
+  "needs_info",
   "quoted",
   "approved",
   "printing",
   "ready",
   "completed",
+  "rejected",
   "cancelled",
 ] as const;
 
@@ -89,13 +111,26 @@ export type PrintQuoteStatus = (typeof PRINT_QUOTE_STATUSES)[number];
 export const PRINT_QUOTE_STATUS_LABELS: Record<PrintQuoteStatus, string> = {
   new: "New",
   reviewing: "Reviewing",
+  needs_info: "Info needed",
   quoted: "Quoted",
   approved: "Approved",
   printing: "Printing",
   ready: "Ready",
   completed: "Completed",
+  rejected: "Rejected",
   cancelled: "Cancelled",
 };
+
+/** Statuses where the workshop is still waiting on the customer. */
+export const PRINT_QUOTE_OPEN_STATUSES: PrintQuoteStatus[] = ["new", "reviewing", "needs_info"];
+
+/** Statuses that produced work someone paid for (revenue basis). */
+export const PRINT_QUOTE_WON_STATUSES: PrintQuoteStatus[] = [
+  "approved",
+  "printing",
+  "ready",
+  "completed",
+];
 
 export type PrintQuoteRequest = {
   id: string;
@@ -112,6 +147,13 @@ export type PrintQuoteRequest = {
   fileUrls: string[];
   status: PrintQuoteStatus;
   adminNotes: string;
+  /** What we quoted, once reviewed. 0 = not quoted yet. */
+  quotedAmount: number;
+  /** Slicer estimate the quote was costed from. */
+  estimatedGrams: number;
+  printHours: number;
+  /** Marks a job that had to be printed again. */
+  reprint: boolean;
   createdAt: string;
 };
 
@@ -121,7 +163,62 @@ export type PrintContent = {
   materials: PrintMaterial[];
   promotions: PrintPromotion[];
   gallery: PrintGalleryItem[];
+  services: PrintService[];
 };
+
+/** Copy shown when print_services is empty or unreadable. */
+export const defaultPrintServices: PrintService[] = [
+  {
+    id: "design-for-print",
+    title: "Design for print",
+    description:
+      "We prepare geometry, tolerances, supports and orientation so the first print is the right one.",
+    priceNote: "From NPR 2,500",
+    sortOrder: 1,
+    active: true,
+  },
+  {
+    id: "file-repair",
+    title: "File repair",
+    description: "Non-manifold meshes, missing walls and broken exports fixed before slicing.",
+    priceNote: "From NPR 300",
+    sortOrder: 2,
+    active: true,
+  },
+  {
+    id: "material-guidance",
+    title: "Material guidance",
+    description:
+      "PLA or PETG, wall count, infill and finish — chosen around how the part will be used.",
+    priceNote: "",
+    sortOrder: 3,
+    active: true,
+  },
+  {
+    id: "scaling-and-fitting",
+    title: "Scaling and fitting",
+    description: "Resize a model while keeping clearances that still work in the real world.",
+    priceNote: "",
+    sortOrder: 4,
+    active: true,
+  },
+  {
+    id: "small-batch-runs",
+    title: "Small-batch runs",
+    description: "Repeatable quantities for classroom sets, fixtures and product samples.",
+    priceNote: "Quoted by volume",
+    sortOrder: 5,
+    active: true,
+  },
+  {
+    id: "post-processing",
+    title: "Post-processing",
+    description: "Support removal, clean-up and finish options discussed with the quote.",
+    priceNote: "Quoted per job",
+    sortOrder: 6,
+    active: true,
+  },
+];
 
 // Bundled fallback — used when Supabase is not configured or a table is still
 // empty, so /3d-printing never renders blank. These are DEFAULTS, not data:
@@ -137,6 +234,9 @@ export const defaultPrintSettings: PrintSettings = {
   heroImage: "",
   materialsIntro:
     "We print in FDM. PLA is the everyday choice for display and teaching models; PETG is the tougher option for parts that take a knock. Send a file and we will recommend a material and orientation before printing.",
+  pricingStatus: "draft",
+  pricingApprovedAt: null,
+  pricingApprovedBy: "",
 };
 
 export const defaultPrintCategories: PrintCategory[] = [
@@ -229,7 +329,24 @@ export const defaultPrintContent: PrintContent = {
   materials: defaultPrintMaterials,
   promotions: [],
   gallery: [],
+  services: defaultPrintServices,
 };
+
+/**
+ * Customer-facing view of print settings: a rate is only published when an
+ * admin approved pricing. Used by the page, the public API and the app so the
+ * three can never disagree.
+ */
+export function publishedPrintSettings(settings: PrintSettings): PrintSettings {
+  if (settings.pricingStatus === "approved") return settings;
+  return { ...settings, calculatorEnabled: false };
+}
+
+/** Rate to show a customer; 0 means "rate on request". */
+export function publishedRate(material: PrintMaterial, settings: PrintSettings): number {
+  if (settings.pricingStatus !== "approved") return 0;
+  return material.ratePerGram > 0 ? material.ratePerGram : 0;
+}
 
 /** Print-only extras a 3D product row can carry (see products table). */
 export type PrintProductFields = {

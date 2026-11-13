@@ -18,6 +18,7 @@ export async function GET() {
         materials: content.materials,
         promotions: promo ? [promo] : [],
         gallery: content.gallery,
+        services: content.services,
       },
       { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" } }
     );

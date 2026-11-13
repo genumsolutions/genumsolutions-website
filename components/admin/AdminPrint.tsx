@@ -4,15 +4,26 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { inputClass, cardRow, cardRowText } from "../../lib/styles";
 import {
   defaultPrintSettings,
+  formatNPR,
   PRINT_QUOTE_STATUSES,
+  PRINT_QUOTE_WON_STATUSES,
   quoteStatusLabel,
   type PrintCategory,
   type PrintGalleryItem,
   type PrintMaterial,
   type PrintPromotion,
   type PrintQuoteRequest,
+  type PrintService,
   type PrintSettings,
 } from "../../lib/print";
+import {
+  costPrintJob,
+  costingStatus,
+  defaultPrintCosting,
+  quoteMargin,
+  suggestedPrice,
+  type PrintCosting,
+} from "../../lib/print-costing";
 import type { Product } from "./admin-types";
 import AdminProducts from "./AdminProducts";
 import {
@@ -29,7 +40,20 @@ import {
 // tab strip (and both repos' parity tests) stays untouched: catalog, pricing,
 // categories, promotions, gallery and quote requests all live here.
 
-const SECTIONS = ["Catalog", "Categories", "Pricing", "Promotions", "Gallery", "Requests"] as const;
+// 2026-11-13 (business layer): Services moved out of a hardcoded component,
+// Costs is the internal cost/margin sheet, and Reports turns quote records into
+// the KPIs the handoff asks for (revenue, AOV, grams, margin, conversion).
+const SECTIONS = [
+  "Catalog",
+  "Categories",
+  "Pricing",
+  "Costs",
+  "Promotions",
+  "Services",
+  "Gallery",
+  "Requests",
+  "Reports",
+] as const;
 type Section = (typeof SECTIONS)[number];
 
 type Props = {
@@ -83,7 +107,58 @@ const emptyGallery: PrintGalleryItem = {
   sortOrder: 1000,
 };
 
+const emptyService: PrintService & { id?: string } = {
+  id: "",
+  title: "",
+  description: "",
+  priceNote: "",
+  sortOrder: 1000,
+  active: true,
+};
+
 const oneLine = "min-w-0 text-sm font-bold";
+
+type NumericCostingKey = Exclude<keyof PrintCosting, "notes">;
+
+const COSTING_FIELDS: Array<{
+  key: NumericCostingKey;
+  label: string;
+  step?: number;
+  hint?: string;
+}> = [
+  {
+    key: "filamentCostPerGram",
+    label: "Filament cost / gram (NPR)",
+    step: 0.01,
+    hint: "Supplier price per kg ÷ 1000.",
+  },
+  { key: "wastagePercent", label: "Waste allowance (%)", hint: "Handoff starting point: 10%." },
+  {
+    key: "electricityRatePerKwh",
+    label: "Electricity / kWh (NPR)",
+    step: 0.01,
+    hint: "Use your NEA tariff, not a guess.",
+  },
+  { key: "printerWatts", label: "Printer power (W)" },
+  { key: "machineCost", label: "Machine cost (NPR)" },
+  { key: "machineLifeHours", label: "Useful machine hours" },
+  { key: "maintenancePerHour", label: "Maintenance / hour (NPR)", step: 0.01 },
+  { key: "labourPerHour", label: "Operator labour / hour (NPR)", step: 0.01 },
+  { key: "packagingPerJob", label: "Packaging / job (NPR)" },
+  {
+    key: "paymentFeePercent",
+    label: "Payment fee (%)",
+    step: 0.01,
+    hint: "Gateway charge, applied to the subtotal.",
+  },
+  { key: "overheadPerMonth", label: "Overhead / month (NPR)" },
+  { key: "monthlyOrderTarget", label: "Orders / month (target)" },
+  {
+    key: "targetMarginPercent",
+    label: "Target gross margin (%)",
+    hint: "price = cost ÷ (1 − margin).",
+  },
+];
 
 async function uploadImage(file: File): Promise<string> {
   const body = new FormData();
@@ -142,6 +217,228 @@ function ImageField({
   );
 }
 
+/** Per-quote cost inputs. Local state keeps typing cheap; Save sends all four
+ * fields together so a status change never wipes a half-typed figure. */
+function QuoteFigures({
+  quote,
+  costing,
+  busy,
+  onSave,
+}: {
+  quote: PrintQuoteRequest;
+  costing: PrintCosting;
+  busy: boolean;
+  onSave: (values: Record<string, unknown>, message: string) => Promise<unknown>;
+}) {
+  const [amount, setAmount] = useState(String(quote.quotedAmount || ""));
+  const [grams, setGrams] = useState(String(quote.estimatedGrams || ""));
+  const [hours, setHours] = useState(String(quote.printHours || ""));
+  const [reprint, setReprint] = useState(quote.reprint);
+  const margin = quoteMargin(costing, {
+    quotedAmount: quote.quotedAmount,
+    estimatedGrams: quote.estimatedGrams,
+    printHours: quote.printHours,
+    reprint: quote.reprint,
+  });
+  return (
+    <div className="mt-3 rounded-xl bg-mist/60 p-3">
+      <div className="flex flex-wrap items-end gap-2">
+        <label className="text-xs font-bold">
+          Quoted (NPR)
+          <input
+            type="number"
+            min={0}
+            value={amount}
+            onChange={(event) => setAmount(event.target.value)}
+            className={`mt-1 w-28 ${inputClass}`}
+          />
+        </label>
+        <label className="text-xs font-bold">
+          Grams
+          <input
+            type="number"
+            min={0}
+            value={grams}
+            onChange={(event) => setGrams(event.target.value)}
+            className={`mt-1 w-24 ${inputClass}`}
+          />
+        </label>
+        <label className="text-xs font-bold">
+          Print hours
+          <input
+            type="number"
+            min={0}
+            step="0.25"
+            value={hours}
+            onChange={(event) => setHours(event.target.value)}
+            className={`mt-1 w-24 ${inputClass}`}
+          />
+        </label>
+        <label className="flex min-h-[44px] items-center gap-2 text-xs font-bold">
+          <input
+            type="checkbox"
+            checked={reprint}
+            onChange={(event) => setReprint(event.target.checked)}
+            className="h-4 w-4 accent-navy"
+          />
+          Reprinted
+        </label>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() =>
+            void onSave(
+              {
+                status: quote.status,
+                adminNotes: quote.adminNotes,
+                quotedAmount: Number(amount) || 0,
+                estimatedGrams: Number(grams) || 0,
+                printHours: Number(hours) || 0,
+                reprint,
+              },
+              "Quote figures saved."
+            )
+          }
+          className="min-h-[44px] rounded-lg border border-navy px-4 text-xs font-black text-navy transition hover:bg-white disabled:opacity-60"
+        >
+          Save figures
+        </button>
+        <p className="ml-auto text-right text-[11px] leading-4 text-slate-500">
+          {margin
+            ? `Est. cost ${formatNPR(margin.cost)} · margin ${margin.marginPercent}%`
+            : quote.quotedAmount > 0
+              ? "Margin hidden: the Costs sheet is incomplete."
+              : "Not quoted yet."}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/** KPIs the handoff asks for, from quote records + the internal costing sheet. */
+function PrintReports({ quotes, costing }: { quotes: PrintQuoteRequest[]; costing: PrintCosting }) {
+  const won = quotes.filter((quote) => PRINT_QUOTE_WON_STATUSES.includes(quote.status));
+  const closed = quotes.filter(
+    (quote) => quote.status !== "cancelled" && quote.status !== "rejected"
+  );
+  const revenue = won.reduce((sum, quote) => sum + quote.quotedAmount, 0);
+  const grams = won.reduce(
+    (sum, quote) => sum + quote.estimatedGrams * Math.max(1, quote.quantity),
+    0
+  );
+  const month = new Date().toISOString().slice(0, 7);
+  const monthQuotes = quotes.filter((quote) => quote.createdAt.startsWith(month));
+  const monthWon = monthQuotes.filter((quote) => PRINT_QUOTE_WON_STATUSES.includes(quote.status));
+  const monthRevenue = monthWon.reduce((sum, quote) => sum + quote.quotedAmount, 0);
+  const reprints = quotes.filter((quote) => quote.reprint).length;
+  const margins = won
+    .map((quote) =>
+      quoteMargin(costing, {
+        quotedAmount: quote.quotedAmount,
+        estimatedGrams: quote.estimatedGrams,
+        printHours: quote.printHours,
+        reprint: quote.reprint,
+      })
+    )
+    .filter((value): value is NonNullable<ReturnType<typeof quoteMargin>> => value !== null);
+  const averageMargin =
+    margins.length > 0
+      ? Math.round(
+          (margins.reduce((sum, value) => sum + value.marginPercent, 0) / margins.length) * 10
+        ) / 10
+      : null;
+  const costed = won.filter((quote) => quote.quotedAmount > 0).length;
+  const sheet = costingStatus(costing);
+
+  const stats: Array<{ label: string; value: string; note: string }> = [
+    {
+      label: "Quoted revenue",
+      value: formatNPR(revenue),
+      note: `${won.length} won quotes (approved → completed)`,
+    },
+    {
+      label: "Average order",
+      value: won.length > 0 ? formatNPR(Math.round(revenue / won.length)) : "—",
+      note: `${costed} of ${won.length} quotes costed`,
+    },
+    {
+      label: "Enquiry conversion",
+      value: closed.length > 0 ? `${Math.round((won.length / closed.length) * 100)}%` : "—",
+      note: `${won.length} won / ${closed.length} live enquiries`,
+    },
+    {
+      label: "This month",
+      value: formatNPR(monthRevenue),
+      note: `${monthWon.length} of ${monthQuotes.length} requests won`,
+    },
+    {
+      label: "Material used",
+      value: `${grams.toLocaleString("en-IN")} g`,
+      note: "Slicer grams × quantity on won quotes",
+    },
+    {
+      label: "Reprint rate",
+      value: quotes.length > 0 ? `${Math.round((reprints / quotes.length) * 100)}%` : "—",
+      note: `${reprints} flagged reprint${reprints === 1 ? "" : "s"}`,
+    },
+    {
+      label: "Average gross margin",
+      value: averageMargin === null ? "—" : `${averageMargin}%`,
+      note:
+        averageMargin === null ? "Fill the Costs sheet to see margins" : "Estimate, not net profit",
+    },
+    {
+      label: "Cost per quoted gram",
+      value:
+        sheet.complete && billedGramCost(costing) > 0
+          ? `${formatNPR(Math.round(billedGramCost(costing) * 100) / 100)}/g`
+          : "—",
+      note: sheet.complete ? "Includes waste allowance" : `Missing: ${sheet.missing.join(", ")}`,
+    },
+  ];
+
+  return (
+    <div className="mt-4 min-w-0 space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {stats.map((stat) => (
+          <div key={stat.label} className="rounded-xl border border-line bg-white p-4">
+            <p className="text-[11px] font-black uppercase tracking-[0.14em] text-muted">
+              {stat.label}
+            </p>
+            <p className="mt-1 break-words font-display text-xl font-bold text-ink">{stat.value}</p>
+            <p className="mt-1 text-[11px] leading-4 text-slate-500">{stat.note}</p>
+          </div>
+        ))}
+      </div>
+      <PanelCard>
+        <h2 className={panelTitle}>By status</h2>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {PRINT_QUOTE_STATUSES.map((status) => {
+            const count = quotes.filter((quote) => quote.status === status).length;
+            return (
+              <span
+                key={status}
+                className="rounded-full border border-line px-3 py-1.5 text-xs font-bold text-ink"
+              >
+                {quoteStatusLabel(status)} · {count}
+              </span>
+            );
+          })}
+        </div>
+        <p className="mt-4 text-xs leading-5 text-slate-500">
+          Figures come from the quote records only. Material cost, margin and cost per gram are
+          estimates from the Costs sheet — never present them as audited profit.
+        </p>
+      </PanelCard>
+    </div>
+  );
+}
+
+/** Filament cost per billed gram (with the waste allowance applied). */
+function billedGramCost(costing: PrintCosting): number {
+  return costing.filamentCostPerGram * (1 + costing.wastagePercent / 100);
+}
+
 export default function AdminPrint({ products, onProductsChange, setMessage, canDelete }: Props) {
   const [section, setSection] = useState<Section>("Catalog");
   const [loaded, setLoaded] = useState(false);
@@ -150,12 +447,15 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
   const [materials, setMaterials] = useState<PrintMaterial[]>([]);
   const [promotions, setPromotions] = useState<PrintPromotion[]>([]);
   const [gallery, setGallery] = useState<PrintGalleryItem[]>([]);
+  const [services, setServices] = useState<PrintService[]>([]);
+  const [costing, setCosting] = useState<PrintCosting>(defaultPrintCosting);
   const [quotes, setQuotes] = useState<PrintQuoteRequest[]>([]);
 
   const [category, setCategory] = useState<PrintCategory>(emptyCategory);
   const [material, setMaterial] = useState<PrintMaterial>(emptyMaterial);
   const [promotion, setPromotion] = useState<PrintPromotion>(emptyPromotion);
   const [galleryItem, setGalleryItem] = useState<PrintGalleryItem>(emptyGallery);
+  const [service, setService] = useState<PrintService & { id?: string }>(emptyService);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
@@ -171,6 +471,8 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
       setMaterials(data.materials ?? []);
       setPromotions(data.promotions ?? []);
       setGallery(data.gallery ?? []);
+      setServices(data.services ?? []);
+      setCosting({ ...defaultPrintCosting, ...(data.costing ?? {}) });
       setQuotes(data.quotes ?? []);
     } catch {
       setMessage("Could not reach the server to load 3D print content.");
@@ -402,6 +704,50 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
 
       {section === "Pricing" && (
         <div className="mt-4 grid min-w-0 gap-4">
+          {/* 2026-11-13: a typed rate is a DRAFT until someone approves it.
+              Approval also switches the calculator on; withdrawal switches it
+              off and returns every rate to "on request" publicly. */}
+          <PanelCard className="flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[11px] font-black uppercase tracking-[0.14em] text-muted">
+                Publication status
+              </p>
+              <p className="mt-1 text-sm font-bold text-ink">
+                {settings.pricingStatus === "approved"
+                  ? `Rates approved${settings.pricingApprovedAt ? ` on ${new Date(settings.pricingApprovedAt).toLocaleDateString()}` : ""}${settings.pricingApprovedBy ? ` by ${settings.pricingApprovedBy}` : ""}`
+                  : 'Draft — customers see "rate on request" and the calculator stays hidden'}
+              </p>
+            </div>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={async () => {
+                const approved = settings.pricingStatus !== "approved";
+                if (
+                  approved &&
+                  !window.confirm(
+                    "Publish the current material rates and switch the calculator on?"
+                  )
+                )
+                  return;
+                if (
+                  await save(
+                    "pricing",
+                    { approved },
+                    approved ? "Rates published." : "Rates withdrawn."
+                  )
+                )
+                  return;
+              }}
+              className={`min-h-[44px] rounded-full px-5 text-xs font-black transition disabled:opacity-60 ${
+                settings.pricingStatus === "approved"
+                  ? "border border-line bg-white text-ink hover:border-red-500"
+                  : "bg-navy text-white hover:bg-navy-dark"
+              }`}
+            >
+              {settings.pricingStatus === "approved" ? "Withdraw rates" : "Approve & publish rates"}
+            </button>
+          </PanelCard>
           <div className="grid gap-4 xl:grid-cols-[1fr_1.3fr]">
             <PanelCard>
               <h2 className={panelTitle}>Materials ({materials.length})</h2>
@@ -940,6 +1286,241 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
         </div>
       )}
 
+      {section === "Costs" && (
+        <div className="mt-4 min-w-0">
+          <form
+            className={editorCard}
+            onSubmit={(event) => {
+              event.preventDefault();
+              void save("costing", costing, "Costing sheet saved.");
+            }}
+          >
+            <h2 className={editorCardTitle}>Internal costing sheet</h2>
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              Staff-only — this never reaches the website or the app. Leave a field at 0 until you
+              have a real figure; the reports hide margin rather than guess.
+            </p>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {COSTING_FIELDS.map((field) => (
+                <label key={field.key} className={oneLine}>
+                  {field.label}
+                  <input
+                    type="number"
+                    min={0}
+                    step={field.step ?? 1}
+                    value={costing[field.key]}
+                    onChange={(event) =>
+                      setCosting({ ...costing, [field.key]: Number(event.target.value) })
+                    }
+                    className={`mt-2 w-full ${inputClass}`}
+                  />
+                  {field.hint && (
+                    <span className="mt-1 block text-[11px] font-medium leading-4 text-slate-500">
+                      {field.hint}
+                    </span>
+                  )}
+                </label>
+              ))}
+              <label className={`${oneLine} sm:col-span-2 lg:col-span-3`}>
+                Internal notes
+                <textarea
+                  value={costing.notes}
+                  onChange={(event) => setCosting({ ...costing, notes: event.target.value })}
+                  rows={2}
+                  className={`mt-2 w-full ${inputClass}`}
+                />
+              </label>
+            </div>
+            <SaveBar>
+              <button
+                type="submit"
+                disabled={busy}
+                className="bg-gold px-5 py-3 text-sm font-black text-ink transition hover:bg-gold-dark disabled:opacity-60"
+              >
+                {busy ? "Saving..." : "Save costing"}
+              </button>
+            </SaveBar>
+          </form>
+
+          <PanelCard className="mt-4">
+            <h3 className="font-display text-lg font-bold">Worked example</h3>
+            <p className="mt-1 text-xs text-slate-500">
+              100 g part, 2 print hours, 15 minutes of labour — recalculated as you type.
+            </p>
+            {(() => {
+              const job = costPrintJob(costing, { grams: 100, printHours: 2, labourHours: 0.25 });
+              const price = suggestedPrice(job.total, costing.targetMarginPercent);
+              return (
+                <>
+                  <dl className="mt-3 grid gap-1.5 text-sm sm:grid-cols-2">
+                    {[
+                      ["Material (incl. waste)", job.materialCost],
+                      ["Electricity", job.electricityCost],
+                      ["Machine time", job.machineCost],
+                      ["Maintenance", job.maintenanceCost],
+                      ["Labour", job.labourCost],
+                      ["Packaging", job.packagingCost],
+                      ["Payment fee", job.paymentFee],
+                      ["Overhead allocation", job.overheadAllocation],
+                      ["Total cost", job.total],
+                    ].map(([label, value]) => (
+                      <div
+                        key={String(label)}
+                        className="flex justify-between gap-3 border-b border-line pb-1"
+                      >
+                        <dt className="text-muted">{label}</dt>
+                        <dd className="font-bold text-ink">{formatNPR(Number(value))}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                  <p className="mt-3 text-sm font-bold text-ink">
+                    Suggested price at {costing.targetMarginPercent}% margin: {formatNPR(price)}
+                  </p>
+                  {!job.complete && (
+                    <p className="mt-1 text-xs font-bold text-amber-700">
+                      Incomplete: {job.missing.join(", ")}. Treat the figures above as partial.
+                    </p>
+                  )}
+                </>
+              );
+            })()}
+          </PanelCard>
+        </div>
+      )}
+
+      {section === "Services" && (
+        <div className="mt-4 grid min-w-0 gap-4 xl:grid-cols-[1fr_1.3fr]">
+          <PanelCard>
+            <h2 className={panelTitle}>Custom services ({services.length})</h2>
+            <div className="mt-3 divide-y divide-line">
+              {services.map((item) => (
+                <div key={item.id} className={`${cardRow} items-center`}>
+                  <div className={cardRowText}>
+                    <strong>{item.title}</strong>
+                    {item.priceNote && (
+                      <span className="ml-2 text-xs text-slate-500">{item.priceNote}</span>
+                    )}
+                    {!item.active && (
+                      <span className="ml-2 text-[10px] font-black uppercase text-red-500">
+                        hidden
+                      </span>
+                    )}
+                  </div>
+                  <RowActions
+                    actions={[
+                      { label: "Edit", tone: "navy", onClick: () => setService(item) },
+                      {
+                        label: item.active ? "Hide" : "Show",
+                        tone: "ink",
+                        onClick: () =>
+                          void save(
+                            "services",
+                            { ...item, active: !item.active },
+                            item.active ? "Service hidden." : "Service shown."
+                          ),
+                      },
+                      {
+                        label: "Delete",
+                        tone: "red",
+                        show: canDelete,
+                        onClick: () => void remove("services", item.id, item.title),
+                      },
+                    ]}
+                  />
+                </div>
+              ))}
+              {loaded && services.length === 0 && (
+                <EmptyState>
+                  No services yet — the website falls back to the six bundled ones (design, repair,
+                  material guidance, scaling, batches, post-processing).
+                </EmptyState>
+              )}
+            </div>
+          </PanelCard>
+
+          <form
+            className={editorCard}
+            onSubmit={async (event: FormEvent) => {
+              event.preventDefault();
+              if (!service.title.trim()) {
+                setMessage("Service needs a title.");
+                return;
+              }
+              if (await save("services", service, "Service saved."))
+                setService({ ...emptyService });
+            }}
+          >
+            <h2 className={editorCardTitle}>{service.id ? "Edit service" : "Add service"}</h2>
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              <label className={oneLine}>
+                Title
+                <input
+                  value={service.title}
+                  onChange={(event) => setService({ ...service, title: event.target.value })}
+                  className={`mt-2 w-full ${inputClass}`}
+                />
+              </label>
+              <label className={oneLine}>
+                Price note
+                <input
+                  value={service.priceNote}
+                  onChange={(event) => setService({ ...service, priceNote: event.target.value })}
+                  placeholder="From NPR 2,500"
+                  className={`mt-2 w-full ${inputClass}`}
+                />
+              </label>
+              <label className={`${oneLine} sm:col-span-2`}>
+                Description
+                <textarea
+                  value={service.description}
+                  onChange={(event) => setService({ ...service, description: event.target.value })}
+                  rows={3}
+                  className={`mt-2 w-full ${inputClass}`}
+                />
+              </label>
+              <label className={oneLine}>
+                Sort order
+                <input
+                  type="number"
+                  value={service.sortOrder}
+                  onChange={(event) =>
+                    setService({ ...service, sortOrder: Number(event.target.value) })
+                  }
+                  className={`mt-2 w-full ${inputClass}`}
+                />
+              </label>
+              <label className="flex items-center gap-2 text-sm font-bold">
+                <input
+                  type="checkbox"
+                  checked={service.active}
+                  onChange={(event) => setService({ ...service, active: event.target.checked })}
+                  className="h-4 w-4"
+                />{" "}
+                Active
+              </label>
+            </div>
+            <SaveBar>
+              <button
+                type="submit"
+                disabled={busy}
+                className="bg-gold px-5 py-3 text-sm font-black text-ink transition hover:bg-gold-dark disabled:opacity-60"
+              >
+                {busy ? "Saving..." : "Save service"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setService({ ...emptyService })}
+                className="border border-line px-5 py-3 text-sm font-black text-ink transition hover:border-navy"
+              >
+                New
+              </button>
+            </SaveBar>
+          </form>
+        </div>
+      )}
+
+      {section === "Reports" && <PrintReports quotes={quotes} costing={costing} />}
+
       {section === "Gallery" && (
         <div className="mt-4 grid min-w-0 gap-4 xl:grid-cols-[1fr_1.3fr]">
           <PanelCard>
@@ -1116,6 +1697,17 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
                       ))}
                     </p>
                   )}
+                  {/* Quote figures (2026-11-13): the amount actually quoted, the
+                      slicer grams/hours the price was built from, and whether the
+                      job had to be reprinted. Feeds the Reports tab. */}
+                  <QuoteFigures
+                    quote={quote}
+                    costing={costing}
+                    busy={busy}
+                    onSave={(values, message) =>
+                      save("quotes", { id: quote.id, ...values }, message)
+                    }
+                  />
                   <div className="mt-3 flex flex-wrap items-center gap-2">
                     <select
                       value={quote.status}
@@ -1169,7 +1761,15 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
                         if (e.target.value === quote.adminNotes) return;
                         void save(
                           "quotes",
-                          { id: quote.id, status: quote.status, adminNotes: e.target.value },
+                          {
+                            id: quote.id,
+                            status: quote.status,
+                            adminNotes: e.target.value,
+                            quotedAmount: quote.quotedAmount,
+                            estimatedGrams: quote.estimatedGrams,
+                            printHours: quote.printHours,
+                            reprint: quote.reprint,
+                          },
                           "Notes saved."
                         );
                       }}

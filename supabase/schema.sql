@@ -3044,3 +3044,109 @@ create policy "admin delete print quotes" on public.print_quote_requests
 insert into storage.buckets (id, name, public)
 values ('print-quote-files', 'print-quote-files', false)
 on conflict (id) do update set public = false;
+
+-- =====================================================================
+-- 3D printing business layer (mirrors
+-- migrations/20261113160000_print_business.sql)
+--
+-- Pricing has an explicit approval state, the custom-services strip is
+-- admin-managed, internal costing lives in a staff-only table, and quote
+-- requests carry the figures a workshop quotes from. Nothing here publishes
+-- a price: rates still start at 0 and the calculator still ships disabled.
+-- =====================================================================
+
+alter table public.print_settings
+  add column if not exists pricing_status text not null default 'draft';
+alter table public.print_settings
+  add column if not exists pricing_approved_at timestamptz;
+alter table public.print_settings
+  add column if not exists pricing_approved_by text not null default '';
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'print_settings_pricing_status_check'
+  ) then
+    alter table public.print_settings
+      add constraint print_settings_pricing_status_check
+      check (pricing_status in ('draft', 'approved'));
+  end if;
+end $$;
+
+create table if not exists public.print_services (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  description text not null default '',
+  price_note text not null default '',
+  sort_order integer not null default 1000,
+  active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+-- internal costing: staff-only, never exposed to a customer surface
+create table if not exists public.print_costing (
+  id integer primary key default 1 check (id = 1),
+  filament_cost_per_gram numeric(10, 2) not null default 0 check (filament_cost_per_gram >= 0),
+  wastage_percent integer not null default 10 check (wastage_percent >= 0 and wastage_percent <= 100),
+  electricity_rate_per_kwh numeric(10, 2) not null default 0 check (electricity_rate_per_kwh >= 0),
+  printer_watts integer not null default 0 check (printer_watts >= 0),
+  machine_cost integer not null default 0 check (machine_cost >= 0),
+  machine_life_hours integer not null default 0 check (machine_life_hours >= 0),
+  maintenance_per_hour numeric(10, 2) not null default 0 check (maintenance_per_hour >= 0),
+  labour_per_hour numeric(10, 2) not null default 0 check (labour_per_hour >= 0),
+  packaging_per_job integer not null default 0 check (packaging_per_job >= 0),
+  payment_fee_percent numeric(5, 2) not null default 0 check (payment_fee_percent >= 0),
+  overhead_per_month integer not null default 0 check (overhead_per_month >= 0),
+  monthly_order_target integer not null default 0 check (monthly_order_target >= 0),
+  target_margin_percent integer not null default 60 check (target_margin_percent >= 0 and target_margin_percent <= 95),
+  notes text not null default '',
+  updated_at timestamptz not null default now()
+);
+
+alter table public.print_services enable row level security;
+alter table public.print_costing enable row level security;
+
+drop policy if exists "public read print services" on public.print_services;
+create policy "public read print services" on public.print_services
+  for select using (active = true or public.is_staff());
+drop policy if exists "staff insert print services" on public.print_services;
+create policy "staff insert print services" on public.print_services
+  for insert with check (public.is_staff());
+drop policy if exists "staff update print services" on public.print_services;
+create policy "staff update print services" on public.print_services
+  for update using (public.is_staff());
+drop policy if exists "admin delete print services" on public.print_services;
+create policy "admin delete print services" on public.print_services
+  for delete using (public.is_admin());
+
+drop policy if exists "staff read print costing" on public.print_costing;
+create policy "staff read print costing" on public.print_costing
+  for select using (public.is_staff());
+drop policy if exists "staff insert print costing" on public.print_costing;
+create policy "staff insert print costing" on public.print_costing
+  for insert with check (public.is_staff());
+drop policy if exists "staff update print costing" on public.print_costing;
+create policy "staff update print costing" on public.print_costing
+  for update using (public.is_staff());
+
+insert into public.print_costing (id) values (1) on conflict (id) do nothing;
+
+alter table public.print_quote_requests
+  add column if not exists quoted_amount integer not null default 0;
+alter table public.print_quote_requests
+  add column if not exists estimated_grams integer not null default 0;
+alter table public.print_quote_requests
+  add column if not exists print_hours numeric(6, 2) not null default 0;
+alter table public.print_quote_requests
+  add column if not exists reprint boolean not null default false;
+
+alter table public.print_quote_requests
+  drop constraint if exists print_quote_requests_status_check;
+alter table public.print_quote_requests
+  add constraint print_quote_requests_status_check check (
+    status in (
+      'new', 'reviewing', 'needs_info', 'quoted', 'approved',
+      'printing', 'ready', 'completed', 'rejected', 'cancelled'
+    )
+  );
