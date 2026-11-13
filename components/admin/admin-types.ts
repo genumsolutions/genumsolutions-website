@@ -41,14 +41,16 @@ export type Tab = (typeof TABS)[number];
 // so the console explains itself the same way on either surface. Keep values
 // free of double quotes — the tests parse them out of the source text.
 export const TAB_HINTS: Record<Tab, string> = {
-  Dashboard: "Revenue, orders and traffic at a glance.",
-  Orders: "Every order, its payment state and the pilot finance lines.",
+  // 2026-11-13 (batch 4): money moved into Orders → Finance only, and customer
+  // messages moved out of Settings into Users. The hints say so on both clients.
+  Dashboard: "Orders, stock, accounts and traffic at a glance.",
+  Orders: "Every order, its payment state and the finance lines.",
   "Electronic Products": "The /products catalog — pricing, stock and photos.",
   "3D Products": "The /3d-printing catalog.",
   Projects: "Bundles sold on /projects, including pre-packaged kits.",
   Content: "Services, journal posts and the home page copy.",
-  Users: "Accounts, roles, orders, project profiles, activity and diagnostics.",
-  Settings: "Company details, customer messages and newsletter subscribers.",
+  Users: "Accounts, roles, messages, project profiles, activity and diagnostics.",
+  Settings: "Company details, socials and contact channels.",
 };
 
 export const TAB_GROUP_OF: Record<Tab, string> = Object.fromEntries(

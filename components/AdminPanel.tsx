@@ -78,7 +78,9 @@ export default function AdminPanel({ initialProducts, currentRole }: Props) {
       case "Dashboard":
         return (
           <>
-            <AdminDashboard />
+            {/* 2026-11-13 (batch 4): money lives in Orders → Finance; the
+                dashboard routes there instead of publishing the same tiles. */}
+            <AdminDashboard onOpenOrders={() => setTab("Orders")} />
             <AdminActivity />
           </>
         );
@@ -132,16 +134,15 @@ export default function AdminPanel({ initialProducts, currentRole }: Props) {
         return (
           <>
             <AdminUsers setMessage={setMessage} canDelete={canDelete} currentRole={currentRole} />
+            {/* 2026-11-13 (batch 4): customer messages + newsletter subscribers
+                are about people, not company settings — they moved here from
+                the Settings tab (mirrored in the app's AdminScreen). */}
+            <AdminMessages setMessage={setMessage} canDelete={canDelete} />
             <AdminLogsHub />
           </>
         );
       case "Settings":
-        return (
-          <>
-            <AdminSettings setMessage={setMessage} canDelete={canDelete} />
-            <AdminMessages setMessage={setMessage} canDelete={canDelete} />
-          </>
-        );
+        return <AdminSettings setMessage={setMessage} canDelete={canDelete} />;
     }
   }
 

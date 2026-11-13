@@ -1,43 +1,48 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { formatNPR } from "../../lib/catalog";
 import type { DashboardStats, Analytics } from "./admin-types";
-import { Stat, panelCard } from "./admin-helpers";
+import { EmptyState, LoadingRow, PanelCard, Stat, panelCard, panelTitle } from "./admin-helpers";
 
-export default function AdminDashboard() {
+// 2026-11-13 (site polish batch 4): the Dashboard used to publish Revenue,
+// Revenue today, Transactions and Conversion rate — the same four numbers
+// AdminFinance renders in the same admin, so the console disagreed with itself
+// the moment one fetch landed before the other. Money now has ONE home
+// (Orders → Finance) and the Dashboard answers operations: orders, stock,
+// accounts, messages and traffic.
+export default function AdminDashboard({ onOpenOrders }: { onOpenOrders: () => void }) {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
+  const [statsFailed, setStatsFailed] = useState(false);
 
   useEffect(() => {
     void Promise.all([
       fetch("/api/admin/stats")
-        .then((r) => r.json())
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error("stats"))))
         .catch(() => null),
       fetch("/api/admin/analytics?days=30")
-        .then((r) => r.json())
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error("analytics"))))
         .catch(() => null),
     ]).then(([s, a]) => {
       if (s) setStats(s);
+      else setStatsFailed(true);
       if (a) setAnalytics(a);
     });
   }, []);
 
   return (
     <section aria-label="Dashboard overview" className="mt-4 space-y-4">
-      <h2 className="font-display text-2xl font-bold text-ink">Dashboard</h2>
-      {!stats ? (
-        <p className="text-sm text-slate-500" role="status">
-          Loading stats…
-        </p>
-      ) : (
+      <h2 className={panelTitle}>Dashboard</h2>
+      {!stats && !statsFailed && <LoadingRow />}
+      {!stats && statsFailed && (
+        <EmptyState>
+          The dashboard numbers could not be loaded. Reload the page to try again — the panels below
+          still work.
+        </EmptyState>
+      )}
+      {stats && (
         <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Stat
-              label="Revenue"
-              value={formatNPR(stats.revenue)}
-              sub={`Today: ${formatNPR(stats.revenueToday)}`}
-            />
             <Stat label="Orders" value={stats.totalOrders} sub={`${stats.pendingOrders} pending`} />
             <Stat label="Users" value={stats.totalUsers} sub={`${stats.newUsersToday} new today`} />
             <Stat
@@ -57,11 +62,6 @@ export default function AdminDashboard() {
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Stat
-              label="Transactions"
-              value={stats.totalTransactions}
-              sub={`${stats.succeededTransactions} succeeded`}
-            />
-            <Stat
               label="Messages"
               value={stats.totalMessages}
               sub={`${stats.unreadMessages} unread`}
@@ -71,16 +71,25 @@ export default function AdminDashboard() {
               value={analytics?.totalViews ?? "—"}
               sub={`Today: ${analytics?.todayViews ?? "—"}`}
             />
-            <Stat
-              label="Conversion Rate"
-              value={
-                stats.totalOrders > 0 && stats.totalUsers > 0
-                  ? `${((stats.succeededTransactions / Math.max(1, stats.totalUsers)) * 100).toFixed(1)}%`
-                  : "—"
-              }
-              sub="Paid orders / users"
-            />
           </div>
+
+          <PanelCard className="flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[11px] font-black uppercase tracking-[0.14em] text-muted">Money</p>
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                Revenue, transactions and the order status split live in one place — Orders, then
+                Finance.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onOpenOrders}
+              className="min-h-[44px] shrink-0 rounded-full border border-navy px-4 py-2 text-xs font-black text-navy transition hover:bg-mist"
+            >
+              Open Orders
+            </button>
+          </PanelCard>
+
           {analytics && analytics.topPaths.length > 0 && (
             <div className={panelCard}>
               <h3 className="font-display text-lg font-bold">Top Pages (30 days)</h3>
