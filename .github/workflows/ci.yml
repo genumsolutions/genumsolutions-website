@@ -215,3 +215,32 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: npm run db:drift
+
+  # Order items contract — the website and the app write the SAME Supabase
+  # orders.items JSON. They drifted once: the app wrote `priceNpr` while this
+  # client read `price`, so app orders rendered as "NPR NaN" here. Unit tests
+  # can only see their own repo's copy, so each repo ships a verbatim contract
+  # file and this job fails when the two copies differ.
+  order-items-contract:
+    name: Order items contract matches the app
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout website
+        uses: actions/checkout@v5
+
+      # Public repo, so the job's default token can clone it.
+      - name: Checkout app
+        uses: actions/checkout@v5
+        with:
+          repository: genumsolutions/genumsolutions-app
+          path: app
+
+      - name: Fail when the copies differ
+        run: |
+          if ! diff -u supabase/order-items.contract.json app/mobile/src/config/order-items.contract.json; then
+            echo "::error::The orders.items contract copies differ. Copy supabase/order-items.contract.json verbatim to the app's mobile/src/config/order-items.contract.json, and update both repos' writers/tests in the same change."
+            exit 1
+          fi
+          echo "orders.items contract matches the app"

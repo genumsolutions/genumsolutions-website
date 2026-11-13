@@ -22,7 +22,7 @@ type OrderRow = {
  * as "NPR NaN" in the account page and admin orders. New writes always use
  * `price`; this keeps historic rows readable.
  */
-function normalizeItems(raw: unknown): OrderItem[] {
+export function normalizeItems(raw: unknown): OrderItem[] {
   if (!Array.isArray(raw)) return [];
   return raw.map((entry) => {
     const item = (entry ?? {}) as Partial<OrderItem>;
