@@ -134,9 +134,19 @@ export async function PUT(request: Request) {
     const pricing = parsePricing(
       {
         ...body,
+        // Approval state is never set by a settings save — only the admin
+        // "pricing" action above may change it.
         priceStatus: existing.priceStatus,
         priceApprovedAt: existing.priceApprovedAt,
         priceApprovedBy: existing.priceApprovedBy,
+        // A partial patch keeps whatever it does not mention: sending only
+        // extras must not wipe the tiers (or the fields themselves).
+        packageBaseCharge: body.packageBaseCharge ?? existing.packageBaseCharge,
+        componentMarkupPercent: body.componentMarkupPercent ?? existing.componentMarkupPercent,
+        extras: body.extras ?? existing.extras,
+        bulkTiers: body.bulkTiers ?? existing.bulkTiers,
+        minimumOrder: body.minimumOrder ?? existing.minimumOrder,
+        note: body.note ?? existing.note,
       },
       projectId
     );

@@ -136,7 +136,12 @@ export default function ProductDetailPro({
     fetch(`/api/project-pricing/${encodeURIComponent(product.id)}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
-        if (active && d?.pricing) setProjectPricing(d.pricing as ProjectPricing);
+        if (active && d?.pricing)
+          setProjectPricing({
+            ...defaultProjectPricing,
+            ...(d.pricing as Partial<ProjectPricing>),
+            id: product.id,
+          });
       })
       .catch(() => undefined);
     return () => {

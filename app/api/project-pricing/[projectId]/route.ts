@@ -30,9 +30,9 @@ export async function GET(_request: Request, { params }: { params: { projectId: 
             bulkTiers: pricing.bulkTiers,
             minimumOrder: pricing.minimumOrder,
             priceStatus: pricing.priceStatus,
-            priceApprovedAt: pricing.priceApprovedAt,
-            priceApprovedBy: pricing.priceApprovedBy,
-            note: pricing.note,
+            // Deliberately NOT exposed: `note` is an internal pricing note and
+            // `priceApprovedBy` is a staff email — neither belongs in a
+            // public payload.
           }
         : null,
     });

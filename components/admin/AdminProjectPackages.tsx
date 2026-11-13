@@ -16,7 +16,6 @@ import {
 import type { Product } from "./admin-types";
 import { emptyProduct, PAGE_SIZE } from "./admin-types";
 import { Pager, focusEditor, editorCard, editorCardTitle, panelCard } from "./admin-helpers";
-import { revalidateProjectPricing } from "../../lib/revalidate";
 
 type Props = {
   products: Product[];
@@ -401,7 +400,6 @@ export default function AdminProjectPackages({
       if (response.ok) {
         setProjectPricing(result.pricing ?? pricing);
         setMessage("Project pricing saved.");
-        revalidateProjectPricing(product.id);
       } else {
         setMessage((result.error as string) || "Could not save the pricing.");
       }
@@ -432,7 +430,6 @@ export default function AdminProjectPackages({
             ? { ...prev, priceStatus: "approved" as const }
             : { ...prev, priceStatus: "draft" as const }
         );
-        revalidateProjectPricing(product.id);
       } else {
         setMessage((result.error as string) || "Could not update the pricing status.");
       }
@@ -505,8 +502,6 @@ export default function AdminProjectPackages({
     setBulkTiersState(projectPricing.bulkTiers);
   }, [projectPricing.extras, projectPricing.bulkTiers]);
 
-  // The draft-CalculatedPrice component used inline below is typed via the
-  // ProjectPricingEstimate returned by estimateProject.
   const projectProducts = products.filter(
     (item) =>
       item.productType === "Project package" ||
