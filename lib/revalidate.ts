@@ -41,6 +41,11 @@ export function revalidatePrint(): void {
   safe("/3d-printing");
 }
 
+export function revalidateProjectPricing(projectId?: string): void {
+  safe("/projects", "/products");
+  if (projectId) safe(`/products/${projectId}`);
+}
+
 export function revalidateServices(): void {
   safe("/services");
 }

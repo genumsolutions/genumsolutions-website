@@ -2,13 +2,23 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ArrowUpRight, Check } from "lucide-react";
 import { galleryImages, relatedProducts, scopeForProduct, type Product } from "../lib/catalog";
 import { getProductMedia } from "../lib/product-media";
 import { useCart } from "./cart-provider";
 import { recordProductView } from "../lib/recently-viewed";
 import ProductCard from "./ProductCard";
+import {
+  defaultProjectPricing,
+  estimateProject,
+  formatNPR,
+  projectPricingAvailable,
+  resolveLine,
+  type ProjectPricing,
+  type ProjectPricingEstimate,
+  type ProjectPricingLine,
+} from "../lib/project-pricing";
 
 // C3 (2026-09-23): "Related products" row on the detail page. The full list
 // is passed down from the server page; the row renders client-side after
@@ -112,6 +122,92 @@ export default function ProductDetailPro({
       product: allProducts.find((p) => p.id === row.productId && p.active !== false),
     }))
     .filter((entry): entry is { qty: number; product: Product } => Boolean(entry.product));
+
+  // 2026-11-13: project pricing — published price + calculator on the detail page.
+  // Fetched client-side (the project_pricing row is staff-managed; empty/draft →
+  // the price stays "rate on request" and the calculator stays hidden).
+  const [projectPricing, setProjectPricing] = useState<ProjectPricing>(defaultProjectPricing);
+  useEffect(() => {
+    if (product.productType !== "Project package") {
+      setProjectPricing(defaultProjectPricing);
+      return;
+    }
+    let active = true;
+    fetch(`/api/project-pricing/${encodeURIComponent(product.id)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (active && d?.pricing) setProjectPricing(d.pricing as ProjectPricing);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [product.id, product.productType]);
+
+  // 2026-11-13: the calculator lets a buyer change each component's quantity;
+  // the estimate then recalculates with the same rules the admin panel uses.
+  const [quantityOverrides, setQuantityOverrides] = useState<Record<string, number>>({});
+  useEffect(() => setQuantityOverrides({}), [product.id]);
+
+  const projectLines = useMemo<ProjectPricingLine[]>(() => {
+    if (!isProjectPackage) return [];
+    return componentRows
+      .map((row) => {
+        const found = allProducts.find((p) => p.id === row.productId && p.active !== false);
+        if (!found) return null;
+        const quantity = Math.max(1, quantityOverrides[row.productId] ?? row.quantity);
+        const line = resolveLine(
+          { productId: row.productId, quantity },
+          found.price,
+          projectPricing.componentMarkupPercent
+        );
+        return { ...line, name: found.name };
+      })
+      .filter((line): line is ProjectPricingLine => Boolean(line));
+  }, [
+    isProjectPackage,
+    componentRows,
+    allProducts,
+    quantityOverrides,
+    projectPricing.componentMarkupPercent,
+  ]);
+
+  const projectEstimate = useMemo<ProjectPricingEstimate>(() => {
+    if (!isProjectPackage) {
+      return {
+        available: false,
+        packageBaseCharge: 0,
+        componentsTotal: 0,
+        extrasTotal: 0,
+        subtotal: 0,
+        discountPercent: 0,
+        discountAmount: 0,
+        beforeMinimum: 0,
+        total: 0,
+        minimumApplied: false,
+        minimumOrder: 0,
+        reason: "",
+      };
+    }
+    return estimateProject({
+      pricing: projectPricing,
+      links: projectLines.map((line) => ({
+        productId: line.productId,
+        quantity: line.quantity,
+      })),
+      catalogPrices: new Map(projectLines.map((line) => [line.productId, line.catalogPrice])),
+    });
+  }, [isProjectPackage, projectLines, projectPricing]);
+
+  // Only publish a price when the row is approved AND it resolves to a real
+  // amount — an approved row with no base charge, markup or priced components
+  // must not render "NPR 0".
+  const pricingPublished =
+    isProjectPackage &&
+    projectEstimate.available &&
+    projectPricingAvailable(projectPricing) &&
+    projectEstimate.total > 0;
+
   const usedInProjects = usedInRows
     .map((row) => allProducts.find((p) => p.id === row.projectId && p.active !== false))
     .filter((p): p is Product => Boolean(p));
@@ -259,11 +355,184 @@ export default function ProductDetailPro({
               </dl>
             ) : null}
             <div className="mt-7 flex flex-wrap items-baseline gap-3">
-              <span className="font-display text-3xl font-bold">{product.priceLabel}</span>
+              <span className="font-display text-3xl font-bold">
+                {pricingPublished ? formatNPR(projectEstimate.total) : product.priceLabel}
+              </span>
               <span className="text-sm text-muted">
-                {product.productType === "Project package" ? "indicative package" : "per unit"}
+                {isProjectPackage
+                  ? pricingPublished
+                    ? `indicative package estimate · ${projectLines.length} ${
+                        projectLines.length === 1 ? "component" : "components"
+                      }`
+                    : "rate on request"
+                  : "per unit"}
               </span>
             </div>
+            {pricingPublished ? (
+              <div className="mt-6">
+                <div className="rounded-xl border border-line bg-card p-5">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <h2 className={"text-sm font-bold text-ink"}>
+                      Quote calculator{" "}
+                      <span className="text-muted">({projectLines.length} components)</span>
+                    </h2>
+                    <span className="text-sm font-display font-bold text-navy">
+                      {formatNPR(projectEstimate.total)}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm text-muted">
+                    Adjust the quantities below to see how the indicative price changes. Final
+                    contracts are confirmed with the team after you request a quote.
+                  </p>
+                  {/* component breakdown */}
+                  {projectLines.length > 0 ? (
+                    <div className="mt-4 space-y-3">
+                      {projectLines.map((line) => (
+                        <div
+                          key={line.productId}
+                          className="rounded-lg border border-line bg-white p-3"
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-bold text-ink">{line.name}</p>
+                              <p className="text-xs text-muted">
+                                {projectPricing.componentMarkupPercent > 0
+                                  ? `${formatNPR(line.catalogPrice)} catalog + ${projectPricing.componentMarkupPercent}% markup = ${formatNPR(line.unitPrice)}/unit`
+                                  : `${formatNPR(line.catalogPrice)}/unit from the catalog`}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center rounded-full border border-line">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setQuantityOverrides((prev) => ({
+                                      ...prev,
+                                      [line.productId]: Math.max(1, line.quantity - 1),
+                                    }))
+                                  }
+                                  className="h-8 w-8 rounded-l-full text-sm font-bold transition hover:bg-mist"
+                                  aria-label={`Decrease ${line.name} quantity`}
+                                >
+                                  −
+                                </button>
+                                <span
+                                  className="w-8 text-center text-xs font-bold"
+                                  aria-live="polite"
+                                >
+                                  {line.quantity}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setQuantityOverrides((prev) => ({
+                                      ...prev,
+                                      [line.productId]: Math.min(99, line.quantity + 1),
+                                    }))
+                                  }
+                                  className="h-8 w-8 rounded-r-full text-sm font-bold transition hover:bg-mist"
+                                  aria-label={`Increase ${line.name} quantity`}
+                                >
+                                  +
+                                </button>
+                              </div>
+                              <span className="w-28 text-right text-sm font-bold text-ink">
+                                {formatNPR(line.lineTotal)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-sm text-muted">
+                      No catalog components are linked to this package yet.
+                    </p>
+                  )}
+                  {/* extras */}
+                  {projectEstimate.extrasTotal > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2 text-sm">
+                      {projectPricing.extras.map((extra) => {
+                        if (extra.amount <= 0) return null;
+                        return (
+                          <span
+                            key={extra.id}
+                            className="rounded-lg border border-line bg-white px-3 py-2"
+                          >
+                            {extra.name} <span className="text-muted">·</span>{" "}
+                            {formatNPR(extra.amount)}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {/* summary */}
+                  <dl className="mt-4 divide-y divide-line border-t border-line text-sm">
+                    <div className="flex justify-between py-2">
+                      <span className="text-muted">Package base charge</span>
+                      <span className="font-bold text-ink">
+                        {formatNPR(projectEstimate.packageBaseCharge)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between py-2">
+                      <span className="text-muted">Components</span>
+                      <span className="font-bold text-ink">
+                        {formatNPR(projectEstimate.componentsTotal)}
+                      </span>
+                    </div>
+                    {projectEstimate.extrasTotal > 0 && (
+                      <div className="flex justify-between py-2">
+                        <span className="text-muted">Extras</span>
+                        <span className="font-bold text-ink">
+                          {formatNPR(projectEstimate.extrasTotal)}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex justify-between py-2">
+                      <span className="text-muted">Subtotal</span>
+                      <span className="font-bold text-ink">
+                        {formatNPR(projectEstimate.subtotal)}
+                      </span>
+                    </div>
+                    {projectEstimate.discountPercent > 0 && (
+                      <div className="flex justify-between py-2">
+                        <span className="text-muted">
+                          Bulk discount ({projectEstimate.discountPercent}%)
+                        </span>
+                        <span className="font-bold text-red-600">
+                          −{formatNPR(projectEstimate.discountAmount)}
+                        </span>
+                      </div>
+                    )}
+                    {projectEstimate.minimumApplied && (
+                      <div className="flex justify-between py-2">
+                        <span className="text-muted">
+                          Minimum order {formatNPR(projectEstimate.minimumOrder)} applied
+                        </span>
+                        <span className="font-bold text-ink">
+                          {formatNPR(projectEstimate.beforeMinimum)}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex justify-between py-3">
+                      <span className="font-bold text-ink">Indicative price</span>
+                      <span className="font-display text-lg font-bold text-navy">
+                        {formatNPR(projectEstimate.total)}
+                      </span>
+                    </div>
+                  </dl>
+                  <p className="mt-3 text-xs text-muted">
+                    Indicative only — the final package price is confirmed by the team after you
+                    request a quote.
+                  </p>
+                </div>
+              </div>
+            ) : isProjectPackage && projectPricing.priceStatus === "approved" ? (
+              <p className="mt-6 rounded-xl border border-dashed border-line bg-mist/60 px-5 py-4 text-sm text-muted">
+                Pricing approved but no components, extras, base charge or markup set yet — set
+                those in the admin project editor to show the calculator.
+              </p>
+            ) : null}
             <div className="mt-6 flex flex-wrap items-center gap-3">
               {canPurchase && (
                 <div className="flex items-center rounded-full border border-line bg-white shadow-sm">
@@ -290,7 +559,23 @@ export default function ProductDetailPro({
                   </button>
                 </div>
               )}
-              {isProjectPackage ? (
+              {pricingPublished ? (
+                <>
+                  <Link
+                    href="/contact"
+                    className="rounded-full bg-navy px-6 py-3.5 text-sm font-black text-white transition hover:bg-navy-dark"
+                    aria-label={`Request a quote for ${product.name} with the quantities above`}
+                  >
+                    <span className="inline-flex items-center gap-1.5">
+                      Request this package
+                      <ArrowUpRight size={15} aria-hidden="true" />
+                    </span>
+                  </Link>
+                  <p className="text-xs text-muted">
+                    The estimate recalculates live as you change component quantities above.
+                  </p>
+                </>
+              ) : isProjectPackage ? (
                 <Link
                   href="/contact"
                   className="rounded-full bg-navy px-6 py-3.5 text-sm font-black text-white transition hover:bg-navy-dark"

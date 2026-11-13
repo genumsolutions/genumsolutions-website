@@ -1,13 +1,22 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import { inputClass, cardRow, cardRowText } from "../../lib/styles";
 import { PROJECT_CATEGORIES } from "../../lib/project-catalog";
+import {
+  type ProjectPricing,
+  type ProjectPricingExtra,
+  type ProjectPricingBulkTier,
+  defaultProjectPricing,
+  formatNPR,
+  estimateProject,
+} from "../../lib/project-pricing";
 import type { Product } from "./admin-types";
 import { emptyProduct, PAGE_SIZE } from "./admin-types";
 import { Pager, focusEditor, editorCard, editorCardTitle, panelCard } from "./admin-helpers";
+import { revalidateProjectPricing } from "../../lib/revalidate";
 
 type Props = {
   products: Product[];
@@ -287,6 +296,30 @@ export default function AdminProjectPackages({
   >([]);
   const [linkerBusy, setLinkerBusy] = useState(false);
 
+  // 2026-11-13: project pricing (mirrors the 3D print studio pricing panel).
+  // Loaded when a saved project opens; saved alongside the product via the
+  // admin project-pricing route. Draft by default — prices stay hidden until
+  // an admin approves them.
+  const [projectPricing, setProjectPricing] = useState<ProjectPricing>(defaultProjectPricing);
+  const [pricingBusy, setPricingBusy] = useState(false);
+
+  useEffect(() => {
+    if (!product.id || product.productType !== "Project package") {
+      setProjectPricing(defaultProjectPricing);
+      return;
+    }
+    let active = true;
+    fetch(`/api/admin/project-pricing?projectId=${encodeURIComponent(product.id)}`)
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        if (active && data?.pricing) setProjectPricing(data.pricing as ProjectPricing);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [product.id, product.productType]);
+
   // Load saved links + fresh suggestions whenever a project opens in the editor.
   useEffect(() => {
     if (!product.id || product.productType !== "Project package") {
@@ -349,6 +382,131 @@ export default function AdminProjectPackages({
     }
   }
 
+  // 2026-11-13: save the open project's pricing rules (staff+) — mirrors the
+  // 3D print studio settings save. Partial patches keep the rest intact via the
+  // existing row read inside the API route.
+  async function saveProjectPricing_(pricing: ProjectPricing) {
+    if (!product.id) return;
+    setPricingBusy(true);
+    try {
+      const response = await fetch("/api/admin/project-pricing", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectId: product.id,
+          ...pricing,
+        }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (response.ok) {
+        setProjectPricing(result.pricing ?? pricing);
+        setMessage("Project pricing saved.");
+        revalidateProjectPricing(product.id);
+      } else {
+        setMessage((result.error as string) || "Could not save the pricing.");
+      }
+    } catch {
+      setMessage("Could not reach the server to save the pricing.");
+    } finally {
+      setPricingBusy(false);
+    }
+  }
+
+  async function approveProjectPricing_(approved: boolean) {
+    if (!product.id) return;
+    setPricingBusy(true);
+    try {
+      const response = await fetch("/api/admin/project-pricing", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectId: product.id,
+          resource: "pricing",
+          approved,
+        }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (response.ok) {
+        setProjectPricing((prev) =>
+          approved
+            ? { ...prev, priceStatus: "approved" as const }
+            : { ...prev, priceStatus: "draft" as const }
+        );
+        revalidateProjectPricing(product.id);
+      } else {
+        setMessage((result.error as string) || "Could not update the pricing status.");
+      }
+    } catch {
+      setMessage("Could not reach the server to update the pricing status.");
+    } finally {
+      setPricingBusy(false);
+    }
+  }
+
+  // Local state for the extras + bulk-tiers editors (mirrors AdminPrint's
+  // in-place array editing). synced back to projectPricing on save.
+  const [extrasState, setExtrasState] = useState<ProjectPricingExtra[]>(projectPricing.extras);
+  const [bulkTiersState, setBulkTiersState] = useState<ProjectPricingBulkTier[]>(
+    projectPricing.bulkTiers
+  );
+
+  // Keep the live estimate preview in sync with the linked components + the
+  // edited pricing rules. Runs whenever the open project's links or the local
+  // extras/bulk-tiers/base-charge/markup/minimum change.
+  const estimatePreview = useMemo<ReturnType<typeof estimateProject>>(() => {
+    if (!product.id || product.productType !== "Project package") {
+      return {
+        available: false,
+        packageBaseCharge: 0,
+        componentsTotal: 0,
+        extrasTotal: 0,
+        subtotal: 0,
+        discountPercent: 0,
+        discountAmount: 0,
+        beforeMinimum: 0,
+        total: 0,
+        minimumApplied: false,
+        minimumOrder: 0,
+        reason: "Rate on request",
+      };
+    }
+    const catalogPrices = new Map<string, number>();
+    for (const link of linkerLinks) {
+      const found = products.find((p) => p.id === link.productId);
+      if (found) catalogPrices.set(link.productId, found.price);
+    }
+    // Compute as if approved: the owner must see the number these rules
+    // produce BEFORE deciding to publish them (the public page still hides
+    // it until approval).
+    return estimateProject({
+      pricing: {
+        ...projectPricing,
+        priceStatus: "approved" as const,
+        extras: extrasState,
+        bulkTiers: bulkTiersState,
+      },
+      links: linkerLinks,
+      catalogPrices,
+    });
+  }, [
+    product.id,
+    product.productType,
+    linkerLinks,
+    products,
+    projectPricing,
+    extrasState,
+    bulkTiersState,
+  ]);
+
+  // Keep the local extras/bulk-tiers state in sync when the open project
+  // changes (e.g. staff switches between projects in the editor).
+  useEffect(() => {
+    setExtrasState(projectPricing.extras);
+    setBulkTiersState(projectPricing.bulkTiers);
+  }, [projectPricing.extras, projectPricing.bulkTiers]);
+
+  // The draft-CalculatedPrice component used inline below is typed via the
+  // ProjectPricingEstimate returned by estimateProject.
   const projectProducts = products.filter(
     (item) =>
       item.productType === "Project package" ||
@@ -721,10 +879,362 @@ export default function AdminProjectPackages({
           )}
         </section>
       </div>
+
+      {/* 2026-11-13: project pricing (mirrors the 3D print studio pricing panel).
+            Only shown for a saved project package — it has an id to hang the pricing
+            row on, and the catalog components it can be priced from. */}
+      {product.id && product.productType === "Project package" && (
+        <section id="project-package-pricing" aria-label="Project package pricing" className="mt-4">
+          <div className={`${editorCard} rounded-xl border border-line bg-card p-5`}>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className={editorCardTitle}>Pricing</h2>
+              <button
+                type="button"
+                disabled={pricingBusy}
+                onClick={async () => {
+                  if (!product.id) return;
+                  const next = {
+                    ...projectPricing,
+                    extras: extrasState,
+                    bulkTiers: bulkTiersState,
+                  };
+                  await saveProjectPricing_(next);
+                }}
+                className="rounded-full bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark disabled:opacity-60"
+              >
+                {pricingBusy ? "Saving…" : "Save pricing"}
+              </button>
+            </div>
+            <p className="mt-1 text-sm text-muted">
+              Set the base charge, component markup, optional extras, bulk tiers and minimum order
+              for this project package. Prices stay hidden (rate on request) until you approve them
+              below.
+            </p>
+
+            {/* publication status + approve/withdraw */}
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-[0.14em] text-muted">
+                  Publication status
+                </p>
+                <p className="mt-1 text-sm font-bold text-ink">
+                  {projectPricing.priceStatus === "approved"
+                    ? `Rates approved${projectPricing.priceApprovedAt ? ` on ${new Date(projectPricing.priceApprovedAt).toLocaleDateString()}` : ""}${projectPricing.priceApprovedBy ? ` by ${projectPricing.priceApprovedBy}` : ""}`
+                    : 'Draft — customers see "rate on request" and the calculator stays hidden'}
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={pricingBusy}
+                onClick={async () => {
+                  if (!product.id) return;
+                  const approved = projectPricing.priceStatus !== "approved";
+                  if (
+                    approved &&
+                    !window.confirm(
+                      "Publish the current project pricing and switch the calculator on?"
+                    )
+                  )
+                    return;
+                  await approveProjectPricing_(approved);
+                }}
+                className={`min-h-[44px] rounded-full px-5 text-xs font-black transition disabled:opacity-60 ${
+                  projectPricing.priceStatus === "approved"
+                    ? "border border-line bg-white text-ink hover:border-red-500"
+                    : "bg-navy text-white hover:bg-navy-dark"
+                }`}
+              >
+                {projectPricing.priceStatus === "approved"
+                  ? "Withdraw rates"
+                  : "Approve & publish rates"}
+              </button>
+            </div>
+
+            <div className="mt-5 grid gap-4 xl:grid-cols-[1fr_1.3fr]">
+              <div className={editorCard}>
+                <h2 className={editorCardTitle}>Base charge &amp; markup</h2>
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <label className="min-w-0 text-sm font-bold">
+                    Package base charge (NPR)
+                    <input
+                      type="number"
+                      min={0}
+                      value={projectPricing.packageBaseCharge}
+                      onChange={(e) =>
+                        setProjectPricing({
+                          ...projectPricing,
+                          packageBaseCharge: Math.max(0, Math.round(Number(e.target.value) || 0)),
+                        })
+                      }
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <label className="min-w-0 text-sm font-bold">
+                    Component markup (%)
+                    <input
+                      type="number"
+                      min={0}
+                      max={500}
+                      value={projectPricing.componentMarkupPercent}
+                      onChange={(e) =>
+                        setProjectPricing({
+                          ...projectPricing,
+                          componentMarkupPercent: Math.max(
+                            0,
+                            Math.min(500, Math.round(Number(e.target.value) || 0))
+                          ),
+                        })
+                      }
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <label className="min-w-0 text-sm font-bold">
+                    Minimum order (NPR)
+                    <input
+                      type="number"
+                      min={0}
+                      value={projectPricing.minimumOrder}
+                      onChange={(e) =>
+                        setProjectPricing({
+                          ...projectPricing,
+                          minimumOrder: Math.max(0, Math.round(Number(e.target.value) || 0)),
+                        })
+                      }
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <label className="sm:col-span-2 min-w-0 text-sm font-bold">
+                    Pricing note
+                    <input
+                      value={projectPricing.note}
+                      onChange={(e) =>
+                        setProjectPricing({
+                          ...projectPricing,
+                          note: e.target.value.slice(0, 300),
+                        })
+                      }
+                      className={`mt-2 w-full ${inputClass}`}
+                      placeholder="Internal note (not shown to customers)"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div className={editorCard}>
+                <h2 className={editorCardTitle}>Extras &amp; bulk tiers</h2>
+
+                <div className="mt-3">
+                  <p className="text-sm font-bold">Optional extras (flat add-ons)</p>
+                  {extrasState.map((extra, index) => (
+                    <div key={extra.id ?? index} className="mt-2 flex flex-wrap items-end gap-2">
+                      <input
+                        value={extra.name}
+                        aria-label="Extra name"
+                        onChange={(e) => {
+                          const next = extrasState.map((x, i) =>
+                            i === index ? { ...x, name: e.target.value.slice(0, 60) } : x
+                          );
+                          setExtrasState(next);
+                        }}
+                        className={`min-w-0 flex-1 ${inputClass}`}
+                        placeholder="e.g. On-site training"
+                      />
+                      <input
+                        type="number"
+                        min={0}
+                        aria-label="Extra amount (NPR)"
+                        value={extra.amount}
+                        onChange={(e) => {
+                          const next = extrasState.map((x, i) =>
+                            i === index
+                              ? {
+                                  ...x,
+                                  amount: Math.max(0, Math.round(Number(e.target.value) || 0)),
+                                }
+                              : x
+                          );
+                          setExtrasState(next);
+                        }}
+                        className={`w-32 ${inputClass}`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setExtrasState(extrasState.filter((_, i) => i !== index))}
+                        className="rounded-lg border border-line px-3 py-3 text-xs font-black text-red-600"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExtrasState([
+                        ...extrasState,
+                        { id: `extra-${extrasState.length + 1}`, name: "", amount: 0 },
+                      ])
+                    }
+                    className="mt-2 rounded-lg border border-line px-4 py-2 text-xs font-black text-ink hover:border-navy"
+                  >
+                    Add extra
+                  </button>
+                </div>
+
+                <div className="mt-5">
+                  <p className="text-sm font-bold">Bulk tiers (quantity → % off)</p>
+                  {bulkTiersState.map((tier, index) => (
+                    <div key={index} className="mt-2 flex flex-wrap items-center gap-2">
+                      <label className="text-xs font-bold">
+                        Min qty
+                        <input
+                          type="number"
+                          min={1}
+                          value={tier.minQty}
+                          onChange={(e) => {
+                            const next = bulkTiersState.map((t, i) =>
+                              i === index
+                                ? {
+                                    ...t,
+                                    minQty: Math.max(1, Math.round(Number(e.target.value) || 1)),
+                                  }
+                                : t
+                            );
+                            setBulkTiersState(next);
+                          }}
+                          className={`ml-2 w-24 ${inputClass}`}
+                        />
+                      </label>
+                      <label className="text-xs font-bold">
+                        Discount %
+                        <input
+                          type="number"
+                          min={0}
+                          max={90}
+                          value={tier.discountPercent}
+                          onChange={(e) => {
+                            const next = bulkTiersState.map((t, i) =>
+                              i === index
+                                ? {
+                                    ...t,
+                                    discountPercent: Math.min(
+                                      90,
+                                      Math.max(0, Math.round(Number(e.target.value) || 0))
+                                    ),
+                                  }
+                                : t
+                            );
+                            setBulkTiersState(next);
+                          }}
+                          className={`ml-2 w-24 ${inputClass}`}
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setBulkTiersState(bulkTiersState.filter((_, i) => i !== index))
+                        }
+                        className="rounded-lg border border-line px-3 py-2 text-xs font-black text-red-600"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setBulkTiersState([...bulkTiersState, { minQty: 10, discountPercent: 5 }])
+                    }
+                    className="mt-2 rounded-lg border border-line px-4 py-2 text-xs font-black text-ink hover:border-navy"
+                  >
+                    Add tier
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {(extrasState.length > 0 ||
+              bulkTiersState.length > 0 ||
+              projectPricing.packageBaseCharge > 0 ||
+              projectPricing.componentMarkupPercent > 0 ||
+              projectPricing.minimumOrder > 0) && (
+              <div className="mt-5 border-t border-line pt-4">
+                <p className="text-xs font-black uppercase tracking-widest text-slate-500">
+                  Live estimate preview
+                </p>
+                <p className="mt-1 text-sm text-muted">
+                  Based on the components currently linked to this project (below) + the pricing
+                  rules above. This preview uses the same calculator the public page will show once
+                  you approve the rates.
+                </p>
+                {estimatePreview.available ? (
+                  <div className="mt-3 rounded-xl border border-line bg-white p-4">
+                    <p className="text-sm text-muted">
+                      Estimated indicative price
+                      {projectPricing.priceStatus === "approved"
+                        ? ""
+                        : " (draft preview — approve above to publish)"}
+                    </p>
+                    <p className="mt-2 font-display text-2xl font-bold text-ink">
+                      {formatNPR(estimatePreview.total)}
+                    </p>
+                    <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted">Package base charge</span>
+                        <span className="font-bold text-ink">
+                          {formatNPR(estimatePreview.packageBaseCharge)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted">
+                          Components (
+                          {estimatePreview.componentsTotal > 0 ? "included" : "none linked"})
+                        </span>
+                        <span className="font-bold text-ink">
+                          {formatNPR(estimatePreview.componentsTotal)}
+                        </span>
+                      </div>
+                      {estimatePreview.extrasTotal > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-muted">Extras</span>
+                          <span className="font-bold text-ink">
+                            {formatNPR(estimatePreview.extrasTotal)}
+                          </span>
+                        </div>
+                      )}
+                      {estimatePreview.discountPercent > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-muted">
+                            Bulk discount · {estimatePreview.discountPercent}%
+                          </span>
+                          <span className="font-bold text-red-600">
+                            −{formatNPR(estimatePreview.discountAmount)}
+                          </span>
+                        </div>
+                      )}
+                      {estimatePreview.minimumApplied && (
+                        <div className="flex justify-between">
+                          <span className="text-muted">Minimum order applied</span>
+                          <span className="font-bold text-ink">
+                            {formatNPR(estimatePreview.minimumOrder)}
+                          </span>
+                        </div>
+                      )}
+                    </dl>
+                  </div>
+                ) : (
+                  <p className="mt-3 text-sm text-slate-500">{estimatePreview.reason}</p>
+                )}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* project package preview portal — the "eye" button in the list opens
+          a full-screen preview. Portal to <body> so the tab track's transform +
+          overflow-hidden don't clip it off-screen (owner report 2026-09-22). */}
       {previewProduct &&
         createPortal(
-          // Portal to <body>: the tab track's transform + overflow-hidden clips fixed
-          // descendants — without it the preview renders off-screen (owner report 2026-09-22).
           <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 p-5"
             role="dialog"

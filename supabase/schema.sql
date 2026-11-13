@@ -1654,6 +1654,74 @@ $$;
 comment on function public.save_project_components(text, jsonb) is
   'U-45 Phase 2: staff+ gated replace-all save for the app admin Projects linker (website parity with PUT /api/admin/project-components).';
 
+-- =====================================================================
+-- Project pricing (2026-11-13): per-project-package price calculator,
+-- managed from the admin Projects tab and approved to publish. Mirrors the
+-- 3D print studio pattern (print_settings / print_materials) but project-
+-- specific: a project is priced from its linked catalog components (via the
+-- project_components join) + a package base charge + optional extras +
+-- bulk tiers + a minimum order, all DRAFT by default until an admin approves.
+-- =====================================================================
+
+create table if not exists public.project_pricing (
+  -- one row per project package (id references products.id)
+  id text primary key references public.products(id) on delete cascade,
+  -- base charge for the package itself (NPR), before components/extras
+  package_base_charge integer not null default 0 check (package_base_charge >= 0),
+  -- component unit price is the catalog product's price * (1 + markupPercent/100).
+  -- 0 means use the catalog price as-is; 100 means double it, etc.
+  component_markup_percent integer not null default 0 check (component_markup_percent >= 0 and component_markup_percent <= 500),
+  -- optional extras a buyer can add to a project quote (training, assembly, docs, delivery)
+  extras jsonb not null default '[]',
+  -- quantity -> % off the components + extras subtotal (parallel to print bulk_tiers)
+  bulk_tiers jsonb not null default '[]',
+  -- minimum quote value (NPR); below it the quote is auto-elevated (parallel to print minimum_order)
+  minimum_order integer not null default 0 check (minimum_order >= 0),
+  -- publication status: draft hides every price ("rate on request"); approved reveals them
+  price_status text not null default 'draft',
+  -- when the owner approved / last withdrew
+  price_approved_at timestamptz,
+  -- who approved / last withdrew
+  price_approved_by text not null default ''',
+  note text not null default '',
+  updated_at timestamptz not null default now(),
+  constraint project_pricing_price_status_check check (price_status in ('draft', 'approved'))
+);
+
+-- idempotent seed: draft defaults for any project package that has no pricing row yet.
+-- Kept draft (pending GENUM approval) — the owner sets real base charges / markups /
+-- extras / tiers in Admin → Projects → Pricing. The docx lists projects as quote-based,
+-- so there is no docx number to mirror; defaults to 0 / "rate on request" until set.
+insert into public.project_pricing (id, package_base_charge, component_markup_percent, extras, bulk_tiers, minimum_order, price_status, note)
+  select id, 0, 0, '[]', '[]', 0, 'draft', ''
+  from public.products
+  where product_type = 'Project package'
+    and not exists (select 1 from public.project_pricing pp where pp.id = products.id)
+on conflict (id) do nothing;
+
+alter table public.project_pricing enable row level security;
+
+-- Public read: only approved rows are visible to anonymous users (the public
+-- API and the storefront show prices only after an admin approves them).
+drop policy if exists "public read approved project pricing" on public.project_pricing;
+create policy "public read approved project pricing" on public.project_pricing
+  for select using (price_status = 'approved');
+
+-- Staff read: staff+ sees every row (draft + approved) so the admin editor can edit draft pricing.
+drop policy if exists "staff read project pricing" on public.project_pricing;
+create policy "staff read project pricing" on public.project_pricing
+  for select using (public.is_staff());
+
+-- Staff write: staff+ can insert/update project pricing rows.
+drop policy if exists "staff write project pricing" on public.project_pricing;
+create policy "staff write project pricing" on public.project_pricing
+  for all using (public.is_staff());
+
+-- Admin delete: only admin+owner may delete a project pricing row.
+drop policy if exists "admin delete project pricing" on public.project_pricing;
+create policy "admin delete project pricing" on public.project_pricing
+  for delete using (public.is_admin());
+
 -- ===== U-47 (2026-09-27): CATALOG RE-HOME + PROJECT TAXONOMY (owner) =====
 -- Owner round: electronic/3D rows that landed in the wrong category move to
 -- their own shelves; Projects become SIX owner-named categories (Robo Car
