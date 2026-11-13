@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { ArrowRight, Bot, Cpu, Home, Plane, Sprout, Trash2, Wifi } from "lucide-react";
 import ArticleCard from "../../components/ArticleCard";
 import PageIntro from "../../components/PageIntro";
 import PageShell from "../../components/PageShell";
@@ -16,6 +17,55 @@ export const metadata: Metadata = {
   description:
     "Web delivery, 3D printing, school STEM packages, teacher workshops, and training programs from GENUM Solutions.",
 };
+
+// The academy tracks used to live on a separate /academy page that repeated
+// this page's training programmes and age-band curriculum. The unique part —
+// the learning streams — now lives here, and /academy permanently redirects
+// to #academy (see next.config.mjs), so one page owns the training story.
+const streams = [
+  {
+    id: "robotics",
+    name: "Robotics & robot cars",
+    icon: Bot,
+    body: "Chassis, motors, motor drivers, steering and PID — 2WD, 4WD, self-balancing and path-following builds.",
+  },
+  {
+    id: "electronics",
+    name: "Electronics & soldering",
+    icon: Cpu,
+    body: "Components, breadboards, sensors, power and safe soldering — the part every later stream depends on.",
+  },
+  {
+    id: "iot",
+    name: "IoT & automation",
+    icon: Wifi,
+    body: "ESP32 Wi-Fi, MQTT-style control, cloud dashboards and the Control Panel used to drive a build from a browser.",
+  },
+  {
+    id: "home",
+    name: "Smart home",
+    icon: Home,
+    body: "Relays, lights, door locks and sensors, plus the voice and app control that make them usable.",
+  },
+  {
+    id: "farm",
+    name: "Smart farm",
+    icon: Sprout,
+    body: "Soil moisture, irrigation pumps, greenhouses and the autonomy rules that save water.",
+  },
+  {
+    id: "city",
+    name: "Smart city & waste",
+    icon: Trash2,
+    body: "Street lighting, parking, air quality and the smart dustbin — the public-facing projects schools ask for.",
+  },
+  {
+    id: "drones",
+    name: "Aerial drones",
+    icon: Plane,
+    body: "Frames, ESCs, flight controllers, telemetry and safe first flights.",
+  },
+];
 
 const processSteps = [
   ["01", "Share the outcome", "Tell us what you need to sell, print, teach, publish, or build."],
@@ -86,6 +136,48 @@ export default async function ServicesPage() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ─── Learning Streams ─── */}
+      <section id="academy" className="border-t border-line">
+        <div className="mx-auto max-w-7xl px-5 py-10 sm:py-14 lg:px-8">
+          <p className="text-xs font-black uppercase tracking-[.24em] text-navy">
+            Robotic Academy · Kathmandu
+          </p>
+          <h2 className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl">
+            Learning streams
+          </h2>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
+            Seven lab tracks, each backed by a real kit, a real project in the workshop, and a
+            Control Panel window learners can drive.
+          </p>
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {streams.map((stream) => {
+              const Icon = stream.icon;
+              return (
+                <article
+                  key={stream.id}
+                  className="rounded-2xl border border-line bg-white p-5 shadow-card"
+                >
+                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-mist text-navy">
+                    <Icon size={16} aria-hidden="true" />
+                  </span>
+                  <h3 className="mt-3 break-words font-display text-base font-bold text-ink">
+                    {stream.name}
+                  </h3>
+                  <p className="mt-2 break-words text-sm leading-6 text-slate-600">{stream.body}</p>
+                </article>
+              );
+            })}
+          </div>
+          <Link
+            href="/projects"
+            className="mt-6 inline-flex items-center gap-1.5 text-sm font-bold text-navy underline decoration-gold decoration-2 underline-offset-4 transition hover:text-navy-dark"
+          >
+            See the projects each track builds
+            <ArrowRight size={15} aria-hidden="true" />
+          </Link>
         </div>
       </section>
 

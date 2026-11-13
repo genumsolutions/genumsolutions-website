@@ -22,7 +22,6 @@ const nav = [
   { label: "Services", href: "/services" },
   { label: "Products", href: "/products" },
   { label: "Projects", href: "/projects" },
-  { label: "Academy", href: "/academy" },
   { label: "Control Panel", href: "/tools" },
   { label: "3D Printing", href: "/3d-printing" },
   { label: "Journal", href: "/journal" },

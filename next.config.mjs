@@ -17,6 +17,19 @@ const nextConfig = {
     return [
       { source: "/robot-cars", destination: "/projects", permanent: true },
       { source: "/robocar", destination: "/tools", permanent: true },
+      // The academy page was folded into /services (its unique learning-stream
+      // section now lives there); the training programmes it repeated were
+      // already on /services.
+      { source: "/academy", destination: "/services#academy", permanent: true },
+      // Orphaned project-category landing pages: nothing linked to them, and
+      // they repeated the category data /projects already shows. /robocar is
+      // handled above (it was already shadowed by the Control Panel redirect).
+      { source: "/home-automation", destination: "/projects", permanent: true },
+      { source: "/smart-farm", destination: "/projects", permanent: true },
+      { source: "/smart-city", destination: "/projects", permanent: true },
+      { source: "/drones", destination: "/projects", permanent: true },
+      { source: "/smart-dustbin", destination: "/projects", permanent: true },
+      { source: "/remote-controller", destination: "/projects", permanent: true },
       { source: "/training", destination: "/services#training", permanent: true },
       {
         source: "/products/esp32-car",
