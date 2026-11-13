@@ -61,7 +61,7 @@ export default function OpenTools() {
   const visible = tools.filter((tool) => filter === "All" || tool.group === filter);
 
   return (
-    <section className="mx-auto max-w-7xl px-5 py-12 lg:px-8 lg:py-16">
+    <section className="mx-auto max-w-7xl px-5 py-10 sm:py-14 lg:px-8">
       <p className="text-[10px] font-black uppercase tracking-widest text-navy">Open tools</p>
       <h2 className="mt-2 max-w-2xl font-display text-3xl font-bold text-ink lg:text-4xl">
         Free tools we rely on.
@@ -85,18 +85,20 @@ export default function OpenTools() {
         {visible.map((tool) => (
           <article
             key={tool.name}
-            className="rounded-2xl border-t-2 border-navy bg-white p-5 shadow-card"
+            className="flex flex-col rounded-2xl border border-line bg-white p-5"
           >
             <p className="text-[10px] font-black uppercase tracking-widest text-navy">
               {tool.group}
             </p>
-            <h2 className="mt-8 font-display text-xl font-bold">{tool.name}</h2>
-            <p className="mt-2 text-sm leading-6 text-muted">{tool.description}</p>
+            {/* h3: the section heading above is the h2, so every tool name used
+                to sit at the same level as the section it belongs to. */}
+            <h3 className="mt-3 font-display text-lg font-bold text-ink">{tool.name}</h3>
+            <p className="mt-2 flex-1 text-sm leading-6 text-muted">{tool.description}</p>
             <a
               href={tool.href}
               target="_blank"
               rel="noreferrer"
-              className="mt-6 inline-flex min-h-9 items-center text-sm font-bold text-navy underline decoration-gold decoration-2 underline-offset-4 transition hover:text-navy-dark"
+              className="mt-5 inline-flex min-h-9 items-center text-sm font-bold text-navy underline decoration-gold decoration-2 underline-offset-4 transition hover:text-navy-dark"
             >
               Open tool ↗
             </a>

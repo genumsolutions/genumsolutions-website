@@ -17,6 +17,25 @@ export default function ServicesGrid({ services }: { services: Service[] }) {
     [services, category]
   );
 
+  // 2026-11-13: an admin who unticks every service left this section as a bare
+  // heading over an empty grid. Say what happened and give the reader a way
+  // forward, instead of the "no services in this category" line, which claimed
+  // a filter was responsible when none was.
+  if (services.length === 0) {
+    return (
+      <p className="mt-8 rounded-2xl border border-line bg-white p-5 text-sm leading-6 text-slate-600">
+        The service list is being updated.{" "}
+        <Link
+          href="/contact"
+          className="font-bold text-navy underline decoration-gold decoration-2 underline-offset-4"
+        >
+          Tell us what you need
+        </Link>{" "}
+        and we will price it directly.
+      </p>
+    );
+  }
+
   return (
     <>
       {categories.length > 1 && (
@@ -42,6 +61,10 @@ export default function ServicesGrid({ services }: { services: Service[] }) {
         {filtered.map((s) => (
           <ArticleCard
             key={s.id}
+            // 2026-11-13 card standard: the rounded panel is what the stream,
+            // training and curriculum cards on this page use. Services were the
+            // only cards still drawing the border-top variant.
+            variant="rounded"
             tag={s.tag || s.category}
             title={s.name}
             description={s.description}
@@ -56,9 +79,16 @@ export default function ServicesGrid({ services }: { services: Service[] }) {
           </ArticleCard>
         ))}
         {filtered.length === 0 && (
-          <p className="col-span-full py-8 text-sm text-slate-500">
-            No services in this category. Contact us for details.
-          </p>
+          <div className="col-span-full rounded-2xl border border-line bg-white p-5 text-sm leading-6 text-slate-600">
+            <p>No services in {category} yet.</p>
+            <button
+              type="button"
+              onClick={() => setCategory("All")}
+              className="mt-2 font-bold text-navy underline decoration-gold decoration-2 underline-offset-4"
+            >
+              Show all {services.length} services
+            </button>
+          </div>
         )}
       </div>
     </>

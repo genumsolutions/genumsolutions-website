@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronDown, Search } from "lucide-react";
 import type { Product, SortOption } from "../lib/catalog";
@@ -249,7 +250,6 @@ export default function ProductCatalog({
               Clear all filters
             </button>
           )}
-          <span className="text-xs text-muted">{filtered.length} total</span>
         </div>
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm text-muted">
@@ -272,20 +272,34 @@ export default function ProductCatalog({
 
       <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
         {items.length === 0 && (
-          <div className="col-span-full border-t-2 border-ink bg-white p-10 text-center">
-            <p className="font-display text-xl font-bold">No products found</p>
-            <p className="mt-2 text-sm text-muted">
-              Try a different search term or browse another category.
+          <div className="col-span-full rounded-2xl border border-line bg-white p-8 text-center sm:p-10">
+            {/* 2026-11-13: an empty catalog and an over-filtered catalog are
+                different problems; the old copy blamed the search for both. */}
+            <p className="font-display text-xl font-bold">
+              {scopedProducts.length === 0 ? "The catalog is being restocked" : "No products found"}
             </p>
-            {hasActiveFilters && (
-              <button
-                type="button"
-                onClick={clearAllFilters}
-                className="mt-4 rounded-full border border-navy px-5 py-2 text-xs font-black text-navy transition hover:bg-mist"
+            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted">
+              {scopedProducts.length === 0
+                ? "Nothing is listed for sale right now. Tell us what you need and we will check stock or source it."
+                : "No listing matches the current search, category or price filter."}
+            </p>
+            <div className="mt-4 flex flex-wrap justify-center gap-2">
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={clearAllFilters}
+                  className="rounded-full border border-navy px-5 py-2 text-xs font-black text-navy transition hover:bg-mist"
+                >
+                  Clear all filters
+                </button>
+              )}
+              <Link
+                href="/contact"
+                className="rounded-full border border-line px-5 py-2 text-xs font-black text-ink transition hover:border-navy hover:text-navy"
               >
-                Clear all filters
-              </button>
-            )}
+                Ask about a part
+              </Link>
+            </div>
           </div>
         )}
         {items.map((product) => (

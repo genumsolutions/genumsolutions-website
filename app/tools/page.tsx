@@ -39,7 +39,7 @@ export default async function ToolsPage() {
       {/* Garage - the signed-in user's own devices, named by them. Needs no
           live link, so it stays useful while remote control is paused (unlike
           the drive decks, which cannot work until the relay exists). */}
-      <section className="border-t border-line bg-mist py-10 lg:py-14">
+      <section className="border-t border-line bg-mist py-10 sm:py-14">
         <div className="mx-auto max-w-3xl px-5 lg:px-8">
           <GaragePanel />
         </div>
@@ -54,7 +54,7 @@ export default async function ToolsPage() {
 
       {/* U-46: parts strip — bridge from tools to the live components store */}
       {stock.length > 0 && (
-        <section className="border-t border-line bg-mist py-10 lg:py-14">
+        <section className="border-t border-line bg-mist py-10 sm:py-14">
           <div className="mx-auto max-w-7xl px-5 lg:px-8">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>

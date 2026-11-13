@@ -11,7 +11,6 @@
 
 import { ROBOCAR_MODES } from "../lib/robo-car-catalog";
 import type { ControlKind } from "../lib/robo-car-catalog";
-import PageIntro from "./PageIntro";
 
 const CONTROL_LABELS: Record<ControlKind, string> = {
   "drive-tank": "Tank drive (F/B/L/R + speed)",
@@ -33,12 +32,19 @@ export default function RoboticsFleet() {
   const modes = [...ROBOCAR_MODES].sort((a, b) => a.deviceIndex - b.deviceIndex);
 
   return (
-    <section className="mx-auto max-w-7xl px-5 py-10 lg:px-8 lg:py-12">
-      <PageIntro
-        eyebrow="GENUM robot fleet · 9 modes"
-        title="The fleet, mode by mode."
-        body="Every mode the ESP32 remote and the GENUM app can drive, exactly as the car cycles them with its mode button. Pick a mode in the app and this is what it unlocks."
-      />
+    // 2026-11-13: this rendered <PageIntro>, i.e. a second hero with an <h1>
+    // halfway down /tools. A mid-page section gets a section header.
+    <section className="mx-auto max-w-7xl px-5 py-10 sm:py-14 lg:px-8">
+      <p className="text-xs font-black uppercase tracking-[.24em] text-navy">
+        GENUM robot fleet · {modes.length} modes
+      </p>
+      <h2 className="mt-2 max-w-2xl font-display text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+        The fleet, mode by mode.
+      </h2>
+      <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">
+        Every mode the ESP32 remote and the GENUM app can drive, exactly as the car cycles them with
+        its mode button. Pick a mode in the app and this is what it unlocks.
+      </p>
       <ol className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {modes.map((mode) => (
           <li
@@ -53,7 +59,7 @@ export default function RoboticsFleet() {
                 className="shrink-0 rounded-full bg-sky px-3 py-1 text-[10px] font-bold text-navy"
                 title="Position in the car's mode-button cycle"
               >
-                MODE&nbsp;{mode.deviceIndex + 1}/9 · {mode.token}
+                MODE&nbsp;{mode.deviceIndex + 1}/{modes.length} · {mode.token}
               </span>
             </div>
             <p className="mt-3 flex-1 text-xs leading-5 text-slate-600">{mode.blurb}</p>

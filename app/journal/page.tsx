@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import ArticleCard from "../../components/ArticleCard";
 import PageIntro from "../../components/PageIntro";
 import PageShell from "../../components/PageShell";
@@ -27,20 +28,64 @@ export default async function JournalPage() {
         body="Tutorials, field notes, and industry observations for people building a more useful future."
       />
       <section className="mx-auto max-w-7xl px-5 py-10 sm:py-14 lg:px-8">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {posts.map((post) => (
-            <ArticleCard
-              key={post.id}
-              tag={post.tag}
-              title={post.title}
-              description={post.text}
-              href="/contact"
-              cta="Get in touch about this"
-            />
-          ))}
+        {/* The grid used to open straight under the page intro with no label,
+            and every card carried the same "Get in touch about this" link
+            because there is no per-post page to open. One heading, one CTA. */}
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[.24em] text-navy">
+              Latest entries
+            </p>
+            <h2 className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl">
+              What we published recently.
+            </h2>
+          </div>
+          {posts.length > 0 && (
+            <p className="text-sm font-bold text-muted">
+              {posts.length} note{posts.length === 1 ? "" : "s"}
+            </p>
+          )}
         </div>
 
-        <div className="mt-10 border-y border-line py-6 sm:mt-12 sm:py-8">
+        {posts.length === 0 ? (
+          <p className="mt-6 rounded-2xl border border-line bg-white p-5 text-sm leading-6 text-muted">
+            The journal is between entries.{" "}
+            <Link
+              href="/contact"
+              className="font-bold text-navy underline decoration-gold decoration-2 underline-offset-4"
+            >
+              Ask what we are working on
+            </Link>{" "}
+            and we will send the notes behind it.
+          </p>
+        ) : (
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {posts.map((post) => (
+              <ArticleCard
+                key={post.id}
+                variant="rounded"
+                tag={post.tag}
+                title={post.title}
+                description={post.text}
+              />
+            ))}
+          </div>
+        )}
+
+        {posts.length > 0 && (
+          <p className="mt-6 text-sm leading-6 text-muted">
+            Want the full write-up, the files, or a session on one of these topics?{" "}
+            <Link
+              href="/contact"
+              className="font-bold text-navy underline decoration-gold decoration-2 underline-offset-4"
+            >
+              Ask us about it
+            </Link>
+            .
+          </p>
+        )}
+
+        <div className="mt-10 rounded-2xl border border-line bg-white p-5 sm:p-6">
           <p className="text-xs font-black uppercase tracking-[.24em] text-navy">
             Trend brief · August 2026
           </p>

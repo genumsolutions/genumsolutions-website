@@ -94,7 +94,7 @@ export default function ContactForm() {
         />
       </label>
       <button
-        className="rounded-lg bg-navy px-5 py-3 text-sm font-black text-white transition hover:bg-navy-dark disabled:cursor-wait disabled:opacity-60"
+        className="min-h-12 rounded-full bg-navy px-6 py-3 text-sm font-black text-white transition hover:bg-navy-dark disabled:cursor-wait disabled:opacity-60"
         type="submit"
         disabled={sending}
       >

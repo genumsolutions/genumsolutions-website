@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     "GENUM Solutions brings a decade of telecom, IoT, embedded systems, and STEAM education experience from Kathmandu, Nepal.",
 };
 
-const competencies = [
+const competencies: [string, string][] = [
   ["Microcontrollers", "ESP32, Arduino, STM32, and ARM-based systems"],
   ["Cloud platforms", "AWS, Azure, Google Cloud, Firebase, and IoT backends"],
   ["IoT networks", "WiFi, Bluetooth, LoRaWAN, MQTT, CoAP, and Zigbee"],
@@ -63,12 +63,16 @@ export default async function AboutPage() {
   const electronic = applyScope(products, "components").filter((p) => p.active !== false);
   const models = applyScope(products, "models").filter((p) => p.active !== false);
   const projects = applyScope(products, "projects").filter((p) => p.active !== false);
+  // 2026-11-13: `|| 3` invented a category count whenever the store returned
+  // none. The store always falls back to the bundled categories, so show the
+  // real length and let the empty-state guard below handle a failed read.
   const liveCounts: [string, string][] = [
     [String(electronic.length), "electronic components in store"],
     [String(models.length), "3D models printed on demand"],
     [String(projects.length), "project packages & builds"],
-    [String(projectCategories.length || 3), "project categories supported"],
+    [String(projectCategories.length), "project categories supported"],
   ];
+  const hasLiveCounts = liveCounts.some(([value]) => Number(value) > 0);
   return (
     <PageShell>
       <PageIntro
@@ -77,8 +81,12 @@ export default async function AboutPage() {
         body="GENUM brings a decade of telecom, IoT, embedded systems, project delivery, and STEAM education experience into a company built for practical technology."
       />
 
-      <section className="mx-auto max-w-7xl px-5 py-10 sm:py-14 lg:px-8">
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <section className="mx-auto max-w-7xl px-5 pb-10 pt-10 sm:pt-14 lg:px-8">
+        {/* Two 4-up number rows sat directly on top of each other with no
+            labels, so "25+ projects completed" and "N project packages & builds"
+            read as a contradiction. Each row now says what it counts. */}
+        <p className="text-xs font-black uppercase tracking-[.24em] text-navy">Track record</p>
+        <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
           <div className="border-t-2 border-ink pt-4">
             <strong className="font-display text-2xl sm:text-3xl">25+</strong>
             <p className="mt-1 text-xs text-slate-500 sm:text-sm">projects completed</p>
@@ -98,14 +106,30 @@ export default async function AboutPage() {
         </div>
 
         {/* U-46: live store facts — same DB the storefront reads. */}
-        <div className="mt-6 grid grid-cols-2 gap-4 rounded-2xl border border-line bg-white p-5 sm:grid-cols-4 sm:p-6">
-          {liveCounts.map(([value, label]) => (
-            <div key={label}>
-              <strong className="font-display text-2xl text-navy sm:text-3xl">{value}</strong>
-              <p className="mt-1 text-xs leading-5 text-slate-500">{label}</p>
+        <div className="mt-8 rounded-2xl border border-line bg-white p-5 sm:p-6">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <p className="text-xs font-black uppercase tracking-[.24em] text-navy">
+              In the store today
+            </p>
+            <p className="text-xs font-medium text-slate-500">
+              Live from the same catalog the storefront reads
+            </p>
+          </div>
+          {hasLiveCounts ? (
+            <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+              {liveCounts.map(([value, label]) => (
+                <div key={label}>
+                  <strong className="font-display text-2xl text-navy sm:text-3xl">{value}</strong>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">{label}</p>
+                </div>
+              ))}
             </div>
-          ))}
-          <div className="col-span-full mt-1 flex flex-wrap gap-2">
+          ) : (
+            <p className="mt-4 text-sm leading-6 text-slate-600">
+              Catalog figures are refreshing — open a catalog below to see what is listed right now.
+            </p>
+          )}
+          <div className="mt-5 flex flex-wrap gap-2 border-t border-line pt-4">
             {[
               { href: "/products", label: "Shop components" },
               { href: "/3d-printing", label: "3D products" },
@@ -122,8 +146,12 @@ export default async function AboutPage() {
             ))}
           </div>
         </div>
+      </section>
 
-        <div className="mt-12 grid gap-8 sm:mt-16 sm:gap-10 lg:grid-cols-[.8fr_1.2fr]">
+      {/* Own band: the story used to share the stats section, so the page had
+          no visual break between numbers and narrative. */}
+      <section className="border-t border-line">
+        <div className="mx-auto grid max-w-7xl gap-8 px-5 py-10 sm:gap-10 sm:py-14 lg:grid-cols-[.8fr_1.2fr] lg:px-8">
           <div>
             <p className="text-xs font-black uppercase tracking-[.24em] text-navy">How we work</p>
             <h2 className="mt-3 font-display text-2xl font-bold sm:text-3xl lg:text-4xl">
@@ -177,11 +205,10 @@ export default async function AboutPage() {
           Capabilities we bring to every project.
         </h2>
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {/* Same rounded panel as the what-we-do cards above; this grid used to
+              be the only place on /about drawing square, gold-ruled cards. */}
           {competencies.map(([title, text]) => (
-            <article key={title} className="border-l-2 border-gold bg-white p-5">
-              <h3 className="font-display text-xl font-bold">{title}</h3>
-              <p className="mt-2 text-sm leading-6 text-slate-600">{text}</p>
-            </article>
+            <ArticleCard key={title} variant="rounded" title={title} description={text} />
           ))}
         </div>
       </section>

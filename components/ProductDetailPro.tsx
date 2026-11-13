@@ -4,7 +4,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowUpRight, Check } from "lucide-react";
-import { galleryImages, relatedProducts, type Product } from "../lib/catalog";
+import { galleryImages, relatedProducts, scopeForProduct, type Product } from "../lib/catalog";
+import { getProductMedia } from "../lib/product-media";
 import { useCart } from "./cart-provider";
 import { recordProductView } from "../lib/recently-viewed";
 import ProductCard from "./ProductCard";
@@ -28,6 +29,39 @@ export default function ProductDetailPro({
   const canPurchase = !isProjectPackage && (product.stock ?? 0) > 0;
   const related = relatedProducts(allProducts, product);
   const images = galleryImages(product);
+  // 2026-11-13: both <Image> sources pointed at /placeholder.jpg, which is not
+  // in public/, so any product without its own photo rendered a broken image.
+  // Use the same category fallback the catalog cards use (lib/product-media).
+  const fallbackMedia = getProductMedia(product.category);
+  const mainImage = images[activeImage] || fallbackMedia.src;
+  // This route serves all three catalogs, so "Back to the shop" sent a 3D
+  // model or a project package into the electronics catalog.
+  const productScope = scopeForProduct(product);
+  const backLink =
+    productScope === "models"
+      ? { href: "/3d-printing", label: "Back to 3D printing" }
+      : productScope === "projects" || productScope === "cars"
+        ? { href: "/projects", label: "Back to projects" }
+        : { href: "/products", label: "Back to the shop" };
+  // A blank "Difficulty" row (or any other unset field) read as a missing
+  // value; drop rows without content instead of drawing an empty line.
+  const infoRows: [string, string][] = (
+    [
+      ["SKU", product.sku || product.id],
+      [
+        "Availability",
+        product.productType === "Project package"
+          ? "Quote-based package"
+          : product.stock > 0
+            ? `In stock (${product.stock} unit${product.stock === 1 ? "" : "s"})`
+            : "Out of stock — unavailable for direct purchase (ask about restock)",
+      ],
+      ["Delivery", product.delivery || "Nepal-wide courier"],
+      ["Warranty", product.warranty || "7-day replacement"],
+      ["Best for", product.audience || "Makers, schools, and engineers"],
+      ["Difficulty", product.difficulty],
+    ] as [string, string | undefined][]
+  ).filter((row): row is [string, string] => Boolean(row[1]));
   // U-24 (2026-09-24): canonical MakerWorld specs as rows; falls back to the
   // plain `specs` chip lines when a product was entered by hand.
   const specRows = product.importMeta?.structuredSpecs?.length
@@ -126,17 +160,19 @@ export default function ProductDetailPro({
     <div className="min-h-screen bg-mist">
       <div className="mx-auto max-w-7xl px-5 py-6 sm:py-8 lg:px-8">
         <Link
-          href="/products"
+          href={backLink.href}
           className="inline-flex items-center gap-1.5 text-sm font-bold text-navy transition hover:text-navy-dark"
         >
-          <ArrowLeft size={15} aria-hidden="true" /> Back to the shop
+          <ArrowLeft size={15} aria-hidden="true" /> {backLink.label}
         </Link>
         <div className="mt-6 grid gap-8 sm:mt-8 sm:gap-10 lg:grid-cols-[.9fr_1.1fr] lg:items-start">
           <div>
             <div className="relative z-0 aspect-square overflow-hidden rounded-2xl bg-white ring-1 ring-line sm:rounded-3xl">
               <Image
-                src={images[activeImage] || "/placeholder.jpg"}
-                alt={`${product.name} photo ${activeImage + 1}`}
+                src={mainImage}
+                alt={
+                  images.length > 0 ? `${product.name} photo ${activeImage + 1}` : fallbackMedia.alt
+                }
                 fill
                 priority
                 sizes="(max-width: 1024px) 100vw, 40vw"
@@ -157,7 +193,7 @@ export default function ProductDetailPro({
                     }`}
                   >
                     <Image
-                      src={src || "/placeholder.jpg"}
+                      src={src || fallbackMedia.src}
                       alt=""
                       fill
                       sizes="80px"
@@ -311,21 +347,7 @@ export default function ProductDetailPro({
             Product information
           </p>
           <dl className="mt-3 grid gap-x-8 gap-y-2 sm:grid-cols-2">
-            {[
-              ["SKU", product.sku || product.id],
-              [
-                "Availability",
-                product.productType === "Project package"
-                  ? "Quote-based package"
-                  : product.stock > 0
-                    ? `In stock (${product.stock} unit${product.stock === 1 ? "" : "s"})`
-                    : "Out of stock — unavailable for direct purchase (ask about restock)",
-              ],
-              ["Delivery", product.delivery || "Nepal-wide courier"],
-              ["Warranty", product.warranty || "7-day replacement"],
-              ["Best for", product.audience || "Makers, schools, and engineers"],
-              ["Difficulty", product.difficulty],
-            ].map(([label, value]) => (
+            {infoRows.map(([label, value]) => (
               <div
                 key={label}
                 className="flex items-baseline justify-between gap-4 border-b border-line py-1.5"

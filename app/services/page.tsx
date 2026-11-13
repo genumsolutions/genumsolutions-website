@@ -99,6 +99,19 @@ export default async function ServicesPage() {
     getPilotCosts(),
     getCurriculumHighlights(),
   ]);
+  // The total used to be typed into this file, so it kept claiming NPR 8,40,000
+  // after an admin edited a pilot line. Add the rows up only while every cost is
+  // a plain NPR amount; otherwise say the total is quoted per proposal rather
+  // than print a number the table contradicts.
+  const pilotAmounts = pilotCosts.map(({ cost }) =>
+    /^NPR [\d,]+$/.test(cost.trim()) ? Number(cost.replace(/[^\d]/g, "")) : NaN
+  );
+  const pilotTotal =
+    pilotAmounts.length > 0 && pilotAmounts.every((amount) => amount > 0)
+      ? new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(
+          pilotAmounts.reduce((sum, amount) => sum + amount, 0)
+        )
+      : null;
   return (
     <PageShell>
       <PageIntro
@@ -111,11 +124,17 @@ export default async function ServicesPage() {
       <section id="services" className="mx-auto max-w-7xl px-5 py-10 sm:py-14 lg:px-8">
         <p className="text-xs font-black uppercase tracking-[.24em] text-navy">What we offer</p>
         <h2 className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl">
-          Our Services
+          Services you can book.
         </h2>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
+          Every service carries its price so you can compare before asking for a quote. Filter the
+          grid by category to narrow it down.
+        </p>
         <ServicesGrid services={services} />
 
-        <div className="mt-12 grid gap-8 border-y border-line py-8 sm:py-10 lg:grid-cols-[.8fr_1.2fr]">
+        {/* One panel instead of a full-width rule: the next section already draws
+            a top border, so the old border-y left a double line on the page. */}
+        <div className="mt-10 grid gap-6 rounded-2xl border border-line bg-mist p-5 sm:p-6 lg:grid-cols-[.8fr_1.2fr] lg:gap-10">
           <div>
             <p className="text-xs font-black uppercase tracking-[.24em] text-navy">How it works</p>
             <h3 className="mt-3 font-display text-2xl font-bold sm:text-3xl">
@@ -149,17 +168,14 @@ export default async function ServicesPage() {
             Learning streams
           </h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
-            Seven lab tracks, each backed by a real kit, a real project in the workshop, and a
-            Control Panel window learners can drive.
+            {streams.length} lab tracks, each backed by a real kit, a real project in the workshop,
+            and a Control Panel window learners can drive.
           </p>
           <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {streams.map((stream) => {
               const Icon = stream.icon;
               return (
-                <article
-                  key={stream.id}
-                  className="rounded-2xl border border-line bg-white p-5 shadow-card"
-                >
+                <article key={stream.id} className="rounded-2xl border border-line bg-white p-5">
                   <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-mist text-navy">
                     <Icon size={16} aria-hidden="true" />
                   </span>
@@ -188,12 +204,24 @@ export default async function ServicesPage() {
             Training programs
           </p>
           <h2 className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl">
-            Programs that Build Careers
+            Programs that build careers.
           </h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
             GENUM&apos;s source curriculum combines 100+ age-banded STEM projects with modular
             robotics, teacher enablement, and measurable pilot support.
           </p>
+          {trainingPrograms.length === 0 && (
+            <p className="mt-8 rounded-2xl border border-line bg-white p-5 text-sm leading-6 text-slate-600">
+              The current program schedule is being refreshed.{" "}
+              <Link
+                href="/contact"
+                className="font-bold text-navy underline decoration-gold decoration-2 underline-offset-4"
+              >
+                Ask for dates and the outline
+              </Link>{" "}
+              and we will send what is running next.
+            </p>
+          )}
           <div className="mt-8 grid gap-4 md:grid-cols-2">
             {trainingPrograms.map((program) => (
               <ArticleCard
@@ -220,82 +248,113 @@ export default async function ServicesPage() {
       </section>
 
       {/* ─── School Packages & Pilot Costs ─── */}
-      <section id="pilots" className="mx-auto max-w-7xl px-5 py-10 sm:py-14 lg:px-8">
-        <div className="grid gap-8 sm:gap-10 lg:grid-cols-[.9fr_1.1fr]">
+      <section id="pilots" className="mx-auto max-w-7xl px-5 pb-14 pt-10 sm:pt-14 lg:px-8">
+        {/* The section used to open inside its left column, so "Illustrative
+            pilot costing" was an h2 competing with "STEM Project Highlights"
+            as a peer. One heading owns the section; the columns carry h3s. */}
+        <p className="text-xs font-black uppercase tracking-[.24em] text-navy">
+          School packages · pilot costing
+        </p>
+        <h2 className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl">
+          A transparent starting point for a school proposal.
+        </h2>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
+          The source proposal models a three-classroom pilot with 30 kits. These figures are
+          illustrative, shown in NPR for planning, and confirmed after scope, taxes, delivery, and
+          local procurement review.
+        </p>
+
+        <div className="mt-8 grid gap-8 sm:gap-10 lg:grid-cols-[.9fr_1.1fr]">
           <div className="min-w-0">
-            <p className="text-xs font-black uppercase tracking-[.24em] text-navy">
+            <h3 className="font-display text-xl font-bold tracking-tight text-ink">
               Illustrative pilot costing
+            </h3>
+            <p className="mt-4 font-display text-2xl font-bold text-navy sm:text-3xl">
+              {pilotTotal ? (
+                <>
+                  NPR {pilotTotal}{" "}
+                  <span className="font-sans text-sm font-normal text-slate-500">
+                    illustrative total
+                  </span>
+                </>
+              ) : (
+                <span className="font-sans text-base font-bold text-slate-500">
+                  Priced per proposal
+                </span>
+              )}
             </p>
-            <h2 className="mt-3 font-display text-2xl font-bold tracking-tight sm:text-3xl">
-              A transparent starting point for a school proposal.
-            </h2>
-            <p className="mt-4 leading-7 text-slate-600">
-              The source proposal models a three-classroom pilot with 30 kits. These figures are
-              illustrative, shown in NPR for planning, and confirmed after scope, taxes, delivery,
-              and local procurement review.
-            </p>
-            <p className="mt-5 font-display text-2xl font-bold text-navy sm:text-3xl">
-              NPR 8,40,000{" "}
-              <span className="font-sans text-sm font-normal text-slate-500">
-                illustrative total
-              </span>
-            </p>
-            <div className="mt-8 overflow-x-auto">
-              <table className="w-full min-w-[320px] sm:min-w-[400px] text-left text-sm">
-                <caption className="sr-only">
-                  Illustrative three-classroom pilot cost breakdown in NPR
-                </caption>
-                <thead>
-                  <tr className="border-b border-line text-xs uppercase tracking-wider text-slate-400">
-                    <th scope="col" className="py-2 pr-4 font-bold">
-                      Line item
-                    </th>
-                    <th scope="col" className="py-2 font-bold">
-                      Cost
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pilotCosts.map(({ item, cost, note }) => (
-                    <tr key={item} className="border-b border-line last:border-b-0">
-                      <th scope="row" className="py-3 pr-4 align-top font-semibold text-ink">
-                        {item}
-                        <span className="block text-xs font-normal leading-5 text-slate-500">
-                          {note}
-                        </span>
+            {pilotCosts.length === 0 && (
+              <p className="mt-6 rounded-2xl border border-line bg-white p-5 text-sm leading-6 text-slate-600">
+                Line-item costing is prepared with each proposal — request one and we will list
+                kits, logistics and training separately.
+              </p>
+            )}
+            {pilotCosts.length > 0 && (
+              <div className="mt-6 overflow-x-auto">
+                <table className="w-full min-w-[320px] sm:min-w-[400px] text-left text-sm">
+                  <caption className="sr-only">
+                    Illustrative three-classroom pilot cost breakdown in NPR
+                  </caption>
+                  <thead>
+                    <tr className="border-b border-line text-xs uppercase tracking-wider text-slate-400">
+                      <th scope="col" className="py-2 pr-4 font-bold">
+                        Line item
                       </th>
-                      <td className="py-3 align-top font-display font-bold">{cost}</td>
+                      <th scope="col" className="py-2 font-bold">
+                        Cost
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {pilotCosts.map(({ item, cost, note }) => (
+                      <tr key={item} className="border-b border-line last:border-b-0">
+                        <th scope="row" className="py-3 pr-4 align-top font-semibold text-ink">
+                          {item}
+                          <span className="block text-xs font-normal leading-5 text-slate-500">
+                            {note}
+                          </span>
+                        </th>
+                        <td className="py-3 align-top font-display font-bold">{cost}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
           <div className="min-w-0">
-            <h3 className="font-display text-2xl font-bold tracking-tight">
-              STEM Project Highlights
+            <h3 className="font-display text-xl font-bold tracking-tight text-ink">
+              STEM project highlights
             </h3>
             <p className="mt-3 text-sm leading-6 text-slate-600">
               Age-banded project examples from our 100+ project curriculum catalog.
             </p>
-            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {stemProjectHighlights.map(({ ageBand, items }) => (
-                <div key={ageBand} className="rounded-2xl border border-line bg-white p-5">
-                  <p className="text-xs font-black uppercase tracking-widest text-gold">
-                    {ageBand}
-                  </p>
-                  <ul className="mt-3 space-y-1.5 text-sm leading-6 text-slate-600">
-                    {items.map((project) => (
-                      <li key={project}>{project}</li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
+            {stemProjectHighlights.length === 0 && (
+              <p className="mt-6 rounded-2xl border border-line bg-white p-5 text-sm leading-6 text-slate-600">
+                Age-band examples are being updated. Ask for the curriculum outline and we will send
+                the current project list.
+              </p>
+            )}
+            {stemProjectHighlights.length > 0 && (
+              <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {stemProjectHighlights.map(({ ageBand, items }) => (
+                  <div key={ageBand} className="rounded-2xl border border-line bg-white p-5">
+                    <p className="text-xs font-black uppercase tracking-widest text-gold">
+                      {ageBand}
+                    </p>
+                    <ul className="mt-3 space-y-1.5 text-sm leading-6 text-slate-600">
+                      {items.map((project) => (
+                        <li key={project}>{project}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 href="/contact"
-                className="inline-flex h-12 items-center rounded-full bg-navy px-6 text-sm font-bold text-white transition hover:bg-navy-dark"
+                className="inline-flex h-12 items-center rounded-full bg-navy px-6 text-sm font-black text-white transition hover:bg-navy-dark"
               >
                 Request a school proposal
               </Link>

@@ -77,12 +77,14 @@ export default function IotRemote() {
   const category = PROJECT_CATEGORIES.find((c) => c.slug === slug) ?? PROJECT_CATEGORIES[0]!;
 
   return (
-    <section className="mx-auto max-w-7xl px-5 py-10 lg:px-8 lg:py-12">
-      <p className="text-[10px] font-black uppercase tracking-widest text-navy">Control Panel</p>
-      <h2 className="mt-2 max-w-2xl font-display text-3xl font-bold text-ink lg:text-4xl">
+    <section className="mx-auto max-w-7xl px-5 py-10 sm:py-14 lg:px-8">
+      <p className="text-xs font-black uppercase tracking-[.24em] text-navy">Control Panel</p>
+      {/* U-47: this is the page's only heading, so it is the h1 — the fleet
+          block further down used to supply one via <PageIntro> mid-page. */}
+      <h1 className="mt-2 max-w-2xl font-display text-2xl font-bold tracking-tight text-ink sm:text-3xl">
         Test &amp; control your projects.
-      </h2>
-      <p className="mt-4 max-w-2xl text-base leading-7 text-muted lg:text-lg">
+      </h1>
+      <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">
         {REMOTE_CONTROL_ENABLED
           ? "Pick a project category, connect a device over the cloud relay, and drive or operate it live."
           : "Live control from the website is paused for now — a public web page cannot reach a car on your local network. Drive your projects from the GENUM app over Bluetooth or WiFi."}
@@ -113,7 +115,7 @@ export default function IotRemote() {
       {REMOTE_CONTROL_ENABLED ? (
         <CategoryControlPanel key={category.slug} category={category} />
       ) : (
-        <section className="mt-6 rounded-2xl border border-line bg-white p-5 shadow-card lg:p-8">
+        <section className="mt-6 rounded-2xl border border-line bg-white p-5 sm:p-6">
           <div className="flex items-center gap-2">
             <span className="h-2.5 w-2.5 rounded-full bg-border" />
             <p className="text-sm font-bold text-ink">Remote control paused</p>
