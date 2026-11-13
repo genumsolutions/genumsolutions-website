@@ -195,7 +195,12 @@ export async function PUT(request: Request) {
             : Math.max(0, Math.round(number(item.designBaseCharge))),
         finishingCharges: Array.isArray(item.finishingCharges)
           ? (item.finishingCharges as PrintSettings["finishingCharges"])
-              .filter((charge) => charge && typeof charge.name === "string")
+              // A nameless charge cannot be matched by the calculator (and
+              // would save with an empty id), so drop it like project pricing does.
+              .filter(
+                (charge) =>
+                  charge && typeof charge.name === "string" && charge.name.trim().length > 0
+              )
               .map((charge) => ({
                 id: slug(charge.id) || slug(charge.name),
                 name: text(charge.name, 60),
