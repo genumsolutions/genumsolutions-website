@@ -77,6 +77,25 @@ export async function PUT(request: Request) {
     if (Number.isFinite(price)) product.price = price;
     if (Number.isInteger(stock)) product.stock = stock;
 
+    // 3D print fields (2026-11-13). Sanitized here rather than trusted from
+    // the editor because productToRow writes them straight to columns.
+    product.printCategory =
+      typeof body.printCategory === "string" ? body.printCategory.trim().slice(0, 80) : "";
+    product.material = typeof body.material === "string" ? body.material.trim().slice(0, 80) : "";
+    product.dimensions =
+      typeof body.dimensions === "string" ? body.dimensions.trim().slice(0, 120) : "";
+    const weightGrams = Number(body.weightGrams);
+    product.weightGrams = Number.isFinite(weightGrams)
+      ? Math.min(1_000_000, Math.max(0, Math.round(weightGrams)))
+      : 0;
+    product.customization = Array.isArray(body.customization)
+      ? body.customization
+          .filter((line: unknown) => typeof line === "string" && line.trim())
+          .slice(0, 20)
+          .map((line: string) => line.slice(0, 120))
+      : [];
+    product.featuredPrint = body.featuredPrint === true;
+
     // W1 (2026-09-24) — link-import image parity: the editor seeds the image
     // field with the ORIGINAL third-party URL from the extracted page (e.g.
     // makerworld.com CDN). next/image + our CSP only allow our own Supabase

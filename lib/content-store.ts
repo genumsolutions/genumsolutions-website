@@ -61,6 +61,12 @@ type ProductRow = {
   image_url: string | null;
   gallery: string[] | null;
   import_meta: Record<string, unknown> | null;
+  print_category?: string | null;
+  material?: string | null;
+  dimensions?: string | null;
+  weight_grams?: number | null;
+  customization?: unknown;
+  featured_print?: boolean | null;
 };
 
 function rowToProduct(row: ProductRow): Product {
@@ -96,6 +102,12 @@ function rowToProduct(row: ProductRow): Product {
     note: row.note || "",
     description: row.description || "",
     specs: Array.isArray(row.specs) ? (row.specs as string[]) : [],
+    printCategory: row.print_category || "",
+    material: row.material || "",
+    dimensions: row.dimensions || "",
+    weightGrams: row.weight_grams ?? 0,
+    customization: Array.isArray(row.customization) ? (row.customization as string[]) : [],
+    featuredPrint: row.featured_print === true,
     audience: row.audience || "",
     difficulty: (row.difficulty as Product["difficulty"]) || "Beginner",
     warranty: row.warranty || "",
@@ -140,6 +152,12 @@ export function productToRow(product: Product) {
     note: product.note,
     description: product.description,
     specs: product.specs,
+    print_category: product.printCategory || "",
+    material: product.material || "",
+    dimensions: product.dimensions || "",
+    weight_grams: Math.max(0, Math.round(Number(product.weightGrams) || 0)),
+    customization: Array.isArray(product.customization) ? product.customization : [],
+    featured_print: product.featuredPrint === true,
     audience: product.audience,
     difficulty: product.difficulty,
     warranty: product.warranty,

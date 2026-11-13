@@ -21,6 +21,7 @@ import AdminActivity from "./admin/AdminActivity";
 import AdminOrders from "./admin/AdminOrders";
 import AdminFinance from "./admin/AdminFinance";
 import AdminProducts from "./admin/AdminProducts";
+import AdminPrint from "./admin/AdminPrint";
 import AdminProjectPackages from "./admin/AdminProjectPackages";
 import AdminServices from "./admin/AdminServices";
 import AdminJournal from "./admin/AdminJournal";
@@ -99,9 +100,11 @@ export default function AdminPanel({ initialProducts, currentRole }: Props) {
           />
         );
       case "3D Products":
+        // 2026-11-13: the tab now owns the whole print studio (catalog,
+        // categories, pricing, promotions, gallery, quote requests). The tab
+        // strip itself is unchanged, so the app parity tests still pass.
         return (
-          <AdminProducts
-            kind="models"
+          <AdminPrint
             products={products}
             onProductsChange={setProducts}
             setMessage={setMessage}

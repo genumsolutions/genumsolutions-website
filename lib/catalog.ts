@@ -33,6 +33,14 @@ export type Product = {
   note: string;
   description: string;
   specs: string[];
+  // 3D print fields (2026-11-13) — only meaningful on category "3D Models".
+  // Kept optional so non-print rows and older data stay valid.
+  printCategory?: string;
+  material?: string;
+  dimensions?: string;
+  weightGrams?: number;
+  customization?: string[];
+  featuredPrint?: boolean;
   audience: string;
   difficulty: "Beginner" | "Intermediate" | "Advanced" | "Professional";
   warranty: string;
@@ -131,22 +139,19 @@ export function applyScope(all: Product[], scope: string): Product[] {
       .trim()
       .toLowerCase();
   if (scope === "models") return all.filter((p) => norm(p.category) === "3d models");
-  if (scope === "cars")
-    return all.filter((p) => norm(p.project_category) === "robo car");
+  if (scope === "cars") return all.filter((p) => norm(p.project_category) === "robo car");
   if (scope === "projects")
     return all.filter(
       (p) =>
         norm(p.productType) === "project package" ||
         norm(p.category) === "pre-packaged kits" ||
-        norm(p.category) === "prepackaged kits",
+        norm(p.category) === "prepackaged kits"
     );
   return all.filter(
     (p) =>
-      !["robot cars", "pre-packaged kits", "prepackaged kits"].includes(
-        norm(p.category),
-      ) &&
+      !["robot cars", "pre-packaged kits", "prepackaged kits"].includes(norm(p.category)) &&
       norm(p.category) !== "3d models" &&
-      norm(p.productType) !== "project package",
+      norm(p.productType) !== "project package"
   );
 }
 
@@ -155,7 +160,7 @@ export function applyScope(all: Product[], scope: string): Product[] {
 // kit that is not a package is listed with the cars. `components` is the
 // fallback (everything the other branches exclude).
 export function scopeForProduct(
-  product: Pick<Product, "category" | "productType" | "project_category">,
+  product: Pick<Product, "category" | "productType" | "project_category">
 ): CatalogScope {
   const norm = (v: unknown) =>
     String(v ?? "")

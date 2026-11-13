@@ -63,6 +63,14 @@ export default function AdminProducts({
   const fileInput = useRef<HTMLInputElement>(null);
   const linkInput = useRef<HTMLInputElement>(null);
 
+  // 3D print metadata (2026-11-13): the option lists come from the same tables
+  // the storefront reads, so a category renamed in Admin → 3D → Categories
+  // shows up in this select without a redeploy.
+  const [printOptions, setPrintOptions] = useState<{
+    categories: { id: string; name: string }[];
+    materials: { id: string; name: string }[];
+  }>({ categories: [], materials: [] });
+
   // U-35 (2026-09-25): owner asked to keep track of the new sources staff try
   // pasting. The edge function logs every preview; this surfaces the ones we
   // could NOT read, so the next provider gets added on evidence.
@@ -88,6 +96,28 @@ export default function AdminProducts({
     };
   }, []);
 
+  useEffect(() => {
+    if (!isModels) return;
+    let cancelled = false;
+    fetch("/api/admin/print")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return;
+        setPrintOptions({
+          categories: Array.isArray(data.categories)
+            ? data.categories.map((c: { id: string; name: string }) => ({ id: c.id, name: c.name }))
+            : [],
+          materials: Array.isArray(data.materials)
+            ? data.materials.map((m: { id: string; name: string }) => ({ id: m.id, name: m.name }))
+            : [],
+        });
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [isModels]);
+
   const catalogProducts = useMemo(() => products.filter(scopeFilter), [products, scopeFilter]);
   const categories = Array.from(
     new Set(catalogProducts.map((item) => item.category).filter(Boolean))
@@ -111,7 +141,7 @@ export default function AdminProducts({
     productPage * PAGE_SIZE
   );
 
-  function updateProduct(key: keyof Product, value: string | number | string[]) {
+  function updateProduct(key: keyof Product, value: string | number | string[] | boolean) {
     setProduct((current) => ({ ...current, [key]: value }));
   }
 
@@ -670,6 +700,85 @@ export default function AdminProducts({
                   className={`mt-2 w-full ${inputClass}`}
                 />
               </label>
+              {isModels && (
+                <fieldset className="min-w-0 rounded-xl border border-line p-4 sm:col-span-2">
+                  <legend className="px-1 text-sm font-bold">Print details</legend>
+                  <p className="text-xs font-normal text-muted">
+                    Shown on the /3d-printing cards, the featured row and the product page. Weight
+                    drives the calculator estimate.
+                  </p>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    <label className="min-w-0 text-sm font-bold">
+                      Print category
+                      <select
+                        value={product.printCategory ?? ""}
+                        onChange={(e) => updateProduct("printCategory", e.target.value)}
+                        className={`mt-2 w-full ${inputClass}`}
+                      >
+                        <option value="">Uncategorised</option>
+                        {printOptions.categories.map((cat) => (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="min-w-0 text-sm font-bold">
+                      Material
+                      <input
+                        list="print-material-suggestions"
+                        value={product.material ?? ""}
+                        onChange={(e) => updateProduct("material", e.target.value)}
+                        placeholder="PLA, PETG, or both"
+                        className={`mt-2 w-full ${inputClass}`}
+                      />
+                      <datalist id="print-material-suggestions">
+                        {printOptions.materials.map((mat) => (
+                          <option key={mat.id} value={mat.name} />
+                        ))}
+                      </datalist>
+                    </label>
+                    <label className="min-w-0 text-sm font-bold">
+                      Dimensions
+                      <input
+                        value={product.dimensions ?? ""}
+                        onChange={(e) => updateProduct("dimensions", e.target.value)}
+                        placeholder="e.g. 12 × 8 × 10 cm"
+                        className={`mt-2 w-full ${inputClass}`}
+                      />
+                    </label>
+                    <label className="min-w-0 text-sm font-bold">
+                      Weight (grams)
+                      <input
+                        type="number"
+                        min={0}
+                        value={product.weightGrams ?? 0}
+                        onChange={(e) => updateProduct("weightGrams", Number(e.target.value))}
+                        className={`mt-2 w-full ${inputClass}`}
+                      />
+                    </label>
+                    <label className="min-w-0 text-sm font-bold sm:col-span-2">
+                      Customisation options, one per line
+                      <textarea
+                        value={(product.customization ?? []).join("\n")}
+                        onChange={(e) => updateProduct("customization", e.target.value.split("\n"))}
+                        rows={3}
+                        placeholder="Material choice\nSize scaling\nName engraving"
+                        className={`mt-2 w-full ${inputClass}`}
+                      />
+                    </label>
+                    <label className="flex items-center gap-2 text-sm font-bold sm:col-span-2">
+                      <input
+                        type="checkbox"
+                        checked={product.featuredPrint === true}
+                        onChange={(e) => updateProduct("featuredPrint", e.target.checked)}
+                        className="h-4 w-4"
+                      />{" "}
+                      Feature this model on /3d-printing
+                    </label>
+                  </div>
+                </fieldset>
+              )}
               <div className="min-w-0 sm:col-span-2">
                 <p className="text-sm font-bold">Product image</p>
                 <div className="mt-2 flex min-w-0 flex-wrap items-center gap-3">

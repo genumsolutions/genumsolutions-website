@@ -35,6 +35,12 @@ export function revalidateProducts(productId?: string): void {
   if (productId) safe(`/products/${productId}`);
 }
 
+// 3D print studio content (categories, rates/settings, promotions, gallery)
+// all renders on /3d-printing; product rows route through revalidateProducts.
+export function revalidatePrint(): void {
+  safe("/3d-printing");
+}
+
 export function revalidateServices(): void {
   safe("/services");
 }
