@@ -6,6 +6,7 @@ import {
   getPrintContent,
   getPrintCosting,
   getPrintQuoteRequests,
+  getPrintSettings,
   signedQuoteFiles,
   savePrintCategory,
   savePrintGalleryItem,
@@ -174,10 +175,24 @@ export async function PUT(request: Request) {
     }
 
     if (resource === "settings") {
+      // Merge with the stored row: a save that omits a field must keep it
+      // (a partial save used to blank the finishing charges, the bulk tiers
+      // and the disclaimer). `undefined` = not sent; `null` is an explicit
+      // clear for the string fields.
+      const existing = await getPrintSettings();
       const settings: PrintSettings = {
-        calculatorEnabled: item.calculatorEnabled === true,
-        minimumOrder: Math.max(0, Math.round(number(item.minimumOrder))),
-        designBaseCharge: Math.max(0, Math.round(number(item.designBaseCharge))),
+        calculatorEnabled:
+          typeof item.calculatorEnabled === "boolean"
+            ? item.calculatorEnabled
+            : existing.calculatorEnabled,
+        minimumOrder:
+          item.minimumOrder === undefined
+            ? existing.minimumOrder
+            : Math.max(0, Math.round(number(item.minimumOrder))),
+        designBaseCharge:
+          item.designBaseCharge === undefined
+            ? existing.designBaseCharge
+            : Math.max(0, Math.round(number(item.designBaseCharge))),
         finishingCharges: Array.isArray(item.finishingCharges)
           ? (item.finishingCharges as PrintSettings["finishingCharges"])
               .filter((charge) => charge && typeof charge.name === "string")
@@ -187,7 +202,7 @@ export async function PUT(request: Request) {
                 amount: Math.max(0, Math.round(number(charge.amount))),
               }))
               .slice(0, 20)
-          : [],
+          : existing.finishingCharges,
         bulkTiers: Array.isArray(item.bulkTiers)
           ? (item.bulkTiers as PrintSettings["bulkTiers"])
               .map((tier) => ({
@@ -195,16 +210,19 @@ export async function PUT(request: Request) {
                 discountPercent: Math.min(90, Math.max(0, number(tier.discountPercent))),
               }))
               .slice(0, 10)
-          : [],
-        disclaimer: text(item.disclaimer, 600),
-        heroImage: text(item.heroImage, 600),
-        materialsIntro: text(item.materialsIntro, 1200),
+          : existing.bulkTiers,
+        disclaimer:
+          item.disclaimer === undefined ? existing.disclaimer : text(item.disclaimer, 600),
+        heroImage: item.heroImage === undefined ? existing.heroImage : text(item.heroImage, 600),
+        materialsIntro:
+          item.materialsIntro === undefined
+            ? existing.materialsIntro
+            : text(item.materialsIntro, 1200),
         // Approval is owned by the dedicated `pricing` action; a plain settings
-        // save must not flip it (or erase who approved it).
-        pricingStatus: item.pricingStatus === "approved" ? "approved" : "draft",
-        pricingApprovedAt:
-          typeof item.pricingApprovedAt === "string" ? item.pricingApprovedAt : null,
-        pricingApprovedBy: text(item.pricingApprovedBy, 120),
+        // save must never flip it or erase who approved it.
+        pricingStatus: existing.pricingStatus,
+        pricingApprovedAt: existing.pricingApprovedAt,
+        pricingApprovedBy: existing.pricingApprovedBy,
       };
       await savePrintSettings(settings);
       await logActivity({

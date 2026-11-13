@@ -267,6 +267,25 @@ export function rowToQuote(row: Record<string, unknown>): PrintQuoteRequest {
 }
 
 /**
+ * Stored print settings exactly as saved — the staff view, with no
+ * publication gate applied. Used by the admin route so a save can merge the
+ * fields the request did not send instead of blanking them.
+ */
+export async function getPrintSettings(): Promise<PrintSettings> {
+  if (!supabaseConfigured()) return defaultPrintSettings;
+  const { data, error } = await createServiceClient()
+    .from("print_settings")
+    .select("*")
+    .eq("id", 1)
+    .maybeSingle();
+  if (error) {
+    console.warn("print_settings read failed", error);
+    return defaultPrintSettings;
+  }
+  return rowToSettings((data as Record<string, unknown> | null) ?? null);
+}
+
+/**
  * Everything the public page needs, in one call. Each table is optional: a
  * missing migration or an empty table falls back to bundled defaults instead
  * of failing the render.
