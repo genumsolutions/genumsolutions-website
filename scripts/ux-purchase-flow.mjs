@@ -4,6 +4,9 @@
 // service-role key so scheduled runs never leave junk in production):
 //   1. PURCHASE: signup → build list → checkout → COD submit
 //      → /checkout/success?order=… → order row verified.
+//      The probe item is chosen from the live /api/products catalog (first
+//      in-stock, priced, non-project product) so the run does not go red just
+//      because one hardcoded product sold out.
 //   2. CONTACT: form submit → success status → row verified in
 //      customer_messages → deleted.
 //   3. NEWSLETTER: footer opt-in → done state → row verified in
@@ -46,6 +49,32 @@ function findChrome() {
           ];
   for (const c of candidates) if (c && existsSync(c)) return c;
   return puppeteer.executablePath();
+}
+
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+// The probe item must be purchasable RIGHT NOW. A hardcoded slug (this flow
+// used arduino-uno) turns the whole job red the moment that item sells out,
+// which says nothing about the site. Pick a live one from the public catalog
+// using the same rules checkout enforces: active, not a project package, real
+// stock, real price.
+async function pickProbeProduct() {
+  const res = await fetch(`${BASE}/api/products`, { headers: { Accept: "application/json" } });
+  if (!res.ok) throw new Error(`/api/products returned ${res.status}`);
+  const products = await res.json();
+  if (!Array.isArray(products)) throw new Error("/api/products did not return an array");
+  const usable = products.filter(
+    (p) =>
+      p?.id &&
+      p.active !== false &&
+      p.productType !== "Project package" &&
+      Number(p.stock) > 0 &&
+      Number(p.price) > 0
+  );
+  // Shortest plain name first (the checkout assertion matches on it), then by
+  // id so repeated runs pick the same item.
+  usable.sort((a, b) => String(a.name).length - String(b.name).length || a.id.localeCompare(b.id));
+  return usable[0] ?? null;
 }
 
 function loadServiceKey() {
@@ -104,8 +133,20 @@ try {
   }, EMAIL);
   step("signup", reg === 200, `status ${reg}`);
 
-  // 2. add to build list from the product page
-  await page.goto(BASE + "/products/arduino-uno", { waitUntil: "networkidle2", timeout: 60000 });
+  // 2. add to build list from the product page (probe = any in-stock item)
+  let probe = null;
+  let probeNote = "";
+  try {
+    probe = await pickProbeProduct();
+    probeNote = probe ? `${probe.id} (stock ${probe.stock})` : "no in-stock purchasable product";
+  } catch (e) {
+    probeNote = `catalog lookup failed: ${String(e).slice(0, 120)}`;
+  }
+  if (!probe) console.log(`WARN: ${probeNote} — the purchase flow cannot run`);
+  await page.goto(`${BASE}/products/${probe ? probe.id : ""}`, {
+    waitUntil: "networkidle2",
+    timeout: 60000,
+  });
   const addBtn = await page.evaluate(() => {
     const a = [...document.querySelectorAll("a")].find((x) =>
       /add to build list/i.test(x.textContent || "")
@@ -117,18 +158,24 @@ try {
   await new Promise((r) => setTimeout(r, 1500));
   step(
     "add to build list",
-    addBtn && page.url().includes("/checkout"),
-    page.url().replace(BASE, "")
+    !!probe && addBtn && page.url().includes("/checkout"),
+    probe ? `${probeNote} — ${page.url().replace(BASE, "")}` : probeNote
   );
 
   // 3. checkout shows the item
   await page.goto(BASE + "/checkout", { waitUntil: "networkidle2", timeout: 60000 });
   await new Promise((r) => setTimeout(r, 1500));
-  const ck = await page.evaluate(() => {
-    const t = document.body.innerText;
-    return { hasItem: /arduino/i.test(t), hasCod: /pay on delivery|reserve order/i.test(t) };
-  });
-  step("checkout shows item", ck.hasItem);
+  const ck = await page.evaluate(
+    (pattern) => {
+      const t = document.body.innerText;
+      return {
+        hasItem: pattern ? new RegExp(pattern, "i").test(t) : false,
+        hasCod: /pay on delivery|reserve order/i.test(t),
+      };
+    },
+    probe ? escapeRegex(String(probe.name).trim()) : null
+  );
+  step("checkout shows item", ck.hasItem, probe ? probe.name : "no probe item");
   step("COD button present", ck.hasCod);
 
   // 4. fill customer details
@@ -481,7 +528,10 @@ try {
   }
 
   // ---------- FLOW 6: CART QUANTITY EDIT (checkout qty controls) ----------
-  await page.goto(BASE + "/products/arduino-uno", { waitUntil: "networkidle2", timeout: 60000 });
+  await page.goto(`${BASE}/products/${probe ? probe.id : ""}`, {
+    waitUntil: "networkidle2",
+    timeout: 60000,
+  });
   await page.evaluate(() => {
     const a = [...document.querySelectorAll("a")].find((x) =>
       /add to build list/i.test(x.textContent || "")
