@@ -14,11 +14,17 @@ import {
   panelHeader,
   panelRow,
 } from "./admin-helpers";
-import { tabBase, tabActive, tabInactive } from "../../lib/styles";
+import { tabBase, tabActive, tabInactive } from "../lib/styles";
 
 // U-UI2 (2026-11-14): sub-tabs for Orders tab — mirroring the 3D Products pattern.
 // Only one sub-tab is visible at a time, sub-tabs are sticky while scrolling.
-const ORDER_SUBTABS = ["All", "Pending", "Paid", "Fulfilled", "Cancelled"] as const;
+const ORDER_SUBTABS = [
+  "All",
+  "Pending",
+  "Paid",
+  "Fulfilled",
+  "Cancelled",
+] as const;
 type OrderSubTab = (typeof ORDER_SUBTABS)[number];
 
 type OrderRow = OrderPage["orders"][number];
@@ -34,7 +40,6 @@ export default function AdminOrders({ canDelete }: { canDelete: boolean }) {
   const [orderQuery, setOrderQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [subTab, setSubTab] = useState<OrderSubTab>("All");
-  const [expandedId, setExpandedId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     void loadOrders(1);
@@ -109,7 +114,7 @@ export default function AdminOrders({ canDelete }: { canDelete: boolean }) {
             aria-label="Order sub-tabs"
             className="flex items-center gap-2 overflow-x-auto pb-0.5 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
-            {ORDER_SUBTABS.map((sub: OrderSubTab, _: number) => (
+            {ORDER_SUBTABS.map((sub: OrderSubTab, i: number) => (
               <button
                 key={sub}
                 role="tab"
@@ -169,7 +174,9 @@ export default function AdminOrders({ canDelete }: { canDelete: boolean }) {
           {orderData.orders.map((order) => {
             const orderStatus = order.status?.toLowerCase() as keyof typeof statusMap;
             const matchesSubTab =
-              subTab === "All" ? true : (statusMap[orderStatus] ?? "All") === subTab;
+              subTab === "All"
+                ? true
+                : (statusMap[orderStatus] ?? "All") === subTab;
 
             return matchesSubTab ? (
               <li key={order.id} className={panelRow}>
@@ -201,7 +208,7 @@ export default function AdminOrders({ canDelete }: { canDelete: boolean }) {
                     </select>
                     <button
                       onClick={() =>
-                        setExpandedId((current) => (current === order.id ? undefined : order.id))
+                        setExpandedId(current => current === order.id ? null : order.id)
                       }
                       aria-expanded={expandedId === order.id}
                       className="min-h-[36px] rounded-lg border border-line px-3 py-1 text-xs font-bold text-navy transition hover:border-navy"
@@ -220,7 +227,10 @@ export default function AdminOrders({ canDelete }: { canDelete: boolean }) {
                 </div>
                 <ul className="mt-2 space-y-1 text-xs leading-5 text-slate-600">
                   {order.items.map((item) => (
-                    <li key={`${order.id}-${item.name}`} className="truncate">
+                    <li
+                      key={`${order.id}-${item.name}`}
+                      className="truncate"
+                    >
                       {item.quantity} × {item.name} ({formatNPR(item.price * item.quantity)})
                     </li>
                   ))}
@@ -238,28 +248,37 @@ export default function AdminOrders({ canDelete }: { canDelete: boolean }) {
                       {(order as OrderRow & { phone?: string }).phone || "—"}
                     </dd>
                     <dt className="font-bold uppercase tracking-wide text-slate-500">Address</dt>
-                    <dd className="break-words text-slate-700">{order.address || "—"}</dd>
+                    <dd className="break-words text-slate-700">
+                      {order.address || "—"}
+                    </dd>
                     <dt className="font-bold uppercase tracking-wide text-slate-500">Provider</dt>
                     <dd className="text-slate-700">
                       {order.provider}
-                      {(order as OrderRow & { providerRef?: string }).providerRef
+                      {(order as OrderRow & { providerRef?: string })
+                        .providerRef
                         ? ` · ref ${(order as OrderRow & { providerRef?: string }).providerRef}`
                         : ""}
                     </dd>
                     <dt className="font-bold uppercase tracking-wide text-slate-500">Placed</dt>
-                    <dd className="text-slate-700">{formatTimestamp(order.createdAt)}</dd>
+                    <dd className="text-slate-700">
+                      {formatTimestamp(order.createdAt)}
+                    </dd>
                     <dt className="font-bold uppercase tracking-wide text-slate-500">Items</dt>
                     <dd className="text-slate-700">
                       <ul className="space-y-0.5">
                         {order.items.map((item) => (
-                          <li key={`${order.id}-detail-${item.name}`}>
+                          <li
+                            key={`${order.id}-detail-${item.name}`}
+                          >
                             {item.quantity} × {item.name} @ {formatNPR(item.price)}
                           </li>
                         ))}
                       </ul>
                     </dd>
                     <dt className="font-bold uppercase tracking-wide text-slate-500">Total</dt>
-                    <dd className="font-black text-ink">{formatNPR(order.totalNpr)}</dd>
+                    <dd className="font-black text-ink">
+                      {formatNPR(order.totalNpr)}
+                    </dd>
                   </dl>
                 )}
               </li>
