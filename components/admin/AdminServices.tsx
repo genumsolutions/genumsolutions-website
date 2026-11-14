@@ -14,11 +14,18 @@ import {
   editorCardTitle,
   focusEditor,
   panelListSection,
+  panelId,
   panelTitle,
   PanelCard,
 } from "./admin-helpers";
+import { tabBase, tabActive, tabInactive } from "../../lib/styles";
 
 type Props = { setMessage: (msg: string) => void; canDelete: boolean };
+
+// U-UI2 (2026-11-14): sub-tabs for Services tab — mirroring the 3D Products pattern.
+// Only one sub-tab is visible at a time, sub-tabs are sticky while scrolling.
+const SERVICES_SUBTABS = ["General", "Pricing", "Settings"] as const;
+type ServicesSubTab = (typeof SERVICES_SUBTABS)[number];
 
 export default function AdminServices({ setMessage, canDelete }: Props) {
   const [services, setServices] = useState<Service[]>([]);
@@ -27,6 +34,7 @@ export default function AdminServices({ setMessage, canDelete }: Props) {
   const [previewService, setPreviewService] = useState<Service | null>(null);
   const [category, setCategory] = useState("All");
   const [busy, setBusy] = useState(false);
+  const [subTab, setSubTab] = useState<ServicesSubTab>("General");
 
   useEffect(() => {
     void fetch("/api/admin/services")
@@ -102,77 +110,124 @@ export default function AdminServices({ setMessage, canDelete }: Props) {
     }
   }
 
+  // Render Services sub-tab content
+  const renderServicesContent = () => {
+    if (!loaded) {
+      return <LoadingRow className="mt-3" />;
+    }
+    return (
+      <div className="mt-3 divide-y divide-line">
+        {categories.length > 0 && (
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            aria-label="Category filter"
+            className={`mt-3 w-full sm:w-48 ${inputClass}`}
+          >
+            <option value="All">All categories</option>
+            {categories.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
+        )}
+        {filteredServices.map((s) => (
+          <div key={s.id} className={`${cardRow} items-center`}>
+            <div className={cardRowText}>
+              <span className="block">
+                <strong>{s.name}</strong> <span className="text-slate-400">{s.priceLabel}</span>
+              </span>
+              {!s.active && (
+                <span className="ml-2 text-[10px] font-black uppercase text-red-500">inactive</span>
+              )}
+            </div>
+            <RowActions
+              actions={[
+                {
+                  label: "Edit",
+                  tone: "navy",
+                  onClick: () => {
+                    setService(s);
+                    focusEditor("service-editor");
+                  },
+                },
+                { label: "Preview", tone: "slate", onClick: () => setPreviewService(s) },
+                {
+                  label: s.active ? "Hide" : "Show",
+                  tone: "ink",
+                  onClick: () => void toggleServiceVisibility(s),
+                },
+                {
+                  label: "Delete",
+                  tone: "red",
+                  show: canDelete,
+                  onClick: () => removeService(s.id),
+                },
+              ]}
+            />
+          </div>
+        ))}
+        {filteredServices.length === 0 && <EmptyState>No services found.</EmptyState>}
+      </div>
+    );
+  };
+
+  const renderPricingContent = () => (
+    <PanelCard>
+      <h2 className={panelTitle}>Service Pricing</h2>
+      {/* Pricing details would go here */}
+      <p className="text-sm text-slate-500">Service pricing sub-tab content</p>
+    </PanelCard>
+  );
+
+  const renderSettingsContent = () => (
+    <PanelCard>
+      <h2 className={panelTitle}>Service Settings</h2>
+      {/* Settings would go here */}
+      <p className="text-sm text-slate-500">Service settings sub-tab content</p>
+    </PanelCard>
+  );
+
   return (
     <>
+      {/* U-UI2 sub-tabs strip - sticky, one at a time */}
+      <div className="sticky top-0 z-20 -mx-5 border-b border-line bg-white/95 px-5 backdrop-blur lg:-mx-8 lg:px-8">
+        <div
+          role="tablist"
+          aria-label="Services sub-tabs"
+          className="flex items-center gap-2 overflow-x-auto pb-0.5 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {SERVICES_SUBTABS.map((sub: ServicesSubTab, _: number) => (
+            <button
+              key={sub}
+              role="tab"
+              aria-selected={subTab === sub}
+              aria-controls={`services-subpanel-${panelId(sub)}`}
+              tabIndex={subTab === sub ? 0 : -1}
+              onClick={() => setSubTab(sub)}
+              className={`${tabBase} text-[10px] ${subTab === sub ? tabActive : tabInactive}`}
+            >
+              {sub}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="mt-4 grid min-w-0 gap-4 xl:grid-cols-[1fr_1.3fr]">
-        <section aria-label="Service list" className={panelListSection}>
-          <PanelCard>
-            <h2 className={panelTitle}>Services ({filteredServices.length})</h2>
-            {!loaded ? (
-              <LoadingRow className="mt-3" />
-            ) : (
-              <>
-                {categories.length > 0 && (
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    aria-label="Category filter"
-                    className={`mt-3 w-full sm:w-48 ${inputClass}`}
-                  >
-                    <option value="All">All categories</option>
-                    {categories.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
-                )}
-                <div className="mt-3 divide-y divide-line">
-                  {filteredServices.map((s) => (
-                    <div key={s.id} className={`${cardRow} items-center`}>
-                      <div className={cardRowText}>
-                        <span className="block">
-                          <strong>{s.name}</strong>{" "}
-                          <span className="text-slate-400">{s.priceLabel}</span>
-                        </span>
-                        {!s.active && (
-                          <span className="ml-2 text-[10px] font-black uppercase text-red-500">
-                            inactive
-                          </span>
-                        )}
-                      </div>
-                      <RowActions
-                        actions={[
-                          {
-                            label: "Edit",
-                            tone: "navy",
-                            onClick: () => {
-                              setService(s);
-                              focusEditor("service-editor");
-                            },
-                          },
-                          { label: "Preview", tone: "slate", onClick: () => setPreviewService(s) },
-                          {
-                            label: s.active ? "Hide" : "Show",
-                            tone: "ink",
-                            onClick: () => void toggleServiceVisibility(s),
-                          },
-                          {
-                            label: "Delete",
-                            tone: "red",
-                            show: canDelete,
-                            onClick: () => removeService(s.id),
-                          },
-                        ]}
-                      />
-                    </div>
-                  ))}
-                </div>
-                {filteredServices.length === 0 && <EmptyState>No services found.</EmptyState>}
-              </>
-            )}
-          </PanelCard>
-        </section>
+        {subTab === "General" && (
+          <section aria-label="Service list" className={panelListSection}>
+            <PanelCard>
+              <h2 className={panelTitle}>Services ({filteredServices.length})</h2>
+              {renderServicesContent()}
+            </PanelCard>
+          </section>
+        )}
+
+        {subTab === "Pricing" && renderPricingContent()}
+
+        {subTab === "Settings" && renderSettingsContent()}
+
         <section id="service-editor" aria-label="Service editor" className="min-w-0">
           <form onSubmit={saveServiceItem} className={editorCard}>
             <h2 className={editorCardTitle}>
@@ -279,6 +334,7 @@ export default function AdminServices({ setMessage, canDelete }: Props) {
           </form>
         </section>
       </div>
+
       {previewService &&
         createPortal(
           // Portal to <body>: the tab track's transform + overflow-hidden clips fixed

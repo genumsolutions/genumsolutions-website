@@ -354,3 +354,10 @@ export function EditorCard({
 }) {
   return <div className={`${editorCard} ${className}`.trim()}>{children}</div>;
 }
+
+export function panelId(subTab: string) {
+  return subTab
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "");
+}

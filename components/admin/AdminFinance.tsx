@@ -3,15 +3,18 @@
 import { useEffect, useState } from "react";
 import { formatNPR } from "../../lib/catalog";
 import type { DashboardStats } from "./admin-types";
-import { EmptyState, LoadingRow, PanelCard, Stat, panelTitle } from "./admin-helpers";
+import { EmptyState, LoadingRow, PanelCard, Stat, panelId, panelTitle } from "./admin-helpers";
+import { tabBase, tabActive, tabInactive } from "../../lib/styles";
 
-// 2026-11-13 (site polish batch 4): this is now the ONLY place the console
-// shows money. It used to duplicate the Dashboard's revenue/transaction tiles
-// (and the Dashboard duplicated these), so the two tabs could disagree while
-// their separate fetches were in flight. Conversion moved here with them.
+// U-UI2 (2026-11-14): sub-tabs for Finance tab — mirroring the 3D Products pattern.
+// Only one sub-tab is visible at a time, sub-tabs are sticky while scrolling.
+const FINANCE_SUBTABS = ["Overview", "Transactions", "Payments"] as const;
+type FinanceSubTab = (typeof FINANCE_SUBTABS)[number];
+
 export default function AdminFinance() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [failed, setFailed] = useState(false);
+  const [subTab, setSubTab] = useState<FinanceSubTab>("Overview");
 
   useEffect(() => {
     void fetch("/api/admin/stats")
@@ -30,63 +33,76 @@ export default function AdminFinance() {
 
   return (
     <section aria-label="Finance overview" className="mt-4 space-y-4">
-      <PanelCard>
-        <h2 className={panelTitle}>Finance &amp; Transactions</h2>
-        {!stats && !failed && <LoadingRow className="mt-3" />}
-        {!stats && failed && (
-          <EmptyState className="mt-3">
-            Finance figures could not be loaded. Reload the page to try again.
-          </EmptyState>
-        )}
-        {stats && (
-          <>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <Stat label="Total revenue" value={formatNPR(stats.revenue)} />
-              <Stat label="Revenue today" value={formatNPR(stats.revenueToday)} />
-              <Stat
-                label="Transactions"
-                value={stats.succeededTransactions}
-                sub={`${stats.totalTransactions} total · ${stats.totalTransactions - stats.succeededTransactions} pending/failed`}
-              />
-              <Stat label="Conversion" value={conversionRate} sub="Paid orders / users" />
-            </div>
-            {stats.totalTransactions === 0 && (
-              <EmptyState className="mt-4">
-                No payments recorded yet. Cash-on-delivery and gateway orders appear here as soon as
-                the first one is placed.
-              </EmptyState>
-            )}
-          </>
-        )}
-      </PanelCard>
-      <PanelCard>
-        <h3 className="font-display text-lg font-bold">Order Status Breakdown</h3>
-        {!stats ? (
-          <LoadingRow className="mt-3" />
-        ) : stats.totalOrders === 0 ? (
-          <EmptyState className="mt-3">
-            No orders yet — the pending / paid / fulfilled split appears with the first order.
-          </EmptyState>
-        ) : (
-          <div className="mt-3 flex flex-wrap gap-3">
-            {[
-              { key: "pending", label: "Pending", count: stats.pendingOrders },
-              { key: "paid", label: "Paid", count: stats.paidOrders },
-              { key: "fulfilled", label: "Fulfilled", count: stats.fulfilledOrders },
-              { key: "cancelled", label: "Cancelled", count: stats.cancelledOrders },
-            ].map(({ key, label, count }) => {
-              return (
-                <div key={key} className="rounded-lg border border-line px-3 py-2 text-center">
-                  <p className="text-xs font-black uppercase tracking-widest text-slate-400">
-                    {label}
-                  </p>
-                  <p className="mt-1 text-xl font-bold">{Math.max(0, count)}</p>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </PanelCard>
+      {/* U-UI2 sub-tabs strip - sticky, one at a time */}
+      <div className="sticky top-0 z-20 -mx-5 border-b border-line bg-white/95 px-5 backdrop-blur lg:-mx-8 lg:px-8">
+        <div
+          role="tablist"
+          aria-label="Finance sub-tabs"
+          className="flex items-center gap-2 overflow-x-auto pb-0.5 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {FINANCE_SUBTABS.map((sub: FinanceSubTab, _: number) => (
+            <button
+              key={sub}
+              role="tab"
+              aria-selected={subTab === sub}
+              aria-controls={`finance-subpanel-${panelId(sub)}`}
+              tabIndex={subTab === sub ? 0 : -1}
+              onClick={() => setSubTab(sub)}
+              className={`${tabBase} text-[10px] ${subTab === sub ? tabActive : tabInactive}`}
+            >
+              {sub}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {subTab === "Overview" && (
+        <PanelCard>
+          <h2 className={panelTitle}>Finance & Transactions</h2>
+          {!stats && !failed && <LoadingRow className="mt-3" />}
+          {!stats && failed && (
+            <EmptyState className="mt-3">
+              Finance figures could not be loaded. Reload the page to try again.
+            </EmptyState>
+          )}
+          {stats && (
+            <>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <Stat label="Total revenue" value={formatNPR(stats.revenue)} />
+                <Stat label="Revenue today" value={formatNPR(stats.revenueToday)} />
+                <Stat
+                  label="Transactions"
+                  value={stats.succeededTransactions}
+                  sub={`${stats.totalTransactions} total · ${stats.totalTransactions - stats.succeededTransactions} pending/failed`}
+                />
+                <Stat label="Conversion" value={conversionRate} sub="Paid orders / users" />
+              </div>
+              {stats.totalTransactions === 0 && (
+                <EmptyState className="mt-4">
+                  No payments recorded yet. Cash-on-delivery and gateway orders appear here as soon
+                  as the first one is placed.
+                </EmptyState>
+              )}
+            </>
+          )}
+        </PanelCard>
+      )}
+
+      {subTab === "Transactions" && (
+        <PanelCard>
+          <h2 className={panelTitle}>Transactions</h2>
+          {/* Transaction listing would go here */}
+          <p className="text-sm text-slate-500">Transactions sub-tab content</p>
+        </PanelCard>
+      )}
+
+      {subTab === "Payments" && (
+        <PanelCard>
+          <h2 className={panelTitle}>Payments</h2>
+          {/* Payment details would go here */}
+          <p className="text-sm text-slate-500">Payments sub-tab content</p>
+        </PanelCard>
+      )}
     </section>
   );
 }

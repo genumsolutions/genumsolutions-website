@@ -5,6 +5,7 @@ import { inputClass } from "../../lib/styles";
 import AdminRows from "./AdminRows";
 import type { RowItem } from "./AdminRows";
 import { LoadingRow, PanelCard, SaveBar, editorCardTitle } from "./admin-helpers";
+import { tabBase, tabActive, tabInactive } from "../../lib/styles";
 
 type Props = {
   setMessage: (msg: string) => void;
@@ -16,6 +17,7 @@ export default function AdminContent({ setMessage, canDelete }: Props) {
   const [homeTitle, setHomeTitle] = useState("");
   const [homeBody, setHomeBody] = useState("");
   const [busy, setBusy] = useState(false);
+  const [subTab, setSubTab] = useState("Services");
 
   const [programs, setPrograms] = useState<RowItem[]>([]);
   const [pilots, setPilots] = useState<RowItem[]>([]);
@@ -68,6 +70,29 @@ export default function AdminContent({ setMessage, canDelete }: Props) {
 
   return (
     <div className="mt-4">
+      {/* U-UI2 sub-tabs strip - sticky, one at a time */}
+      <div className="sticky top-0 z-20 -mx-5 border-b border-line bg-white/95 px-5 backdrop-blur lg:-mx-8 lg:px-8">
+        <div
+          role="tablist"
+          aria-label="Content sub-tabs"
+          className="flex items-center gap-2 overflow-x-auto pb-0.5 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {"Services Journal Content".split(" ").map((sub: string, _: number) => (
+            <button
+              key={sub}
+              role="tab"
+              aria-selected={subTab === sub}
+              aria-controls={`content-subpanel-${sub}`}
+              tabIndex={subTab === sub ? 0 : -1}
+              onClick={() => setSubTab(sub as "Services" | "Journal" | "Content")}
+              className={`${tabBase} text-[10px] ${subTab === sub ? tabActive : tabInactive}`}
+            >
+              {sub}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <PanelCard>
         <h2 className={editorCardTitle}>Homepage content</h2>
         {!loaded ? (
@@ -105,35 +130,50 @@ export default function AdminContent({ setMessage, canDelete }: Props) {
         )}
       </PanelCard>
 
-      <div className="mt-6 grid gap-6">
-        <AdminRows
-          kind="training"
-          rows={programs}
-          onChange={setPrograms}
-          caption="Training programs"
-          hint="Windo training shows on the app home + website pages."
-          canDelete={canDelete}
-          setMessage={setMessage}
-        />
-        <AdminRows
-          kind="pilot"
-          rows={pilots}
-          onChange={setPilots}
-          caption="Pilot cost lines"
-          hint="Running costs shown on the app home screen."
-          canDelete={canDelete}
-          setMessage={setMessage}
-        />
-        <AdminRows
-          kind="curriculum"
-          rows={curricula}
-          onChange={setCurricula}
-          caption="Curriculum highlights"
-          hint="Age-band skills for the app home screen."
-          canDelete={canDelete}
-          setMessage={setMessage}
-        />
-      </div>
+      {/* Sub-tab content replaces main panel, no split screen */}
+      {subTab === "Services" && (
+        <div className="mt-6 grid gap-6">
+          <AdminRows
+            kind="training"
+            rows={programs}
+            onChange={setPrograms}
+            caption="Training programs"
+            hint="Windo training shows on the app home + website pages."
+            canDelete={canDelete}
+            setMessage={setMessage}
+          />
+          <AdminRows
+            kind="pilot"
+            rows={pilots}
+            onChange={setPilots}
+            caption="Pilot cost lines"
+            hint="Running costs shown on the app home screen."
+            canDelete={canDelete}
+            setMessage={setMessage}
+          />
+          <AdminRows
+            kind="curriculum"
+            rows={curricula}
+            onChange={setCurricula}
+            caption="Curriculum highlights"
+            hint="Age-band skills for the app home screen."
+            canDelete={canDelete}
+            setMessage={setMessage}
+          />
+        </div>
+      )}
+
+      {subTab === "Journal" && (
+        <div className="mt-6 grid gap-6">
+          <p className="text-sm text-slate-500">Journal sub-tab content</p>
+        </div>
+      )}
+
+      {subTab === "Content" && (
+        <div className="mt-6 grid gap-6">
+          <p className="text-sm text-slate-500">Content sub-tab content</p>
+        </div>
+      )}
     </div>
   );
 }

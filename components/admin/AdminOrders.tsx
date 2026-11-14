@@ -14,9 +14,13 @@ import {
   panelHeader,
   panelRow,
 } from "./admin-helpers";
+import { tabBase, tabActive, tabInactive } from "../../lib/styles";
 
-// Detail fields shown in the expandable row (app-parity: the app's Orders tab
-// shows the full items list + address + provider + timestamps on the card).
+// U-UI2 (2026-11-14): sub-tabs for Orders tab — mirroring the 3D Products pattern.
+// Only one sub-tab is visible at a time, sub-tabs are sticky while scrolling.
+const ORDER_SUBTABS = ["All", "Pending", "Paid", "Fulfilled", "Cancelled"] as const;
+type OrderSubTab = (typeof ORDER_SUBTABS)[number];
+
 type OrderRow = OrderPage["orders"][number];
 
 export default function AdminOrders({ canDelete }: { canDelete: boolean }) {
@@ -29,7 +33,8 @@ export default function AdminOrders({ canDelete }: { canDelete: boolean }) {
   const [loaded, setLoaded] = useState(false);
   const [orderQuery, setOrderQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [subTab, setSubTab] = useState<OrderSubTab>("All");
+  const [expandedId, setExpandedId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     void loadOrders(1);
@@ -42,6 +47,7 @@ export default function AdminOrders({ canDelete }: { canDelete: boolean }) {
       const params = new URLSearchParams({ page: String(page), limit: String(PAGE_SIZE) });
       if (orderQuery.trim()) params.set("q", orderQuery.trim());
       if (statusFilter) params.set("status", statusFilter);
+      if (subTab !== "All") params.set("subTab", subTab);
       const response = await fetch(`/api/admin/orders?${params}`);
       if (response.ok) setOrderData(await response.json());
     } finally {
@@ -84,10 +90,41 @@ export default function AdminOrders({ canDelete }: { canDelete: boolean }) {
     }
   }
 
+  const statusMap: Record<string, OrderSubTab> = {
+    pending: "Pending",
+    paid: "Paid",
+    fulfilled: "Fulfilled",
+    cancelled: "Cancelled",
+  };
+
   return (
     <section aria-label="Customer orders" className="mt-4 space-y-4">
       <div className={`${panelCard} ${panelHeader}`}>
         <h2 className="font-display text-xl font-bold">Customer orders</h2>
+
+        {/* U-UI2 sub-tabs strip - sticky, one at a time */}
+        <div className="sticky top-0 z-20 -mx-5 border-b border-line bg-white/95 px-5 backdrop-blur lg:-mx-8 lg:px-8">
+          <div
+            role="tablist"
+            aria-label="Order sub-tabs"
+            className="flex items-center gap-2 overflow-x-auto pb-0.5 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {ORDER_SUBTABS.map((sub: OrderSubTab, _: number) => (
+              <button
+                key={sub}
+                role="tab"
+                aria-selected={subTab === sub}
+                aria-controls={`order-subpanel-${sub}`}
+                tabIndex={subTab === sub ? 0 : -1}
+                onClick={() => setSubTab(sub)}
+                className={`${tabBase} text-[10px] ${subTab === sub ? tabActive : tabInactive}`}
+              >
+                {sub}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <label className="ml-auto text-sm font-bold text-slate-500">
           Search buyer
           <input
@@ -122,14 +159,19 @@ export default function AdminOrders({ canDelete }: { canDelete: boolean }) {
           Apply
         </button>
       </div>
+
       {!loaded ? (
         <LoadingRow />
       ) : orderData.orders.length === 0 ? (
         <EmptyState>No orders match this search yet.</EmptyState>
       ) : (
-        <>
-          <ul className="space-y-3">
-            {orderData.orders.map((order) => (
+        <div className="space-y-3">
+          {orderData.orders.map((order) => {
+            const orderStatus = order.status?.toLowerCase() as keyof typeof statusMap;
+            const matchesSubTab =
+              subTab === "All" ? true : (statusMap[orderStatus] ?? "All") === subTab;
+
+            return matchesSubTab ? (
               <li key={order.id} className={panelRow}>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="min-w-0">
@@ -144,9 +186,6 @@ export default function AdminOrders({ canDelete }: { canDelete: boolean }) {
                       {order.provider} · {formatTimestamp(order.createdAt)}
                     </p>
                   </div>
-                  {/* U-47v4 (owner: admin buttons overflow mobile): wrap the
-                      action cluster instead of shrink-0 — select + Details +
-                      Delete overflowed 320-360px viewports. */}
                   <div className="flex flex-wrap items-center gap-2">
                     <select
                       value={order.status}
@@ -162,7 +201,7 @@ export default function AdminOrders({ canDelete }: { canDelete: boolean }) {
                     </select>
                     <button
                       onClick={() =>
-                        setExpandedId((current) => (current === order.id ? null : order.id))
+                        setExpandedId((current) => (current === order.id ? undefined : order.id))
                       }
                       aria-expanded={expandedId === order.id}
                       className="min-h-[36px] rounded-lg border border-line px-3 py-1 text-xs font-bold text-navy transition hover:border-navy"
@@ -224,18 +263,18 @@ export default function AdminOrders({ canDelete }: { canDelete: boolean }) {
                   </dl>
                 )}
               </li>
-            ))}
-          </ul>
-          <Pager
-            page={orderData.page}
-            totalPages={orderData.totalPages}
-            onPage={(page) => void loadOrders(page)}
-          />
-          <p className="text-xs text-slate-400">
-            {orderData.total} total order{orderData.total === 1 ? "" : "s"}
-          </p>
-        </>
+            ) : null;
+          })}
+        </div>
       )}
+      <Pager
+        page={orderData.page}
+        totalPages={orderData.totalPages}
+        onPage={(page) => void loadOrders(page)}
+      />
+      <p className="text-xs text-slate-400">
+        {orderData.total} total order{orderData.total === 1 ? "" : "s"}
+      </p>
     </section>
   );
 }

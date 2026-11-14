@@ -5,7 +5,13 @@ import { inputClass } from "../../lib/styles";
 import { isAdminRole, isOwnerRole } from "../../lib/roles";
 import type { UserPage, ManagedUser } from "./admin-types";
 import { PAGE_SIZE } from "./admin-types";
-import { Pager } from "./admin-helpers";
+import { Pager, panelId } from "./admin-helpers";
+import { tabBase, tabActive, tabInactive } from "../../lib/styles";
+
+// U-UI2 (2026-11-14): sub-tabs for Users tab — mirroring the 3D Products pattern.
+// Only one sub-tab is visible at a time, sub-tabs are sticky while scrolling.
+const USERS_SUBTABS = ["Users", "Projects", "Robot Profiles"] as const;
+type UsersSubTab = (typeof USERS_SUBTABS)[number];
 
 type RobotRow = {
   robot_id: string;
@@ -40,6 +46,7 @@ type Props = {
   canDelete: boolean;
   currentRole: "staff" | "admin" | "owner";
 };
+
 function uniqueById<
   T extends { id?: string; profile_key?: string; robot_id?: string; unique_id?: string },
 >(rows: T[]): T[] {
@@ -243,10 +250,12 @@ export default function AdminUsers({ setMessage, canDelete, currentRole }: Props
     hasMore: false,
   });
   const [loaded, setLoaded] = useState(false);
+  const [subTab, setSubTab] = useState<UsersSubTab>("Users");
   const userQuery = "";
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [search, setSearch] = useState("");
   const [busyUserId, setBusyUserId] = useState("");
+
   // Same role matrix as the app's admin Users tab:
   //   staff  -> view + tier
   //   admin  -> + change role (customer/staff/admin)
@@ -347,6 +356,29 @@ export default function AdminUsers({ setMessage, canDelete, currentRole }: Props
 
   return (
     <section aria-label="User management" className="mt-4 space-y-4">
+      {/* U-UI2 sub-tabs strip - sticky, one at a time */}
+      <div className="sticky top-0 z-20 -mx-5 border-b border-line bg-white/95 px-5 backdrop-blur lg:-mx-8 lg:px-8">
+        <div
+          role="tablist"
+          aria-label="Users sub-tabs"
+          className="flex items-center gap-2 overflow-x-auto pb-0.5 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {USERS_SUBTABS.map((sub: UsersSubTab, _: number) => (
+            <button
+              key={sub}
+              role="tab"
+              aria-selected={subTab === sub}
+              aria-controls={`users-subpanel-${panelId(sub)}`}
+              tabIndex={subTab === sub ? 0 : -1}
+              onClick={() => setSubTab(sub)}
+              className={`${tabBase} text-[10px] ${subTab === sub ? tabActive : tabInactive}`}
+            >
+              {sub}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="mb-3">
         <p className="text-xs font-black uppercase tracking-widest text-navy">User Directory</p>
         <p className="mt-1 text-xs text-slate-500">
