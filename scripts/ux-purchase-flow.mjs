@@ -93,21 +93,13 @@ const SUPABASE_URL =
 const rand = Math.random().toString(36).slice(2, 8);
 const EMAIL = `uxflow-${rand}@genumtest.invalid`;
 const results = [];
+// The reporter groups steps by this. It used to infer the flow from
+// results.length, which mislabelled later steps ("order placed" showed up as
+// `contact`) as soon as any flow gained or lost a step. Each flow now sets it.
+let currentFlow = "purchase";
 const step = (name, ok, detail = "") => {
-  const flow =
-    results.length < 5
-      ? "purchase"
-      : results.length < 9
-        ? "contact"
-        : results.length < 13
-          ? "newsletter"
-          : results.length < 16
-            ? "auth"
-            : results.length < 18
-              ? "profile"
-              : "cart";
-  results.push({ flow, name, ok, detail });
-  console.log(`${ok ? "PASS" : "FAIL"} [${flow}] ${name}${detail ? " — " + detail : ""}`);
+  results.push({ flow: currentFlow, name, ok, detail });
+  console.log(`${ok ? "PASS" : "FAIL"} [${currentFlow}] ${name}${detail ? " — " + detail : ""}`);
 };
 
 const browser = await puppeteer.launch({
@@ -250,6 +242,7 @@ try {
   }
 
   // ---------- FLOW 2: CONTACT (guest inquiry, no account needed) ----------
+  currentFlow = "contact";
   await page.goto(BASE + "/contact", { waitUntil: "networkidle2", timeout: 60000 });
   const contactFilled = await page.evaluate((email) => {
     const nativeI = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
@@ -322,6 +315,7 @@ try {
   }
 
   // ---------- FLOW 3: NEWSLETTER (footer opt-in, consent checkbox required) ----------
+  currentFlow = "newsletter";
   await page.goto(BASE + "/", { waitUntil: "networkidle2", timeout: 60000 });
   // Tick consent the way a human does — click the LABEL (React listens to
   // change on the checkbox; synthetic .checked writes don't survive it).
@@ -388,6 +382,7 @@ try {
   }
 
   // ---------- FLOW 4: LOGIN AFTER LOGOUT (session round-trip) ----------
+  currentFlow = "auth";
   // The purchase flow already registered the probe user; sign out, then sign
   // back in through the real UI and confirm the account page loads again.
   // The account panel hydrates late — wait for the Log out button to exist.
@@ -468,6 +463,7 @@ try {
   step("login round-trip", backIn, page.url().replace(BASE, ""));
 
   // ---------- FLOW 5: PROFILE SAVE (account details round-trip) ----------
+  currentFlow = "profile";
   // Only meaningful when signed in (flow 4 just got us there).
   if (backIn) {
     await page.goto(BASE + "/account", { waitUntil: "networkidle2", timeout: 60000 });
@@ -528,6 +524,7 @@ try {
   }
 
   // ---------- FLOW 6: CART QUANTITY EDIT (checkout qty controls) ----------
+  currentFlow = "cart";
   await page.goto(`${BASE}/products/${probe ? probe.id : ""}`, {
     waitUntil: "networkidle2",
     timeout: 60000,
@@ -541,7 +538,16 @@ try {
   await new Promise((r) => setTimeout(r, 1500));
   await page.goto(BASE + "/checkout", { waitUntil: "networkidle2", timeout: 60000 });
   await new Promise((r) => setTimeout(r, 1200));
-  const qtyBefore = await page.evaluate(() => {
+  // Read the line quantity, never a constant: an earlier flow can leave items
+  // in the build list, so "the badge must say 2" only held on a clean cart.
+  const readQty = () =>
+    page.evaluate(() => {
+      const badge = document.querySelector('[aria-live="polite"]');
+      const parsed = Number((badge?.textContent || "").match(/\d+/)?.[0]);
+      return Number.isFinite(parsed) ? parsed : null;
+    });
+  const qtyBefore = await readQty();
+  const plusClicked = await page.evaluate(() => {
     const plus = [...document.querySelectorAll("button")].find((b) =>
       /add another/i.test(b.getAttribute("aria-label") || "")
     );
@@ -549,11 +555,12 @@ try {
     return !!plus;
   });
   await new Promise((r) => setTimeout(r, 800));
-  const qtyAfter = await page.evaluate(() => {
-    const badge = document.querySelector('[aria-live="polite"]');
-    return badge?.textContent?.trim() ?? null;
-  });
-  step("cart qty + works", qtyBefore && qtyAfter === "2", `qty now ${qtyAfter}`);
+  const qtyAfter = await readQty();
+  step(
+    "cart qty + works",
+    plusClicked && qtyBefore !== null && qtyAfter === qtyBefore + 1,
+    `qty ${qtyBefore ?? "?"} → ${qtyAfter ?? "?"}`
+  );
   const removed = await page.evaluate(() => {
     const rm = [...document.querySelectorAll("button")].find((b) =>
       /remove/i.test(b.getAttribute("aria-label") || "")
@@ -562,12 +569,15 @@ try {
     return !!rm;
   });
   await new Promise((r) => setTimeout(r, 800));
-  const emptyAfterRemove = await page.evaluate(() =>
-    /build list is empty|no purchasable items|some items in your build list/i.test(
-      document.body.innerText
-    )
+  const qtyAfterRemove = await readQty();
+  const emptied = await page.evaluate(() =>
+    /build list is empty|no purchasable items/i.test(document.body.innerText)
   );
-  step("cart remove works", removed && emptyAfterRemove);
+  step(
+    "cart remove works",
+    removed && (emptied || (qtyAfter !== null && qtyAfterRemove === qtyAfter - 1)),
+    `qty ${qtyAfter ?? "?"} → ${qtyAfterRemove ?? "empty"}`
+  );
 } catch (e) {
   step("flow crashed", false, String(e).slice(0, 200));
 } finally {
