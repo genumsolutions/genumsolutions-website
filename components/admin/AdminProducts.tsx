@@ -14,6 +14,7 @@ import {
 } from "../../lib/styles";
 import { productIdFromTitle } from "../../lib/product-slug";
 import { applyScope } from "../../lib/catalog";
+import ProductCard from "../ProductCard";
 import type { Product } from "./admin-types";
 import { emptyProduct, fields, PAGE_SIZE } from "./admin-types";
 import {
@@ -983,14 +984,14 @@ export default function AdminProducts({
           // which clips any fixed-positioned descendant — the preview rendered off-screen
           // before (owner report 2026-09-22: "admin doesn't show the preview of the cards").
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 p-5"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 p-3"
             role="dialog"
             aria-modal="true"
-            aria-label="Product preview"
+            aria-label="Storefront product card preview"
             onClick={() => setPreviewProduct(null)}
           >
             <article
-              className="relative max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-2xl border border-line bg-white shadow-2xl"
+              className="relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl border border-line bg-white shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               <button
@@ -1000,52 +1001,49 @@ export default function AdminProducts({
               >
                 ✕
               </button>
-              <div className="relative h-48 overflow-hidden rounded-t-2xl bg-ink">
-                {previewProduct.image ? (
-                  <Image
-                    src={previewProduct.image}
-                    alt={previewProduct.name}
-                    fill
-                    unoptimized
-                    className="object-cover"
-                  />
-                ) : null}
-                <div className="absolute inset-0 bg-gradient-to-t from-ink/70 to-transparent" />
-                <span className="absolute bottom-3 left-4 max-w-[calc(100%-2rem)] truncate text-xs font-black uppercase tracking-widest text-white">
-                  {previewProduct.category}
-                </span>
+              <div className="p-4 pr-14">
+                <p className="text-xs font-black uppercase tracking-widest text-navy">
+                  Mobile storefront · two-column catalog
+                </p>
+                <p className="mt-1 text-[11px] text-muted">
+                  Uses the same card shown to customers.
+                </p>
+                {previewProduct.active === false && (
+                  <p className="mt-2 text-xs font-bold text-red-600">
+                    This product is hidden from the storefront.
+                  </p>
+                )}
               </div>
-              <div className="flex flex-1 flex-col p-5">
-                <p className="truncate text-xs font-black uppercase tracking-widest text-navy">
-                  {previewProduct.badge || previewProduct.productType}
+              <div className="border-y border-line bg-mist py-3">
+                <p className="sr-only">
+                  Storefront card preview for {previewProduct.name}, {previewProduct.priceLabel}.
                 </p>
-                <h2 className="mt-2 break-words font-display text-xl font-bold leading-snug text-ink">
-                  {previewProduct.name}
-                </h2>
-                <p className="mt-2 break-words text-sm leading-6 text-muted">
-                  {previewProduct.note || previewProduct.description}
-                </p>
-                <div className="mt-5 flex items-center justify-between gap-3">
-                  <strong className="font-display text-lg text-ink">
-                    {previewProduct.priceLabel}
-                  </strong>
-                  <span className="flex gap-2">
-                    <a
-                      href={`/products/${previewProduct.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="rounded-full bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark"
-                    >
-                      View page
-                    </a>
-                    <button
-                      onClick={() => setPreviewProduct(null)}
-                      className="rounded-full border border-line px-4 py-2 text-xs font-black text-ink transition hover:border-navy"
-                    >
-                      Close
-                    </button>
-                  </span>
+                <div
+                  aria-hidden="true"
+                  {...({ inert: "" } as Record<string, string>)}
+                  className="pointer-events-none mx-auto grid w-full max-w-[343px] grid-cols-2 gap-3"
+                >
+                  <div className="min-w-0">
+                    <ProductCard product={previewProduct} />
+                  </div>
+                  <div className="min-w-0" aria-hidden="true" />
                 </div>
+              </div>
+              <div className="flex flex-wrap justify-end gap-2 p-4">
+                <a
+                  href={`/products/${previewProduct.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex min-h-10 items-center rounded-full bg-navy px-4 text-xs font-black text-white transition hover:bg-navy-dark"
+                >
+                  View page
+                </a>
+                <button
+                  onClick={() => setPreviewProduct(null)}
+                  className="inline-flex min-h-10 items-center rounded-full border border-line px-4 text-xs font-black text-ink transition hover:border-navy"
+                >
+                  Close
+                </button>
               </div>
             </article>
           </div>,

@@ -68,7 +68,7 @@ function AdminSectionTabs<T extends string>({
         <div
           role="tablist"
           aria-label={label}
-          className="flex items-center gap-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="flex items-center gap-2 overflow-x-auto pb-2 pt-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {tabs.map((tab) => {
             const selected = active === tab;
@@ -82,7 +82,11 @@ function AdminSectionTabs<T extends string>({
                 aria-controls={`${group}-panel-${id}`}
                 tabIndex={selected ? 0 : -1}
                 onClick={() => onChange(tab)}
-                className={`${tabBase} text-[11px] ${selected ? tabActive : tabInactive}`}
+                className={`inline-flex min-h-10 shrink-0 items-center justify-center rounded-full border px-4 text-[11px] font-black uppercase tracking-wide transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy ${
+                  selected
+                    ? "border-navy bg-navy text-white"
+                    : "border-line bg-white text-muted hover:border-navy hover:text-navy"
+                }`}
               >
                 {tab}
               </button>
@@ -101,10 +105,7 @@ function AdminSectionTabs<T extends string>({
               role="tabpanel"
               aria-labelledby={`${group}-tab-${id}`}
               hidden={!selected}
-              {...({ inert: selected ? undefined : "" } as Record<
-                string,
-                string | undefined
-              >)}
+              {...({ inert: selected ? undefined : "" } as Record<string, string | undefined>)}
               className="min-w-0"
             >
               {content}
@@ -137,8 +138,7 @@ export default function AdminPanel({ initialProducts, currentRole }: Props) {
   const [message, setMessage] = useState("");
   const [visited, setVisited] = useState<Set<number>>(() => new Set([0]));
   const [ordersSection, setOrdersSection] = useState<OrderSection>("Orders");
-  const [contentSection, setContentSection] =
-    useState<ContentSection>("Services");
+  const [contentSection, setContentSection] = useState<ContentSection>("Services");
   const [userSection, setUserSection] = useState<UserSection>("Users");
 
   const canDelete = isAdminRole(currentRole);
@@ -221,30 +221,15 @@ export default function AdminPanel({ initialProducts, currentRole }: Props) {
             panels={[
               {
                 tab: "Services",
-                content: (
-                  <AdminServices
-                    setMessage={setMessage}
-                    canDelete={canDelete}
-                  />
-                ),
+                content: <AdminServices setMessage={setMessage} canDelete={canDelete} />,
               },
               {
                 tab: "Journal",
-                content: (
-                  <AdminJournal
-                    setMessage={setMessage}
-                    canDelete={canDelete}
-                  />
-                ),
+                content: <AdminJournal setMessage={setMessage} canDelete={canDelete} />,
               },
               {
                 tab: "Content",
-                content: (
-                  <AdminContent
-                    setMessage={setMessage}
-                    canDelete={canDelete}
-                  />
-                ),
+                content: <AdminContent setMessage={setMessage} canDelete={canDelete} />,
               },
             ]}
           />
@@ -270,12 +255,7 @@ export default function AdminPanel({ initialProducts, currentRole }: Props) {
               },
               {
                 tab: "Messages",
-                content: (
-                  <AdminMessages
-                    setMessage={setMessage}
-                    canDelete={canDelete}
-                  />
-                ),
+                content: <AdminMessages setMessage={setMessage} canDelete={canDelete} />,
               },
               { tab: "Logs", content: <AdminLogsHub /> },
             ]}
