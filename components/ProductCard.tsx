@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Heart } from "lucide-react";
+import { Heart, Eye } from "lucide-react";
 import type { Product } from "../lib/catalog";
 import { galleryImages } from "../lib/catalog";
 import { getProductMedia } from "../lib/product-media";
@@ -95,7 +95,7 @@ export default function ProductCard({ product }: { product: Product }) {
             <span className="font-bold text-emerald-700">In stock</span>
           )}
         </span>
-      </Link>
+      </Link>{" "}
       <button
         type="button"
         onClick={(event) => {
@@ -112,6 +112,14 @@ export default function ProductCard({ product }: { product: Product }) {
         }`}
       >
         <Heart size={16} fill={saved ? "currentColor" : "none"} aria-hidden="true" />
+      </button>
+      <button
+        type="button"
+        onClick={() => window.open(`/products/${product.id}`, "_blank")}
+        aria-label={saved ? `View ${product.name} details` : `View ${product.name} details`}
+        className="absolute left-2 top-2 rounded-lg border border-line bg-white/90 p-2 shadow-sm transition hover:bg-white"
+      >
+        <Eye className="h-5 w-5 text-navy" />
       </button>
     </div>
   );
