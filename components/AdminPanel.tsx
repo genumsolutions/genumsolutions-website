@@ -205,40 +205,38 @@ export default function AdminPanel({ initialProducts, currentRole }: Props) {
           {message}
         </p>
       )}
-      {/* Swipeable track: panels translate horizontally in sync.
-          U-42 (2026-09-26), REVISED after owner regression report: the
-          inactive panels get `h-0 overflow-hidden`, NOT `hidden` —
-          display:none removes a panel from the flex row, which changes the
-          row's width math and breaks the percentage translateX (tabs landed
-          blank). Zero-height keeps every panel in the flex row at w-full
-          (translate offsets stay exact) while contributing NO height, so
-          the track height = the ACTIVE tab's content only — no dead space
-          from taller neighbours. Panel DOM stays mounted for state survival. */}
-      <div className="overflow-hidden">
-        <div
-          className="flex transition-transform duration-300 ease-out"
-          style={{ transform: `translateX(-${tabIndex * 100}%)` }}
-        >
-          {TABS.map((name: Tab, i: number) => (
-            <div
-              key={name}
-              role="tabpanel"
-              id={`panel-${panelId(name)}`}
-              aria-labelledby={`tab-${panelId(name)}`}
-              aria-hidden={tabIndex !== i}
-              // Inactive panels stay mounted (state survives) but are zero-
-              // height, so their controls were still reachable by Tab. `inert`
-              // removes them from focus order and the a11y tree for real.
-              {...({ inert: tabIndex === i ? undefined : "" } as Record<
-                string,
-                string | undefined
-              >)}
-              className={`w-full shrink-0 ${tabIndex === i ? "" : "h-0 overflow-hidden"}`}
-            >
-              {visited.has(i) ? renderPanel(name) : null}
-            </div>
-          ))}
-        </div>
+      {/* 2026-11-14 (owner: "i dont like the split screen of the admin
+          dashboards tabs contents"): ONE panel at a time, in normal document
+          flow — the public site's mobile view, now used at every width.
+
+          History: this used to be a filmstrip — all eight panels as
+          `w-full shrink-0` siblings inside one flex row, moved with
+          `translateX(-index * 100%)`. That had three failure modes:
+            1. during the 300ms slide both panels are visible, side by side;
+            2. the track's width is 8 × viewport, so any panel content wider
+               than its 1/8 share (a wide table, a long unbroken URL) widened
+               the track and the browser landed on half of two tabs — a real
+               split screen, not an animation artefact;
+            3. every panel inherited that oversized width, which is what made
+               buttons and cards look stretched.
+          Panels still stay mounted (per-tab state and in-flight loads
+          survive), but inactive ones are `hidden` + `inert`: no display, no
+          height, no focus, no width contribution. Nothing to slide, so there
+          is nothing to split. */}
+      <div className="min-w-0">
+        {TABS.map((name: Tab, i: number) => (
+          <div
+            key={name}
+            role="tabpanel"
+            id={`panel-${panelId(name)}`}
+            aria-labelledby={`tab-${panelId(name)}`}
+            hidden={tabIndex !== i}
+            {...({ inert: tabIndex === i ? undefined : "" } as Record<string, string | undefined>)}
+            className="min-w-0"
+          >
+            {visited.has(i) ? renderPanel(name) : null}
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -15,7 +15,14 @@ import {
 } from "../../lib/project-pricing";
 import type { Product } from "./admin-types";
 import { emptyProduct, PAGE_SIZE } from "./admin-types";
-import { Pager, focusEditor, editorCard, editorCardTitle, panelCard } from "./admin-helpers";
+import {
+  AdminImageField,
+  Pager,
+  focusEditor,
+  editorCard,
+  editorCardTitle,
+  panelCard,
+} from "./admin-helpers";
 
 type Props = {
   products: Product[];
@@ -229,15 +236,13 @@ function ProjectEditor({
               className={`mt-2 w-full ${inputClass}`}
             />
           </label>
-          <label className="sm:col-span-2 text-sm font-bold">
-            Image URL
-            <input
-              value={product.image || ""}
-              onChange={(event) => setField("image", event.target.value)}
-              placeholder="Supabase Storage or public image URL"
-              className={`mt-2 w-full ${inputClass}`}
-            />
-          </label>
+          {/* 2026-11-14: was a bare URL input — no thumbnail, no way to check
+              or clear the imported picture. Shared AdminImageField now. */}
+          <AdminImageField
+            label="Image"
+            value={product.image || ""}
+            onChange={(image) => setField("image", image)}
+          />
           <label className="flex items-center gap-2 text-sm font-bold sm:col-span-2">
             <input
               type="checkbox"

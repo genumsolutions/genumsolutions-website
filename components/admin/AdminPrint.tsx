@@ -27,6 +27,7 @@ import {
 import type { Product } from "./admin-types";
 import AdminProducts from "./AdminProducts";
 import {
+  AdminImageField as ImageField,
   EmptyState,
   RowActions,
   SaveBar,
@@ -159,63 +160,6 @@ const COSTING_FIELDS: Array<{
     hint: "price = cost ÷ (1 − margin).",
   },
 ];
-
-async function uploadImage(file: File): Promise<string> {
-  const body = new FormData();
-  body.append("file", file);
-  const response = await fetch("/api/admin/upload", { method: "POST", body });
-  const result = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(result.error || "Upload failed.");
-  return String(result.url ?? "");
-}
-
-function ImageField({
-  value,
-  onChange,
-  label = "Image",
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  label?: string;
-}) {
-  const [busy, setBusy] = useState(false);
-  return (
-    <div className="min-w-0 sm:col-span-2">
-      <p className="text-sm font-bold">{label}</p>
-      <div className="mt-2 flex min-w-0 flex-wrap items-center gap-3">
-        <input
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          placeholder="https://... or upload"
-          aria-label={`${label} URL`}
-          className={`min-w-0 flex-1 ${inputClass}`}
-        />
-        <label className="cursor-pointer rounded-lg bg-navy px-4 py-2.5 text-xs font-black text-white transition hover:bg-navy-dark">
-          {busy ? "Uploading..." : "Upload"}
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={async (event) => {
-              const file = event.target.files?.[0];
-              event.currentTarget.value = "";
-              if (!file) return;
-              setBusy(true);
-              try {
-                onChange(await uploadImage(file));
-              } catch {
-                // The parent message channel owns user-facing errors; the
-                // button just returns to idle.
-              } finally {
-                setBusy(false);
-              }
-            }}
-          />
-        </label>
-      </div>
-    </div>
-  );
-}
 
 /** Per-quote cost inputs. Local state keeps typing cheap; Save sends all four
  * fields together so a status change never wipes a half-typed figure. */
@@ -1158,6 +1102,15 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
             <p className="mt-2 text-xs text-muted">
               Promotions start unpublished. Set the dates, publish, and the banner appears above the
               catalogue only while it is live.
+            </p>
+            {/* 2026-11-14 (owner: "keep that in the admin panel too properly"):
+                two surfaces print this row — the /3d-printing banner and the
+                dismissible sticker on the landing page — and both print the
+                title and body VERBATIM. Terms therefore belong in the body. */}
+            <p className="mt-2 rounded-lg border border-line bg-mist/60 px-3 py-2 text-xs leading-5 text-muted">
+              The title and body are printed word-for-word on the landing-page sticker, so put the
+              terms there (for example <em>“first year only, until 14 Nov 2027”</em>). The end date
+              is what removes it automatically; unpublishing hides it immediately.
             </p>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <label className={`${oneLine} sm:col-span-2`}>

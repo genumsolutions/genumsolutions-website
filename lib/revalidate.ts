@@ -38,7 +38,10 @@ export function revalidateProducts(productId?: string): void {
 // 3D print studio content (categories, rates/settings, promotions, gallery)
 // all renders on /3d-printing; product rows route through revalidateProducts.
 export function revalidatePrint(): void {
-  safe("/3d-printing");
+  // 2026-11-14: "/" as well — the landing page now prints the active
+  // print promotion as a dismissible sticker, so a promotion edit in admin has
+  // to invalidate the home page too or the sticker lags up to 5 minutes.
+  safe("/3d-printing", "/");
 }
 
 export function revalidateProjectPricing(projectId?: string): void {

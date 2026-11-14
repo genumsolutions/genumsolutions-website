@@ -3,7 +3,15 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
-import { inputClass, cardRow, cardRowText } from "../../lib/styles";
+import {
+  inputClass,
+  cardRow,
+  cardRowText,
+  adminBtnGold,
+  adminBtnOutline,
+  adminBtnPrimary,
+  adminIconButton,
+} from "../../lib/styles";
 import { productIdFromTitle } from "../../lib/product-slug";
 import { applyScope } from "../../lib/catalog";
 import type { Product } from "./admin-types";
@@ -47,6 +55,10 @@ export default function AdminProducts({
     category: defaultCategory,
   }));
   const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
+  // 2026-11-14 (owner): "add the imported picture preview". Imported photos
+  // arrive as 56–64px thumbnails, far too small to judge whether the extractor
+  // grabbed the right model — this is the full-size view behind a click.
+  const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("All");
   const [stockFilter, setStockFilter] = useState<"all" | "in" | "low" | "out">("all");
@@ -75,6 +87,16 @@ export default function AdminProducts({
   // pasting. The edge function logs every preview; this surfaces the ones we
   // could NOT read, so the next provider gets added on evidence.
   const [demand, setDemand] = useState<{ host: string; attempts: number; lastSeen: string }[]>([]);
+
+  // 2026-11-14: Escape closes the full-size image, same as the card preview.
+  useEffect(() => {
+    if (!lightbox) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setLightbox(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightbox]);
 
   useEffect(() => {
     setProductPage(1);
@@ -574,12 +596,12 @@ export default function AdminProducts({
                 }}
                 placeholder="https://makerworld.com/en/models/... or any product page"
                 aria-label="Product link"
-                className={`w-full ${inputClass}`}
+                className={`min-w-0 flex-1 ${inputClass}`}
               />
               <button
                 type="submit"
                 disabled={!linkUrl.trim() || importing}
-                className="shrink-0 bg-gold px-5 py-2 text-sm font-black text-ink transition hover:bg-gold-dark disabled:opacity-60"
+                className={`${adminBtnGold} shrink-0`}
               >
                 {importing ? "Extracting…" : "Extract details"}
               </button>
@@ -587,14 +609,26 @@ export default function AdminProducts({
             {extracted && (
               <div className="mt-3 flex items-center gap-3 rounded bg-navy/5 p-3">
                 {extracted.images[0] ? (
-                  <Image
-                    src={extracted.images[0]}
-                    alt=""
-                    width={56}
-                    height={56}
-                    unoptimized
-                    className="shrink-0 rounded border border-line object-cover"
-                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setLightbox({
+                        src: extracted?.images[0] ?? "",
+                        alt: `First imported image for ${tabLabel}`,
+                      })
+                    }
+                    aria-label="View the imported image full size"
+                    className="shrink-0 rounded border border-line transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy hover:border-navy"
+                  >
+                    <Image
+                      src={extracted.images[0]}
+                      alt=""
+                      width={56}
+                      height={56}
+                      unoptimized
+                      className="h-14 w-14 rounded object-cover"
+                    />
+                  </button>
                 ) : (
                   <div className="h-14 w-14 shrink-0 rounded border border-dashed border-line" />
                 )}
@@ -784,20 +818,38 @@ export default function AdminProducts({
                 <div className="mt-2 flex min-w-0 flex-wrap items-center gap-3">
                   {product.image && (
                     <div className="relative h-16 w-16 shrink-0">
-                      <Image
-                        src={product.image}
-                        alt={product.name || "Product preview"}
-                        width={64}
-                        height={64}
-                        unoptimized
-                        className="h-16 w-16 rounded object-cover"
-                      />
-                      {/* U-39b: remove the cover (clears the URL field below). */}
+                      {/* 2026-11-14: the cover is a preview target too — click
+                          it to see the imported photo at full size before
+                          deciding to keep it. */}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setLightbox({
+                            src: product.image ?? "",
+                            alt: product.name ? `${product.name} cover` : "Product cover",
+                          })
+                        }
+                        aria-label={`View ${product.name || "product"} cover full size`}
+                        className="block h-16 w-16 rounded transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
+                      >
+                        <Image
+                          src={product.image}
+                          alt={product.name || "Product preview"}
+                          width={64}
+                          height={64}
+                          unoptimized
+                          className="h-16 w-16 rounded object-cover"
+                        />
+                      </button>
+                      {/* U-39b: remove the cover (clears the URL field below).
+                          2026-11-14: was a 20px hot spot — below the WCAG 2.5.8
+                          minimum and hard to hit, so staff kept leaving
+                          unwanted photos in place. 28px + focus ring now. */}
                       <button
                         type="button"
                         onClick={() => updateProduct("image", "")}
                         aria-label="Remove product image"
-                        className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full border border-line bg-white text-[10px] font-black leading-none text-ink shadow-sm transition hover:border-red-500 hover:text-red-600"
+                        className={adminIconButton}
                       >
                         ×
                       </button>
@@ -825,7 +877,7 @@ export default function AdminProducts({
                     type="button"
                     disabled={uploading}
                     onClick={() => fileInput.current?.click()}
-                    className="rounded-lg bg-navy px-4 py-2.5 text-xs font-black text-white transition hover:bg-navy-dark disabled:opacity-60"
+                    className={`${adminBtnPrimary} shrink-0`}
                   >
                     {uploading ? "Uploading..." : "Upload"}
                   </button>
@@ -853,7 +905,7 @@ export default function AdminProducts({
                   rows={4}
                   placeholder={"https://...\nhttps://..."}
                   aria-label="Product gallery image URLs"
-                  className={`mt-2 w-full ${inputClass} font-mono text-xs`}
+                  className={`mt-2 w-full break-all font-mono text-xs ${inputClass}`}
                 />
                 {Array.isArray(product.gallery) && product.gallery.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-2">
@@ -865,16 +917,24 @@ export default function AdminProducts({
                         key={`${src}-${i}`}
                         className="relative h-14 w-14 rounded border border-line bg-mist"
                       >
-                        <Image
-                          src={src}
-                          alt={`Gallery ${i + 1}`}
-                          width={56}
-                          height={56}
-                          unoptimized
-                          className="h-full w-full rounded object-cover"
-                        />
+                        <button
+                          type="button"
+                          onClick={() => setLightbox({ src, alt: `Gallery image ${i + 1}` })}
+                          aria-label={`View gallery image ${i + 1} full size`}
+                          className="block h-full w-full rounded transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
+                        >
+                          <Image
+                            src={src}
+                            alt={`Gallery ${i + 1}`}
+                            width={56}
+                            height={56}
+                            unoptimized
+                            className="h-full w-full rounded object-cover"
+                          />
+                        </button>
                         {/* U-39b (2026-09-26): per-image remove button so staff
-                            can drop unwanted extraction photos before saving. */}
+                            can drop unwanted extraction photos before saving.
+                            2026-11-14: 28px target + focus ring (see P-17). */}
                         <button
                           type="button"
                           onClick={() =>
@@ -884,7 +944,7 @@ export default function AdminProducts({
                             )
                           }
                           aria-label={`Remove gallery image ${i + 1}`}
-                          className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full border border-line bg-white text-[10px] font-black leading-none text-ink shadow-sm transition hover:border-red-500 hover:text-red-600"
+                          className={adminIconButton}
                         >
                           ×
                         </button>
@@ -895,11 +955,7 @@ export default function AdminProducts({
               </div>
             </div>
             <SaveBar>
-              <button
-                type="submit"
-                disabled={busy || uploading}
-                className="bg-gold px-5 py-3 text-sm font-black text-ink transition hover:bg-gold-dark disabled:opacity-60"
-              >
+              <button type="submit" disabled={busy || uploading} className={adminBtnGold}>
                 {busy ? "Saving..." : "Save product"}
               </button>
               {product.id && (
@@ -912,7 +968,7 @@ export default function AdminProducts({
                     setLinkUrl("");
                     setExtracted(null);
                   }}
-                  className="border border-line px-5 py-3 text-sm font-black text-ink transition hover:border-navy"
+                  className={adminBtnOutline}
                 >
                   New product
                 </button>
@@ -992,6 +1048,56 @@ export default function AdminProducts({
                 </div>
               </div>
             </article>
+          </div>,
+          document.body
+        )}
+      {lightbox &&
+        createPortal(
+          // Portal to <body> for the same reason as the card preview: nothing
+          // in the panel track can clip it.
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-ink/85 p-5"
+            role="dialog"
+            aria-modal="true"
+            aria-label={lightbox.alt}
+            onClick={() => setLightbox(null)}
+          >
+            <figure
+              className="flex max-h-[90vh] w-full max-w-2xl flex-col gap-3"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="relative h-[70vh] w-full overflow-hidden rounded-xl bg-white/5">
+                <Image
+                  src={lightbox.src}
+                  alt={lightbox.alt}
+                  fill
+                  unoptimized
+                  sizes="(max-width: 768px) 100vw, 672px"
+                  className="object-contain"
+                />
+              </div>
+              <figcaption className="flex items-center justify-between gap-3 text-xs font-bold text-white">
+                <span className="min-w-0 truncate">{lightbox.alt}</span>
+                <span className="flex shrink-0 gap-2">
+                  <a
+                    href={lightbox.src}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex min-h-[40px] items-center rounded-lg border border-white/30 px-4 text-xs font-black text-white transition hover:border-white"
+                  >
+                    Open original
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => setLightbox(null)}
+                    aria-label="Close image preview"
+                    className="inline-flex min-h-[40px] items-center rounded-lg bg-white px-4 text-xs font-black text-ink transition hover:bg-white/90"
+                  >
+                    Close
+                  </button>
+                </span>
+              </figcaption>
+            </figure>
           </div>,
           document.body
         )}

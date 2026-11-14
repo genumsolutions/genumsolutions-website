@@ -7,6 +7,26 @@ export const btnPrimary =
 export const btnOutline =
   "rounded-full border border-line px-5 py-3 text-sm font-bold text-muted transition hover:border-navy hover:text-navy";
 
+// ---------------------------------------------------------------
+// Admin buttons (2026-11-14)
+// Owner: admin buttons looked "stretched and uncanny". The cause was three
+// dialects in one form — rounded-full pills, rounded-lg upload buttons and
+// square save/extract buttons — plus buttons with no height floor sitting in
+// flex rows where the default `align-items: stretch` made them taller than
+// their label. One family now: rounded-lg, 40px floor, centred single-line
+// label, visible focus ring, and never `flex-1`/`w-full` so a button keeps its
+// shape next to an input instead of stretching or wrapping.
+// ---------------------------------------------------------------
+export const adminBtn =
+  "inline-flex min-h-[40px] items-center justify-center gap-2 whitespace-nowrap rounded-lg px-5 py-2 text-sm font-black transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy disabled:cursor-not-allowed disabled:opacity-60";
+export const adminBtnPrimary = `${adminBtn} bg-navy text-white hover:bg-navy-dark`;
+export const adminBtnGold = `${adminBtn} bg-gold text-ink hover:bg-gold-dark`;
+export const adminBtnOutline = `${adminBtn} border border-line bg-white text-ink hover:border-navy`;
+export const adminBtnDanger = `${adminBtn} border border-red-200 bg-white text-red-600 hover:border-red-500 hover:bg-red-50`;
+/** Icon-only control on an image tile: 28px (WCAG 2.5.8 floor), focus-ringed. */
+export const adminIconButton =
+  "absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full border border-line bg-white text-sm font-black leading-none text-ink shadow-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy hover:border-red-500 hover:bg-red-50 hover:text-red-600";
+
 export const tabBase =
   "relative -mb-px inline-flex min-h-[44px] items-center gap-2 whitespace-nowrap border-b-2 px-2 pb-3 pt-2 text-sm font-bold uppercase tracking-wider transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy";
 

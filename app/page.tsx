@@ -4,6 +4,9 @@ import { ArrowRight } from "lucide-react";
 import PageShell from "../components/PageShell";
 import HeroCarousel from "../components/HeroCarousel";
 import ProductCard from "../components/ProductCard";
+import PrintPromoSticker from "../components/PrintPromoSticker";
+import { getPrintContent } from "../lib/print-store";
+import { activePrintPromotion } from "../lib/print";
 import { getTrainingPrograms, getPilotCosts, getCurriculumHighlights } from "../lib/programs-store";
 import { getManagedProducts } from "../lib/content-store";
 import { getSiteContent } from "../lib/content-store";
@@ -100,20 +103,27 @@ export default async function HomePage() {
   // with the bundled lists as fallback — one company story on both surfaces.
   // U-38e: printing models come from the same "3D Models" catalog rows the
   // /3d-printing page shows, so the home strip never drifts from the vertical.
-  const [trainingPrograms, pilotCosts, curriculum, featuredElectronic] = await Promise.all([
-    getTrainingPrograms(),
-    getPilotCosts(),
-    getCurriculumHighlights(),
-    // U-46: in-stock electronic products with photos for the hero carousel
-    // (most-updated-first is not exposed on Product — stable name order).
-    getManagedProducts()
-      .then((products) =>
-        applyScope(products, "components")
-          .filter((p) => p.active !== false && p.stock > 0 && Boolean(p.image))
-          .sort((a, b) => a.name.localeCompare(b.name))
-      )
-      .catch(() => []),
-  ]);
+  const [trainingPrograms, pilotCosts, curriculum, featuredElectronic, printPromo] =
+    await Promise.all([
+      getTrainingPrograms(),
+      getPilotCosts(),
+      getCurriculumHighlights(),
+      // U-46: in-stock electronic products with photos for the hero carousel
+      // (most-updated-first is not exposed on Product — stable name order).
+      getManagedProducts()
+        .then((products) =>
+          applyScope(products, "components")
+            .filter((p) => p.active !== false && p.stock > 0 && Boolean(p.image))
+            .sort((a, b) => a.name.localeCompare(b.name))
+        )
+        .catch(() => []),
+      // 2026-11-14 (owner): the landing-page 3D-printing offer sticker. Copy,
+      // dates and on/off live in Admin → 3D Products → Promotions; a failed or
+      // empty read simply means no sticker.
+      getPrintContent()
+        .then((content) => activePrintPromotion(content.promotions))
+        .catch(() => null),
+    ]);
   // U-46: hero carousel slides — the newest 3D prints + electronic products
   // (already fetched above for the strips; no extra DB round-trip).
   // U-47v6 (owner: 3D residue in the landing-page product displays):
@@ -133,6 +143,7 @@ export default async function HomePage() {
   return (
     <PageShell>
       <main>
+        <PrintPromoSticker promo={printPromo} />
         <section className="grid-paper border-b border-line">
           <div className="mx-auto grid max-w-7xl items-center gap-8 px-5 py-12 sm:py-16 lg:grid-cols-[1.1fr_.9fr] lg:gap-14 lg:px-8 lg:py-24">
             <div>
