@@ -62,4 +62,14 @@ describe("sign-up flow", () => {
     expect(panel).toContain("/api/auth/verify");
     expect(panel).toContain('mode === "verify"');
   });
+
+  it("passes an email rate limit through as a retryable 429", () => {
+    // The built-in mailer answers 429 / over_email_send_rate_limit; that used
+    // to be flattened into a generic 500 "Could not register".
+    expect(register).toContain("over_email_send_rate_limit");
+    expect(register).toContain('"Retry-After": "60"');
+    expect(register).toMatch(/status: 429/);
+    // A 500 must stay reserved for an actual signUp failure.
+    expect(register).toMatch(/status: exists \? 409 : 500/);
+  });
 });

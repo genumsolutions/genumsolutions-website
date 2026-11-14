@@ -54,6 +54,27 @@ export async function POST(request: Request) {
     });
 
     if (error) {
+      // Supabase's built-in mailer throttles confirmation emails and answers
+      // 429 "over_email_send_rate_limit". That is not a server fault: a retry
+      // in a minute works. Reporting it as a generic 500 told the customer to
+      // "try again" with no hint why, and made the scheduled UX probe look
+      // like a broken registration flow.
+      const authError = error as { status?: number; code?: string; message: string };
+      const rateLimited =
+        authError.status === 429 ||
+        /rate limit|over_email_send_rate_limit|too many requests/i.test(
+          `${authError.code ?? ""} ${error.message}`
+        );
+      if (rateLimited) {
+        return NextResponse.json(
+          {
+            error:
+              "Confirmation emails are temporarily rate-limited. Please wait a minute and try again.",
+          },
+          { status: 429, headers: { "Retry-After": "60" } }
+        );
+      }
+
       const exists = /already registered|already exists/i.test(error.message);
       return NextResponse.json(
         {
