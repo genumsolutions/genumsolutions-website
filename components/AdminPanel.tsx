@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import { tabActive, tabBase, tabInactive } from "../lib/styles";
 import { isAdminRole } from "../lib/roles";
 import type { Product } from "../lib/content-store";
@@ -39,6 +40,82 @@ type Props = {
 // U-44: tab ids must be URL/DOM-safe — "Electronic Products" → "electronic-products".
 const panelId = (name: string) => name.toLowerCase().replace(/\s+/g, "-");
 
+const ORDER_SECTIONS = ["Orders", "Finance"] as const;
+type OrderSection = (typeof ORDER_SECTIONS)[number];
+const CONTENT_SECTIONS = ["Services", "Journal", "Content"] as const;
+type ContentSection = (typeof CONTENT_SECTIONS)[number];
+const USER_SECTIONS = ["Users", "Messages", "Logs"] as const;
+type UserSection = (typeof USER_SECTIONS)[number];
+
+function AdminSectionTabs<T extends string>({
+  group,
+  label,
+  tabs,
+  active,
+  onChange,
+  panels,
+}: {
+  group: string;
+  label: string;
+  tabs: readonly T[];
+  active: T;
+  onChange: (tab: T) => void;
+  panels: readonly { tab: T; content: ReactNode }[];
+}) {
+  return (
+    <>
+      <div className="sticky top-11 z-10 -mx-5 mt-4 border-b border-line bg-white/95 px-5 backdrop-blur lg:-mx-8 lg:px-8">
+        <div
+          role="tablist"
+          aria-label={label}
+          className="flex items-center gap-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {tabs.map((tab) => {
+            const selected = active === tab;
+            const id = panelId(tab);
+            return (
+              <button
+                key={tab}
+                id={`${group}-tab-${id}`}
+                role="tab"
+                aria-selected={selected}
+                aria-controls={`${group}-panel-${id}`}
+                tabIndex={selected ? 0 : -1}
+                onClick={() => onChange(tab)}
+                className={`${tabBase} text-[11px] ${selected ? tabActive : tabInactive}`}
+              >
+                {tab}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <div className="min-w-0">
+        {panels.map(({ tab, content }) => {
+          const selected = active === tab;
+          const id = panelId(tab);
+          return (
+            <div
+              key={tab}
+              id={`${group}-panel-${id}`}
+              role="tabpanel"
+              aria-labelledby={`${group}-tab-${id}`}
+              hidden={!selected}
+              {...({ inert: selected ? undefined : "" } as Record<
+                string,
+                string | undefined
+              >)}
+              className="min-w-0"
+            >
+              {content}
+            </div>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
 type TabIconMap = {
   [K in Tab]: LucideIconType;
 };
@@ -59,6 +136,10 @@ export default function AdminPanel({ initialProducts, currentRole }: Props) {
   const [products, setProducts] = useState(initialProducts);
   const [message, setMessage] = useState("");
   const [visited, setVisited] = useState<Set<number>>(() => new Set([0]));
+  const [ordersSection, setOrdersSection] = useState<OrderSection>("Orders");
+  const [contentSection, setContentSection] =
+    useState<ContentSection>("Services");
+  const [userSection, setUserSection] = useState<UserSection>("Users");
 
   const canDelete = isAdminRole(currentRole);
   const tabIndex = TABS.indexOf(tab);
@@ -86,10 +167,17 @@ export default function AdminPanel({ initialProducts, currentRole }: Props) {
         );
       case "Orders":
         return (
-          <>
-            <AdminOrders canDelete={canDelete} />
-            <AdminFinance />
-          </>
+          <AdminSectionTabs
+            group="orders"
+            label="Order sections"
+            tabs={ORDER_SECTIONS}
+            active={ordersSection}
+            onChange={setOrdersSection}
+            panels={[
+              { tab: "Orders", content: <AdminOrders canDelete={canDelete} /> },
+              { tab: "Finance", content: <AdminFinance /> },
+            ]}
+          />
         );
       case "Electronic Products":
         return (
@@ -124,22 +212,74 @@ export default function AdminPanel({ initialProducts, currentRole }: Props) {
         );
       case "Content":
         return (
-          <>
-            <AdminServices setMessage={setMessage} canDelete={canDelete} />
-            <AdminJournal setMessage={setMessage} canDelete={canDelete} />
-            <AdminContent setMessage={setMessage} canDelete={canDelete} />
-          </>
+          <AdminSectionTabs
+            group="content"
+            label="Content sections"
+            tabs={CONTENT_SECTIONS}
+            active={contentSection}
+            onChange={setContentSection}
+            panels={[
+              {
+                tab: "Services",
+                content: (
+                  <AdminServices
+                    setMessage={setMessage}
+                    canDelete={canDelete}
+                  />
+                ),
+              },
+              {
+                tab: "Journal",
+                content: (
+                  <AdminJournal
+                    setMessage={setMessage}
+                    canDelete={canDelete}
+                  />
+                ),
+              },
+              {
+                tab: "Content",
+                content: (
+                  <AdminContent
+                    setMessage={setMessage}
+                    canDelete={canDelete}
+                  />
+                ),
+              },
+            ]}
+          />
         );
       case "Users":
         return (
-          <>
-            <AdminUsers setMessage={setMessage} canDelete={canDelete} currentRole={currentRole} />
-            {/* 2026-11-13 (batch 4): customer messages + newsletter subscribers
-                are about people, not company settings — they moved here from
-                the Settings tab (mirrored in the app's AdminScreen). */}
-            <AdminMessages setMessage={setMessage} canDelete={canDelete} />
-            <AdminLogsHub />
-          </>
+          <AdminSectionTabs
+            group="users"
+            label="User administration sections"
+            tabs={USER_SECTIONS}
+            active={userSection}
+            onChange={setUserSection}
+            panels={[
+              {
+                tab: "Users",
+                content: (
+                  <AdminUsers
+                    setMessage={setMessage}
+                    canDelete={canDelete}
+                    currentRole={currentRole}
+                  />
+                ),
+              },
+              {
+                tab: "Messages",
+                content: (
+                  <AdminMessages
+                    setMessage={setMessage}
+                    canDelete={canDelete}
+                  />
+                ),
+              },
+              { tab: "Logs", content: <AdminLogsHub /> },
+            ]}
+          />
         );
       case "Settings":
         return <AdminSettings setMessage={setMessage} canDelete={canDelete} />;
