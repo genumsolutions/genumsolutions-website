@@ -2,6 +2,12 @@ import { NextResponse } from "next/server";
 import { getPublishedProjectPricing } from "../../../../lib/project-pricing-store";
 
 export const dynamic = "force-dynamic";
+// 2026-11-14: `smart-dustbin` kept answering `pricing: null` long after its row
+// was approved, while its ten siblings were live. The row and the code were
+// both correct (a local `next dev` against the same database returned it), so
+// a build-time fetch was serving the stale value for that one URL. Opting the
+// route's fetches out of the data cache is the documented fix.
+export const fetchCache = "force-no-store";
 
 /** Public project pricing row for one project package.
  *
