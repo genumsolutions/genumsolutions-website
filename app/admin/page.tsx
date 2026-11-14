@@ -42,10 +42,18 @@ export default async function AdminPage() {
     <main className="min-h-0 bg-mist">
       <header className="border-b border-line bg-white">
         <div className="mx-auto max-w-7xl px-5 py-5 lg:px-8">
-          <div className="flex items-center justify-between gap-4">
+          {/* 2026-11-14 (phone-viewport sweep): at 390px the brand + role badge +
+              the long staff email + "Log out" did not fit in one row, so the
+              logout control ran past the viewport edge and `overflow-x: clip`
+              on the document sliced 6px off it on every tab. The header now
+              wraps: brand stays first, the account controls drop onto a second
+              line on narrow screens and stay right-aligned on wider ones. The
+              email is shown (truncated) at every width so you can still confirm
+              which account is signed in. */}
+          <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
             <Link
               href="/"
-              className="group flex shrink-0 items-center gap-3"
+              className="group flex min-w-0 shrink-0 items-center gap-3"
               aria-label="GENUM SOLUTIONS home"
             >
               <span className="relative block h-10 w-10 shrink-0 overflow-hidden rounded-full bg-white shadow-card ring-1 ring-line transition group-hover:ring-navy/40 sm:h-12 sm:w-12">
@@ -68,7 +76,7 @@ export default async function AdminPage() {
                 </span>
               </span>
             </Link>
-            <div className="flex min-w-0 items-center gap-3">
+            <div className="flex min-w-0 w-full items-center justify-end gap-2 sm:w-auto sm:gap-3">
               <span
                 className={`shrink-0 rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] ${
                   role === "staff" ? "border border-line bg-white text-navy" : "bg-navy text-white"
@@ -78,7 +86,7 @@ export default async function AdminPage() {
                 {roleLabel}
               </span>
               <span
-                className="hidden max-w-[16rem] truncate text-xs font-semibold text-muted md:block"
+                className="min-w-0 max-w-[12rem] truncate text-xs font-semibold text-muted sm:max-w-[16rem]"
                 title={admin.email}
               >
                 {admin.email}

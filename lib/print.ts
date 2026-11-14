@@ -470,30 +470,6 @@ export function activePromotion(
   );
 }
 
-/**
- * The one promotion a customer surface may advertise right now.
- *
- * 2026-11-14: `getPrintContent` returns every promotion row it can read (the
- * service role bypasses RLS), so public surfaces must gate on `active` AND the
- * live window themselves — which is what this does. Returns null when nothing
- * is running, so callers can simply not render.
- */
-export function activePrintPromotion(
-  promotions: PrintPromotion[],
-  now: Date = new Date()
-): PrintPromotion | null {
-  const time = now.getTime();
-  const running = promotions
-    .filter((promo) => promo.active)
-    .filter((promo) => {
-      if (promo.startsAt && new Date(promo.startsAt).getTime() > time) return false;
-      if (promo.endsAt && new Date(promo.endsAt).getTime() < time) return false;
-      return true;
-    })
-    .sort((a, b) => a.sortOrder - b.sortOrder);
-  return running[0] ?? null;
-}
-
 export function promotionBadge(promo: PrintPromotion): string {
   if (promo.discountType === "percent" && promo.discountValue > 0)
     return `${promo.discountValue}% off`;

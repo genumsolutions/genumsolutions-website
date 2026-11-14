@@ -6,7 +6,7 @@ import HeroCarousel from "../components/HeroCarousel";
 import ProductCard from "../components/ProductCard";
 import PrintPromoSticker from "../components/PrintPromoSticker";
 import { getPrintContent } from "../lib/print-store";
-import { activePrintPromotion } from "../lib/print";
+import { activePromotion } from "../lib/print";
 import { getTrainingPrograms, getPilotCosts, getCurriculumHighlights } from "../lib/programs-store";
 import { getManagedProducts } from "../lib/content-store";
 import { getSiteContent } from "../lib/content-store";
@@ -121,7 +121,7 @@ export default async function HomePage() {
       // dates and on/off live in Admin → 3D Products → Promotions; a failed or
       // empty read simply means no sticker.
       getPrintContent()
-        .then((content) => activePrintPromotion(content.promotions))
+        .then((content) => activePromotion(content.promotions))
         .catch(() => null),
     ]);
   // U-46: hero carousel slides — the newest 3D prints + electronic products
