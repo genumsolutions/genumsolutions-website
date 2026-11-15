@@ -58,6 +58,7 @@ export async function PUT(request: Request) {
           tiktokUrl: c.tiktokUrl ?? "",
           linkedinUrl: c.linkedinUrl ?? "",
           youtubeUrl: c.youtubeUrl ?? "",
+          url: c.url ?? "",
         });
         await logActivity({ action: "company.saved", entityType: "company_info", entityId: "1" });
         revalidateCompany();

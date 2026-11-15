@@ -147,6 +147,7 @@ describe("getManagedSettings", () => {
       tiktokUrl: "",
       linkedinUrl: "",
       youtubeUrl: "",
+      url: "",
     });
   });
 });
@@ -237,6 +238,7 @@ describe("save mutations (camelCase in, snake_case out)", () => {
       tiktokUrl: "",
       linkedinUrl: "",
       youtubeUrl: "",
+      url: "https://genumsolutions.com",
     });
     expect(state.upserts[0]!.table).toBe("company_info");
     expect(state.upserts[0]!.row).toMatchObject({
@@ -249,6 +251,9 @@ describe("save mutations (camelCase in, snake_case out)", () => {
     expect(state.upserts[0]!.row.whatsapp_number).toBe("9779861842552");
     expect(state.upserts[0]!.row.facebook_url).toBe("https://facebook.com/genum");
     expect(state.upserts[0]!.row.instagram_url).toBe("");
+    // The app's Settings form had a Website URL input before this column
+    // existed; it now round-trips through both consoles.
+    expect(state.upserts[0]!.row.url).toBe("https://genumsolutions.com");
     expect(state.upserts[0]!.row.updated_at).toBeTruthy();
     expect(state.invalidateCalls).toBe(1);
   });

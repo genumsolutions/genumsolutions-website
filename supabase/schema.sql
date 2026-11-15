@@ -837,6 +837,9 @@ create table if not exists public.company_info (
   tiktok_url text not null default '',
   linkedin_url text not null default '',
   youtube_url text not null default '',
+  -- Public site URL. The app's Settings form had this field before the column
+  -- existed, so it was never persisted; both consoles write it now.
+  url text not null default '',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -847,6 +850,7 @@ alter table public.company_info add column if not exists facebook_url text not n
 alter table public.company_info add column if not exists instagram_url text not null default '';
 alter table public.company_info add column if not exists tiktok_url text not null default '';
 alter table public.company_info add column if not exists linkedin_url text not null default '';
+alter table public.company_info add column if not exists url text not null default '';
 alter table public.company_info add column if not exists youtube_url text not null default '';
 
 alter table public.company_info enable row level security;

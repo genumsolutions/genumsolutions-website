@@ -42,6 +42,7 @@ export type ManagedCompanyInfo = {
   tiktokUrl: string;
   linkedinUrl: string;
   youtubeUrl: string;
+  url: string;
 };
 
 export type ManagedTrainingProgram = {
@@ -96,6 +97,7 @@ const emptyCompany: ManagedCompanyInfo = {
   tiktokUrl: "",
   linkedinUrl: "",
   youtubeUrl: "",
+  url: "",
 };
 
 export async function getManagedSettings(): Promise<SettingsBundle> {
@@ -127,6 +129,7 @@ export async function getManagedSettings(): Promise<SettingsBundle> {
         tiktokUrl: companyRow.tiktok_url ?? "",
         linkedinUrl: companyRow.linkedin_url ?? "",
         youtubeUrl: companyRow.youtube_url ?? "",
+        url: companyRow.url ?? "",
       }
     : { ...emptyCompany };
 
@@ -182,6 +185,7 @@ export async function saveCompanyInfo(info: ManagedCompanyInfo): Promise<void> {
     tiktok_url: info.tiktokUrl,
     linkedin_url: info.linkedinUrl,
     youtube_url: info.youtubeUrl,
+    url: info.url,
     updated_at: new Date().toISOString(),
   });
   await invalidateCompanyCache();

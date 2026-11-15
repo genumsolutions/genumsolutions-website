@@ -29,6 +29,7 @@ type CompanyInfo = {
   tiktokUrl: string;
   linkedinUrl: string;
   youtubeUrl: string;
+  url: string;
 };
 
 const emptyCompany: CompanyInfo = {
@@ -48,6 +49,7 @@ const emptyCompany: CompanyInfo = {
   tiktokUrl: "",
   linkedinUrl: "",
   youtubeUrl: "",
+  url: "",
 };
 
 const SECTIONS = [
@@ -271,6 +273,17 @@ export default function AdminSettings({ setMessage, canDelete: _canDelete }: Pro
                     value={company.youtubeUrl}
                     onChange={(e) => setCompany({ ...company, youtubeUrl: e.target.value })}
                     placeholder="https://youtube.com/@…"
+                    className={`mt-2 w-full ${inputClass}`}
+                  />
+                </label>
+                {/* Same field as the app's Settings → Social & messaging, so the
+                    two consoles hold the identical company record. */}
+                <label className="min-w-0 text-sm font-bold">
+                  Website URL
+                  <input
+                    value={company.url}
+                    onChange={(e) => setCompany({ ...company, url: e.target.value })}
+                    placeholder="https://example.com"
                     className={`mt-2 w-full ${inputClass}`}
                   />
                 </label>
