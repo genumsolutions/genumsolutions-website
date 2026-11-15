@@ -44,6 +44,7 @@ import {
   panelTitle,
   PanelCard,
 } from "./admin-helpers";
+import { AdminEditorSheet } from "./AdminEditorSheet";
 
 // The existing "3D Products" tab becomes a workspace with sub-tabs. The global
 // tab strip (and both repos' parity tests) stays untouched: catalog, pricing,
@@ -393,6 +394,10 @@ function billedGramCost(costing: PrintCosting): number {
 
 export default function AdminPrint({ products, onProductsChange, setMessage, canDelete }: Props) {
   const [section, setSection] = useState<Section>("Catalog");
+  // Add/edit forms open in a sheet; null keeps every fieldset closed.
+  const [editorOpen, setEditorOpen] = useState<
+    null | "category" | "promotion" | "service" | "gallery" | "material" | "calculator"
+  >(null);
   // Storefront preview for the records that publish a card on /3d-printing.
   const [preview, setPreview] = useState<{
     eyebrow: string;
@@ -539,7 +544,19 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
       {section === "Categories" && (
         <div className="mt-4 grid min-w-0 gap-4 xl:grid-cols-[1fr_1.3fr]">
           <PanelCard>
-            <h2 className={panelTitle}>Categories ({categories.length})</h2>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className={panelTitle}>Categories ({categories.length})</h2>
+              <button
+                type="button"
+                onClick={() => {
+                  setCategory(emptyCategory);
+                  setEditorOpen("category");
+                }}
+                className="min-h-[36px] rounded-full bg-navy px-4 text-xs font-black text-white transition hover:bg-navy-dark"
+              >
+                + Add category
+              </button>
+            </div>
             <div className="mt-3 divide-y divide-line">
               {categories.map((item) => (
                 <div key={item.id} className={`${cardRow} items-center`}>
@@ -567,7 +584,14 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
                             active: item.active,
                           }),
                       },
-                      { label: "Edit", tone: "navy", onClick: () => setCategory(item) },
+                      {
+                        label: "Edit",
+                        tone: "navy",
+                        onClick: () => {
+                          setCategory(item);
+                          setEditorOpen("category");
+                        },
+                      },
                       {
                         label: item.active ? "Hide" : "Show",
                         tone: "ink",
@@ -592,90 +616,104 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
             </div>
           </PanelCard>
 
-          <form
-            className={editorCard}
-            onSubmit={async (event: FormEvent) => {
-              event.preventDefault();
-              if (!category.id || !category.name) {
-                setMessage("Category needs an id and a name.");
-                return;
-              }
-              if (await save("categories", category, "Category saved.")) setCategory(emptyCategory);
-            }}
-          >
-            <h2 className={editorCardTitle}>
-              {categories.some((item) => item.id === category.id)
-                ? "Edit category"
-                : "Add category"}
-            </h2>
-            <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              <label className={oneLine}>
-                Id
-                <input
-                  value={category.id}
-                  onChange={(e) => setCategory({ ...category, id: e.target.value })}
-                  placeholder="home-decor"
-                  className={`mt-2 w-full ${inputClass}`}
-                />
-              </label>
-              <label className={oneLine}>
-                Name
-                <input
-                  value={category.name}
-                  onChange={(e) => setCategory({ ...category, name: e.target.value })}
-                  className={`mt-2 w-full ${inputClass}`}
-                />
-              </label>
-              <label className={`${oneLine} sm:col-span-2`}>
-                Description
-                <textarea
-                  value={category.description}
-                  onChange={(e) => setCategory({ ...category, description: e.target.value })}
-                  rows={3}
-                  className={`mt-2 w-full ${inputClass}`}
-                />
-              </label>
-              <ImageField
-                label="Category image"
-                value={category.image}
-                onChange={(image) => setCategory({ ...category, image })}
-              />
-              <label className={oneLine}>
-                Sort order
-                <input
-                  type="number"
-                  value={category.sortOrder}
-                  onChange={(e) => setCategory({ ...category, sortOrder: Number(e.target.value) })}
-                  className={`mt-2 w-full ${inputClass}`}
-                />
-              </label>
-              <label className="flex items-center gap-2 text-sm font-bold">
-                <input
-                  type="checkbox"
-                  checked={category.active}
-                  onChange={(e) => setCategory({ ...category, active: e.target.checked })}
-                  className="h-4 w-4"
-                />{" "}
-                Active
-              </label>
-            </div>
-            <SaveBar>
-              <button
-                type="submit"
-                disabled={busy}
-                className="bg-gold px-5 py-3 text-sm font-black text-ink transition hover:bg-gold-dark disabled:opacity-60"
+          {editorOpen === "category" ? (
+            <AdminEditorSheet
+              title="Category"
+              hint="Publishes as a category card on the /3d-printing storefront."
+              onClose={() => setEditorOpen(null)}
+            >
+              <form
+                className={editorCard}
+                onSubmit={async (event: FormEvent) => {
+                  event.preventDefault();
+                  if (!category.id || !category.name) {
+                    setMessage("Category needs an id and a name.");
+                    return;
+                  }
+                  if (await save("categories", category, "Category saved."))
+                    setCategory(emptyCategory);
+                }}
               >
-                {busy ? "Saving..." : "Save category"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setCategory(emptyCategory)}
-                className="border border-line px-5 py-3 text-sm font-black text-ink transition hover:border-navy"
-              >
-                New
-              </button>
-            </SaveBar>
-          </form>
+                <h2 className={editorCardTitle}>
+                  {categories.some((item) => item.id === category.id)
+                    ? "Edit category"
+                    : "Add category"}
+                </h2>
+                <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                  <label className={oneLine}>
+                    Id
+                    <input
+                      value={category.id}
+                      onChange={(e) => setCategory({ ...category, id: e.target.value })}
+                      placeholder="home-decor"
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <label className={oneLine}>
+                    Name
+                    <input
+                      value={category.name}
+                      onChange={(e) => setCategory({ ...category, name: e.target.value })}
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <label className={`${oneLine} sm:col-span-2`}>
+                    Description
+                    <textarea
+                      value={category.description}
+                      onChange={(e) => setCategory({ ...category, description: e.target.value })}
+                      rows={3}
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <ImageField
+                    label="Category image"
+                    value={category.image}
+                    onChange={(image) => setCategory({ ...category, image })}
+                  />
+                  <label className={oneLine}>
+                    Sort order
+                    <input
+                      type="number"
+                      value={category.sortOrder}
+                      onChange={(e) =>
+                        setCategory({ ...category, sortOrder: Number(e.target.value) })
+                      }
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <label className="flex items-center gap-2 text-sm font-bold">
+                    <input
+                      type="checkbox"
+                      checked={category.active}
+                      onChange={(e) => setCategory({ ...category, active: e.target.checked })}
+                      className="h-4 w-4"
+                    />{" "}
+                    Active
+                  </label>
+                </div>
+                <SaveBar>
+                  <button
+                    type="submit"
+                    disabled={busy}
+                    className="bg-gold px-5 py-3 text-sm font-black text-ink transition hover:bg-gold-dark disabled:opacity-60"
+                  >
+                    {busy ? "Saving..." : "Save category"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCategory(emptyCategory);
+                      setEditorOpen(null);
+                    }}
+                    className="border border-line px-5 py-3 text-sm font-black text-ink transition hover:border-navy"
+                  >
+                    New
+                  </button>
+                </SaveBar>
+              </form>
+            </AdminEditorSheet>
+          ) : null}
         </div>
       )}
 
@@ -727,7 +765,19 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
           </PanelCard>
           <div className="grid gap-4 xl:grid-cols-[1fr_1.3fr]">
             <PanelCard>
-              <h2 className={panelTitle}>Materials ({materials.length})</h2>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className={panelTitle}>Materials ({materials.length})</h2>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMaterial(emptyMaterial);
+                    setEditorOpen("material");
+                  }}
+                  className="min-h-[36px] rounded-full bg-navy px-4 text-xs font-black text-white transition hover:bg-navy-dark"
+                >
+                  + Add material
+                </button>
+              </div>
               <div className="mt-3 divide-y divide-line">
                 {materials.map((item) => (
                   <div key={item.id} className={`${cardRow} items-center`}>
@@ -744,7 +794,14 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
                     </div>
                     <RowActions
                       actions={[
-                        { label: "Edit", tone: "navy", onClick: () => setMaterial(item) },
+                        {
+                          label: "Edit",
+                          tone: "navy",
+                          onClick: () => {
+                            setMaterial(item);
+                            setEditorOpen("material");
+                          },
+                        },
                         {
                           label: item.active ? "Hide" : "Show",
                           tone: "ink",
@@ -768,319 +825,377 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
               </div>
             </PanelCard>
 
-            <form
-              className={editorCard}
-              onSubmit={async (event: FormEvent) => {
-                event.preventDefault();
-                if (!material.id || !material.name) {
-                  setMessage("Material needs an id and a name.");
-                  return;
-                }
-                if (await save("materials", material, "Material saved."))
-                  setMaterial(emptyMaterial);
-              }}
-            >
-              <h2 className={editorCardTitle}>Material rate</h2>
-              <p className="mt-2 text-xs text-muted">
-                A rate of 0 keeps the material &quot;rate on request&quot; and stops the calculator
-                from pricing it. Rates only appear publicly once you enter them here.
-              </p>
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                <label className={oneLine}>
-                  Id
-                  <input
-                    value={material.id}
-                    onChange={(e) => setMaterial({ ...material, id: e.target.value })}
-                    placeholder="pla"
-                    className={`mt-2 w-full ${inputClass}`}
-                  />
-                </label>
-                <label className={oneLine}>
-                  Name
-                  <input
-                    value={material.name}
-                    onChange={(e) => setMaterial({ ...material, name: e.target.value })}
-                    className={`mt-2 w-full ${inputClass}`}
-                  />
-                </label>
-                <label className={oneLine}>
-                  Rate per gram (NPR)
-                  <input
-                    type="number"
-                    min={0}
-                    value={material.ratePerGram}
-                    onChange={(e) =>
-                      setMaterial({ ...material, ratePerGram: Number(e.target.value) })
+            {editorOpen === "material" ? (
+              <AdminEditorSheet
+                title="Material"
+                hint="NPR per gram; zero keeps it rate on request."
+                onClose={() => setEditorOpen(null)}
+              >
+                <form
+                  className={editorCard}
+                  onSubmit={async (event: FormEvent) => {
+                    event.preventDefault();
+                    if (!material.id || !material.name) {
+                      setMessage("Material needs an id and a name.");
+                      return;
                     }
-                    className={`mt-2 w-full ${inputClass}`}
-                  />
-                </label>
-                <label className={oneLine}>
-                  Sort order
-                  <input
-                    type="number"
-                    value={material.sortOrder}
-                    onChange={(e) =>
-                      setMaterial({ ...material, sortOrder: Number(e.target.value) })
+                    if (await save("materials", material, "Material saved.")) {
+                      setMaterial(emptyMaterial);
+                      setEditorOpen(null);
                     }
-                    className={`mt-2 w-full ${inputClass}`}
-                  />
-                </label>
-                <label className={`${oneLine} sm:col-span-2`}>
-                  Description
-                  <textarea
-                    value={material.description}
-                    onChange={(e) => setMaterial({ ...material, description: e.target.value })}
-                    rows={3}
-                    className={`mt-2 w-full ${inputClass}`}
-                  />
-                </label>
-                <label className={`${oneLine} sm:col-span-2`}>
-                  Customer-facing note
-                  <input
-                    value={material.note}
-                    onChange={(e) => setMaterial({ ...material, note: e.target.value })}
-                    className={`mt-2 w-full ${inputClass}`}
-                  />
-                </label>
-                <label className="flex items-center gap-2 text-sm font-bold">
-                  <input
-                    type="checkbox"
-                    checked={material.active}
-                    onChange={(e) => setMaterial({ ...material, active: e.target.checked })}
-                    className="h-4 w-4"
-                  />{" "}
-                  Active
-                </label>
-              </div>
-              <SaveBar>
-                <button
-                  type="submit"
-                  disabled={busy}
-                  className="bg-gold px-5 py-3 text-sm font-black text-ink transition hover:bg-gold-dark disabled:opacity-60"
+                  }}
                 >
-                  {busy ? "Saving..." : "Save material"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMaterial(emptyMaterial)}
-                  className="border border-line px-5 py-3 text-sm font-black text-ink transition hover:border-navy"
-                >
-                  New
-                </button>
-              </SaveBar>
-            </form>
-          </div>
-
-          <form
-            className={editorCard}
-            onSubmit={(event) => {
-              event.preventDefault();
-              void save("settings", settings, "Calculator settings saved.");
-            }}
-          >
-            <h2 className={editorCardTitle}>Calculator &amp; order rules</h2>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <label className="flex items-center gap-2 text-sm font-bold sm:col-span-2">
-                <input
-                  type="checkbox"
-                  checked={settings.calculatorEnabled}
-                  onChange={(e) =>
-                    setSettings({ ...settings, calculatorEnabled: e.target.checked })
-                  }
-                  className="h-4 w-4"
-                />{" "}
-                Show the public calculator (requires at least one material rate)
-              </label>
-              <label className={oneLine}>
-                Minimum order (NPR)
-                <input
-                  type="number"
-                  min={0}
-                  value={settings.minimumOrder}
-                  onChange={(e) =>
-                    setSettings({ ...settings, minimumOrder: Number(e.target.value) })
-                  }
-                  className={`mt-2 w-full ${inputClass}`}
-                />
-              </label>
-              <label className={oneLine}>
-                Design base charge (NPR)
-                <input
-                  type="number"
-                  min={0}
-                  value={settings.designBaseCharge}
-                  onChange={(e) =>
-                    setSettings({ ...settings, designBaseCharge: Number(e.target.value) })
-                  }
-                  className={`mt-2 w-full ${inputClass}`}
-                />
-              </label>
-              <label className={`${oneLine} sm:col-span-2`}>
-                Materials introduction (shown above PLA/PETG)
-                <textarea
-                  value={settings.materialsIntro}
-                  onChange={(e) => setSettings({ ...settings, materialsIntro: e.target.value })}
-                  rows={3}
-                  className={`mt-2 w-full ${inputClass}`}
-                />
-              </label>
-              <label className={`${oneLine} sm:col-span-2`}>
-                Estimate disclaimer
-                <textarea
-                  value={settings.disclaimer}
-                  onChange={(e) => setSettings({ ...settings, disclaimer: e.target.value })}
-                  rows={2}
-                  className={`mt-2 w-full ${inputClass}`}
-                />
-              </label>
-              <label className={`${oneLine} sm:col-span-2`}>
-                Hero image URL
-                <input
-                  value={settings.heroImage}
-                  onChange={(e) => setSettings({ ...settings, heroImage: e.target.value })}
-                  placeholder="https://..."
-                  className={`mt-2 w-full ${inputClass}`}
-                />
-              </label>
-              <div className="sm:col-span-2">
-                <p className="text-sm font-bold">Finishing charges</p>
-                {settings.finishingCharges.map((charge, index) => (
-                  <div key={charge.id} className="mt-2 flex flex-wrap items-end gap-2">
-                    <input
-                      value={charge.name}
-                      aria-label="Finishing name"
-                      onChange={(e) => {
-                        const next = [...settings.finishingCharges];
-                        next[index] = { ...charge, name: e.target.value };
-                        setSettings({ ...settings, finishingCharges: next });
-                      }}
-                      className={`min-w-0 flex-1 ${inputClass}`}
-                    />
-                    <input
-                      type="number"
-                      min={0}
-                      aria-label="Finishing amount"
-                      value={charge.amount}
-                      onChange={(e) => {
-                        const next = [...settings.finishingCharges];
-                        next[index] = { ...charge, amount: Number(e.target.value) };
-                        setSettings({ ...settings, finishingCharges: next });
-                      }}
-                      className={`w-32 ${inputClass}`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setSettings({
-                          ...settings,
-                          finishingCharges: settings.finishingCharges.filter((_, i) => i !== index),
-                        })
-                      }
-                      className="rounded-lg border border-line px-3 py-3 text-xs font-black text-red-600"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={() =>
-                    setSettings({
-                      ...settings,
-                      finishingCharges: [
-                        ...settings.finishingCharges,
-                        {
-                          id: `finish-${settings.finishingCharges.length + 1}`,
-                          name: "",
-                          amount: 0,
-                        },
-                      ],
-                    })
-                  }
-                  className="mt-2 rounded-lg border border-line px-4 py-2 text-xs font-black text-ink hover:border-navy"
-                >
-                  Add finishing charge
-                </button>
-              </div>
-              <div className="sm:col-span-2">
-                <p className="text-sm font-bold">Bulk tiers (quantity → % off print + finishing)</p>
-                {settings.bulkTiers.map((tier, index) => (
-                  <div key={index} className="mt-2 flex flex-wrap items-center gap-2">
-                    <label className="text-xs font-bold">
-                      Min qty
+                  <h2 className={editorCardTitle}>Material rate</h2>
+                  <p className="mt-2 text-xs text-muted">
+                    A rate of 0 keeps the material &quot;rate on request&quot; and stops the
+                    calculator from pricing it. Rates only appear publicly once you enter them here.
+                  </p>
+                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                    <label className={oneLine}>
+                      Id
                       <input
-                        type="number"
-                        min={1}
-                        value={tier.minQty}
-                        onChange={(e) => {
-                          const next = [...settings.bulkTiers];
-                          next[index] = { ...tier, minQty: Number(e.target.value) };
-                          setSettings({ ...settings, bulkTiers: next });
-                        }}
-                        className={`ml-2 w-24 ${inputClass}`}
+                        value={material.id}
+                        onChange={(e) => setMaterial({ ...material, id: e.target.value })}
+                        placeholder="pla"
+                        className={`mt-2 w-full ${inputClass}`}
                       />
                     </label>
-                    <label className="text-xs font-bold">
-                      Discount %
+                    <label className={oneLine}>
+                      Name
+                      <input
+                        value={material.name}
+                        onChange={(e) => setMaterial({ ...material, name: e.target.value })}
+                        className={`mt-2 w-full ${inputClass}`}
+                      />
+                    </label>
+                    <label className={oneLine}>
+                      Rate per gram (NPR)
                       <input
                         type="number"
                         min={0}
-                        max={90}
-                        value={tier.discountPercent}
-                        onChange={(e) => {
-                          const next = [...settings.bulkTiers];
-                          next[index] = { ...tier, discountPercent: Number(e.target.value) };
-                          setSettings({ ...settings, bulkTiers: next });
-                        }}
-                        className={`ml-2 w-24 ${inputClass}`}
+                        value={material.ratePerGram}
+                        onChange={(e) =>
+                          setMaterial({ ...material, ratePerGram: Number(e.target.value) })
+                        }
+                        className={`mt-2 w-full ${inputClass}`}
                       />
                     </label>
+                    <label className={oneLine}>
+                      Sort order
+                      <input
+                        type="number"
+                        value={material.sortOrder}
+                        onChange={(e) =>
+                          setMaterial({ ...material, sortOrder: Number(e.target.value) })
+                        }
+                        className={`mt-2 w-full ${inputClass}`}
+                      />
+                    </label>
+                    <label className={`${oneLine} sm:col-span-2`}>
+                      Description
+                      <textarea
+                        value={material.description}
+                        onChange={(e) => setMaterial({ ...material, description: e.target.value })}
+                        rows={3}
+                        className={`mt-2 w-full ${inputClass}`}
+                      />
+                    </label>
+                    <label className={`${oneLine} sm:col-span-2`}>
+                      Customer-facing note
+                      <input
+                        value={material.note}
+                        onChange={(e) => setMaterial({ ...material, note: e.target.value })}
+                        className={`mt-2 w-full ${inputClass}`}
+                      />
+                    </label>
+                    <label className="flex items-center gap-2 text-sm font-bold">
+                      <input
+                        type="checkbox"
+                        checked={material.active}
+                        onChange={(e) => setMaterial({ ...material, active: e.target.checked })}
+                        className="h-4 w-4"
+                      />{" "}
+                      Active
+                    </label>
+                  </div>
+                  <SaveBar>
+                    <button
+                      type="submit"
+                      disabled={busy}
+                      className="bg-gold px-5 py-3 text-sm font-black text-ink transition hover:bg-gold-dark disabled:opacity-60"
+                    >
+                      {busy ? "Saving..." : "Save material"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMaterial(emptyMaterial);
+                        setEditorOpen(null);
+                      }}
+                      className="border border-line px-5 py-3 text-sm font-black text-ink transition hover:border-navy"
+                    >
+                      New
+                    </button>
+                  </SaveBar>
+                </form>
+              </AdminEditorSheet>
+            ) : null}
+          </div>
+
+          <PanelCard>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className={panelTitle}>Calculator &amp; order rules</h2>
+              <button
+                type="button"
+                onClick={() => setEditorOpen("calculator")}
+                className="min-h-[36px] rounded-full border border-line px-4 text-xs font-bold text-ink transition hover:border-navy"
+              >
+                Edit rules
+              </button>
+            </div>
+            <p className="mt-2 break-words text-sm leading-6 text-muted">
+              {settings.calculatorEnabled ? "Calculator is live" : "Calculator hidden"} · minimum
+              order {settings.minimumOrder} NPR · design base {settings.designBaseCharge} NPR ·{" "}
+              {settings.bulkTiers.length} bulk tier
+              {settings.bulkTiers.length === 1 ? "" : "s"} · {settings.finishingCharges.length}{" "}
+              finishing charge
+              {settings.finishingCharges.length === 1 ? "" : "s"}
+            </p>
+          </PanelCard>
+
+          {editorOpen === "calculator" ? (
+            <AdminEditorSheet
+              title="Calculator & order rules"
+              hint="Public calculator limits, bulk tiers and finishing charges."
+              onClose={() => setEditorOpen(null)}
+            >
+              <form
+                className={editorCard}
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void save("settings", settings, "Calculator settings saved.");
+                }}
+              >
+                <h2 className={editorCardTitle}>Calculator &amp; order rules</h2>
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <label className="flex items-center gap-2 text-sm font-bold sm:col-span-2">
+                    <input
+                      type="checkbox"
+                      checked={settings.calculatorEnabled}
+                      onChange={(e) =>
+                        setSettings({ ...settings, calculatorEnabled: e.target.checked })
+                      }
+                      className="h-4 w-4"
+                    />{" "}
+                    Show the public calculator (requires at least one material rate)
+                  </label>
+                  <label className={oneLine}>
+                    Minimum order (NPR)
+                    <input
+                      type="number"
+                      min={0}
+                      value={settings.minimumOrder}
+                      onChange={(e) =>
+                        setSettings({ ...settings, minimumOrder: Number(e.target.value) })
+                      }
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <label className={oneLine}>
+                    Design base charge (NPR)
+                    <input
+                      type="number"
+                      min={0}
+                      value={settings.designBaseCharge}
+                      onChange={(e) =>
+                        setSettings({ ...settings, designBaseCharge: Number(e.target.value) })
+                      }
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <label className={`${oneLine} sm:col-span-2`}>
+                    Materials introduction (shown above PLA/PETG)
+                    <textarea
+                      value={settings.materialsIntro}
+                      onChange={(e) => setSettings({ ...settings, materialsIntro: e.target.value })}
+                      rows={3}
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <label className={`${oneLine} sm:col-span-2`}>
+                    Estimate disclaimer
+                    <textarea
+                      value={settings.disclaimer}
+                      onChange={(e) => setSettings({ ...settings, disclaimer: e.target.value })}
+                      rows={2}
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <label className={`${oneLine} sm:col-span-2`}>
+                    Hero image URL
+                    <input
+                      value={settings.heroImage}
+                      onChange={(e) => setSettings({ ...settings, heroImage: e.target.value })}
+                      placeholder="https://..."
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <div className="sm:col-span-2">
+                    <p className="text-sm font-bold">Finishing charges</p>
+                    {settings.finishingCharges.map((charge, index) => (
+                      <div key={charge.id} className="mt-2 flex flex-wrap items-end gap-2">
+                        <input
+                          value={charge.name}
+                          aria-label="Finishing name"
+                          onChange={(e) => {
+                            const next = [...settings.finishingCharges];
+                            next[index] = { ...charge, name: e.target.value };
+                            setSettings({ ...settings, finishingCharges: next });
+                          }}
+                          className={`min-w-0 flex-1 ${inputClass}`}
+                        />
+                        <input
+                          type="number"
+                          min={0}
+                          aria-label="Finishing amount"
+                          value={charge.amount}
+                          onChange={(e) => {
+                            const next = [...settings.finishingCharges];
+                            next[index] = { ...charge, amount: Number(e.target.value) };
+                            setSettings({ ...settings, finishingCharges: next });
+                          }}
+                          className={`w-32 ${inputClass}`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSettings({
+                              ...settings,
+                              finishingCharges: settings.finishingCharges.filter(
+                                (_, i) => i !== index
+                              ),
+                            })
+                          }
+                          className="rounded-lg border border-line px-3 py-3 text-xs font-black text-red-600"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
                     <button
                       type="button"
                       onClick={() =>
                         setSettings({
                           ...settings,
-                          bulkTiers: settings.bulkTiers.filter((_, i) => i !== index),
+                          finishingCharges: [
+                            ...settings.finishingCharges,
+                            {
+                              id: `finish-${settings.finishingCharges.length + 1}`,
+                              name: "",
+                              amount: 0,
+                            },
+                          ],
                         })
                       }
-                      className="rounded-lg border border-line px-3 py-2 text-xs font-black text-red-600"
+                      className="mt-2 rounded-lg border border-line px-4 py-2 text-xs font-black text-ink hover:border-navy"
                     >
-                      Remove
+                      Add finishing charge
                     </button>
                   </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={() =>
-                    setSettings({
-                      ...settings,
-                      bulkTiers: [...settings.bulkTiers, { minQty: 10, discountPercent: 5 }],
-                    })
-                  }
-                  className="mt-2 rounded-lg border border-line px-4 py-2 text-xs font-black text-ink hover:border-navy"
-                >
-                  Add tier
-                </button>
-              </div>
-            </div>
-            <SaveBar>
-              <button
-                type="submit"
-                disabled={busy}
-                className="bg-gold px-5 py-3 text-sm font-black text-ink transition hover:bg-gold-dark disabled:opacity-60"
-              >
-                {busy ? "Saving..." : "Save settings"}
-              </button>
-            </SaveBar>
-          </form>
+                  <div className="sm:col-span-2">
+                    <p className="text-sm font-bold">
+                      Bulk tiers (quantity → % off print + finishing)
+                    </p>
+                    {settings.bulkTiers.map((tier, index) => (
+                      <div key={index} className="mt-2 flex flex-wrap items-center gap-2">
+                        <label className="text-xs font-bold">
+                          Min qty
+                          <input
+                            type="number"
+                            min={1}
+                            value={tier.minQty}
+                            onChange={(e) => {
+                              const next = [...settings.bulkTiers];
+                              next[index] = { ...tier, minQty: Number(e.target.value) };
+                              setSettings({ ...settings, bulkTiers: next });
+                            }}
+                            className={`ml-2 w-24 ${inputClass}`}
+                          />
+                        </label>
+                        <label className="text-xs font-bold">
+                          Discount %
+                          <input
+                            type="number"
+                            min={0}
+                            max={90}
+                            value={tier.discountPercent}
+                            onChange={(e) => {
+                              const next = [...settings.bulkTiers];
+                              next[index] = { ...tier, discountPercent: Number(e.target.value) };
+                              setSettings({ ...settings, bulkTiers: next });
+                            }}
+                            className={`ml-2 w-24 ${inputClass}`}
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSettings({
+                              ...settings,
+                              bulkTiers: settings.bulkTiers.filter((_, i) => i !== index),
+                            })
+                          }
+                          className="rounded-lg border border-line px-3 py-2 text-xs font-black text-red-600"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSettings({
+                          ...settings,
+                          bulkTiers: [...settings.bulkTiers, { minQty: 10, discountPercent: 5 }],
+                        })
+                      }
+                      className="mt-2 rounded-lg border border-line px-4 py-2 text-xs font-black text-ink hover:border-navy"
+                    >
+                      Add tier
+                    </button>
+                  </div>
+                </div>
+                <SaveBar>
+                  <button
+                    type="submit"
+                    disabled={busy}
+                    className="bg-gold px-5 py-3 text-sm font-black text-ink transition hover:bg-gold-dark disabled:opacity-60"
+                  >
+                    {busy ? "Saving..." : "Save settings"}
+                  </button>
+                </SaveBar>
+              </form>
+            </AdminEditorSheet>
+          ) : null}
         </div>
       )}
 
       {section === "Promotions" && (
         <div className="mt-4 grid min-w-0 gap-4 xl:grid-cols-[1fr_1.3fr]">
           <PanelCard>
-            <h2 className={panelTitle}>Promotions ({promotions.length})</h2>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className={panelTitle}>Promotions ({promotions.length})</h2>
+              <button
+                type="button"
+                onClick={() => {
+                  setPromotion(emptyPromotion);
+                  setEditorOpen("promotion");
+                }}
+                className="min-h-[36px] rounded-full bg-navy px-4 text-xs font-black text-white transition hover:bg-navy-dark"
+              >
+                + Add promotion
+              </button>
+            </div>
             <div className="mt-3 divide-y divide-line">
               {promotions.map((item) => (
                 <div key={item.id} className={`${cardRow} items-center`}>
@@ -1108,7 +1223,14 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
                             active: item.active,
                           }),
                       },
-                      { label: "Edit", tone: "navy", onClick: () => setPromotion(item) },
+                      {
+                        label: "Edit",
+                        tone: "navy",
+                        onClick: () => {
+                          setPromotion(item);
+                          setEditorOpen("promotion");
+                        },
+                      },
                       {
                         label: item.active ? "Unpublish" : "Publish",
                         tone: "ink",
@@ -1135,156 +1257,169 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
             </div>
           </PanelCard>
 
-          <form
-            className={editorCard}
-            onSubmit={async (event: FormEvent) => {
-              event.preventDefault();
-              if (!promotion.title) {
-                setMessage("Promotion needs a title.");
-                return;
-              }
-              if (await save("promotions", promotion, "Promotion saved."))
-                setPromotion(emptyPromotion);
-            }}
-          >
-            <h2 className={editorCardTitle}>{promotion.id ? "Edit promotion" : "New promotion"}</h2>
-            <p className="mt-2 text-xs text-muted">
-              Promotions start unpublished. Set the dates, publish, and the banner appears above the
-              catalogue only while it is live.
-            </p>
-            {/* 2026-11-14 (owner: "keep that in the admin panel too properly"):
+          {editorOpen === "promotion" ? (
+            <AdminEditorSheet
+              title="Promotion"
+              hint="Renders as a promotion banner on the print storefront."
+              onClose={() => setEditorOpen(null)}
+            >
+              <form
+                className={editorCard}
+                onSubmit={async (event: FormEvent) => {
+                  event.preventDefault();
+                  if (!promotion.title) {
+                    setMessage("Promotion needs a title.");
+                    return;
+                  }
+                  if (await save("promotions", promotion, "Promotion saved."))
+                    setPromotion(emptyPromotion);
+                }}
+              >
+                <h2 className={editorCardTitle}>
+                  {promotion.id ? "Edit promotion" : "New promotion"}
+                </h2>
+                <p className="mt-2 text-xs text-muted">
+                  Promotions start unpublished. Set the dates, publish, and the banner appears above
+                  the catalogue only while it is live.
+                </p>
+                {/* 2026-11-14 (owner: "keep that in the admin panel too properly"):
                 two surfaces print this row — the /3d-printing banner and the
                 dismissible sticker on the landing page — and both print the
                 title and body VERBATIM. Terms therefore belong in the body. */}
-            <p className="mt-2 rounded-lg border border-line bg-mist/60 px-3 py-2 text-xs leading-5 text-muted">
-              The title and body are printed word-for-word on the landing-page sticker, so put the
-              terms there (for example <em>“first year only, until 14 Nov 2027”</em>). The end date
-              is what removes it automatically; unpublishing hides it immediately.
-            </p>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <label className={`${oneLine} sm:col-span-2`}>
-                Title
-                <input
-                  value={promotion.title}
-                  onChange={(e) => setPromotion({ ...promotion, title: e.target.value })}
-                  className={`mt-2 w-full ${inputClass}`}
-                />
-              </label>
-              <label className={`${oneLine} sm:col-span-2`}>
-                Body
-                <textarea
-                  value={promotion.body}
-                  onChange={(e) => setPromotion({ ...promotion, body: e.target.value })}
-                  rows={3}
-                  className={`mt-2 w-full ${inputClass}`}
-                />
-              </label>
-              <label className={oneLine}>
-                CTA label
-                <input
-                  value={promotion.ctaLabel}
-                  onChange={(e) => setPromotion({ ...promotion, ctaLabel: e.target.value })}
-                  className={`mt-2 w-full ${inputClass}`}
-                />
-              </label>
-              <label className={oneLine}>
-                CTA link
-                <input
-                  value={promotion.ctaHref}
-                  onChange={(e) => setPromotion({ ...promotion, ctaHref: e.target.value })}
-                  placeholder="/3d-printing#quote"
-                  className={`mt-2 w-full ${inputClass}`}
-                />
-              </label>
-              <label className={oneLine}>
-                Discount type
-                <select
-                  value={promotion.discountType}
-                  onChange={(e) =>
-                    setPromotion({
-                      ...promotion,
-                      discountType: e.target.value as PrintPromotion["discountType"],
-                    })
-                  }
-                  className={`mt-2 w-full ${inputClass}`}
-                >
-                  <option value="none">No percentage</option>
-                  <option value="percent">Percent</option>
-                  <option value="flat">Flat NPR</option>
-                </select>
-              </label>
-              <label className={oneLine}>
-                Discount value
-                <input
-                  type="number"
-                  min={0}
-                  value={promotion.discountValue}
-                  onChange={(e) =>
-                    setPromotion({ ...promotion, discountValue: Number(e.target.value) })
-                  }
-                  className={`mt-2 w-full ${inputClass}`}
-                />
-              </label>
-              <label className={oneLine}>
-                Starts
-                <input
-                  type="datetime-local"
-                  value={promotion.startsAt ? promotion.startsAt.slice(0, 16) : ""}
-                  onChange={(e) =>
-                    setPromotion({
-                      ...promotion,
-                      startsAt: e.target.value ? new Date(e.target.value).toISOString() : null,
-                    })
-                  }
-                  className={`mt-2 w-full ${inputClass}`}
-                />
-              </label>
-              <label className={oneLine}>
-                Ends
-                <input
-                  type="datetime-local"
-                  value={promotion.endsAt ? promotion.endsAt.slice(0, 16) : ""}
-                  onChange={(e) =>
-                    setPromotion({
-                      ...promotion,
-                      endsAt: e.target.value ? new Date(e.target.value).toISOString() : null,
-                    })
-                  }
-                  className={`mt-2 w-full ${inputClass}`}
-                />
-              </label>
-              <ImageField
-                label="Promotion image (optional)"
-                value={promotion.image}
-                onChange={(image) => setPromotion({ ...promotion, image })}
-              />
-              <label className="flex items-center gap-2 text-sm font-bold">
-                <input
-                  type="checkbox"
-                  checked={promotion.active}
-                  onChange={(e) => setPromotion({ ...promotion, active: e.target.checked })}
-                  className="h-4 w-4"
-                />{" "}
-                Published
-              </label>
-            </div>
-            <SaveBar>
-              <button
-                type="submit"
-                disabled={busy}
-                className="bg-gold px-5 py-3 text-sm font-black text-ink transition hover:bg-gold-dark disabled:opacity-60"
-              >
-                {busy ? "Saving..." : "Save promotion"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setPromotion(emptyPromotion)}
-                className="border border-line px-5 py-3 text-sm font-black text-ink transition hover:border-navy"
-              >
-                New
-              </button>
-            </SaveBar>
-          </form>
+                <p className="mt-2 rounded-lg border border-line bg-mist/60 px-3 py-2 text-xs leading-5 text-muted">
+                  The title and body are printed word-for-word on the landing-page sticker, so put
+                  the terms there (for example <em>“first year only, until 14 Nov 2027”</em>). The
+                  end date is what removes it automatically; unpublishing hides it immediately.
+                </p>
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <label className={`${oneLine} sm:col-span-2`}>
+                    Title
+                    <input
+                      value={promotion.title}
+                      onChange={(e) => setPromotion({ ...promotion, title: e.target.value })}
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <label className={`${oneLine} sm:col-span-2`}>
+                    Body
+                    <textarea
+                      value={promotion.body}
+                      onChange={(e) => setPromotion({ ...promotion, body: e.target.value })}
+                      rows={3}
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <label className={oneLine}>
+                    CTA label
+                    <input
+                      value={promotion.ctaLabel}
+                      onChange={(e) => setPromotion({ ...promotion, ctaLabel: e.target.value })}
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <label className={oneLine}>
+                    CTA link
+                    <input
+                      value={promotion.ctaHref}
+                      onChange={(e) => setPromotion({ ...promotion, ctaHref: e.target.value })}
+                      placeholder="/3d-printing#quote"
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <label className={oneLine}>
+                    Discount type
+                    <select
+                      value={promotion.discountType}
+                      onChange={(e) =>
+                        setPromotion({
+                          ...promotion,
+                          discountType: e.target.value as PrintPromotion["discountType"],
+                        })
+                      }
+                      className={`mt-2 w-full ${inputClass}`}
+                    >
+                      <option value="none">No percentage</option>
+                      <option value="percent">Percent</option>
+                      <option value="flat">Flat NPR</option>
+                    </select>
+                  </label>
+                  <label className={oneLine}>
+                    Discount value
+                    <input
+                      type="number"
+                      min={0}
+                      value={promotion.discountValue}
+                      onChange={(e) =>
+                        setPromotion({ ...promotion, discountValue: Number(e.target.value) })
+                      }
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <label className={oneLine}>
+                    Starts
+                    <input
+                      type="datetime-local"
+                      value={promotion.startsAt ? promotion.startsAt.slice(0, 16) : ""}
+                      onChange={(e) =>
+                        setPromotion({
+                          ...promotion,
+                          startsAt: e.target.value ? new Date(e.target.value).toISOString() : null,
+                        })
+                      }
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <label className={oneLine}>
+                    Ends
+                    <input
+                      type="datetime-local"
+                      value={promotion.endsAt ? promotion.endsAt.slice(0, 16) : ""}
+                      onChange={(e) =>
+                        setPromotion({
+                          ...promotion,
+                          endsAt: e.target.value ? new Date(e.target.value).toISOString() : null,
+                        })
+                      }
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <ImageField
+                    label="Promotion image (optional)"
+                    value={promotion.image}
+                    onChange={(image) => setPromotion({ ...promotion, image })}
+                  />
+                  <label className="flex items-center gap-2 text-sm font-bold">
+                    <input
+                      type="checkbox"
+                      checked={promotion.active}
+                      onChange={(e) => setPromotion({ ...promotion, active: e.target.checked })}
+                      className="h-4 w-4"
+                    />{" "}
+                    Published
+                  </label>
+                </div>
+                <SaveBar>
+                  <button
+                    type="submit"
+                    disabled={busy}
+                    className="bg-gold px-5 py-3 text-sm font-black text-ink transition hover:bg-gold-dark disabled:opacity-60"
+                  >
+                    {busy ? "Saving..." : "Save promotion"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPromotion(emptyPromotion);
+                      setEditorOpen(null);
+                    }}
+                    className="border border-line px-5 py-3 text-sm font-black text-ink transition hover:border-navy"
+                  >
+                    New
+                  </button>
+                </SaveBar>
+              </form>
+            </AdminEditorSheet>
+          ) : null}
         </div>
       )}
 
@@ -1393,7 +1528,19 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
       {section === "Services" && (
         <div className="mt-4 grid min-w-0 gap-4 xl:grid-cols-[1fr_1.3fr]">
           <PanelCard>
-            <h2 className={panelTitle}>Custom services ({services.length})</h2>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className={panelTitle}>Custom services ({services.length})</h2>
+              <button
+                type="button"
+                onClick={() => {
+                  setService({ ...emptyService });
+                  setEditorOpen("service");
+                }}
+                className="min-h-[36px] rounded-full bg-navy px-4 text-xs font-black text-white transition hover:bg-navy-dark"
+              >
+                + Add service
+              </button>
+            </div>
             <div className="mt-3 divide-y divide-line">
               {services.map((item) => (
                 <div key={item.id} className={`${cardRow} items-center`}>
@@ -1422,7 +1569,14 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
                             active: item.active,
                           }),
                       },
-                      { label: "Edit", tone: "navy", onClick: () => setService(item) },
+                      {
+                        label: "Edit",
+                        tone: "navy",
+                        onClick: () => {
+                          setService(item);
+                          setEditorOpen("service");
+                        },
+                      },
                       {
                         label: item.active ? "Hide" : "Show",
                         tone: "ink",
@@ -1452,84 +1606,99 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
             </div>
           </PanelCard>
 
-          <form
-            className={editorCard}
-            onSubmit={async (event: FormEvent) => {
-              event.preventDefault();
-              if (!service.title.trim()) {
-                setMessage("Service needs a title.");
-                return;
-              }
-              if (await save("services", service, "Service saved."))
-                setService({ ...emptyService });
-            }}
-          >
-            <h2 className={editorCardTitle}>{service.id ? "Edit service" : "Add service"}</h2>
-            <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              <label className={oneLine}>
-                Title
-                <input
-                  value={service.title}
-                  onChange={(event) => setService({ ...service, title: event.target.value })}
-                  className={`mt-2 w-full ${inputClass}`}
-                />
-              </label>
-              <label className={oneLine}>
-                Price note
-                <input
-                  value={service.priceNote}
-                  onChange={(event) => setService({ ...service, priceNote: event.target.value })}
-                  placeholder="From NPR 2,500"
-                  className={`mt-2 w-full ${inputClass}`}
-                />
-              </label>
-              <label className={`${oneLine} sm:col-span-2`}>
-                Description
-                <textarea
-                  value={service.description}
-                  onChange={(event) => setService({ ...service, description: event.target.value })}
-                  rows={3}
-                  className={`mt-2 w-full ${inputClass}`}
-                />
-              </label>
-              <label className={oneLine}>
-                Sort order
-                <input
-                  type="number"
-                  value={service.sortOrder}
-                  onChange={(event) =>
-                    setService({ ...service, sortOrder: Number(event.target.value) })
+          {editorOpen === "service" ? (
+            <AdminEditorSheet
+              title="Service"
+              hint="Appears in the print storefront service list."
+              onClose={() => setEditorOpen(null)}
+            >
+              <form
+                className={editorCard}
+                onSubmit={async (event: FormEvent) => {
+                  event.preventDefault();
+                  if (!service.title.trim()) {
+                    setMessage("Service needs a title.");
+                    return;
                   }
-                  className={`mt-2 w-full ${inputClass}`}
-                />
-              </label>
-              <label className="flex items-center gap-2 text-sm font-bold">
-                <input
-                  type="checkbox"
-                  checked={service.active}
-                  onChange={(event) => setService({ ...service, active: event.target.checked })}
-                  className="h-4 w-4"
-                />{" "}
-                Active
-              </label>
-            </div>
-            <SaveBar>
-              <button
-                type="submit"
-                disabled={busy}
-                className="bg-gold px-5 py-3 text-sm font-black text-ink transition hover:bg-gold-dark disabled:opacity-60"
+                  if (await save("services", service, "Service saved."))
+                    setService({ ...emptyService });
+                }}
               >
-                {busy ? "Saving..." : "Save service"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setService({ ...emptyService })}
-                className="border border-line px-5 py-3 text-sm font-black text-ink transition hover:border-navy"
-              >
-                New
-              </button>
-            </SaveBar>
-          </form>
+                <h2 className={editorCardTitle}>{service.id ? "Edit service" : "Add service"}</h2>
+                <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                  <label className={oneLine}>
+                    Title
+                    <input
+                      value={service.title}
+                      onChange={(event) => setService({ ...service, title: event.target.value })}
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <label className={oneLine}>
+                    Price note
+                    <input
+                      value={service.priceNote}
+                      onChange={(event) =>
+                        setService({ ...service, priceNote: event.target.value })
+                      }
+                      placeholder="From NPR 2,500"
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <label className={`${oneLine} sm:col-span-2`}>
+                    Description
+                    <textarea
+                      value={service.description}
+                      onChange={(event) =>
+                        setService({ ...service, description: event.target.value })
+                      }
+                      rows={3}
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <label className={oneLine}>
+                    Sort order
+                    <input
+                      type="number"
+                      value={service.sortOrder}
+                      onChange={(event) =>
+                        setService({ ...service, sortOrder: Number(event.target.value) })
+                      }
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <label className="flex items-center gap-2 text-sm font-bold">
+                    <input
+                      type="checkbox"
+                      checked={service.active}
+                      onChange={(event) => setService({ ...service, active: event.target.checked })}
+                      className="h-4 w-4"
+                    />{" "}
+                    Active
+                  </label>
+                </div>
+                <SaveBar>
+                  <button
+                    type="submit"
+                    disabled={busy}
+                    className="bg-gold px-5 py-3 text-sm font-black text-ink transition hover:bg-gold-dark disabled:opacity-60"
+                  >
+                    {busy ? "Saving..." : "Save service"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setService({ ...emptyService });
+                      setEditorOpen(null);
+                    }}
+                    className="border border-line px-5 py-3 text-sm font-black text-ink transition hover:border-navy"
+                  >
+                    New
+                  </button>
+                </SaveBar>
+              </form>
+            </AdminEditorSheet>
+          ) : null}
         </div>
       )}
 
@@ -1538,7 +1707,19 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
       {section === "Gallery" && (
         <div className="mt-4 grid min-w-0 gap-4 xl:grid-cols-[1fr_1.3fr]">
           <PanelCard>
-            <h2 className={panelTitle}>Gallery ({gallery.length})</h2>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className={panelTitle}>Gallery ({gallery.length})</h2>
+              <button
+                type="button"
+                onClick={() => {
+                  setGalleryItem(emptyGallery);
+                  setEditorOpen("gallery");
+                }}
+                className="min-h-[36px] rounded-full bg-navy px-4 text-xs font-black text-white transition hover:bg-navy-dark"
+              >
+                + Add gallery image
+              </button>
+            </div>
             <div className="mt-3 divide-y divide-line">
               {gallery.map((item) => (
                 <div key={item.id} className={`${cardRow} items-center`}>
@@ -1565,7 +1746,14 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
                             active: item.active,
                           }),
                       },
-                      { label: "Edit", tone: "navy", onClick: () => setGalleryItem(item) },
+                      {
+                        label: "Edit",
+                        tone: "navy",
+                        onClick: () => {
+                          setGalleryItem(item);
+                          setEditorOpen("gallery");
+                        },
+                      },
                       {
                         label: item.active ? "Hide" : "Show",
                         tone: "ink",
@@ -1592,90 +1780,103 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
             </div>
           </PanelCard>
 
-          <form
-            className={editorCard}
-            onSubmit={async (event: FormEvent) => {
-              event.preventDefault();
-              if (!galleryItem.image) {
-                setMessage("Add an image first.");
-                return;
-              }
-              if (await save("gallery", galleryItem, "Gallery item saved."))
-                setGalleryItem(emptyGallery);
-            }}
-          >
-            <h2 className={editorCardTitle}>
-              {galleryItem.id ? "Edit gallery item" : "Add gallery image"}
-            </h2>
-            <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              <ImageField
-                label="Image"
-                value={galleryItem.image}
-                onChange={(image) => setGalleryItem({ ...galleryItem, image })}
-              />
-              <label className={oneLine}>
-                Caption
-                <input
-                  value={galleryItem.caption}
-                  onChange={(e) => setGalleryItem({ ...galleryItem, caption: e.target.value })}
-                  className={`mt-2 w-full ${inputClass}`}
-                />
-              </label>
-              <label className={oneLine}>
-                Category label
-                <input
-                  value={galleryItem.category}
-                  onChange={(e) => setGalleryItem({ ...galleryItem, category: e.target.value })}
-                  className={`mt-2 w-full ${inputClass}`}
-                />
-              </label>
-              <label className={oneLine}>
-                Sort order
-                <input
-                  type="number"
-                  value={galleryItem.sortOrder}
-                  onChange={(e) =>
-                    setGalleryItem({ ...galleryItem, sortOrder: Number(e.target.value) })
+          {editorOpen === "gallery" ? (
+            <AdminEditorSheet
+              title="Gallery image"
+              hint="Shown in the print storefront gallery grid."
+              onClose={() => setEditorOpen(null)}
+            >
+              <form
+                className={editorCard}
+                onSubmit={async (event: FormEvent) => {
+                  event.preventDefault();
+                  if (!galleryItem.image) {
+                    setMessage("Add an image first.");
+                    return;
                   }
-                  className={`mt-2 w-full ${inputClass}`}
-                />
-              </label>
-              <label className="flex items-center gap-2 text-sm font-bold">
-                <input
-                  type="checkbox"
-                  checked={galleryItem.active}
-                  onChange={(e) => setGalleryItem({ ...galleryItem, active: e.target.checked })}
-                  className="h-4 w-4"
-                />{" "}
-                Visible
-              </label>
-              <label className="flex items-center gap-2 text-sm font-bold">
-                <input
-                  type="checkbox"
-                  checked={galleryItem.featured}
-                  onChange={(e) => setGalleryItem({ ...galleryItem, featured: e.target.checked })}
-                  className="h-4 w-4"
-                />{" "}
-                Featured
-              </label>
-            </div>
-            <SaveBar>
-              <button
-                type="submit"
-                disabled={busy}
-                className="bg-gold px-5 py-3 text-sm font-black text-ink transition hover:bg-gold-dark disabled:opacity-60"
+                  if (await save("gallery", galleryItem, "Gallery item saved."))
+                    setGalleryItem(emptyGallery);
+                }}
               >
-                {busy ? "Saving..." : "Save image"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setGalleryItem(emptyGallery)}
-                className="border border-line px-5 py-3 text-sm font-black text-ink transition hover:border-navy"
-              >
-                New
-              </button>
-            </SaveBar>
-          </form>
+                <h2 className={editorCardTitle}>
+                  {galleryItem.id ? "Edit gallery item" : "Add gallery image"}
+                </h2>
+                <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                  <ImageField
+                    label="Image"
+                    value={galleryItem.image}
+                    onChange={(image) => setGalleryItem({ ...galleryItem, image })}
+                  />
+                  <label className={oneLine}>
+                    Caption
+                    <input
+                      value={galleryItem.caption}
+                      onChange={(e) => setGalleryItem({ ...galleryItem, caption: e.target.value })}
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <label className={oneLine}>
+                    Category label
+                    <input
+                      value={galleryItem.category}
+                      onChange={(e) => setGalleryItem({ ...galleryItem, category: e.target.value })}
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <label className={oneLine}>
+                    Sort order
+                    <input
+                      type="number"
+                      value={galleryItem.sortOrder}
+                      onChange={(e) =>
+                        setGalleryItem({ ...galleryItem, sortOrder: Number(e.target.value) })
+                      }
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <label className="flex items-center gap-2 text-sm font-bold">
+                    <input
+                      type="checkbox"
+                      checked={galleryItem.active}
+                      onChange={(e) => setGalleryItem({ ...galleryItem, active: e.target.checked })}
+                      className="h-4 w-4"
+                    />{" "}
+                    Visible
+                  </label>
+                  <label className="flex items-center gap-2 text-sm font-bold">
+                    <input
+                      type="checkbox"
+                      checked={galleryItem.featured}
+                      onChange={(e) =>
+                        setGalleryItem({ ...galleryItem, featured: e.target.checked })
+                      }
+                      className="h-4 w-4"
+                    />{" "}
+                    Featured
+                  </label>
+                </div>
+                <SaveBar>
+                  <button
+                    type="submit"
+                    disabled={busy}
+                    className="bg-gold px-5 py-3 text-sm font-black text-ink transition hover:bg-gold-dark disabled:opacity-60"
+                  >
+                    {busy ? "Saving..." : "Save image"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setGalleryItem(emptyGallery);
+                      setEditorOpen(null);
+                    }}
+                    className="border border-line px-5 py-3 text-sm font-black text-ink transition hover:border-navy"
+                  >
+                    New
+                  </button>
+                </SaveBar>
+              </form>
+            </AdminEditorSheet>
+          ) : null}
         </div>
       )}
 

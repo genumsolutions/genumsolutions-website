@@ -9,6 +9,7 @@ import {
   inputClass,
 } from "../../lib/styles";
 import { LoadingRow, PanelCard, SaveBar, editorCardTitle } from "./admin-helpers";
+import { AdminEditorSheet } from "./AdminEditorSheet";
 
 type Props = { setMessage: (msg: string) => void; canDelete: boolean };
 
@@ -143,182 +144,188 @@ export default function AdminSettings({ setMessage, canDelete: _canDelete }: Pro
       {!loaded ? (
         <LoadingRow className="mt-3" />
       ) : editing ? (
-        <form onSubmit={saveCompany} className="space-y-4">
-          <PanelCard>
-            {section === "details" && (
-              <div className="grid gap-4">
-                <h2 className={editorCardTitle}>Company details</h2>
-                <label className="min-w-0 text-sm font-bold">
-                  Name
-                  <input
-                    value={company.name}
-                    onChange={(e) => setCompany({ ...company, name: e.target.value })}
-                    className={`mt-2 w-full ${inputClass}`}
-                  />
-                </label>
-                <label className="min-w-0 text-sm font-bold">
-                  Short name
-                  <input
-                    value={company.shortName}
-                    onChange={(e) => setCompany({ ...company, shortName: e.target.value })}
-                    className={`mt-2 w-full ${inputClass}`}
-                  />
-                </label>
-                <label className="min-w-0 text-sm font-bold">
-                  Address
-                  <textarea
-                    value={company.address}
-                    onChange={(e) => setCompany({ ...company, address: e.target.value })}
-                    rows={2}
-                    className={`mt-2 w-full ${inputClass}`}
-                  />
-                </label>
-                <label className="min-w-0 text-sm font-bold">
-                  City
-                  <input
-                    value={company.city}
-                    onChange={(e) => setCompany({ ...company, city: e.target.value })}
-                    className={`mt-2 w-full ${inputClass}`}
-                  />
-                </label>
-                <label className="min-w-0 text-sm font-bold">
-                  Country
-                  <input
-                    value={company.country}
-                    onChange={(e) => setCompany({ ...company, country: e.target.value })}
-                    className={`mt-2 w-full ${inputClass}`}
-                  />
-                </label>
-                <label className="min-w-0 text-sm font-bold">
-                  PAN
-                  <input
-                    value={company.pan}
-                    onChange={(e) => setCompany({ ...company, pan: e.target.value })}
-                    className={`mt-2 w-full ${inputClass}`}
-                  />
-                </label>
-                <label className="min-w-0 text-sm font-bold">
-                  VAT label
-                  <input
-                    value={company.vatLabel}
-                    onChange={(e) => setCompany({ ...company, vatLabel: e.target.value })}
-                    className={`mt-2 w-full ${inputClass}`}
-                  />
-                </label>
-              </div>
-            )}
-            {section === "contact" && (
-              <div className="grid gap-4">
-                <h2 className={editorCardTitle}>Contact</h2>
-                <label className="min-w-0 text-sm font-bold">
-                  Email
-                  <input
-                    type="email"
-                    value={company.email}
-                    onChange={(e) => setCompany({ ...company, email: e.target.value })}
-                    className={`mt-2 w-full ${inputClass}`}
-                  />
-                </label>
-                <label className="min-w-0 text-sm font-bold">
-                  Phone
-                  <input
-                    value={company.phone}
-                    onChange={(e) => setCompany({ ...company, phone: e.target.value })}
-                    className={`mt-2 w-full ${inputClass}`}
-                  />
-                </label>
-                <label className="min-w-0 text-sm font-bold">
-                  Description
-                  <textarea
-                    value={company.description}
-                    onChange={(e) => setCompany({ ...company, description: e.target.value })}
-                    rows={3}
-                    className={`mt-2 w-full ${inputClass}`}
-                  />
-                </label>
-              </div>
-            )}
-            {section === "social" && (
-              <div className="grid gap-4">
-                <h2 className={editorCardTitle}>Social & messaging</h2>
-                <label className="min-w-0 text-sm font-bold">
-                  WhatsApp number
-                  <input
-                    value={company.whatsappNumber}
-                    onChange={(e) => setCompany({ ...company, whatsappNumber: e.target.value })}
-                    placeholder="97798XXXXXXXX"
-                    className={`mt-2 w-full ${inputClass}`}
-                  />
-                </label>
-                <label className="min-w-0 text-sm font-bold">
-                  Facebook URL
-                  <input
-                    value={company.facebookUrl}
-                    onChange={(e) => setCompany({ ...company, facebookUrl: e.target.value })}
-                    placeholder="https://facebook.com/…"
-                    className={`mt-2 w-full ${inputClass}`}
-                  />
-                </label>
-                <label className="min-w-0 text-sm font-bold">
-                  Instagram URL
-                  <input
-                    value={company.instagramUrl}
-                    onChange={(e) => setCompany({ ...company, instagramUrl: e.target.value })}
-                    placeholder="https://instagram.com/…"
-                    className={`mt-2 w-full ${inputClass}`}
-                  />
-                </label>
-                <label className="min-w-0 text-sm font-bold">
-                  TikTok URL
-                  <input
-                    value={company.tiktokUrl}
-                    onChange={(e) => setCompany({ ...company, tiktokUrl: e.target.value })}
-                    placeholder="https://tiktok.com/@…"
-                    className={`mt-2 w-full ${inputClass}`}
-                  />
-                </label>
-                <label className="min-w-0 text-sm font-bold">
-                  LinkedIn URL
-                  <input
-                    value={company.linkedinUrl}
-                    onChange={(e) => setCompany({ ...company, linkedinUrl: e.target.value })}
-                    placeholder="https://linkedin.com/company/…"
-                    className={`mt-2 w-full ${inputClass}`}
-                  />
-                </label>
-                <label className="min-w-0 text-sm font-bold">
-                  YouTube URL
-                  <input
-                    value={company.youtubeUrl}
-                    onChange={(e) => setCompany({ ...company, youtubeUrl: e.target.value })}
-                    placeholder="https://youtube.com/@…"
-                    className={`mt-2 w-full ${inputClass}`}
-                  />
-                </label>
-                {/* Same field as the app's Settings → Social & messaging, so the
+        <AdminEditorSheet
+          title={SECTIONS.find((s) => s.id === section)?.label ?? "Company information"}
+          hint="Saves to the shared company record the app and website both read."
+          onClose={() => setEditing(false)}
+        >
+          <form onSubmit={saveCompany} className="space-y-4">
+            <PanelCard>
+              {section === "details" && (
+                <div className="grid gap-4">
+                  <h2 className={editorCardTitle}>Company details</h2>
+                  <label className="min-w-0 text-sm font-bold">
+                    Name
+                    <input
+                      value={company.name}
+                      onChange={(e) => setCompany({ ...company, name: e.target.value })}
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <label className="min-w-0 text-sm font-bold">
+                    Short name
+                    <input
+                      value={company.shortName}
+                      onChange={(e) => setCompany({ ...company, shortName: e.target.value })}
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <label className="min-w-0 text-sm font-bold">
+                    Address
+                    <textarea
+                      value={company.address}
+                      onChange={(e) => setCompany({ ...company, address: e.target.value })}
+                      rows={2}
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <label className="min-w-0 text-sm font-bold">
+                    City
+                    <input
+                      value={company.city}
+                      onChange={(e) => setCompany({ ...company, city: e.target.value })}
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <label className="min-w-0 text-sm font-bold">
+                    Country
+                    <input
+                      value={company.country}
+                      onChange={(e) => setCompany({ ...company, country: e.target.value })}
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <label className="min-w-0 text-sm font-bold">
+                    PAN
+                    <input
+                      value={company.pan}
+                      onChange={(e) => setCompany({ ...company, pan: e.target.value })}
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <label className="min-w-0 text-sm font-bold">
+                    VAT label
+                    <input
+                      value={company.vatLabel}
+                      onChange={(e) => setCompany({ ...company, vatLabel: e.target.value })}
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                </div>
+              )}
+              {section === "contact" && (
+                <div className="grid gap-4">
+                  <h2 className={editorCardTitle}>Contact</h2>
+                  <label className="min-w-0 text-sm font-bold">
+                    Email
+                    <input
+                      type="email"
+                      value={company.email}
+                      onChange={(e) => setCompany({ ...company, email: e.target.value })}
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <label className="min-w-0 text-sm font-bold">
+                    Phone
+                    <input
+                      value={company.phone}
+                      onChange={(e) => setCompany({ ...company, phone: e.target.value })}
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <label className="min-w-0 text-sm font-bold">
+                    Description
+                    <textarea
+                      value={company.description}
+                      onChange={(e) => setCompany({ ...company, description: e.target.value })}
+                      rows={3}
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                </div>
+              )}
+              {section === "social" && (
+                <div className="grid gap-4">
+                  <h2 className={editorCardTitle}>Social & messaging</h2>
+                  <label className="min-w-0 text-sm font-bold">
+                    WhatsApp number
+                    <input
+                      value={company.whatsappNumber}
+                      onChange={(e) => setCompany({ ...company, whatsappNumber: e.target.value })}
+                      placeholder="97798XXXXXXXX"
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <label className="min-w-0 text-sm font-bold">
+                    Facebook URL
+                    <input
+                      value={company.facebookUrl}
+                      onChange={(e) => setCompany({ ...company, facebookUrl: e.target.value })}
+                      placeholder="https://facebook.com/…"
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <label className="min-w-0 text-sm font-bold">
+                    Instagram URL
+                    <input
+                      value={company.instagramUrl}
+                      onChange={(e) => setCompany({ ...company, instagramUrl: e.target.value })}
+                      placeholder="https://instagram.com/…"
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <label className="min-w-0 text-sm font-bold">
+                    TikTok URL
+                    <input
+                      value={company.tiktokUrl}
+                      onChange={(e) => setCompany({ ...company, tiktokUrl: e.target.value })}
+                      placeholder="https://tiktok.com/@…"
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <label className="min-w-0 text-sm font-bold">
+                    LinkedIn URL
+                    <input
+                      value={company.linkedinUrl}
+                      onChange={(e) => setCompany({ ...company, linkedinUrl: e.target.value })}
+                      placeholder="https://linkedin.com/company/…"
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <label className="min-w-0 text-sm font-bold">
+                    YouTube URL
+                    <input
+                      value={company.youtubeUrl}
+                      onChange={(e) => setCompany({ ...company, youtubeUrl: e.target.value })}
+                      placeholder="https://youtube.com/@…"
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  {/* Same field as the app's Settings → Social & messaging, so the
                     two consoles hold the identical company record. */}
-                <label className="min-w-0 text-sm font-bold">
-                  Website URL
-                  <input
-                    value={company.url}
-                    onChange={(e) => setCompany({ ...company, url: e.target.value })}
-                    placeholder="https://example.com"
-                    className={`mt-2 w-full ${inputClass}`}
-                  />
-                </label>
-              </div>
-            )}
-          </PanelCard>
-          <SaveBar>
-            <button
-              type="submit"
-              disabled={busy}
-              className="bg-navy px-5 py-3 text-sm font-black text-white transition hover:bg-navy/90 disabled:opacity-60"
-            >
-              {busy ? "Saving..." : "Save company"}
-            </button>
-          </SaveBar>
-        </form>
+                  <label className="min-w-0 text-sm font-bold">
+                    Website URL
+                    <input
+                      value={company.url}
+                      onChange={(e) => setCompany({ ...company, url: e.target.value })}
+                      placeholder="https://example.com"
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                </div>
+              )}
+            </PanelCard>
+            <SaveBar>
+              <button
+                type="submit"
+                disabled={busy}
+                className="bg-navy px-5 py-3 text-sm font-black text-white transition hover:bg-navy/90 disabled:opacity-60"
+              >
+                {busy ? "Saving..." : "Save company"}
+              </button>
+            </SaveBar>
+          </form>
+        </AdminEditorSheet>
       ) : (
         <ReadOnlyCompany
           company={company}

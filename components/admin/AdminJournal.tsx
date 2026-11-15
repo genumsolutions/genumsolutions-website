@@ -12,11 +12,11 @@ import {
   SaveBar,
   editorCard,
   editorCardTitle,
-  focusEditor,
   panelListSection,
   panelTitle,
   PanelCard,
 } from "./admin-helpers";
+import { AdminEditorSheet } from "./AdminEditorSheet";
 
 type Props = { setMessage: (msg: string) => void; canDelete: boolean };
 
@@ -31,6 +31,8 @@ function slugify(title: string) {
 export default function AdminJournal({ setMessage, canDelete }: Props) {
   const [posts, setPosts] = useState<JournalItem[]>([]);
   const [loaded, setLoaded] = useState(false);
+  // Editor as a sheet: closed until New post or Edit is pressed.
+  const [editorOpen, setEditorOpen] = useState(false);
   const [post, setPost] = useState<JournalItem>(emptyJournal);
   const [previewPost, setPreviewPost] = useState<JournalItem | null>(null);
   const [busy, setBusy] = useState(false);
@@ -146,7 +148,7 @@ export default function AdminJournal({ setMessage, canDelete }: Props) {
                           tone: "navy",
                           onClick: () => {
                             setPost(p);
-                            focusEditor("journal-editor");
+                            setEditorOpen(true);
                           },
                         },
                         { label: "Preview", tone: "slate", onClick: () => setPreviewPost(p) },
@@ -172,86 +174,101 @@ export default function AdminJournal({ setMessage, canDelete }: Props) {
         </section>
 
         <section id="journal-editor" aria-label="Journal post editor" className="min-w-0">
-          <form onSubmit={savePostItem} className={editorCard}>
-            <h2 className={editorCardTitle}>
-              {posts.some((p) => p.id === post.id) ? `Edit ${post.id}` : "Add a new journal post"}
-            </h2>
-            <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              <label className="min-w-0 text-sm font-bold">
-                Id (slug, auto-generated from title if blank)
-                <input
-                  value={post.id}
-                  onChange={(e) => updatePost("id", e.target.value)}
-                  className={`mt-2 w-full ${inputClass}`}
-                  placeholder="e.g. esp32-beginner-project"
-                />
-              </label>
-              <label className="min-w-0 text-sm font-bold">
-                Tag / category
-                <input
-                  value={post.tag}
-                  onChange={(e) => updatePost("tag", e.target.value)}
-                  className={`mt-2 w-full ${inputClass}`}
-                  placeholder="Tutorial · Robotics"
-                />
-              </label>
-              <label className="min-w-0 text-sm font-bold sm:col-span-2">
-                Title
-                <input
-                  value={post.title}
-                  onChange={(e) => updatePost("title", e.target.value)}
-                  className={`mt-2 w-full ${inputClass}`}
-                  placeholder="Post title"
-                />
-              </label>
-              <label className="min-w-0 text-sm font-bold sm:col-span-2">
-                Excerpt / summary
-                <textarea
-                  value={post.text}
-                  onChange={(e) => updatePost("text", e.target.value)}
-                  rows={4}
-                  className={`mt-2 w-full ${inputClass}`}
-                  placeholder="One or two sentences shown on the journal page."
-                />
-              </label>
-              <label className="min-w-0 text-sm font-bold">
-                Sort order
-                <input
-                  type="number"
-                  value={post.sortOrder}
-                  onChange={(e) => updatePost("sortOrder", Number(e.target.value))}
-                  className={`mt-2 w-full ${inputClass}`}
-                />
-              </label>
-              <label className="flex items-center gap-2 text-sm font-bold">
-                <input
-                  type="checkbox"
-                  checked={post.active}
-                  onChange={(e) => updatePost("active", e.target.checked)}
-                  className="h-4 w-4"
-                />{" "}
-                Published (visible on site + app)
-              </label>
-            </div>
-            <SaveBar>
-              <button
-                type="submit"
-                disabled={busy}
-                className="bg-gold px-5 py-3 text-sm font-black text-ink transition hover:bg-gold-dark disabled:opacity-60"
-              >
-                {busy ? "Saving..." : "Save post"}
-              </button>
-              {post.id && (
-                <button
-                  type="button"
-                  onClick={() => setPost(emptyJournal)}
-                  className="border border-line px-5 py-3 text-sm font-black text-ink transition hover:border-navy"
-                >
-                  New post
-                </button>
-              )}
-            </SaveBar>
-          </form>
+          {editorOpen ? (
+            <AdminEditorSheet
+              title={
+                posts.some((p) => p.id === post.id) ? `Edit ${post.id}` : "Add a new journal post"
+              }
+              hint="Publishes to the website /journal page and the app Journal."
+              onClose={() => setEditorOpen(false)}
+            >
+              <form onSubmit={savePostItem} className={editorCard}>
+                <h2 className={editorCardTitle}>
+                  {posts.some((p) => p.id === post.id)
+                    ? `Edit ${post.id}`
+                    : "Add a new journal post"}
+                </h2>
+                <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                  <label className="min-w-0 text-sm font-bold">
+                    Id (slug, auto-generated from title if blank)
+                    <input
+                      value={post.id}
+                      onChange={(e) => updatePost("id", e.target.value)}
+                      className={`mt-2 w-full ${inputClass}`}
+                      placeholder="e.g. esp32-beginner-project"
+                    />
+                  </label>
+                  <label className="min-w-0 text-sm font-bold">
+                    Tag / category
+                    <input
+                      value={post.tag}
+                      onChange={(e) => updatePost("tag", e.target.value)}
+                      className={`mt-2 w-full ${inputClass}`}
+                      placeholder="Tutorial · Robotics"
+                    />
+                  </label>
+                  <label className="min-w-0 text-sm font-bold sm:col-span-2">
+                    Title
+                    <input
+                      value={post.title}
+                      onChange={(e) => updatePost("title", e.target.value)}
+                      className={`mt-2 w-full ${inputClass}`}
+                      placeholder="Post title"
+                    />
+                  </label>
+                  <label className="min-w-0 text-sm font-bold sm:col-span-2">
+                    Excerpt / summary
+                    <textarea
+                      value={post.text}
+                      onChange={(e) => updatePost("text", e.target.value)}
+                      rows={4}
+                      className={`mt-2 w-full ${inputClass}`}
+                      placeholder="One or two sentences shown on the journal page."
+                    />
+                  </label>
+                  <label className="min-w-0 text-sm font-bold">
+                    Sort order
+                    <input
+                      type="number"
+                      value={post.sortOrder}
+                      onChange={(e) => updatePost("sortOrder", Number(e.target.value))}
+                      className={`mt-2 w-full ${inputClass}`}
+                    />
+                  </label>
+                  <label className="flex items-center gap-2 text-sm font-bold">
+                    <input
+                      type="checkbox"
+                      checked={post.active}
+                      onChange={(e) => updatePost("active", e.target.checked)}
+                      className="h-4 w-4"
+                    />{" "}
+                    Published (visible on site + app)
+                  </label>
+                </div>
+                <SaveBar>
+                  <button
+                    type="submit"
+                    disabled={busy}
+                    className="bg-gold px-5 py-3 text-sm font-black text-ink transition hover:bg-gold-dark disabled:opacity-60"
+                  >
+                    {busy ? "Saving..." : "Save post"}
+                  </button>
+                  {post.id && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPost(emptyJournal);
+                        setEditorOpen(false);
+                      }}
+                      className="border border-line px-5 py-3 text-sm font-black text-ink transition hover:border-navy"
+                    >
+                      New post
+                    </button>
+                  )}
+                </SaveBar>
+              </form>
+            </AdminEditorSheet>
+          ) : null}
         </section>
       </div>
 

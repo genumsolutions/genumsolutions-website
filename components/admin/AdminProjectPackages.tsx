@@ -15,14 +15,8 @@ import {
 } from "../../lib/project-pricing";
 import type { Product } from "./admin-types";
 import { emptyProduct, PAGE_SIZE } from "./admin-types";
-import {
-  AdminImageField,
-  Pager,
-  focusEditor,
-  editorCard,
-  editorCardTitle,
-  panelCard,
-} from "./admin-helpers";
+import { AdminImageField, Pager, editorCard, editorCardTitle, panelCard } from "./admin-helpers";
+import { AdminEditorSheet } from "./AdminEditorSheet";
 
 type Props = {
   products: Product[];
@@ -279,6 +273,8 @@ export default function AdminProjectPackages({
   setMessage,
   canDelete,
 }: Props) {
+  // Package editor as a sheet: closed until Add or Edit is pressed.
+  const [editorOpen, setEditorOpen] = useState(false);
   const [product, setProduct] = useState<Product>(emptyProduct);
   const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
   const [projectCategory, setProjectCategory] = useState("All");
@@ -608,6 +604,21 @@ export default function AdminProjectPackages({
           <div className={panelCard}>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className={editorCardTitle}>Project Packages ({filteredProjects.length})</h2>
+              <button
+                type="button"
+                onClick={() => {
+                  setProduct({
+                    ...emptyProduct,
+                    productType: "Project package",
+                    category: "Project Packages",
+                    project_category: "",
+                  });
+                  setEditorOpen(true);
+                }}
+                className="min-h-[36px] rounded-full bg-navy px-4 text-xs font-black text-white transition hover:bg-navy-dark"
+              >
+                + Add package
+              </button>
               <select
                 value={projectCategory}
                 onChange={(e) => {
@@ -691,7 +702,7 @@ export default function AdminProjectPackages({
                       <button
                         onClick={() => {
                           setProduct(item);
-                          focusEditor("project-package-editor");
+                          setEditorOpen(true);
                         }}
                         className="text-xs font-bold text-navy underline"
                       >
@@ -735,23 +746,31 @@ export default function AdminProjectPackages({
           aria-label="Project package editor"
           className="min-w-0"
         >
-          <ProjectEditor
-            product={product}
-            onChange={setProduct}
-            onSave={saveProduct}
-            onReset={() =>
-              setProduct({
-                ...emptyProduct,
-                productType: "Project package",
-                category: "Project Packages",
-                project_category: "",
-              })
-            }
-            busy={busy}
-            categories={
-              projectCategories.length ? projectCategories : ["Project Packages", "Robot Cars"]
-            }
-          />
+          {editorOpen ? (
+            <AdminEditorSheet
+              title={product.id ? `Edit ${product.name}` : "Add a project package"}
+              hint="Saves to the shared products table used by the website and the app."
+              onClose={() => setEditorOpen(false)}
+            >
+              <ProjectEditor
+                product={product}
+                onChange={setProduct}
+                onSave={saveProduct}
+                onReset={() =>
+                  setProduct({
+                    ...emptyProduct,
+                    productType: "Project package",
+                    category: "Project Packages",
+                    project_category: "",
+                  })
+                }
+                busy={busy}
+                categories={
+                  projectCategories.length ? projectCategories : ["Project Packages", "Robot Cars"]
+                }
+              />
+            </AdminEditorSheet>
+          ) : null}
           {/* U-45: component linker — only for a SAVED project row (needs an
               id to hang links on). Suggestions come from the matcher; staff
               adjusts quantities / removes rows, then saves. */}
