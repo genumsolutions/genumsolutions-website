@@ -393,6 +393,15 @@ function billedGramCost(costing: PrintCosting): number {
 
 export default function AdminPrint({ products, onProductsChange, setMessage, canDelete }: Props) {
   const [section, setSection] = useState<Section>("Catalog");
+  // Storefront preview for the records that publish a card on /3d-printing.
+  const [preview, setPreview] = useState<{
+    eyebrow: string;
+    title: string;
+    body: string;
+    note?: string;
+    imageUrl?: string;
+    active: boolean;
+  } | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [settings, setSettings] = useState<PrintSettings>(defaultPrintSettings);
   const [categories, setCategories] = useState<PrintCategory[]>([]);
@@ -512,6 +521,8 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
         ))}
       </div>
 
+      {preview ? <StorefrontPreview {...preview} onClose={() => setPreview(null)} /> : null}
+
       {section === "Catalog" && (
         <AdminProducts
           kind="models"
@@ -540,6 +551,19 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
                   </div>
                   <RowActions
                     actions={[
+                      {
+                        label: "Preview",
+                        tone: "slate",
+                        onClick: () =>
+                          setPreview({
+                            eyebrow: "3D printing category",
+                            title: item.name,
+                            body: item.description,
+                            note: `Sort ${item.sortOrder}`,
+                            imageUrl: item.image,
+                            active: item.active,
+                          }),
+                      },
                       { label: "Edit", tone: "navy", onClick: () => setCategory(item) },
                       {
                         label: item.active ? "Hide" : "Show",
@@ -1065,6 +1089,22 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
                   </div>
                   <RowActions
                     actions={[
+                      {
+                        label: "Preview",
+                        tone: "slate",
+                        onClick: () =>
+                          setPreview({
+                            eyebrow: "Promotion",
+                            title: item.title,
+                            body: item.body,
+                            note:
+                              item.discountType === "none"
+                                ? "No discount"
+                                : `${item.discountValue} ${item.discountType}`,
+                            imageUrl: item.image,
+                            active: item.active,
+                          }),
+                      },
                       { label: "Edit", tone: "navy", onClick: () => setPromotion(item) },
                       {
                         label: item.active ? "Unpublish" : "Publish",
@@ -1302,7 +1342,7 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
           </form>
 
           <PanelCard className="mt-4">
-            <h3 className="font-display text-lg font-bold">Worked example</h3>
+            <h3 className="text-sm font-bold text-ink">Worked example</h3>
             <p className="mt-1 text-xs text-muted">
               100 g part, 2 print hours, 15 minutes of labour — recalculated as you type.
             </p>
@@ -1367,6 +1407,18 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
                   </div>
                   <RowActions
                     actions={[
+                      {
+                        label: "Preview",
+                        tone: "slate",
+                        onClick: () =>
+                          setPreview({
+                            eyebrow: "Print service",
+                            title: item.title,
+                            body: item.description,
+                            note: item.priceNote,
+                            active: item.active,
+                          }),
+                      },
                       { label: "Edit", tone: "navy", onClick: () => setService(item) },
                       {
                         label: item.active ? "Hide" : "Show",
@@ -1743,5 +1795,65 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * Storefront preview for a print record: the card a customer sees on
+ * /3d-printing. Kept deliberately plain (image, eyebrow, title, body, note)
+ * and rendered above the list, with a hidden record called out instead of
+ * pretending to be live.
+ */
+function StorefrontPreview({
+  eyebrow,
+  title,
+  body,
+  note,
+  imageUrl,
+  active,
+  onClose,
+}: {
+  eyebrow: string;
+  title: string;
+  body: string;
+  note?: string;
+  imageUrl?: string;
+  active: boolean;
+  onClose: () => void;
+}) {
+  return (
+    <section
+      aria-label={`${title} storefront preview`}
+      className="mb-4 max-w-sm overflow-hidden rounded-2xl border border-line bg-white shadow-card"
+    >
+      {imageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={imageUrl} alt="" className="h-40 w-full object-cover" loading="lazy" />
+      ) : null}
+      <div className="p-4">
+        <div className="flex items-center justify-between gap-2">
+          <p className="min-w-0 flex-1 text-[10px] font-black uppercase tracking-widest text-navy">
+            {eyebrow}
+          </p>
+          {!active ? (
+            <p className="shrink-0 rounded bg-mist px-1.5 py-0.5 text-[10px] font-black uppercase tracking-widest text-red-600">
+              Hidden
+            </p>
+          ) : null}
+        </div>
+        <h3 className="mt-1 break-words font-display text-base font-bold leading-snug text-ink">
+          {title || "(untitled)"}
+        </h3>
+        {body ? <p className="mt-1 break-words text-sm leading-6 text-muted">{body}</p> : null}
+        {note ? <p className="mt-2 text-xs font-bold text-navy">{note}</p> : null}
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-3 rounded-lg border border-line px-4 py-1.5 text-xs font-bold text-ink transition hover:border-navy"
+        >
+          Close preview
+        </button>
+      </div>
+    </section>
   );
 }

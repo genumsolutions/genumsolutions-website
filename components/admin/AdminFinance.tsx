@@ -60,7 +60,7 @@ export default function AdminFinance() {
         )}
       </PanelCard>
       <PanelCard>
-        <h3 className="font-display text-lg font-bold">Order Status Breakdown</h3>
+        <h3 className={panelTitle}>Order Status Breakdown</h3>
         {!stats ? (
           <LoadingRow className="mt-3" />
         ) : stats.totalOrders === 0 ? (

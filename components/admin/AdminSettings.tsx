@@ -65,6 +65,9 @@ export default function AdminSettings({ setMessage, canDelete: _canDelete }: Pro
   const [company, setCompany] = useState<CompanyInfo>(emptyCompany);
   const [busy, setBusy] = useState(false);
   const [section, setSection] = useState<SectionId>("details");
+  // Fieldsets are only rendered after Edit is pressed, matching the app console
+  // and every other admin editor on the site.
+  const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     void fetch("/api/admin/settings")
@@ -121,9 +124,25 @@ export default function AdminSettings({ setMessage, canDelete: _canDelete }: Pro
         ))}
       </div>
       <p className="text-xs text-muted">{SECTIONS.find((s) => s.id === section)?.hint}</p>
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-[10px] font-black uppercase tracking-widest text-muted">
+          {editing ? "Editing" : "Read-only"}
+        </span>
+        <button
+          type="button"
+          onClick={() => setEditing((value) => !value)}
+          className={
+            editing
+              ? `${adminSectionPill} ${adminSectionPillInactive}`
+              : `${adminSectionPill} ${adminSectionPillActive}`
+          }
+        >
+          {editing ? "Cancel" : "Edit"}
+        </button>
+      </div>
       {!loaded ? (
         <LoadingRow className="mt-3" />
-      ) : (
+      ) : editing ? (
         <form onSubmit={saveCompany} className="space-y-4">
           <PanelCard>
             {section === "details" && (
@@ -300,7 +319,66 @@ export default function AdminSettings({ setMessage, canDelete: _canDelete }: Pro
             </button>
           </SaveBar>
         </form>
+      ) : (
+        <ReadOnlyCompany
+          company={company}
+          section={section}
+          label={SECTIONS.find((s) => s.id === section)?.label ?? "Company information"}
+        />
       )}
     </div>
+  );
+}
+
+/** Read-only company record: the same groups, values as plain rows. */
+function ReadOnlyCompany({
+  company,
+  section,
+  label,
+}: {
+  company: CompanyInfo;
+  section: SectionId;
+  label: string;
+}) {
+  const rows: [string, string][] =
+    section === "details"
+      ? [
+          ["Name", company.name],
+          ["Short name", company.shortName],
+          ["Address", company.address],
+          ["City", company.city],
+          ["Country", company.country],
+          ["PAN", company.pan],
+          ["VAT label", company.vatLabel],
+        ]
+      : section === "contact"
+        ? [
+            ["Email", company.email],
+            ["Phone", company.phone],
+            ["Description", company.description],
+          ]
+        : [
+            ["WhatsApp number", company.whatsappNumber],
+            ["Website URL", company.url],
+            ["Facebook URL", company.facebookUrl],
+            ["Instagram URL", company.instagramUrl],
+            ["TikTok URL", company.tiktokUrl],
+            ["LinkedIn URL", company.linkedinUrl],
+            ["YouTube URL", company.youtubeUrl],
+          ];
+  return (
+    <PanelCard>
+      <h2 className={editorCardTitle}>{label}</h2>
+      <dl className="mt-3 divide-y divide-line">
+        {rows.map(([rowLabel, value]) => (
+          <div key={rowLabel} className="flex items-start gap-3 py-2">
+            <dt className="w-32 shrink-0 text-xs text-muted">{rowLabel}</dt>
+            <dd className="min-w-0 flex-1 break-words text-right text-sm text-ink">
+              {value || "—"}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </PanelCard>
   );
 }

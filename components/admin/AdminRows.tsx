@@ -15,7 +15,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { inputClass, cardRow, cardRowText } from "../../lib/styles";
-import { Pager, panelCard, panelHeader } from "./admin-helpers";
+import { Pager, editorCardTitle, panelCard, panelHeader } from "./admin-helpers";
 
 type Kind = "training" | "pilot" | "curriculum";
 
@@ -173,7 +173,7 @@ export default function AdminRows({
     <section aria-label={`${singular}s`} className={panelCard}>
       <div className={`${panelHeader} border-b border-line pb-4`}>
         <div className="min-w-0">
-          <h2 className="font-display text-xl font-bold break-words">
+          <h2 className={`${editorCardTitle} break-words`}>
             {caption || `${singular}s`} ({rows.length})
           </h2>
           {hint && <p className="mt-1 text-xs text-muted">{hint}</p>}

@@ -65,7 +65,7 @@ function ProjectEditor({
   return (
     <section id="project-package-editor" aria-label="Project package editor" className={editorCard}>
       <form onSubmit={onSave}>
-        <h2 className="font-display text-2xl font-bold">
+        <h2 className={editorCardTitle}>
           {product.id ? `Edit ${product.name}` : "Add a project package"}
         </h2>
         <p className="mt-1 text-sm text-muted">
@@ -607,9 +607,7 @@ export default function AdminProjectPackages({
         <section aria-label="Project package list" className="min-w-0 space-y-4">
           <div className={panelCard}>
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="font-display text-xl font-bold">
-                Project Packages ({filteredProjects.length})
-              </h2>
+              <h2 className={editorCardTitle}>Project Packages ({filteredProjects.length})</h2>
               <select
                 value={projectCategory}
                 onChange={(e) => {

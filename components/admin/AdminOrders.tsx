@@ -13,6 +13,7 @@ import {
   panelCard,
   panelHeader,
   panelRow,
+  editorCardTitle,
 } from "./admin-helpers";
 
 // Detail fields shown in the expandable row (app-parity: the app's Orders tab
@@ -87,7 +88,7 @@ export default function AdminOrders({ canDelete }: { canDelete: boolean }) {
   return (
     <section aria-label="Customer orders" className="mt-4 space-y-4">
       <div className={`${panelCard} ${panelHeader}`}>
-        <h2 className="font-display text-xl font-bold">Customer orders</h2>
+        <h2 className={editorCardTitle}>Customer orders</h2>
         <label className="ml-auto text-sm font-bold text-muted">
           Search buyer
           <input

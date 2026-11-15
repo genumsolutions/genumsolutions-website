@@ -92,7 +92,7 @@ export default function AdminDashboard({ onOpenOrders }: { onOpenOrders: () => v
 
           {analytics && analytics.topPaths.length > 0 && (
             <div className={panelCard}>
-              <h3 className="font-display text-lg font-bold">Top Pages (30 days)</h3>
+              <h3 className={panelTitle}>Top Pages (30 days)</h3>
               <ul className="mt-3 divide-y divide-line">
                 {analytics.topPaths.slice(0, 10).map((pv) => (
                   <li
@@ -110,7 +110,7 @@ export default function AdminDashboard({ onOpenOrders }: { onOpenOrders: () => v
           )}
           {analytics && analytics.viewsByDay.length > 0 && (
             <div className={panelCard}>
-              <h3 className="font-display text-lg font-bold">Daily Traffic (30 days)</h3>
+              <h3 className={panelTitle}>Daily Traffic (30 days)</h3>
               <div className="mt-3 flex items-end gap-1" style={{ height: 120 }}>
                 {analytics.viewsByDay.map((d) => {
                   const max = Math.max(...analytics.viewsByDay.map((x) => x.count), 1);

@@ -99,8 +99,8 @@ export function focusEditor(id: string) {
 export const panelCard = cardClass;
 export const panelListSection = "min-w-0 space-y-4";
 export const editorCard = cardClass;
-export const editorCardTitle = "font-display text-xl font-bold text-ink";
-export const panelTitle = "font-display text-lg font-bold text-ink";
+export const editorCardTitle = "font-display text-xl font-bold tracking-tight text-ink";
+export const panelTitle = "font-display text-base font-bold text-ink";
 /** Header row: title on the left, filters/actions on the right. */
 export const panelHeader =
   "flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between";
