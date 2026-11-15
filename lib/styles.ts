@@ -30,6 +30,20 @@ export const adminIconButton =
 export const tabBase =
   "relative -mb-px inline-flex min-h-[44px] items-center gap-2 whitespace-nowrap border-b-2 px-2 pb-3 pt-2 text-sm font-bold uppercase tracking-wider transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy";
 
+// ---------------------------------------------------------------
+// Admin section pills (2026-11-15)
+// The eight top tabs own uppercase + wide tracking. Section rows sit one
+// level BELOW them: sentence case, xs body size, 32px height, muted until
+// selected. Every admin section strip (panel sections, Settings, 3D Products,
+// Logs) uses these, so tabs -> subtabs -> content reads in one hierarchy.
+// ---------------------------------------------------------------
+export const adminSectionStrip = "flex flex-wrap items-center gap-2";
+export const adminSectionPill =
+  "inline-flex min-h-[32px] shrink-0 items-center justify-center whitespace-nowrap rounded-full border px-3 text-xs font-bold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy";
+export const adminSectionPillActive = "border-navy bg-navy text-white";
+export const adminSectionPillInactive =
+  "border-line bg-white text-muted hover:border-navy hover:text-navy";
+
 export const tabActive = "border-navy text-navy";
 export const tabInactive = "border-transparent text-muted hover:border-border hover:text-ink";
 

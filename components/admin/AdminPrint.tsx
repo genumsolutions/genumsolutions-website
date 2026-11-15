@@ -1,7 +1,15 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
-import { inputClass, cardRow, cardRowText } from "../../lib/styles";
+import {
+  adminSectionPill,
+  adminSectionPillActive,
+  adminSectionPillInactive,
+  adminSectionStrip,
+  inputClass,
+  cardRow,
+  cardRowText,
+} from "../../lib/styles";
 import {
   defaultPrintSettings,
   formatNPR,
@@ -487,17 +495,15 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
 
   return (
     <div className="mt-4 min-w-0">
-      <div className="flex flex-wrap gap-1.5 border-b border-line pb-3">
+      <div className={`${adminSectionStrip} border-b border-line pb-3`}>
         {SECTIONS.map((item) => (
           <button
             key={item}
             type="button"
             onClick={() => setSection(item)}
             aria-current={section === item ? "page" : undefined}
-            className={`rounded-full px-4 py-2 text-xs font-black transition ${
-              section === item
-                ? "bg-navy text-white"
-                : "border border-line bg-white text-ink hover:border-navy"
+            className={`${adminSectionPill} ${
+              section === item ? adminSectionPillActive : adminSectionPillInactive
             }`}
           >
             {item}

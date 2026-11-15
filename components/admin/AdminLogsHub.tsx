@@ -2,6 +2,12 @@
 
 import { useState } from "react";
 
+import {
+  adminSectionPill,
+  adminSectionPillActive,
+  adminSectionPillInactive,
+  adminSectionStrip,
+} from "../../lib/styles";
 import AdminLogs from "./AdminLogs";
 import AdminProfileEntries from "./AdminProfileEntries";
 import AdminUserLogs from "./AdminUserLogs";
@@ -45,24 +51,22 @@ export default function AdminLogsHub() {
     <div>
       {/* A filter group, not a tablist: the three panels are separate
           regions, so announcing them as tabs without tabpanels was wrong. */}
-      <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Log sections">
+      <div className={adminSectionStrip} role="group" aria-label="Log sections">
         {SECTIONS.map((item) => (
           <button
             key={item.id}
             type="button"
             aria-pressed={section === item.id}
             onClick={() => setSection(item.id)}
-            className={`min-h-[36px] rounded-full border px-4 text-xs font-black transition ${
-              section === item.id
-                ? "border-navy bg-navy text-white"
-                : "border-line bg-white text-navy hover:border-navy"
+            className={`${adminSectionPill} ${
+              section === item.id ? adminSectionPillActive : adminSectionPillInactive
             }`}
           >
             {item.label}
           </button>
         ))}
       </div>
-      <p className="mt-2 text-xs text-slate-500">{active.hint}</p>
+      <p className="mt-2 text-xs text-muted">{active.hint}</p>
       <div className="mt-3">
         {section === "activity" && <AdminUserLogs />}
         {section === "profiles" && <AdminProfileEntries />}

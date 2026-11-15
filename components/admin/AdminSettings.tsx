@@ -1,7 +1,13 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { inputClass } from "../../lib/styles";
+import {
+  adminSectionPill,
+  adminSectionPillActive,
+  adminSectionPillInactive,
+  adminSectionStrip,
+  inputClass,
+} from "../../lib/styles";
 import { LoadingRow, PanelCard, SaveBar, editorCardTitle } from "./admin-helpers";
 
 type Props = { setMessage: (msg: string) => void; canDelete: boolean };
@@ -97,24 +103,22 @@ export default function AdminSettings({ setMessage, canDelete: _canDelete }: Pro
 
   return (
     <div className="mt-4 space-y-4">
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Company information sections">
+      <div className={adminSectionStrip} role="group" aria-label="Company information sections">
         {SECTIONS.map((item) => (
           <button
             key={item.id}
             type="button"
             aria-pressed={section === item.id}
             onClick={() => setSection(item.id)}
-            className={`min-h-[36px] rounded-full border px-4 text-xs font-black transition ${
-              section === item.id
-                ? "border-navy bg-navy text-white"
-                : "border-line bg-white text-navy hover:border-navy"
+            className={`${adminSectionPill} ${
+              section === item.id ? adminSectionPillActive : adminSectionPillInactive
             }`}
           >
             {item.label}
           </button>
         ))}
       </div>
-      <p className="text-xs text-slate-500">{SECTIONS.find((s) => s.id === section)?.hint}</p>
+      <p className="text-xs text-muted">{SECTIONS.find((s) => s.id === section)?.hint}</p>
       {!loaded ? (
         <LoadingRow className="mt-3" />
       ) : (

@@ -2,7 +2,15 @@
 
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { tabActive, tabBase, tabInactive } from "../lib/styles";
+import {
+  adminSectionPill,
+  adminSectionPillActive,
+  adminSectionPillInactive,
+  adminSectionStrip,
+  tabActive,
+  tabBase,
+  tabInactive,
+} from "../lib/styles";
 import { isAdminRole } from "../lib/roles";
 import type { Product } from "../lib/content-store";
 import type { LucideIcon as LucideIconType } from "lucide-react";
@@ -68,7 +76,7 @@ function AdminSectionTabs<T extends string>({
         <div
           role="tablist"
           aria-label={label}
-          className="flex items-center gap-2 overflow-x-auto pb-2 pt-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className={`${adminSectionStrip} overflow-x-auto pb-2 pt-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`}
         >
           {tabs.map((tab) => {
             const selected = active === tab;
@@ -82,10 +90,8 @@ function AdminSectionTabs<T extends string>({
                 aria-controls={`${group}-panel-${id}`}
                 tabIndex={selected ? 0 : -1}
                 onClick={() => onChange(tab)}
-                className={`inline-flex min-h-10 shrink-0 items-center justify-center rounded-full border px-4 text-[11px] font-black uppercase tracking-wide transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy ${
-                  selected
-                    ? "border-navy bg-navy text-white"
-                    : "border-line bg-white text-muted hover:border-navy hover:text-navy"
+                className={`${adminSectionPill} ${
+                  selected ? adminSectionPillActive : adminSectionPillInactive
                 }`}
               >
                 {tab}
