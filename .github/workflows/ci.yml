@@ -88,18 +88,21 @@ jobs:
   catalog-parity:
     name: App bundled catalog matches this repo
     runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     permissions:
       contents: read
     steps:
       - name: Checkout website
         uses: actions/checkout@v5
 
-      # Public repo, so the job's default token can clone it.
+      # The read-only cross-repository secret grants access to the private app.
       - name: Checkout app
         uses: actions/checkout@v5
         with:
           repository: genumsolutions/genumsolutions-app
           path: app
+          token: ${{ secrets.CROSS_REPO_READ_TOKEN || github.token }}
+          persist-credentials: false
 
       - uses: actions/setup-node@v5
         with:
@@ -224,18 +227,21 @@ jobs:
   order-items-contract:
     name: Order items contract matches the app
     runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     permissions:
       contents: read
     steps:
       - name: Checkout website
         uses: actions/checkout@v5
 
-      # Public repo, so the job's default token can clone it.
+      # The read-only cross-repository secret grants access to the private app.
       - name: Checkout app
         uses: actions/checkout@v5
         with:
           repository: genumsolutions/genumsolutions-app
           path: app
+          token: ${{ secrets.CROSS_REPO_READ_TOKEN || github.token }}
+          persist-credentials: false
 
       - name: Fail when the copies differ
         run: |
