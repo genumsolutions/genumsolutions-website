@@ -1549,6 +1549,19 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
                   </div>
                   <RowActions
                     actions={[
+                      {
+                        label: "Preview",
+                        tone: "slate",
+                        onClick: () =>
+                          setPreview({
+                            eyebrow: "Gallery",
+                            title: item.caption || "Gallery photo",
+                            body: item.category,
+                            note: item.featured ? "Featured" : undefined,
+                            imageUrl: item.image,
+                            active: item.active,
+                          }),
+                      },
                       { label: "Edit", tone: "navy", onClick: () => setGalleryItem(item) },
                       {
                         label: item.active ? "Hide" : "Show",
