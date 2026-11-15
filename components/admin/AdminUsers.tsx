@@ -376,37 +376,18 @@ export default function AdminUsers({ setMessage, canDelete, currentRole }: Props
       ) : filteredUsers.length === 0 ? (
         <p className="text-sm text-muted">No users found.</p>
       ) : (
-        <ul className="space-y-3">
+        <ul className="divide-y divide-line rounded-xl border border-line bg-white">
           {filteredUsers.map((user) => (
-            <li key={user.id} className="border border-line bg-white p-4">
-              <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-bold">
-                    {user.name || "—"}{" "}
-                    <span className="font-normal text-muted">· {user.email}</span>
-                  </p>
-                  {user.phone && <p className="text-xs text-muted/70">{user.phone}</p>}
-                  {user.address && (
-                    <p className="break-words text-xs text-muted/70">{user.address}</p>
-                  )}
-                  <p className="text-xs text-muted/70">
-                    Joined {new Date(user.createdAt ?? Date.now()).toLocaleDateString()}
-                    {user.lastSignInAt
-                      ? ` · Last seen ${new Date(user.lastSignInAt).toLocaleDateString()}`
-                      : ""}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setExpanded((prev) => ({ ...prev, [user.id]: !prev[user.id] }))}
-                  className="rounded-full border border-line px-3 py-1.5 text-xs font-bold text-navy transition hover:border-navy"
-                >
-                  {expanded[user.id] ? "Hide projects" : "Show projects"}
-                </button>
-              </div>
-              <div className="mt-3 flex flex-wrap items-center gap-2">
+            <li key={user.id} className="px-3 py-2">
+              {/* 2026-11-15 (owner: "100s of users should fit"): one dense row
+                  per account. Identity + badges on line 1, every secondary
+                  field folded into one truncating meta line, actions on line 2. */}
+              <div className="flex items-center gap-2">
+                <p className="min-w-0 flex-1 truncate text-sm font-bold">
+                  {user.name || "—"} <span className="font-normal text-muted">· {user.email}</span>
+                </p>
                 <span
-                  className={`rounded px-2 py-0.5 text-[10px] font-black uppercase ${
+                  className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-black uppercase tracking-widest ${
                     user.role === "owner"
                       ? "bg-ink text-white"
                       : user.role === "admin"
@@ -419,12 +400,29 @@ export default function AdminUsers({ setMessage, canDelete, currentRole }: Props
                   {user.role || "customer"}
                 </span>
                 <span
-                  className={`rounded px-2 py-0.5 text-[10px] font-black uppercase ${
+                  className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-black uppercase tracking-widest ${
                     user.tier === "pro" ? "bg-emerald-100 text-emerald-700" : "bg-mist text-muted"
                   }`}
                 >
                   {user.tier || "free"}
                 </span>
+              </div>
+              <p className="truncate text-xs text-muted">
+                {[user.phone, user.address].filter(Boolean).join(" · ")}
+                {user.phone || user.address ? " · " : ""}
+                Joined {new Date(user.createdAt ?? Date.now()).toLocaleDateString()}
+                {user.lastSignInAt
+                  ? ` · last seen ${new Date(user.lastSignInAt).toLocaleDateString()}`
+                  : ""}
+              </p>
+              <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setExpanded((prev) => ({ ...prev, [user.id]: !prev[user.id] }))}
+                  className="rounded-full border border-line px-2.5 py-0.5 text-[11px] font-bold text-navy transition hover:border-navy"
+                >
+                  {expanded[user.id] ? "Hide projects" : "Show projects"}
+                </button>
                 {canEditRoles && user.role !== "owner" && (
                   <label className="text-[11px] font-bold text-muted">
                     Role{" "}
@@ -434,7 +432,7 @@ export default function AdminUsers({ setMessage, canDelete, currentRole }: Props
                       onChange={(e) =>
                         void changeRole(user.id, e.target.value as "customer" | "staff" | "admin")
                       }
-                      className="ml-1 rounded-lg border border-line bg-white px-2 py-1 text-[11px] font-bold text-ink"
+                      className="ml-1 rounded-lg border border-line bg-white px-2 py-0.5 text-[11px] font-bold text-ink"
                     >
                       <option value="customer">Customer</option>
                       <option value="staff">Staff</option>
@@ -446,7 +444,7 @@ export default function AdminUsers({ setMessage, canDelete, currentRole }: Props
                   type="button"
                   disabled={busyUserId === user.id}
                   onClick={() => void changeTier(user.id, user.tier === "pro" ? "free" : "pro")}
-                  className="rounded-full border border-line px-3 py-1 text-[11px] font-bold text-navy transition hover:border-navy disabled:opacity-60"
+                  className="rounded-full border border-line px-2.5 py-0.5 text-[11px] font-bold text-navy transition hover:border-navy disabled:opacity-60"
                 >
                   {user.tier === "pro" ? "Make free" : "Make pro"}
                 </button>
@@ -455,7 +453,7 @@ export default function AdminUsers({ setMessage, canDelete, currentRole }: Props
                     type="button"
                     disabled={busyUserId === user.id}
                     onClick={() => void deleteAccount(user.id, user.email)}
-                    className="rounded-full border border-red-200 px-3 py-1 text-[11px] font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-60"
+                    className="rounded-full border border-red-200 px-2.5 py-0.5 text-[11px] font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-60"
                   >
                     Delete account
                   </button>
