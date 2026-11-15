@@ -412,6 +412,9 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
   const [costing, setCosting] = useState<PrintCosting>(defaultPrintCosting);
   const [quotes, setQuotes] = useState<PrintQuoteRequest[]>([]);
 
+  // A preview belongs to the section that opened it; drop it on tab change.
+  useEffect(() => setPreview(null), [section]);
+
   const [category, setCategory] = useState<PrintCategory>(emptyCategory);
   const [material, setMaterial] = useState<PrintMaterial>(emptyMaterial);
   const [promotion, setPromotion] = useState<PrintPromotion>(emptyPromotion);
