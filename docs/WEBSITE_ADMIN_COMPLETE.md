@@ -2,30 +2,31 @@
 
 ## 1. Admin Dashboard Overview
 
-The website admin dashboard provides centralized management for all administrative functions. It uses a panel-based layout rather than a simple tab bar, with all admin panels accessible through the admin navigation.
+The authenticated `/admin` page mounts the website's `AdminPanel`, which
+provides eight top-level tabs and nested sections within Orders, Content, and
+Users.
 
 ### 1.1 Top-Level Navigation Structure
 
-The website admin uses Next.js page routes with React components for each admin panel:
+The website and app expose the same eight top-level tabs, enforced by parity
+tests. All tabs are panels within `/admin`; Orders, Content, and Users have
+their own subtabs.
 
-| Section/Path         | Component                            | Description                                                               |
-| -------------------- | ------------------------------------ | ------------------------------------------------------------------------- |
-| `/admin`             | `AdminDashboard.tsx`                 | Main dashboard overview — KPIs, recent activity                           |
-| `/admin/settings`    | `AdminSettings.tsx`                  | Company information editing (17 fields)                                   |
-| `/admin/logs`        | `AdminLogs.tsx` (via `AdminLogsHub`) | System logs, user activity, user profiles, fleet diagnostics (3 sections) |
-| `/admin/users`       | `AdminUsers.tsx`                     | User directory, car profiles, robot profiles (3 sections)                 |
-| `/admin/products`    | `AdminProducts.tsx`                  | Electronic products catalog                                               |
-| `/admin/3d-printing` | `Admin3DProducts.tsx`                | 3D printing products catalog                                              |
-| `/admin/projects`    | `AdminProjects.tsx`                  | Project packages, components                                              |
-| `/admin/content`     | `AdminContent.tsx`                   | Services, journal, home page copy                                         |
-| `/admin/activity`    | `AdminActivity.tsx`                  | Activity tracking                                                         |
-| `/admin/finance`     | `AdminFinance.tsx`                   | Financial data, orders, transactions                                      |
+| Top-level tab       | Contents                                |
+| ------------------- | --------------------------------------- |
+| Dashboard           | KPIs and recent activity                |
+| Orders              | Orders, payments, and finance           |
+| Electronic Products | Product catalog                         |
+| 3D Products         | 3D printing catalog                     |
+| Projects            | Project packages and components         |
+| Content             | Services, journal, and home page copy   |
+| Users               | Directory, messages, profiles, and Logs |
+| Settings            | Company and store settings              |
 
-Tab order is identical on the app and website (enforced by parity tests).
+### 1.2 Users Subtab: Directory and Profiles (Nov 2026)
 
-### 1.2 Active Tab: Users — Reorganized (Nov 2026)
-
-The **Users** tab (`AdminUsers.tsx`) now has 3 sections, mirroring the app's Users tab structure:
+The **Users** subtab (`AdminUsers.tsx`) contains the directory and profile
+managers. Messages and Logs are separate subtabs within the top-level Users tab.
 
 #### Section 1: User Directory
 
@@ -290,16 +291,17 @@ The Settings tab:
 
 ## 5. Alignment with App
 
-| Feature                 | Website                                                  | App                                                      | Status                 |
-| ----------------------- | -------------------------------------------------------- | -------------------------------------------------------- | ---------------------- |
-| Tab order (9 tabs)      | Identical                                                | Identical                                                | ✅ Mirrored            |
-| Users tab structure     | 3 sections: User Directory, Car Profiles, Robot Profiles | 3 sections: User Directory, Car Profiles, Robot Profiles | ✅ Mirrored (Nov 2026) |
-| Edit-button pattern     | Read-only → Edit → form → Save/Cancel                    | Read-only → Edit → form → Save/Cancel                    | ✅ Mirrored            |
-| Company info fields     | 17 fields (incl. url)                                    | 17 fields (incl. url)                                    | ✅ Mirrored            |
-| Car profiles per user   | profile_key, car_name, unique_id, settings               | profile_key, car_name, unique_id, settings               | ✅ Mirrored            |
-| Robot profiles per user | robot_id, robot_name, settings                           | robot_id, robot_name, settings                           | ✅ Mirrored            |
-| Logs tab sections       | 3 sections (user-activity, user-profiles, fleet)         | 3 sections (user-activity, user-profiles, fleet)         | ✅ Mirrored            |
-| Settings responsive     | Mobile + desktop, responsive                             | Mobile-first, stacks vertically                          | ✅ Both                |
+| Feature                 | Website                                         | App                                          | Status                 |
+| ----------------------- | ----------------------------------------------- | -------------------------------------------- | ---------------------- |
+| Tab order (8 tabs)      | Identical                                       | Identical                                    | ✅ Mirrored            |
+| Users subtabs           | Users, Messages, Logs                           | Users, Messages, Logs                        | ✅ Mirrored            |
+| Users subtab structure  | User Directory, Car Profiles, Robot Profiles    | User Directory, Car Profiles, Robot Profiles | ✅ Mirrored (Nov 2026) |
+| Edit-button pattern     | Read-only → Edit → form → Save/Cancel           | Read-only → Edit → form → Save/Cancel        | ✅ Mirrored            |
+| Company info fields     | 17 fields (incl. url)                           | 17 fields (incl. url)                        | ✅ Mirrored            |
+| Car profiles per user   | profile_key, car_name, unique_id, settings      | profile_key, car_name, unique_id, settings   | ✅ Mirrored            |
+| Robot profiles per user | robot_id, robot_name, settings                  | robot_id, robot_name, settings               | ✅ Mirrored            |
+| Logs subtab sections    | User activity, user profiles, fleet diagnostics | User activity, profiles, system diagnostics  | ✅ Mirrored            |
+| Settings responsive     | Mobile + desktop, responsive                    | Mobile-first, stacks vertically              | ✅ Both                |
 
 ## 6. Documentation Deliverables
 

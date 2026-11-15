@@ -9,23 +9,22 @@ parity tests enforce it:
 - `genumsolutions-website/tests/admin-parity.test.ts`
 - `genumsolutions-app/mobile/src/config/admin-parity.test.ts`
 
-## Tab inventory (9, identical on both)
+## Tab inventory (8, identical on both)
 
-| Tab                 | Contents                                            |
-| ------------------- | --------------------------------------------------- |
-| Dashboard           | KPIs, revenue trend, recent activity                |
-| Orders              | Orders + finance/transactions                       |
-| Electronic Products | `/products` catalog + import                        |
-| 3D Products         | `/3d-printing` catalog + import                     |
-| Projects            | Project packages, components, import                |
-| Content             | Services, journal, home copy, training programs     |
-| Users               | Directory, roles/tiers, messages, per-user profiles |
-| Logs                | User activity · User profiles · Fleet diagnostics   |
-| Settings            | Company info, store settings                        |
+| Tab                 | Contents                                                |
+| ------------------- | ------------------------------------------------------- |
+| Dashboard           | KPIs, revenue trend, recent activity                    |
+| Orders              | Orders + finance/transactions                           |
+| Electronic Products | `/products` catalog + import                            |
+| 3D Products         | `/3d-printing` catalog + import                         |
+| Projects            | Project packages, components, import                    |
+| Content             | Services, journal, home copy, training programs         |
+| Users               | Directory, messages, roles/tiers, profiles, Logs subtab |
+| Settings            | Company info, store settings                            |
 
-The three former monitoring tabs (**System Logs**, **User Logs**, **Profile
-Entries**) were merged into **Logs** in November 2026 with a section switch.
-The panels themselves were not rewritten — `AdminLogs`, `AdminUserLogs` and
+The **Logs** subtab is inside **Users**, not a top-level tab. It groups system
+diagnostics, user activity, and profile entries into three sections. The panels
+themselves were not rewritten — `AdminLogs`, `AdminUserLogs` and
 `AdminProfileEntries` are mounted inside `AdminLogsHub`, so a fix in a panel
 still applies everywhere it is used.
 

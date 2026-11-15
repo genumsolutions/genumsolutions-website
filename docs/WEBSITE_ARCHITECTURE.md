@@ -17,17 +17,8 @@ website/
 │   ├── checkout/               # Cart review + success/verification page
 │   ├── account/                # User account
 │   ├── login/                  # Login page
-│   ├── admin/                  # Admin dashboard
-│   │   ├── page.tsx            # Admin dashboard overview
-│   │   ├── settings/           # Company settings
-│   │   ├── logs/               # Logs (3 sections)
-│   │   ├── users/              # Users (3 sections)
-│   │   ├── products/           # Product CRUD
-│   │   ├── orders/             # Order management
-│   │   ├── content/            # Content management
-│   │   ├── projects/           # Project management
-│   │   ├── 3d-printing/        # 3D products
-│   │   └── activity/           # Activity tracking
+│   ├── admin/
+│   │   └── page.tsx            # Authenticated admin dashboard
 │   ├── api/
 │   │   ├── auth/               # Auth endpoints
 │   │   ├── cart/               # Cart endpoints
@@ -40,7 +31,7 @@ website/
 │   ├── cart-provider.tsx       # Cart state
 │   ├── ProductCatalog/         # Product display
 │   ├── ProductDetailPro/       # Product detail
-│   ├── AdminPanel/             # Admin dashboard
+│   ├── AdminPanel.tsx          # Admin dashboard tabs and panels
 │   ├── AuthPanel/              # Auth components
 │   └── ...
 ├── lib/
@@ -84,20 +75,17 @@ website/
 
 Next.js App Router with page-based routing:
 
-| Route                | Component                      | Description        |
-| -------------------- | ------------------------------ | ------------------ |
-| `/`                  | `app/page.tsx`                 | Landing page       |
-| `/products`          | `app/products/`                | Product catalog    |
-| `/products/[slug]`   | `app/products/[slug]/page.tsx` | Product detail     |
-| `/checkout`          | `app/checkout/`                | Cart review        |
-| `/account`           | `app/account/`                 | User account       |
-| `/admin`             | `app/admin/`                   | Admin dashboard    |
-| `/admin/settings`    | `app/admin/settings/`          | Company settings   |
-| `/admin/users`       | `app/admin/users/`             | Users (3 sections) |
-| `/admin/logs`        | `app/admin/logs/`              | Logs (3 sections)  |
-| `/login`             | `app/login/`                   | Login              |
-| `/reset-password`    | `app/reset-password/`          | Password reset     |
-| `/privacy`, `/terms` | `app/privacy/`, `app/terms/`   | Legal              |
+| Route                | Component                           | Description            |
+| -------------------- | ----------------------------------- | ---------------------- |
+| `/`                  | `app/page.tsx`                      | Landing page           |
+| `/products`          | `app/products/`                     | Product catalog        |
+| `/products/[slug]`   | `app/products/[slug]/page.tsx`      | Product detail         |
+| `/checkout`          | `app/checkout/`                     | Cart review            |
+| `/account`           | `app/account/`                      | User account           |
+| `/admin`             | `app/admin/page.tsx` + `AdminPanel` | Admin tabs and subtabs |
+| `/login`             | `app/login/`                        | Login                  |
+| `/reset-password`    | `app/reset-password/`               | Password reset         |
+| `/privacy`, `/terms` | `app/privacy/`, `app/terms/`        | Legal                  |
 
 ### 3. State Management
 
@@ -129,21 +117,23 @@ Next.js App Router with page-based routing:
 
 See `docs/WEBSITE_ADMIN_COMPLETE.md` for complete admin UI documentation.
 
-**9 tabs** in the admin dashboard, identical to the app except no Profile tab:
+**8 top-level tabs** in the admin dashboard, identical to the app:
 
-| Tab                 | Path                 | Description                                                  |
-| ------------------- | -------------------- | ------------------------------------------------------------ |
-| Dashboard           | `/admin`             | Main dashboard overview                                      |
-| Orders              | `/admin/orders`      | Order management                                             |
-| Electronic Products | `/admin/products`    | Product catalog                                              |
-| 3D Products         | `/admin/3d-printing` | 3D printing catalog                                          |
-| Projects            | `/admin/projects`    | Project packages                                             |
-| Content             | `/admin/content`     | Services, journal, home copy                                 |
-| Users               | `/admin/users`       | User directory + car profiles + robot profiles (3 sections)  |
-| Logs                | `/admin/logs`        | System logs + user activity + fleet diagnostics (3 sections) |
-| Settings            | `/admin/settings`    | Company info (17 fields) + training programs + pilot costs   |
+| Tab                 | Description                                        |
+| ------------------- | -------------------------------------------------- |
+| Dashboard           | Main dashboard overview                            |
+| Orders              | Orders and finance/transactions                    |
+| Electronic Products | Product catalog                                    |
+| 3D Products         | 3D printing catalog                                |
+| Projects            | Project packages                                   |
+| Content             | Services, journal, home copy                       |
+| Users               | Directory, messages, profiles, and the Logs subtab |
+| Settings            | Company info, training programs, and pilot costs   |
 
-### 6. Users Tab — 3 Sections (mirrored with app)
+Within **Users**, the **Users**, **Messages**, and **Logs** subtabs are available.
+Logs groups system diagnostics, user activity, and profile entries into three sections.
+
+### 6. Users Subtab — 3 Sections (mirrored with app)
 
 The **Users** tab (`AdminUsers.tsx`) has 3 sections:
 
