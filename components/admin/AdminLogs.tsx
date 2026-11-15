@@ -117,7 +117,7 @@ function CrashSection() {
   return (
     <PanelCard>
       <h2 className={panelTitle}>Car crash / restart reports</h2>
-      <p className="mt-1 text-xs text-slate-500">
+      <p className="mt-1 text-xs text-muted">
         One row per connection session, synced by the app from the car&apos;s stored restart record.
         A <span className="font-bold">crash</span> badge marks an actual crash_count &gt; 0.
       </p>
@@ -148,23 +148,23 @@ function CrashSection() {
               <li key={row.id} className="border border-line bg-white px-3 py-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <span
-                    className={`rounded px-1.5 py-0.5 text-[11px] font-black uppercase tracking-wide ${row.has_crash ? "bg-red-100 text-red-700" : "bg-slate-100 text-slate-500"}`}
+                    className={`rounded px-1.5 py-0.5 text-[11px] font-black uppercase tracking-wide ${row.has_crash ? "bg-red-100 text-red-700" : "bg-mist text-muted"}`}
                   >
                     {row.has_crash ? "crash" : "clean"}
                   </span>
                   <span className="font-mono text-sm font-bold">
                     {row.board_id || "(no board id)"}
                   </span>
-                  {row.model_id && <span className="text-xs text-slate-500">{row.model_id}</span>}
-                  <span className="text-xs text-slate-400">FW {row.fw_version || "?"}</span>
-                  <span className="ml-auto text-xs text-slate-400">
+                  {row.model_id && <span className="text-xs text-muted">{row.model_id}</span>}
+                  <span className="text-xs text-muted/70">FW {row.fw_version || "?"}</span>
+                  <span className="ml-auto text-xs text-muted/70">
                     {row.connection_method} via app v{row.app_version}
                   </span>
                 </div>
                 {row.has_crash && (
                   <p className="mt-1 text-sm">
                     <span className="font-bold text-red-700">{row.reset_reason ?? "UNKNOWN"}</span>
-                    <span className="text-slate-500">
+                    <span className="text-muted">
                       {row.crash_count != null
                         ? ` · ${row.crash_count} crash${row.crash_count === 1 ? "" : "es"}`
                         : ""}
@@ -173,7 +173,7 @@ function CrashSection() {
                     </span>
                   </p>
                 )}
-                <p className="mt-1 text-xs text-slate-400">
+                <p className="mt-1 text-xs text-muted/70">
                   boot #{row.boot_count ?? "?"} · {formatTimestamp(row.reported_at)}
                 </p>
                 <RowActions
@@ -190,7 +190,7 @@ function CrashSection() {
             ))}
           </ul>
           <Pager page={page} totalPages={totalPages} onPage={(p) => void load(p)} />
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-muted/70">
             {total} report{total === 1 ? "" : "s"}
           </p>
         </>
@@ -250,7 +250,7 @@ function AppLogSection() {
   return (
     <PanelCard>
       <h2 className={panelTitle}>App logs</h2>
-      <p className="mt-1 text-xs text-slate-500">
+      <p className="mt-1 text-xs text-muted">
         Warn/error lines flushed from the phone&apos;s ring buffer (logger + appLogService), newest
         first.
       </p>
@@ -286,19 +286,19 @@ function AppLogSection() {
                 }}
               >
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-xs uppercase text-slate-400">{row.level}</span>
-                  <span className="font-mono text-xs text-slate-500">[{row.scope}]</span>
-                  <span className="ml-auto text-xs text-slate-400">
+                  <span className="font-mono text-xs uppercase text-muted/70">{row.level}</span>
+                  <span className="font-mono text-xs text-muted">[{row.scope}]</span>
+                  <span className="ml-auto text-xs text-muted/70">
                     app v{row.app_version || "?"} · {row.platform || "?"}
                   </span>
                 </div>
                 <p className="mt-0.5 break-words text-sm">{row.message}</p>
                 {row.detail && Object.keys(row.detail).length > 0 && (
-                  <p className="mt-0.5 break-words text-xs text-slate-500">
+                  <p className="mt-0.5 break-words text-xs text-muted">
                     {JSON.stringify(row.detail)}
                   </p>
                 )}
-                <p className="mt-0.5 text-xs text-slate-400">{formatTimestamp(row.created_at)}</p>
+                <p className="mt-0.5 text-xs text-muted/70">{formatTimestamp(row.created_at)}</p>
                 <RowActions
                   actions={[
                     {
@@ -313,7 +313,7 @@ function AppLogSection() {
             ))}
           </ul>
           <Pager page={page} totalPages={totalPages} onPage={(p) => void load(p)} />
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-muted/70">
             {total} log{total === 1 ? "" : "s"}
           </p>
         </>

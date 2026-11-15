@@ -176,7 +176,7 @@ export default function AdminRows({
           <h2 className="font-display text-xl font-bold break-words">
             {caption || `${singular}s`} ({rows.length})
           </h2>
-          {hint && <p className="mt-1 text-xs text-slate-500">{hint}</p>}
+          {hint && <p className="mt-1 text-xs text-muted">{hint}</p>}
         </div>
         <button
           onClick={() => setEditing({ ...emptyRow })}
@@ -345,7 +345,7 @@ export default function AdminRows({
               <span className="block">
                 <strong>{safe(r)}</strong>{" "}
                 {kind === "curriculum" && r.ageBand && (
-                  <span className="text-slate-400">({r.ageBand})</span>
+                  <span className="text-muted/70">({r.ageBand})</span>
                 )}
               </span>
             </span>
@@ -381,7 +381,7 @@ export default function AdminRows({
           </div>
         ))}
         {shown.length === 0 && (
-          <p className="py-3 text-sm text-slate-500">No {singular.toLowerCase()}s yet.</p>
+          <p className="py-3 text-sm text-muted">No {singular.toLowerCase()}s yet.</p>
         )}
       </div>
 
@@ -414,13 +414,13 @@ export default function AdminRows({
                 {safe(previewing)}
               </h2>
               {kind === "curriculum" && previewing.skills?.length ? (
-                <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-slate-700">
+                <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-ink">
                   {(previewing.skills as string[]).map((s, i) => (
                     <li key={i}>{s}</li>
                   ))}
                 </ul>
               ) : (
-                <p className="mt-4 break-words text-sm leading-6 text-slate-600">
+                <p className="mt-4 break-words text-sm leading-6 text-ink/80">
                   {(previewing as { description?: string }).description ||
                     (previewing as { note?: string }).note ||
                     (previewing.item ?? "")}

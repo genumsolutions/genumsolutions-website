@@ -117,7 +117,7 @@ export default function AdminMessages({ setMessage: _setMessage, canDelete }: Pr
     <section aria-label="Customer messages" className="mt-4 space-y-4">
       <div className={`${panelCard} ${panelHeader}`}>
         <h2 className={panelTitle}>Messages</h2>
-        <label className="ml-auto text-sm font-bold text-slate-500">
+        <label className="ml-auto text-sm font-bold text-muted">
           Status
           <select
             value={filter}
@@ -151,9 +151,9 @@ export default function AdminMessages({ setMessage: _setMessage, canDelete }: Pr
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <p className="break-words text-sm font-bold [overflow-wrap:anywhere]">
-                      {msg.name} <span className="font-normal text-slate-500">· {msg.email}</span>
+                      {msg.name} <span className="font-normal text-muted">· {msg.email}</span>
                     </p>
-                    <p className="mt-1 text-xs text-slate-400">{formatTimestamp(msg.created_at)}</p>
+                    <p className="mt-1 text-xs text-muted/70">{formatTimestamp(msg.created_at)}</p>
                   </div>
                   {/* U-47v4: wrap like the other admin rows so buttons stay
                       inside 320-360px viewports. */}
@@ -181,14 +181,12 @@ export default function AdminMessages({ setMessage: _setMessage, canDelete }: Pr
                     )}
                   </div>
                 </div>
-                <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-700">
-                  {msg.message}
-                </p>
+                <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-ink">{msg.message}</p>
               </li>
             ))}
           </ul>
           <Pager page={page} totalPages={totalPages} onPage={(p) => void loadMessages(p)} />
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-muted/70">
             {total} total message{total === 1 ? "" : "s"}
           </p>
         </>
@@ -220,7 +218,7 @@ export default function AdminMessages({ setMessage: _setMessage, canDelete }: Pr
                   <p className="break-words text-sm font-bold [overflow-wrap:anywhere]">
                     {sub.email}
                   </p>
-                  <p className="mt-0.5 text-xs text-slate-400">
+                  <p className="mt-0.5 text-xs text-muted/70">
                     {formatTimestamp(sub.created_at)} · via {sub.source}
                   </p>
                 </div>
@@ -243,7 +241,7 @@ export default function AdminMessages({ setMessage: _setMessage, canDelete }: Pr
             totalPages={subsTotalPages}
             onPage={(p) => void loadSubscribers(p)}
           />
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-muted/70">
             {subsTotal} total subscriber{subsTotal === 1 ? "" : "s"}
           </p>
         </>

@@ -76,7 +76,7 @@ export default function AdminDashboard({ onOpenOrders }: { onOpenOrders: () => v
           <PanelCard className="flex flex-wrap items-center justify-between gap-3">
             <div className="min-w-0">
               <p className="text-[11px] font-black uppercase tracking-[0.14em] text-muted">Money</p>
-              <p className="mt-1 text-sm leading-6 text-slate-600">
+              <p className="mt-1 text-sm leading-6 text-ink/80">
                 Revenue, transactions and the order status split live in one place — Orders, then
                 Finance.
               </p>
@@ -99,7 +99,7 @@ export default function AdminDashboard({ onOpenOrders }: { onOpenOrders: () => v
                     key={pv.path}
                     className="flex items-center justify-between gap-3 py-2 text-sm"
                   >
-                    <span className="min-w-0 break-all font-mono text-xs text-slate-600">
+                    <span className="min-w-0 break-all font-mono text-xs text-ink/80">
                       {pv.path}
                     </span>
                     <span className="shrink-0 font-bold">{pv.count} views</span>
@@ -124,7 +124,7 @@ export default function AdminDashboard({ onOpenOrders }: { onOpenOrders: () => v
                   );
                 })}
               </div>
-              <div className="mt-1 flex justify-between text-[10px] text-slate-400">
+              <div className="mt-1 flex justify-between text-[10px] text-muted/70">
                 <span>{analytics.viewsByDay[0]?.date}</span>
                 <span>{analytics.viewsByDay[analytics.viewsByDay.length - 1]?.date}</span>
               </div>

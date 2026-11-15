@@ -133,7 +133,7 @@ export default function AdminServices({ setMessage, canDelete }: Props) {
                       <div className={cardRowText}>
                         <span className="block">
                           <strong>{s.name}</strong>{" "}
-                          <span className="text-slate-400">{s.priceLabel}</span>
+                          <span className="text-muted/70">{s.priceLabel}</span>
                         </span>
                         {!s.active && (
                           <span className="ml-2 text-[10px] font-black uppercase text-red-500">

@@ -149,13 +149,13 @@ function UserProjectProfiles({
   }
   if (carProfiles === null || robotProfiles === null) {
     return (
-      <p className="mt-2 text-xs text-slate-500" role="status">
+      <p className="mt-2 text-xs text-muted" role="status">
         Loading projects…
       </p>
     );
   }
   if (carProfiles.length === 0 && robotProfiles.length === 0) {
-    return <p className="mt-2 text-xs text-slate-500">No projects for this user yet.</p>;
+    return <p className="mt-2 text-xs text-muted">No projects for this user yet.</p>;
   }
 
   return (
@@ -174,11 +174,11 @@ function UserProjectProfiles({
                 <p className="truncate text-xs font-bold">
                   {profile.car_name || "Untitled project"}
                 </p>
-                <p className="truncate text-[11px] text-slate-500">
+                <p className="truncate text-[11px] text-muted">
                   {Object.keys(profile.settings || {}).length} saved settings · updated{" "}
                   {new Date(profile.updated_at).toLocaleDateString()}
                 </p>
-                <details className="mt-1 text-[11px] text-slate-400">
+                <details className="mt-1 text-[11px] text-muted/70">
                   <summary className="cursor-pointer font-bold">Technical details</summary>
                   <p className="mt-1 font-mono break-all">
                     Connection ID: {profile.profile_key}
@@ -209,11 +209,11 @@ function UserProjectProfiles({
                 <p className="truncate text-xs font-bold">
                   {robot.robot_name || "Untitled robot profile"}
                 </p>
-                <p className="truncate text-[11px] text-slate-500">
+                <p className="truncate text-[11px] text-muted">
                   {Object.keys(robot.settings || {}).length} saved settings · updated{" "}
                   {new Date(robot.updated_at).toLocaleDateString()}
                 </p>
-                <details className="mt-1 text-[11px] text-slate-400">
+                <details className="mt-1 text-[11px] text-muted/70">
                   <summary className="cursor-pointer font-bold">Technical details</summary>
                   <p className="mt-1 font-mono break-all">Robot ID: {robot.robot_id}</p>
                 </details>
@@ -349,7 +349,7 @@ export default function AdminUsers({ setMessage, canDelete, currentRole }: Props
     <section aria-label="User management" className="mt-4 space-y-4">
       <div className="mb-3">
         <p className="text-xs font-black uppercase tracking-widest text-navy">User Directory</p>
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-muted">
           Each account expands to show its projects and robot profiles.
         </p>
         <div className="mt-3 flex flex-col sm:flex-row gap-2">
@@ -370,11 +370,11 @@ export default function AdminUsers({ setMessage, canDelete, currentRole }: Props
       </div>
 
       {!loaded ? (
-        <p className="text-sm text-slate-500" role="status">
+        <p className="text-sm text-muted" role="status">
           Loading…
         </p>
       ) : filteredUsers.length === 0 ? (
-        <p className="text-sm text-slate-500">No users found.</p>
+        <p className="text-sm text-muted">No users found.</p>
       ) : (
         <ul className="space-y-3">
           {filteredUsers.map((user) => (
@@ -383,13 +383,13 @@ export default function AdminUsers({ setMessage, canDelete, currentRole }: Props
                 <div className="min-w-0">
                   <p className="truncate text-sm font-bold">
                     {user.name || "—"}{" "}
-                    <span className="font-normal text-slate-500">· {user.email}</span>
+                    <span className="font-normal text-muted">· {user.email}</span>
                   </p>
-                  {user.phone && <p className="text-xs text-slate-400">{user.phone}</p>}
+                  {user.phone && <p className="text-xs text-muted/70">{user.phone}</p>}
                   {user.address && (
-                    <p className="break-words text-xs text-slate-400">{user.address}</p>
+                    <p className="break-words text-xs text-muted/70">{user.address}</p>
                   )}
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-muted/70">
                     Joined {new Date(user.createdAt ?? Date.now()).toLocaleDateString()}
                     {user.lastSignInAt
                       ? ` · Last seen ${new Date(user.lastSignInAt).toLocaleDateString()}`
@@ -426,7 +426,7 @@ export default function AdminUsers({ setMessage, canDelete, currentRole }: Props
                   {user.tier || "free"}
                 </span>
                 {canEditRoles && user.role !== "owner" && (
-                  <label className="text-[11px] font-bold text-slate-500">
+                  <label className="text-[11px] font-bold text-muted">
                     Role{" "}
                     <select
                       value={user.role || "customer"}

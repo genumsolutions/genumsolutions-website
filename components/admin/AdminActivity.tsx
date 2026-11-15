@@ -57,25 +57,25 @@ export default function AdminActivity() {
                 <div className="min-w-0 flex-1">
                   <p className="break-words text-sm">
                     <span className="font-bold">{entry.action}</span>{" "}
-                    <span className="text-slate-400">
+                    <span className="text-muted/70">
                       {entry.entityType}
                       {entry.entityId ? ` / ${entry.entityId}` : ""}
                     </span>
                   </p>
                   {Object.keys(entry.details).length > 0 && (
-                    <p className="mt-0.5 break-words text-xs text-slate-500">
+                    <p className="mt-0.5 break-words text-xs text-muted">
                       {JSON.stringify(entry.details)}
                     </p>
                   )}
                 </div>
-                <span className="shrink-0 text-xs text-slate-400">
+                <span className="shrink-0 text-xs text-muted/70">
                   {formatTimestamp(entry.createdAt)}
                 </span>
               </li>
             ))}
           </ul>
           <Pager page={page} totalPages={totalPages} onPage={(p) => void loadActivity(p)} />
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-muted/70">
             {total} total event{total === 1 ? "" : "s"}
           </p>
         </>

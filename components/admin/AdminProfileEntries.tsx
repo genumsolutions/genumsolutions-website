@@ -120,7 +120,7 @@ export default function AdminProfileEntries() {
     <section aria-label="Profile entries" className="space-y-4">
       <PanelCard>
         <h2 className={panelTitle}>User profile entries</h2>
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-muted">
           Each car/project profile saved under a user. Admin-only delete.
         </p>
         {types.length > 0 && (
@@ -128,7 +128,7 @@ export default function AdminProfileEntries() {
             {types.map((type) => (
               <span
                 key={type.id}
-                className="rounded-full border border-line px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-slate-500"
+                className="rounded-full border border-line px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-muted"
               >
                 {type.name || "untyped"}
               </span>
@@ -172,24 +172,24 @@ export default function AdminProfileEntries() {
                         {row.title || "(untitled)"}
                       </span>
                       {summary && (
-                        <span className="ml-auto font-mono text-xs text-slate-500">{summary}</span>
+                        <span className="ml-auto font-mono text-xs text-muted">{summary}</span>
                       )}
                       {row.user_id && (
-                        <details className="w-full text-[11px] text-slate-400">
+                        <details className="w-full text-[11px] text-muted/70">
                           <summary className="cursor-pointer font-bold">Technical details</summary>
                           <p className="mt-1 font-mono break-all">user {row.user_id}</p>
                         </details>
                       )}
                     </div>
                     {Object.keys(row.body ?? {}).length > 0 && !summary && (
-                      <p className="mt-1 break-words text-xs text-slate-500">
+                      <p className="mt-1 break-words text-xs text-muted">
                         {JSON.stringify(row.body)}
                       </p>
                     )}
-                    <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted/70">
                       <span>{formatTimestamp(row.created_at)}</span>
                       {row.updated_at !== row.created_at && (
-                        <span className="text-slate-500">
+                        <span className="text-muted">
                           · updated {formatTimestamp(row.updated_at)}
                         </span>
                       )}
@@ -209,7 +209,7 @@ export default function AdminProfileEntries() {
               })}
             </ul>
             <Pager page={page} totalPages={totalPages} onPage={(p) => void load(p)} />
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-muted/70">
               {total} entr{total === 1 ? "y" : "ies"}
             </p>
           </>

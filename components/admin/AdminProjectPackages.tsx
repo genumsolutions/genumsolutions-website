@@ -671,7 +671,7 @@ export default function AdminProjectPackages({
                     <div className={cardRowText}>
                       <span className="block">
                         <strong>{item.name}</strong>{" "}
-                        <span className="text-slate-400">{item.sku}</span>
+                        <span className="text-muted/70">{item.sku}</span>
                       </span>
                       <span className="text-[10px] font-black uppercase tracking-wide text-gold">
                         {item.inventoryType || "Catalog"} · {item.priceLabel}
@@ -683,7 +683,7 @@ export default function AdminProjectPackages({
                           {stockLabel}
                         </span>
                         {item.active === false && (
-                          <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-slate-600">
+                          <span className="inline-flex rounded-full bg-mist px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-ink/80">
                             Hidden
                           </span>
                         )}
@@ -701,7 +701,7 @@ export default function AdminProjectPackages({
                       </button>
                       <button
                         onClick={() => setPreviewProduct(item)}
-                        className="text-xs font-bold text-slate-500 underline"
+                        className="text-xs font-bold text-muted underline"
                       >
                         Preview
                       </button>
@@ -724,7 +724,7 @@ export default function AdminProjectPackages({
                 );
               })}
               {shownProjects.length === 0 && (
-                <p className="py-3 text-sm text-slate-500">
+                <p className="py-3 text-sm text-muted">
                   No project packages match &ldquo;{projectQuery}&rdquo;.
                 </p>
               )}
@@ -776,7 +776,7 @@ export default function AdminProjectPackages({
                 project&rsquo;s public page.
               </p>
               {linkerLinks.length === 0 && !linkerBusy && (
-                <p className="mt-3 text-sm text-slate-500">
+                <p className="mt-3 text-sm text-muted">
                   No components linked yet — add from the suggestions below.
                 </p>
               )}
@@ -835,7 +835,7 @@ export default function AdminProjectPackages({
               </ul>
               {linkerSuggestions.length > 0 && (
                 <div className="mt-4 border-t border-line pt-3">
-                  <p className="text-xs font-black uppercase tracking-widest text-slate-500">
+                  <p className="text-xs font-black uppercase tracking-widest text-muted">
                     Matcher suggestions
                   </p>
                   <div className="mt-2 flex flex-wrap gap-2">
@@ -860,10 +860,10 @@ export default function AdminProjectPackages({
                           }
                           className={`rounded-full border px-3 py-1.5 text-xs font-bold transition ${
                             already
-                              ? "border-line bg-mist text-slate-400"
+                              ? "border-line bg-mist text-muted/70"
                               : s.productId
                                 ? "border-navy bg-white text-navy hover:bg-mist"
-                                : "cursor-not-allowed border-dashed border-line text-slate-400"
+                                : "cursor-not-allowed border-dashed border-line text-muted/70"
                           }`}
                         >
                           {already ? "✓ " : "+ "}
@@ -1158,7 +1158,7 @@ export default function AdminProjectPackages({
               projectPricing.componentMarkupPercent > 0 ||
               projectPricing.minimumOrder > 0) && (
               <div className="mt-5 border-t border-line pt-4">
-                <p className="text-xs font-black uppercase tracking-widest text-slate-500">
+                <p className="text-xs font-black uppercase tracking-widest text-muted">
                   Live estimate preview
                 </p>
                 <p className="mt-1 text-sm text-muted">
@@ -1222,7 +1222,7 @@ export default function AdminProjectPackages({
                     </dl>
                   </div>
                 ) : (
-                  <p className="mt-3 text-sm text-slate-500">{estimatePreview.reason}</p>
+                  <p className="mt-3 text-sm text-muted">{estimatePreview.reason}</p>
                 )}
               </div>
             )}

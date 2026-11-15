@@ -119,7 +119,7 @@ export default function AdminJournal({ setMessage, canDelete }: Props) {
         <section aria-label="Journal post list" className={panelListSection}>
           <PanelCard>
             <h2 className={panelTitle}>Journal posts ({posts.length})</h2>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-muted">
               Published posts appear on /journal and in the native app&apos;s Journal screen.
               Editing here updates the DB - both clients render the latest copy.
             </p>
@@ -131,7 +131,7 @@ export default function AdminJournal({ setMessage, canDelete }: Props) {
                   <div key={p.id} className={`${cardRow} items-center`}>
                     <div className={cardRowText}>
                       <span className="block">
-                        <strong>{p.title}</strong> <span className="text-slate-400">{p.tag}</span>
+                        <strong>{p.title}</strong> <span className="text-muted/70">{p.tag}</span>
                       </span>
                       {!p.active && (
                         <span className="ml-2 text-[10px] font-black uppercase text-red-500">
@@ -286,7 +286,7 @@ export default function AdminJournal({ setMessage, canDelete }: Props) {
                 </h2>
                 <p className="mt-2 flex-1 text-sm leading-6 text-muted">{previewPost.text}</p>
                 <div className="mt-5 flex items-center justify-between gap-3">
-                  <strong className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                  <strong className="text-[10px] font-black uppercase tracking-widest text-muted/70">
                     {previewPost.active ? "Published" : "Hidden"}
                   </strong>
                   <button

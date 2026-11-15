@@ -77,7 +77,7 @@ export default function AdminFinance() {
             ].map(({ key, label, count }) => {
               return (
                 <div key={key} className="rounded-lg border border-line px-3 py-2 text-center">
-                  <p className="text-xs font-black uppercase tracking-widest text-slate-400">
+                  <p className="text-xs font-black uppercase tracking-widest text-muted/70">
                     {label}
                   </p>
                   <p className="mt-1 text-xl font-bold">{Math.max(0, count)}</p>

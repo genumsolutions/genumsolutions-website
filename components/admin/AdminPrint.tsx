@@ -255,7 +255,7 @@ function QuoteFigures({
         >
           Save figures
         </button>
-        <p className="ml-auto text-right text-[11px] leading-4 text-slate-500">
+        <p className="ml-auto text-right text-[11px] leading-4 text-muted">
           {margin
             ? `Est. cost ${formatNPR(margin.cost)} · margin ${margin.marginPercent}%`
             : quote.quotedAmount > 0
@@ -358,7 +358,7 @@ function PrintReports({ quotes, costing }: { quotes: PrintQuoteRequest[]; costin
               {stat.label}
             </p>
             <p className="mt-1 break-words font-display text-xl font-bold text-ink">{stat.value}</p>
-            <p className="mt-1 text-[11px] leading-4 text-slate-500">{stat.note}</p>
+            <p className="mt-1 text-[11px] leading-4 text-muted">{stat.note}</p>
           </div>
         ))}
       </div>
@@ -377,7 +377,7 @@ function PrintReports({ quotes, costing }: { quotes: PrintQuoteRequest[]; costin
             );
           })}
         </div>
-        <p className="mt-4 text-xs leading-5 text-slate-500">
+        <p className="mt-4 text-xs leading-5 text-muted">
           Figures come from the quote records only. Material cost, margin and cost per gram are
           estimates from the Costs sheet — never present them as audited profit.
         </p>
@@ -531,7 +531,7 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
                 <div key={item.id} className={`${cardRow} items-center`}>
                   <div className={cardRowText}>
                     <strong>{item.name}</strong>
-                    <span className="ml-2 text-xs text-slate-400">{item.id}</span>
+                    <span className="ml-2 text-xs text-muted/70">{item.id}</span>
                     {!item.active && (
                       <span className="ml-2 text-[10px] font-black uppercase text-red-500">
                         hidden
@@ -706,7 +706,7 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
                   <div key={item.id} className={`${cardRow} items-center`}>
                     <div className={cardRowText}>
                       <strong>{item.name}</strong>{" "}
-                      <span className="text-xs text-slate-500">
+                      <span className="text-xs text-muted">
                         {item.ratePerGram > 0 ? `NPR ${item.ratePerGram}/g` : "rate not published"}
                       </span>
                       {!item.active && (
@@ -1059,7 +1059,7 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
                 <div key={item.id} className={`${cardRow} items-center`}>
                   <div className={cardRowText}>
                     <strong>{item.title}</strong>
-                    <span className="ml-2 text-xs text-slate-500">
+                    <span className="ml-2 text-xs text-muted">
                       {item.active ? "live" : "draft"}
                     </span>
                   </div>
@@ -1255,7 +1255,7 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
             }}
           >
             <h2 className={editorCardTitle}>Internal costing sheet</h2>
-            <p className="mt-2 text-xs leading-5 text-slate-500">
+            <p className="mt-2 text-xs leading-5 text-muted">
               Staff-only — this never reaches the website or the app. Leave a field at 0 until you
               have a real figure; the reports hide margin rather than guess.
             </p>
@@ -1274,7 +1274,7 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
                     className={`mt-2 w-full ${inputClass}`}
                   />
                   {field.hint && (
-                    <span className="mt-1 block text-[11px] font-medium leading-4 text-slate-500">
+                    <span className="mt-1 block text-[11px] font-medium leading-4 text-muted">
                       {field.hint}
                     </span>
                   )}
@@ -1303,7 +1303,7 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
 
           <PanelCard className="mt-4">
             <h3 className="font-display text-lg font-bold">Worked example</h3>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-muted">
               100 g part, 2 print hours, 15 minutes of labour — recalculated as you type.
             </p>
             {(() => {
@@ -1357,7 +1357,7 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
                   <div className={cardRowText}>
                     <strong>{item.title}</strong>
                     {item.priceNote && (
-                      <span className="ml-2 text-xs text-slate-500">{item.priceNote}</span>
+                      <span className="ml-2 text-xs text-muted">{item.priceNote}</span>
                     )}
                     {!item.active && (
                       <span className="ml-2 text-[10px] font-black uppercase text-red-500">
@@ -1622,12 +1622,12 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
                     <div className="min-w-0">
                       <p className="text-sm font-black text-ink">
                         {quote.name}{" "}
-                        <span className="font-medium text-slate-500">
+                        <span className="font-medium text-muted">
                           · {quote.email}
                           {quote.phone ? ` · ${quote.phone}` : ""}
                         </span>
                       </p>
-                      <p className="mt-0.5 text-xs text-slate-500">
+                      <p className="mt-0.5 text-xs text-muted">
                         {new Date(quote.createdAt).toLocaleString()} · qty {quote.quantity}
                         {quote.material ? ` · ${quote.material}` : ""}
                         {quote.dimensions ? ` · ${quote.dimensions}` : ""}
@@ -1638,7 +1638,7 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
                       {quoteStatusLabel(quote.status)}
                     </span>
                   </div>
-                  <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700">
+                  <p className="mt-2 whitespace-pre-line text-sm leading-6 text-ink">
                     {quote.description}
                   </p>
                   {quote.referenceUrls.length > 0 && (

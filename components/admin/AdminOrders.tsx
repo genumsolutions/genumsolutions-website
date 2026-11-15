@@ -88,7 +88,7 @@ export default function AdminOrders({ canDelete }: { canDelete: boolean }) {
     <section aria-label="Customer orders" className="mt-4 space-y-4">
       <div className={`${panelCard} ${panelHeader}`}>
         <h2 className="font-display text-xl font-bold">Customer orders</h2>
-        <label className="ml-auto text-sm font-bold text-slate-500">
+        <label className="ml-auto text-sm font-bold text-muted">
           Search buyer
           <input
             value={orderQuery}
@@ -99,7 +99,7 @@ export default function AdminOrders({ canDelete }: { canDelete: boolean }) {
             className={`mt-1 w-full sm:ml-2 sm:mt-0 sm:w-48 ${inputClass}`}
           />
         </label>
-        <label className="text-sm font-bold text-slate-500">
+        <label className="text-sm font-bold text-muted">
           Status
           <select
             value={statusFilter}
@@ -136,11 +136,11 @@ export default function AdminOrders({ canDelete }: { canDelete: boolean }) {
                     <p className="text-sm font-black">
                       #{order.id.slice(0, 8).toUpperCase()} · {formatNPR(order.totalNpr)}
                     </p>
-                    <p className="break-words text-xs text-slate-500">
+                    <p className="break-words text-xs text-muted">
                       {order.customerName} · {order.email}
                     </p>
-                    <p className="break-words text-xs text-slate-400">{order.address}</p>
-                    <p className="text-xs text-slate-400">
+                    <p className="break-words text-xs text-muted/70">{order.address}</p>
+                    <p className="text-xs text-muted/70">
                       {order.provider} · {formatTimestamp(order.createdAt)}
                     </p>
                   </div>
@@ -179,7 +179,7 @@ export default function AdminOrders({ canDelete }: { canDelete: boolean }) {
                     )}
                   </div>
                 </div>
-                <ul className="mt-2 space-y-1 text-xs leading-5 text-slate-600">
+                <ul className="mt-2 space-y-1 text-xs leading-5 text-ink/80">
                   {order.items.map((item) => (
                     <li key={`${order.id}-${item.name}`} className="truncate">
                       {item.quantity} × {item.name} ({formatNPR(item.price * item.quantity)})
@@ -188,29 +188,29 @@ export default function AdminOrders({ canDelete }: { canDelete: boolean }) {
                 </ul>
                 {expandedId === order.id && (
                   <dl className="mt-3 grid grid-cols-[7rem_1fr] gap-x-3 gap-y-1 border-t border-line pt-3 text-xs leading-5">
-                    <dt className="font-bold uppercase tracking-wide text-slate-500">Order id</dt>
-                    <dd className="break-all text-slate-700">{order.id}</dd>
-                    <dt className="font-bold uppercase tracking-wide text-slate-500">Buyer</dt>
-                    <dd className="text-slate-700">
+                    <dt className="font-bold uppercase tracking-wide text-muted">Order id</dt>
+                    <dd className="break-all text-ink">{order.id}</dd>
+                    <dt className="font-bold uppercase tracking-wide text-muted">Buyer</dt>
+                    <dd className="text-ink">
                       {order.customerName} · {order.email}
                     </dd>
-                    <dt className="font-bold uppercase tracking-wide text-slate-500">Phone</dt>
-                    <dd className="text-slate-700">
+                    <dt className="font-bold uppercase tracking-wide text-muted">Phone</dt>
+                    <dd className="text-ink">
                       {(order as OrderRow & { phone?: string }).phone || "—"}
                     </dd>
-                    <dt className="font-bold uppercase tracking-wide text-slate-500">Address</dt>
-                    <dd className="break-words text-slate-700">{order.address || "—"}</dd>
-                    <dt className="font-bold uppercase tracking-wide text-slate-500">Provider</dt>
-                    <dd className="text-slate-700">
+                    <dt className="font-bold uppercase tracking-wide text-muted">Address</dt>
+                    <dd className="break-words text-ink">{order.address || "—"}</dd>
+                    <dt className="font-bold uppercase tracking-wide text-muted">Provider</dt>
+                    <dd className="text-ink">
                       {order.provider}
                       {(order as OrderRow & { providerRef?: string }).providerRef
                         ? ` · ref ${(order as OrderRow & { providerRef?: string }).providerRef}`
                         : ""}
                     </dd>
-                    <dt className="font-bold uppercase tracking-wide text-slate-500">Placed</dt>
-                    <dd className="text-slate-700">{formatTimestamp(order.createdAt)}</dd>
-                    <dt className="font-bold uppercase tracking-wide text-slate-500">Items</dt>
-                    <dd className="text-slate-700">
+                    <dt className="font-bold uppercase tracking-wide text-muted">Placed</dt>
+                    <dd className="text-ink">{formatTimestamp(order.createdAt)}</dd>
+                    <dt className="font-bold uppercase tracking-wide text-muted">Items</dt>
+                    <dd className="text-ink">
                       <ul className="space-y-0.5">
                         {order.items.map((item) => (
                           <li key={`${order.id}-detail-${item.name}`}>
@@ -219,7 +219,7 @@ export default function AdminOrders({ canDelete }: { canDelete: boolean }) {
                         ))}
                       </ul>
                     </dd>
-                    <dt className="font-bold uppercase tracking-wide text-slate-500">Total</dt>
+                    <dt className="font-bold uppercase tracking-wide text-muted">Total</dt>
                     <dd className="font-black text-ink">{formatNPR(order.totalNpr)}</dd>
                   </dl>
                 )}
@@ -231,7 +231,7 @@ export default function AdminOrders({ canDelete }: { canDelete: boolean }) {
             totalPages={orderData.totalPages}
             onPage={(page) => void loadOrders(page)}
           />
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-muted/70">
             {orderData.total} total order{orderData.total === 1 ? "" : "s"}
           </p>
         </>

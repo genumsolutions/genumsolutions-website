@@ -512,7 +512,7 @@ export default function AdminProducts({
                     <div className={cardRowText}>
                       <span className="block">
                         <strong>{item.name}</strong>{" "}
-                        <span className="text-slate-400">{item.sku}</span>
+                        <span className="text-muted/70">{item.sku}</span>
                       </span>
                       <span className="mt-1 flex flex-wrap items-center gap-2">
                         <span
@@ -521,7 +521,7 @@ export default function AdminProducts({
                           {stockLabel}
                         </span>
                         {item.active === false && (
-                          <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-slate-600">
+                          <span className="inline-flex rounded-full bg-mist px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-ink/80">
                             Hidden
                           </span>
                         )}
@@ -541,7 +541,7 @@ export default function AdminProducts({
                       </button>
                       <button
                         onClick={() => setPreviewProduct(item)}
-                        className="text-xs font-bold text-slate-500 underline"
+                        className="text-xs font-bold text-muted underline"
                       >
                         Preview
                       </button>

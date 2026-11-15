@@ -28,7 +28,7 @@ export function Pager({
       >
         <ChevronLeft size={14} aria-hidden="true" /> Prev
       </button>
-      <span aria-live="polite" className="text-slate-500">
+      <span aria-live="polite" className="text-muted">
         Page {page} of {totalPages}
       </span>
       <button
@@ -119,7 +119,7 @@ export function PanelCard({
 
 export function LoadingRow({ className = "" }: { className?: string }) {
   return (
-    <p role="status" className={`text-sm text-slate-500 ${className}`.trim()}>
+    <p role="status" className={`text-sm text-muted ${className}`.trim()}>
       Loading…
     </p>
   );
@@ -134,7 +134,7 @@ export function EmptyState({
 }) {
   return (
     <p
-      className={`min-w-0 break-words rounded-lg border border-dashed border-line bg-white px-4 py-6 text-center text-sm text-slate-500 ${className}`.trim()}
+      className={`min-w-0 break-words rounded-lg border border-dashed border-line bg-white px-4 py-6 text-center text-sm text-muted ${className}`.trim()}
     >
       {children}
     </p>
@@ -154,7 +154,7 @@ export function RowActions({
 }) {
   const toneClass: Record<string, string> = {
     navy: "text-navy",
-    slate: "text-slate-500",
+    slate: "text-muted",
     ink: "text-ink",
     red: "text-red-600",
   };

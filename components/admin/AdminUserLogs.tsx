@@ -106,7 +106,7 @@ export default function AdminUserLogs() {
     <section aria-label="User logs" className="space-y-4">
       <PanelCard>
         <h2 className={panelTitle}>User activity logs</h2>
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-muted">
           Per-user audit entries logged by the app. Admin-only delete.
         </p>
         {actionError && (
@@ -137,17 +137,17 @@ export default function AdminUserLogs() {
               {entries.map((row) => (
                 <li key={row.id} className="border border-line bg-white px-3 py-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-mono text-xs text-slate-400">
+                    <span className="font-mono text-xs text-muted/70">
                       {row.action || "(no action)"}
                     </span>
                     {row.entity_type && (
-                      <span className="text-xs text-slate-500">{row.entity_type}</span>
+                      <span className="text-xs text-muted">{row.entity_type}</span>
                     )}
-                    <span className="ml-auto text-xs text-slate-400">
+                    <span className="ml-auto text-xs text-muted/70">
                       {formatTimestamp(row.created_at)}
                     </span>
                   </div>
-                  <details className="mt-1 text-[11px] text-slate-400">
+                  <details className="mt-1 text-[11px] text-muted/70">
                     <summary className="cursor-pointer font-bold">Technical details</summary>
                     <p className="mt-1 font-mono break-all">
                       {row.user_id ? `user ${row.user_id}` : ""}
@@ -155,7 +155,7 @@ export default function AdminUserLogs() {
                     </p>
                   </details>
                   {row.details && Object.keys(row.details).length > 0 && (
-                    <p className="mt-1 break-words text-xs text-slate-500">
+                    <p className="mt-1 break-words text-xs text-muted">
                       {JSON.stringify(row.details)}
                     </p>
                   )}
@@ -173,7 +173,7 @@ export default function AdminUserLogs() {
               ))}
             </ul>
             <Pager page={page} totalPages={totalPages} onPage={(p) => void load(p)} />
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-muted/70">
               {total} entr{total === 1 ? "y" : "ies"}
             </p>
           </>
