@@ -1,0 +1,16 @@
+{
+  "projectId": "genumsolutions-website",
+  "name": "genumsolutions-website",
+  "productionUrl": "https://genumsolutions-website.vercel.app/",
+  "repository": {
+    "url": "https://github.com/genumsolutions/genumsolutions-website",
+    "type": "git"
+  },
+  "env": {
+    "SUPABASE_URL": "https://jxgmbodzkmxanuwfaqxo.supabase.co",
+    "SUPABASE_SERVICE_ROLE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4Z21ib2R6a214YW51d2ZhcXhvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5NDA0MDE2MSwiZXhwIjoyMTA5NjE2MTYxfQ.DOP8euovl_iySQfGqpeCUlCyrkmNwuSXn1X04KSnWIQ",
+    "SUPABASE_ACCESS_TOKEN": "sbp_fcea7a4bb8732ead11fc3d03855846dc3a24e86b",
+    "GOOGLE_CLIENT_ID": "689924722337-g0k2gigtu2vq1e340f5ms92v6vk1m2kt.apps.googleusercontent.com",
+    "GOOGLE_CLIENT_SECRET": "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"
+  }
+}
