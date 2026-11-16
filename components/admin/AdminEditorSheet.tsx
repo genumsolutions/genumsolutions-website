@@ -46,7 +46,7 @@ export function AdminEditorSheet({
             onClick={onClose}
             className="min-h-[36px] shrink-0 rounded-full border border-line px-3 text-xs font-bold text-ink transition hover:border-navy"
           >
-            Close
+            Cancel
           </button>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">{children}</div>
