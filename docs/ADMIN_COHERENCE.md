@@ -11,16 +11,16 @@ parity tests enforce it:
 
 ## Tab inventory (8, identical on both)
 
-| Tab                 | Contents                                                |
-| ------------------- | ------------------------------------------------------- |
-| Dashboard           | KPIs, revenue trend, recent activity                    |
-| Orders              | Orders + finance/transactions                           |
-| Electronic Products | `/products` catalog + import                            |
-| 3D Products         | `/3d-printing` catalog + import                         |
-| Projects            | Project packages, components, import                    |
-| Content             | Services, journal, home copy, training programs         |
-| Users               | Directory, messages, roles/tiers, profiles, Logs subtab |
-| Settings            | Company info, store settings                            |
+| Tab                 | Contents                                                                 |
+| ------------------- | ------------------------------------------------------------------------ |
+| Dashboard           | KPIs, revenue trend, recent activity                                     |
+| Orders              | Orders + finance/transactions                                            |
+| Electronic Products | `/products` catalog + import                                             |
+| 3D Products         | `/3d-printing` catalog + import                                          |
+| Projects            | Project packages, components, import                                     |
+| Content             | Services, journal, home copy, training programs                          |
+| Users               | Directory, messages + newsletter opt-ins, per-user projects, Logs subtab |
+| Settings            | Company info, store settings                                             |
 
 The **Logs** subtab is inside **Users**, not a top-level tab. It groups system
 diagnostics, user activity, and profile entries into three sections. The panels
@@ -30,12 +30,12 @@ still applies everywhere it is used.
 
 ## Who can do what
 
-| Role     | Read admin data | Edit content/products | Delete rows | Edit user/project profiles | Delete users |
-| -------- | --------------- | --------------------- | ----------- | -------------------------- | ------------ |
-| customer | –               | –                     | –           | own rows only (app)        | –            |
-| staff    | ✅              | ✅                    | ❌          | read only                  | ❌           |
-| admin    | ✅              | ✅                    | ✅          | ✅                         | ❌           |
-| owner    | ✅              | ✅                    | ✅          | ✅                         | ✅           |
+| Role     | Read admin data | Edit content/products | Delete rows | Repair project profiles        | Delete users |
+| -------- | --------------- | --------------------- | ----------- | ------------------------------ | ------------ |
+| customer | –               | –                     | –           | own rows only (app)            | –            |
+| staff    | ✅              | ✅                    | ❌          | read only                      | ❌           |
+| admin    | ✅              | ✅                    | ✅          | ✅ app · delete only (website) | ❌           |
+| owner    | ✅              | ✅                    | ✅          | ✅ app · delete only (website) | ✅           |
 
 Enforced in three places that agree: `lib/roles.ts` + `lib/admin.ts` on the
 website, `public.is_staff()` / `public.is_admin()` RLS in Postgres, and the
@@ -61,24 +61,35 @@ clients see the same history without duplicating write code.
 
 ## Per-user profiles
 
-Expanding a user in **Users** opens two managers on both clients:
+Expanding a user in **Users** ("Show projects" / "Hide projects") lists the
+rows that user created, read-only for every role:
 
-1. **Robot preferences** — `robot_user_settings`, edit key/value settings per
-   robot, add or delete rows. Staff may read; admin+ may write.
-2. **Project profiles** — `car_profiles`, rename a board, repair its settings
-   JSON, create by profile key, or delete. Staff may read; admin+ may write
-   (`20261109_admin_update_profiles.sql` adds the RLS, the website actions
-   live in `app/api/admin/users/route.ts`).
+1. **Robot profiles** — `robot_user_settings`: robot name, saved-settings count,
+   updated date, and the robot id behind a Technical details disclosure.
+2. **Projects** — `car_profiles`: project name, saved-settings count, updated
+   date, and the profile key (the board's stable identity) plus device id behind
+   a Technical details disclosure.
+
+Admin and owner can delete a row on both clients (confirm first). Repairing a row
+is app-only today: the app opens a JSON editor for `car_profiles.settings` and an
+upsert form keyed by profile key, gated by the same `canDelete` check. The website
+retired that form and offers delete only; its actions still live in
+`app/api/admin/users/route.ts` and the RLS in `20261109_admin_update_profiles.sql`
+still allows the app's writes.
 
 ## Deliberate asymmetries
 
 These are the only places the two clients differ, and each is by design:
 
-| Website                            | App                            | Why                                           |
-| ---------------------------------- | ------------------------------ | --------------------------------------------- |
-| Cookie session, `/api/admin/*`     | Supabase session, direct reads | No server to protect a service key on a phone |
-| Server-rendered panels             | Native lists, 20-row pages     | Same data, phone-sized                        |
-| Drag-free forms with JSON textarea | Same, keyboard-friendly        | Keep the operations identical, not the pixels |
-| `next/image` AVIF/WebP             | `expo-image` cache             | Same stored files, per-platform delivery      |
+| Website                          | App                              | Why                                            |
+| -------------------------------- | -------------------------------- | ---------------------------------------------- |
+| Cookie session, `/api/admin/*`   | Supabase session, direct reads   | No server to protect a service key on a phone  |
+| Server-rendered panels           | Native lists, 20-row pages       | Same data, phone-sized                         |
+| Per-user profiles: read + delete | Read + delete + JSON repair form | The app is where a broken board row gets fixed |
+| `next/image` AVIF/WebP           | `expo-image` cache               | Same stored files, per-platform delivery       |
+
+Newsletter opt-ins are no longer an asymmetry: both consoles list
+`newsletter_subscribers` under Users → Messages, with staff read and admin
+delete.
 
 UI/UX polish is intentionally pending: operations and data parity came first.

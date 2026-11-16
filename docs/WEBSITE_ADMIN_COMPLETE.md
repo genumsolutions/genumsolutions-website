@@ -23,115 +23,52 @@ their own subtabs.
 | Users               | Directory, messages, profiles, and Logs |
 | Settings            | Company and store settings              |
 
-### 1.2 Users Subtab: Directory and Profiles (Nov 2026)
+### 1.2 Users Subtab: Directory and Projects (2026-11)
 
-The **Users** subtab (`AdminUsers.tsx`) contains the directory and profile
-managers. Messages and Logs are separate subtabs within the top-level Users tab.
-
-#### Section 1: User Directory
+The **Users** subtab (`AdminUsers.tsx`) is the directory. Messages and Logs are
+separate subtabs of the top-level Users tab, and a user's projects open inside the
+row that owns them — there are no separate profile sections.
 
 **Header**:
 
 - Label: `"User Directory"` (text-xs font-black uppercase tracking-widest text-navy)
-- Subtext: `"Search and manage user accounts and their basic information."`
 - Components: search input, Clear button
 
 **Per-user row layout**:
 
 - Container: `li border border-line bg-white p-4`
 - Top row: name + email + phone (if present) + address (if present) + joined date + last seen (if present)
-- Bottom row (flex-col sm:flex-row gap-3 sm:items-center sm:justify-between): role select (disabled: canDelete), tier toggle buttons (Upgrade to Pro / Downgrade to Free), Delete user button (owner only)
+- Bottom row (`flex-col sm:flex-row gap-3 sm:items-center sm:justify-between`): role select (admins and owners only), tier toggle (Upgrade to Pro / Downgrade to Free), **Show projects** expander, Delete user (owner only)
+
+**Show projects** (every role may read):
+
+- Calls the admin user route with `listCarProfiles` and `listRobotSettings` for
+  that user and renders two read-only lists, "Projects (n)" from `car_profiles`
+  and "Robot profiles (n)" from `robot_user_settings`.
+- Each row: name (or "Untitled project"), saved-settings count + updated date, and
+  a collapsed **Technical details** disclosure holding the connection/profile key
+  (the board's stable identity: `fw:`, Bluetooth MAC or `wifi:`) and device id.
+  No Wi-Fi passwords are stored in these rows.
+- Admins and owners get a Delete per profile (`deleteCarProfile` /
+  `deleteRobotSetting`); deletion asks for confirmation first. Staff read only.
 
 **Search**: internal `search` state, filters by name or email lowercase includes.
 
 **Interactions**:
 
-- Role select: `onValueChange` → validates role
-- Tier toggle: calls `setMessage("Upgrade/Downgrade ...")` — informational only
-- Delete user: confirm dialog, calls delete
-
-#### Section 2: Car Profiles
-
-**Header**:
-
-- Label: `"Car Profiles"` (text-xs font-black uppercase tracking-widest text-navy)
-- Subtext: `"Per-car rows from car_profiles — the profile key is the board's stable identity (fw:, Bluetooth MAC, wifi:). The app reads the same rows; no Wi-Fi passwords are stored here."`
-
-**Per-car row**:
-
-- Container: `li rounded-lg border border-line bg-white p-3`
-- Top: car name (or "Untitled profile") + profile_key (font-mono text-slate-400), settings keys count + updated date + unique_id (if present)
-- Actions row: Edit button (disabled: !canDelete, title: "Only administrators can edit project profiles"), Delete button (canDelete, red)
-
-**Edit form (inline):**
-
-- `input` for name (placeholder "Profile display name")
-- `textarea` (rows=6, font-mono) for settings JSON (placeholder "Project profile settings JSON")
-- Save button: bg-emerald-600, "Save"
-- Cancel button: border-line, "Cancel"
-- Save → `send("upsertCarProfile", {profileKey, carName, settings})` → onSuccess: re-fetch, `setEditingKey(null)`
-- Cancel → `setEditingKey(null)` (no changes)
-
-**Add new (canDelete):**
-
-- `input` for new profile key (placeholder "e.g. fw:1FB608")
-- "Add profile" button
-- Add → `send("upsertCarProfile", ...)` → onSuccess: re-fetch
-
-**Edit pattern (consistent across app and website):**
-
-1. Read-only card by default (name, profile_key, settings count, date, Edit + Delete buttons)
-2. Tap "Edit" → inline form appears (inputs for name + JSON, Save/Cancel buttons)
-3. Tap "Save" → async call, on success: form closes, re-fetch, `setMessage("Project profile saved for ...")`
-4. Tap "Cancel" → form closes, no changes, `setEditingKey(null)`
-5. Staff: Edit button disabled (`opacity-50`), title tooltip says "Only administrators can edit project profiles"
-6. Admin+: Edit enabled, Delete enabled (with confirm dialog)
-
-#### Section 3: Robot Profiles
-
-**Header**:
-
-- Label: `"Robot Profiles"` (text-xs font-black uppercase tracking-widest text-navy)
-- Subtext: `"Per-robot code values, parameters, and telemetry channels — stored separately from orders/carts. The app reads the same rows."`
-
-**Per-robot row**:
-
-- Container: `li rounded-lg border border-line bg-white p-3`
-- Top: robot name (or robot_id if name empty) + robot_id (font-mono text-slate-400), settings keys count + updated date
-- Actions row: Edit button, Delete button (canDelete, red)
-
-**Edit form (inline):**
-
-- `input` for robot name (placeholder "Robot display name")
-- `textarea` (rows=6, font-mono) for settings JSON (placeholder "Settings JSON")
-- Save button: bg-emerald-600, "Save"
-- Cancel button: border-line, "Cancel"
-- Save → `send("upsertRobotSetting", {robotId, robotName, settings})` → onSuccess: re-fetch, `setEditingId(null)`
-- Cancel → `setEditingId(null)` (no changes)
-
-**Add new (canDelete):**
-
-- `input` for new robot id (placeholder "e.g. 2wd1m-basic")
-- "Add profile" button
-- Add → `send("upsertRobotSetting", ...)` → onSuccess: re-fetch
-
-**Edit pattern (same as Car Profiles and app):**
-
-1. Read-only card by default (name, robot_id, settings count, updated date, Edit + Delete buttons)
-2. Tap "Edit" → inline form appears (inputs for name + JSON, Save/Cancel)
-3. Tap "Save" → async call, on success: form closes, re-fetch, `setMessage("Robot settings saved for ...")`
-4. Tap "Cancel" → form closes, no changes
-5. Delete: confirm dialog, calls delete
+- Role select: `onChange` → validated role change (`admin`/`owner` only)
+- Tier toggle: Upgrade/Downgrade, informational toast
+- Delete user: confirm dialog, calls delete (owner only)
 
 ### 1.3 Active Tab: Logs (3 sections)
 
 The Logs tab has 3 sections via a section switch, mirroring the app's Logs tab:
 
-| Section               | Content                                                              | Component                  |
-| --------------------- | -------------------------------------------------------------------- | -------------------------- |
-| **User Activity**     | `user_activity_log` rows, filtered by search                         | `ActivityTable`            |
-| **User Profiles**     | `user_profile_entries` rows, filtered by search, edit button per row | `ProfileEntriesTable`      |
-| **Fleet Diagnostics** | `device_crash_reports` + `app_logs` with scope filter                | `CrashReports` + `AppLogs` |
+| Section               | Content                                                            | Component                  |
+| --------------------- | ------------------------------------------------------------------ | -------------------------- |
+| **User Activity**     | `user_activity_log` rows, filtered by search                       | `ActivityTable`            |
+| **User Profiles**     | `user_profile_entries` rows, filtered by search, admin-only delete | `ProfileEntriesTable`      |
+| **Fleet Diagnostics** | `device_crash_reports` + `app_logs` with scope filter              | `CrashReports` + `AppLogs` |
 
 **Section selector** (top): 3 pills, active pill has bg-navy text-white, inactive has text-slate-500.
 
@@ -168,12 +105,17 @@ The Settings tab (`AdminSettings.tsx`) has company information editing.
 16. LinkedIn URL (input)
 17. YouTube URL (input)
 
+The tab is split into the three sections the app uses — **Company details**
+(Name, Short name, URL, Address, City, Country, PAN, VAT label), **Contact**
+(Email, Phone, Description) and **Social & messaging** (WhatsApp, Facebook,
+Instagram, TikTok, LinkedIn, YouTube) — each with its own hint line.
+
 **Edit pattern (same as app):**
 
 1. Fields display **read-only** as plain text by default
-2. User taps **"Edit"** → all input/textarea fields become editable, pre-filled
-3. User taps **"Save"** → submits to `/api/admin/settings?action=company`, on success: `setIsEditing(false)`, `setMessage("Company information saved.")`
-4. User taps **"Cancel"** → `setIsEditing(false)`, no changes
+2. User taps **"Edit"** → the section's fields open in `AdminEditorSheet`, pre-filled
+3. User taps **"Save"** → submits to `/api/admin/settings?action=company`, on success: the sheet closes and `setMessage("Company information saved.")`
+4. User taps **"Cancel"** → the sheet closes, no changes
 
 ## 2. Key Types & Interfaces
 
@@ -267,7 +209,8 @@ Each car profile has **distinguished identity fields**:
 - `unique_id`: Unique identifier for the car
 - `settings`: JSON blob of car-specific settings
 
-These fields are shown in the Users tab Car Profiles section and in the UserPreferencesScreen My Devices section (on the app side).
+These fields are shown in each user's **Show projects** expander (the collapsed
+Technical details line) and in the app's UserPreferencesScreen My Devices section.
 
 ## 4. Responsive Design
 
@@ -280,28 +223,29 @@ The website uses Tailwind CSS with responsive prefixes:
 
 The Users tab layout example:
 
-- Top section selector: `flex border-b border-line pb-3 mb-4` (horizontal on all sizes)
+- Section strip (Users / Messages / Logs): one row, horizontal scroll on narrow screens
 - User directory rows: `flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between` (stacked on mobile, side-by-side on desktop)
 - Action cluster: `flex w-full flex-wrap gap-2 sm:w-auto` (full width on mobile, auto width on desktop)
 
 The Settings tab:
 
-- View mode: grid of fields, responsive to screen width
-- Edit mode: form with grid gap-4, responsive grid
+- View mode: read-only label/value rows in the section card
+- Edit mode: `AdminEditorSheet` (bottom sheet under 640px, centred dialog above it) with a scrolling body
 
 ## 5. Alignment with App
 
-| Feature                 | Website                                         | App                                          | Status                 |
-| ----------------------- | ----------------------------------------------- | -------------------------------------------- | ---------------------- |
-| Tab order (8 tabs)      | Identical                                       | Identical                                    | ✅ Mirrored            |
-| Users subtabs           | Users, Messages, Logs                           | Users, Messages, Logs                        | ✅ Mirrored            |
-| Users subtab structure  | User Directory, Car Profiles, Robot Profiles    | User Directory, Car Profiles, Robot Profiles | ✅ Mirrored (Nov 2026) |
-| Edit-button pattern     | Read-only → Edit → form → Save/Cancel           | Read-only → Edit → form → Save/Cancel        | ✅ Mirrored            |
-| Company info fields     | 17 fields (incl. url)                           | 17 fields (incl. url)                        | ✅ Mirrored            |
-| Car profiles per user   | profile_key, car_name, unique_id, settings      | profile_key, car_name, unique_id, settings   | ✅ Mirrored            |
-| Robot profiles per user | robot_id, robot_name, settings                  | robot_id, robot_name, settings               | ✅ Mirrored            |
-| Logs subtab sections    | User activity, user profiles, fleet diagnostics | User activity, profiles, system diagnostics  | ✅ Mirrored            |
-| Settings responsive     | Mobile + desktop, responsive                    | Mobile-first, stacks vertically              | ✅ Both                |
+| Feature                 | Website                                             | App                                          | Status      |
+| ----------------------- | --------------------------------------------------- | -------------------------------------------- | ----------- |
+| Tab order (8 tabs)      | Identical                                           | Identical                                    | ✅ Mirrored |
+| Users subtabs           | Users, Messages, Logs                               | Users, Messages, Logs                        | ✅ Mirrored |
+| Users projects          | Per-user **Show projects** expander (read-only)     | Same expander, same rows                     | ✅ Mirrored |
+| Users → Messages        | Contact messages **plus** newsletter opt-ins        | Contact messages **plus** newsletter opt-ins | ✅ Mirrored |
+| Edit-button pattern     | Read-only → Edit → `AdminEditorSheet` → Save/Cancel | Read-only → Edit → sheet → Save/Cancel       | ✅ Mirrored |
+| Company info fields     | 17 fields (incl. url)                               | 17 fields (incl. url)                        | ✅ Mirrored |
+| Car profiles per user   | profile_key, car_name, unique_id, settings          | profile_key, car_name, unique_id, settings   | ✅ Mirrored |
+| Robot profiles per user | robot_id, robot_name, settings                      | robot_id, robot_name, settings               | ✅ Mirrored |
+| Logs subtab sections    | User activity, user profiles, fleet diagnostics     | Same order and labels                        | ✅ Mirrored |
+| Settings responsive     | Mobile + desktop, responsive                        | Mobile-first, stacks vertically              | ✅ Both     |
 
 ## 6. Documentation Deliverables
 
@@ -315,12 +259,12 @@ Docs in `genumsolutions-website/docs/`:
 
 ## 7. Test Status
 
-- **301 vitest tests** across 24 files — all passing
+- **406 vitest tests** across 36 files — all passing (2026-11-16)
 - **TypeScript `tsc --noEmit`** — 0 errors
 - **Parity tests** — enforce identical tab structure on app and website
 
 ---
 
-_Documentation generated: 2026-11-09_
+_Documentation generated: 2026-11-09, reconciled with the shipped console 2026-11-16_
 _Total docs: WEBSITE_ADMIN_COMPLETE.md, ADMIN_UI_BLUEPRINT.md, APP_WEBSITE_UI_COMPARISON.md, ADMIN_COHERENCE.md_
-_Both repos: TypeScript 0 errors, green CI on all tests (982 mobile + 301 website)_
+_Both repos: TypeScript 0 errors, green CI on all tests (1,067 mobile + 406 website)_
