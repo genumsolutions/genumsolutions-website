@@ -14,7 +14,9 @@ import {
 } from "../../lib/styles";
 import { productIdFromTitle } from "../../lib/product-slug";
 import { applyScope } from "../../lib/catalog";
-import { clampGallery } from "../../lib/image-budget";
+// From image-limits, NOT image-budget: the latter re-exports through sharp,
+// which pulls child_process into a client component and breaks the build.
+import { clampGallery } from "../../lib/image-limits";
 import ProductCard from "../ProductCard";
 import type { Product } from "./admin-types";
 import { emptyProduct, fields, PAGE_SIZE } from "./admin-types";

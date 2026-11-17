@@ -66,6 +66,14 @@ const SECTIONS = [
 ] as const;
 type Section = (typeof SECTIONS)[number];
 
+// The stored value stays stable (it selects the editor); only the label changes,
+// to match the app: "Services" here is the print-service list, and the
+// categories table is shared by every catalog.
+const SECTION_LABELS: Partial<Record<Section, string>> = {
+  Services: "Print services",
+  Categories: "All categories",
+};
+
 type Props = {
   products: Product[];
   onProductsChange: (updater: (prev: Product[]) => Product[]) => void;
@@ -523,7 +531,7 @@ export default function AdminPrint({ products, onProductsChange, setMessage, can
               section === item ? adminSectionPillActive : adminSectionPillInactive
             }`}
           >
-            {item}
+            {SECTION_LABELS[item] ?? item}
             {item === "Requests" && quotes.length > 0 ? ` (${quotes.length})` : ""}
           </button>
         ))}
