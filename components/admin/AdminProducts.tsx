@@ -14,6 +14,7 @@ import {
 } from "../../lib/styles";
 import { productIdFromTitle } from "../../lib/product-slug";
 import { applyScope } from "../../lib/catalog";
+import { clampGallery } from "../../lib/image-budget";
 import ProductCard from "../ProductCard";
 import type { Product } from "./admin-types";
 import { emptyProduct, fields, PAGE_SIZE } from "./admin-types";
@@ -315,7 +316,8 @@ export default function AdminProducts({
       // unwanted photos until after saving). Same guard the save path uses;
       // failure is non-fatal (foreign URLs are kept and the save path
       // re-hosts them again later).
-      const rawImages: string[] = Array.isArray(p?.images) ? p.images.slice(0, 8) : [];
+      // Budget, not a magic 8: the same clamp the app and the save path use.
+      const rawImages: string[] = Array.isArray(p?.images) ? clampGallery(p.images) : [];
       let hostedImages = rawImages;
       const foreign = rawImages.filter(
         (src: string) => src.trim() && !src.startsWith("/") && !src.includes("supabase.co")
@@ -910,14 +912,7 @@ export default function AdminProducts({
                     <textarea
                       value={Array.isArray(product.gallery) ? product.gallery.join("\n") : ""}
                       onChange={(e) =>
-                        updateProduct(
-                          "gallery",
-                          e.target.value
-                            .split("\n")
-                            .map((line) => line.trim())
-                            .filter(Boolean)
-                            .slice(0, 8)
-                        )
+                        updateProduct("gallery", clampGallery(e.target.value.split("\n")))
                       }
                       rows={4}
                       placeholder={"https://...\nhttps://..."}
