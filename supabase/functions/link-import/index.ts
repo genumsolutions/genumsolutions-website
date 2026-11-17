@@ -1285,13 +1285,16 @@ async function runCreate(body: Record<string, unknown>, client: ReturnType<typeo
   const isStorage = (u: string) =>
     Boolean(supabaseUrl) && u.startsWith(`${supabaseUrl}/storage/v1/`);
 
-  // Upload the FULL gallery (cap 8), reviewed URLs FIRST, source-extracted
-  // best-first after. The first success becomes the primary image; every
-  // success becomes a gallery entry, so multi-photo rows keep ALL pictures.
+  // Upload the reviewed gallery (cap 8). When the admin supplied images, those
+  // are the WHOLE set: appending the source-extracted images afterwards put
+  // back every photo they had deleted in the preview, which is why a delete
+  // never stuck and the row seemed to "upload all the images" on save. Only a
+  // preview with no reviewed images falls back to what the page exposed.
   const GALLERY_CAP = 8;
+  const reviewed = overridesList.length > 0 ? overridesList : preview.images;
   const uploaded: string[] = [];
   let imageUrl = "";
-  for (const candidate of dedupe([...overridesList, ...preview.images]).slice(0, GALLERY_CAP)) {
+  for (const candidate of dedupe(reviewed).slice(0, GALLERY_CAP)) {
     if (!isHttpUrl(candidate)) continue;
     // Already ours (re-save of a storage row): keep the URL as-is, no re-host.
     if (isStorage(candidate)) {
