@@ -20,7 +20,7 @@ export async function POST(request: Request) {
   }
 
   const userAgent = request.headers.get("user-agent")?.slice(0, 300) ?? "";
-  const { error } = await createClient().from("web_push_subscriptions").upsert(
+  const { error } = await (await createClient()).from("web_push_subscriptions").upsert(
     {
       user_id: user.id,
       endpoint,

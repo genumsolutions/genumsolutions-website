@@ -5,7 +5,7 @@ import { createClient, supabaseConfigured } from "../../../../lib/supabase/serve
 export async function POST() {
   if (!supabaseConfigured()) return NextResponse.json({ ok: true });
   try {
-    await createClient().auth.signOut();
+    await (await createClient()).auth.signOut();
   } catch {
     // Clearing cookies client-side is enough when Supabase is unreachable.
   }

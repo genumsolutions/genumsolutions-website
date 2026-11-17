@@ -58,7 +58,7 @@ export async function getCurrentUserOrThrow() {
 }
 
 export async function listOrders(userId?: string): Promise<Order[]> {
-  const query = createClient()
+  const query = (await createClient())
     .from("orders")
     .select("*")
     .order("created_at", { ascending: false })
@@ -79,7 +79,7 @@ export async function listOrdersPage(options: {
 }): Promise<{ orders: Order[]; total: number; page: number; totalPages: number }> {
   const page = Math.max(1, Math.floor(options.page || 1));
   const limit = Math.min(50, Math.max(5, Math.floor(options.limit || 10)));
-  let query = createClient()
+  let query = (await createClient())
     .from("orders")
     .select("*", { count: "exact" })
     .order("created_at", { ascending: false })
@@ -112,7 +112,9 @@ export async function createOrder(input: {
   phone: string;
   address: string;
 }): Promise<Order | null> {
-  const { data, error } = await createClient()
+  const { data, error } = await (
+    await createClient()
+  )
     .from("orders")
     .insert({
       user_id: input.userId,
@@ -132,7 +134,9 @@ export async function createOrder(input: {
 }
 
 export async function setOrderRef(orderId: string, providerRef: string) {
-  await createClient()
+  await (
+    await createClient()
+  )
     .from("orders")
     .update({ provider_ref: providerRef, updated_at: new Date().toISOString() })
     .eq("id", orderId);
@@ -144,7 +148,9 @@ export async function setOrderRef(orderId: string, providerRef: string) {
 export async function findOrderByRef(
   providerRef: string
 ): Promise<(Order & { userId: string }) | null> {
-  const { data } = await createClient()
+  const { data } = await (
+    await createClient()
+  )
     .from("orders")
     .select("*")
     .eq("provider_ref", providerRef)
@@ -155,7 +161,13 @@ export async function findOrderByRef(
 
 export async function findOrderById(orderId: string): Promise<(Order & { userId: string }) | null> {
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId)) return null;
-  const { data } = await createClient().from("orders").select("*").eq("id", orderId).maybeSingle();
+  const { data } = await (
+    await createClient()
+  )
+    .from("orders")
+    .select("*")
+    .eq("id", orderId)
+    .maybeSingle();
   if (!data) return null;
   return { ...rowToOrder(data), userId: data.user_id };
 }
@@ -217,7 +229,9 @@ export async function updateOrderStatus(orderId: string, status: Order["status"]
     await markOrderPaidRpc(orderId);
   }
 
-  await createClient()
+  await (
+    await createClient()
+  )
     .from("orders")
     .update({ status, updated_at: new Date().toISOString() })
     .eq("id", orderId);

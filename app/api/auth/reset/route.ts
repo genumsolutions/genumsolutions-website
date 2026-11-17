@@ -14,7 +14,9 @@ export async function POST(request: Request) {
   try {
     // Return to the host the visitor is actually on, so localhost tests round-trip locally.
     const origin = new URL(request.url).origin;
-    await createClient().auth.resetPasswordForEmail(email, {
+    await (
+      await createClient()
+    ).auth.resetPasswordForEmail(email, {
       redirectTo: `${origin}/auth/callback?next=${encodeURIComponent("/reset-password")}`,
     });
   } catch {

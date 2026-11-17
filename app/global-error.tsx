@@ -45,6 +45,9 @@ export default function GlobalError({
               >
                 Try again
               </button>
+              {/* global-error replaces the root layout, so the client router may
+                  not be mounted; a plain anchor guarantees the reload works. */}
+              {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
               <a
                 href="/"
                 className="rounded-full border border-line bg-white px-6 py-3.5 text-sm font-black text-ink transition hover:border-navy hover:text-navy"

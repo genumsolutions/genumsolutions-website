@@ -3,10 +3,10 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "../../../lib/supabase/server";
 import { enforceSingleSession } from "../../../lib/single-session";
 
-function redirectWithCookies(url: string) {
+async function redirectWithCookies(url: string) {
   const response = NextResponse.redirect(url);
   try {
-    for (const cookie of cookies().getAll()) response.cookies.set(cookie);
+    for (const cookie of (await cookies()).getAll()) response.cookies.set(cookie);
   } catch {
     // Best effort: the redirect still happens.
   }
@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
   const next = /^\/[^/\\]/.test(rawNext) ? rawNext : fallback;
 
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     if (code) {
       const { data, error } = await supabase.auth.exchangeCodeForSession(code);
       if (!error) {

@@ -256,7 +256,6 @@ export default function AdminUsers({ setMessage, canDelete, currentRole }: Props
 
   useEffect(() => {
     void loadUsers(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function patchUser(

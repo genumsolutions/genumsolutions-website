@@ -78,7 +78,6 @@ function CrashSection() {
 
   useEffect(() => {
     void load(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function load(p: number) {
@@ -211,7 +210,6 @@ function AppLogSection() {
 
   useEffect(() => {
     void load(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function load(p: number) {

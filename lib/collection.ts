@@ -27,7 +27,9 @@ export async function listCollection(): Promise<CollectionItem[]> {
   if (!supabaseConfigured()) return [];
   const user = await getSessionUser();
   if (!user) return [];
-  const { data, error } = await createClient()
+  const { data, error } = await (
+    await createClient()
+  )
     .from("user_collection")
     .select("item_id, item_kind, created_at")
     .order("created_at", { ascending: false });
@@ -53,7 +55,7 @@ export async function toggleCollection(
   if (!supabaseConfigured()) return false;
   const user = await getSessionUser();
   if (!user) return false;
-  const client = createClient();
+  const client = await createClient();
   const { data: existing } = await client
     .from("user_collection")
     .select("item_id")

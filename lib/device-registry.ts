@@ -13,7 +13,7 @@
 //
 // RLS note: `device_models` is public-read, so the anon client can fetch it.
 // `devices` and `user_devices` are NOT — they need the signed-in user's own
-// session, so those reads go through createClient() (RLS-scoped), never the
+// session, so those reads go through (await createClient()) (RLS-scoped), never the
 // anon key and never the service role for a self-service request.
 // =====================================================================
 import { createClient, createServiceClient, supabaseConfigured } from "./supabase/server";
@@ -211,7 +211,7 @@ export async function getModePlannedFlags(): Promise<ModePlannedFlag[]> {
 export async function getUserDevices(userId: string): Promise<UserDevice[]> {
   if (!supabaseConfigured()) return [];
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data, error } = await supabase
       .from("user_devices")
       .select(

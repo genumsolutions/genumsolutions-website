@@ -11,7 +11,7 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const endpoint = typeof body?.endpoint === "string" && body.endpoint ? body.endpoint : null;
 
-  let query = createClient().from("web_push_subscriptions").delete().eq("user_id", user.id);
+  let query = (await createClient()).from("web_push_subscriptions").delete().eq("user_id", user.id);
   if (endpoint) query = query.eq("endpoint", endpoint);
   const { error } = await query;
   if (error)

@@ -27,7 +27,9 @@ export async function GET(request: NextRequest) {
         callbackOrigin = origin;
       }
     }
-    const { data, error } = await createClient().auth.signInWithOAuth({
+    const { data, error } = await (
+      await createClient()
+    ).auth.signInWithOAuth({
       provider: "google",
       options: {
         redirectTo: `${callbackOrigin}/auth/callback?next=${encodeURIComponent(next)}`,

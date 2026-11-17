@@ -25,7 +25,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 async function resolveViewer() {
   const session = await getSessionUser();
   if (!session) return null;
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: profile } = await supabase
     .from("profiles")
     .select("role, tier")
@@ -45,7 +45,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const supabase = viewer.isAdmin ? createServiceClient() : createClient();
+  const supabase = viewer.isAdmin ? createServiceClient() : await createClient();
   const { data, error } = await supabase
     .from("car_profiles")
     .select("profile_key, car_name, unique_id, settings, wifi_history, updated_at")
@@ -75,7 +75,7 @@ export async function PATCH(request: Request) {
   }
 
   const supabase =
-    viewer.isAdmin && userId !== viewer.session.id ? createServiceClient() : createClient();
+    viewer.isAdmin && userId !== viewer.session.id ? createServiceClient() : await createClient();
   const { error } = await supabase
     .from("car_profiles")
     .update({ car_name: carName, updated_at: new Date().toISOString() })
@@ -108,7 +108,7 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const supabase =
-    viewer.isAdmin && userId !== viewer.session.id ? createServiceClient() : createClient();
+    viewer.isAdmin && userId !== viewer.session.id ? createServiceClient() : await createClient();
   const { error } = await supabase
     .from("car_profiles")
     .delete()

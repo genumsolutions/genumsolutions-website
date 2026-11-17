@@ -6,7 +6,7 @@ import { createClient } from "../../../../lib/supabase/server";
 // trigger), so this endpoint can never be used to self-promote.
 export async function GET() {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data } = await supabase.auth.getUser();
     if (!data.user) return NextResponse.json({ tier: null });
     const { data: profile } = await supabase

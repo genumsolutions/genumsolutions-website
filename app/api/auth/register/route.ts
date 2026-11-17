@@ -4,10 +4,10 @@ import { createClient, supabaseConfigured } from "../../../../lib/supabase/serve
 import { checkRateLimit, clientIp } from "../../../../lib/rate-limit";
 import { enforceSingleSession } from "../../../../lib/single-session";
 
-function jsonWithCookies(body: unknown, init?: Parameters<typeof NextResponse.json>[1]) {
+async function jsonWithCookies(body: unknown, init?: Parameters<typeof NextResponse.json>[1]) {
   const res = NextResponse.json(body, init);
   try {
-    for (const c of cookies().getAll()) res.cookies.set(c);
+    for (const c of (await cookies()).getAll()) res.cookies.set(c);
   } catch {}
   return res;
 }
@@ -44,7 +44,9 @@ export async function POST(request: Request) {
   // locally) and lands on the account page once the address is verified.
   const origin = new URL(request.url).origin;
   try {
-    const { data, error } = await createClient().auth.signUp({
+    const { data, error } = await (
+      await createClient()
+    ).auth.signUp({
       email,
       password,
       options: {

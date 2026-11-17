@@ -54,7 +54,7 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { createClient } = await import("../../../lib/supabase/server");
-  const db = createClient();
+  const db = await createClient();
   const [profileResult, settingsResult] = await Promise.all([
     db.from("profiles").select("theme_preference").eq("id", user.id).maybeSingle(),
     db.from("user_settings").select("settings, updated_at").eq("user_id", user.id).maybeSingle(),
@@ -78,7 +78,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
 
   const { createClient } = await import("../../../lib/supabase/server");
-  const db = createClient();
+  const db = await createClient();
 
   let themeTouched = false;
   const theme = parseTheme(body.theme);

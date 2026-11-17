@@ -91,5 +91,7 @@ export async function getCompany(): Promise<Company> {
 /** Purge the cached company info (call from an admin write path). */
 export async function invalidateCompanyCache(): Promise<void> {
   const { revalidateTag } = await import("next/cache");
-  revalidateTag("company-info");
+  // Next 16 requires a cacheLife profile: admin edits are not latency-critical,
+  // so stale-while-revalidate at the widest profile is right here.
+  revalidateTag("company-info", "max");
 }

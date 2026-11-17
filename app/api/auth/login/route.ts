@@ -25,10 +25,10 @@ function counter() {
 
 // Canonical email + password sign-in. Returns the caller's role so the UI
 // can route admins to /admin and customers to /account.
-function jsonWithCookies(body: unknown, init?: Parameters<typeof NextResponse.json>[1]) {
+async function jsonWithCookies(body: unknown, init?: Parameters<typeof NextResponse.json>[1]) {
   const res = NextResponse.json(body, init);
   try {
-    for (const c of cookies().getAll()) res.cookies.set(c);
+    for (const c of (await cookies()).getAll()) res.cookies.set(c);
   } catch {}
   return res;
 }
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const db = counter();
 
     // Suspicion is counted in the database, not in memory: serverless instances

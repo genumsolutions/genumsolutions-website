@@ -12,7 +12,9 @@ export async function GET() {
     let name = user.email.split("@")[0];
     let role = isOwnerEmail(user.email) ? "owner" : "customer";
     try {
-      const { data: profile } = await createClient()
+      const { data: profile } = await (
+        await createClient()
+      )
         .from("profiles")
         .select("name, role")
         .eq("id", user.id)

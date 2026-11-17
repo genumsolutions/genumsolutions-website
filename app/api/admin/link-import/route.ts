@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     if (!body?.action || !body?.url)
       return NextResponse.json({ error: "action and url are required." }, { status: 400 });
 
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
     const accessToken = sessionData?.session?.access_token;
     if (sessionError || !accessToken)

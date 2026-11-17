@@ -8,7 +8,7 @@ import type { CartLine, CustomerMessage, Customer } from "./customer";
 
 export async function getProfile(userId: string): Promise<Customer | null> {
   if (!supabaseConfigured()) return null;
-  const db = createClient();
+  const db = await createClient();
   const [{ data: cart }, { data: messages }] = await Promise.all([
     db.from("carts").select("lines").eq("user_id", userId).maybeSingle(),
     db
@@ -65,7 +65,9 @@ export async function updateProfile(
   if (typeof patch.phone === "string") update.phone = patch.phone.trim().slice(0, 40);
   if (typeof patch.address === "string") update.address = patch.address.trim().slice(0, 500);
   if (!Object.keys(update).length) return null;
-  const { data, error } = await createClient()
+  const { data, error } = await (
+    await createClient()
+  )
     .from("profiles")
     .update(update)
     .eq("id", userId)
@@ -82,7 +84,9 @@ export async function updateProfile(
 export type ThemePreferenceRow = "light" | "dim";
 
 export async function getThemePreference(userId: string): Promise<ThemePreferenceRow> {
-  const { data } = await createClient()
+  const { data } = await (
+    await createClient()
+  )
     .from("profiles")
     .select("theme_preference")
     .eq("id", userId)
@@ -97,7 +101,9 @@ export async function updateThemePreference(
   userId: string,
   preference: ThemePreferenceRow
 ): Promise<ThemePreferenceRow | null> {
-  const { data, error } = await createClient()
+  const { data, error } = await (
+    await createClient()
+  )
     .from("profiles")
     .update({ theme_preference: preference })
     .eq("id", userId)
@@ -108,7 +114,9 @@ export async function updateThemePreference(
 }
 
 export async function getCart(userId: string): Promise<CartLine[]> {
-  const { data } = await createClient()
+  const { data } = await (
+    await createClient()
+  )
     .from("carts")
     .select("lines")
     .eq("user_id", userId)
@@ -117,7 +125,9 @@ export async function getCart(userId: string): Promise<CartLine[]> {
 }
 
 export async function saveCart(userId: string, lines: CartLine[]): Promise<CartLine[]> {
-  await createClient()
+  await (
+    await createClient()
+  )
     .from("carts")
     .upsert({ user_id: userId, lines, updated_at: new Date().toISOString() });
   return lines;
@@ -127,18 +137,18 @@ export async function addCustomerMessage(
   userId: string | null,
   message: Pick<CustomerMessage, "name" | "email" | "message">
 ) {
-  await createClient()
-    .from("customer_messages")
-    .insert({
-      ...(userId ? { user_id: userId } : {}),
-      name: message.name,
-      email: message.email,
-      message: message.message,
-    });
+  await (await createClient()).from("customer_messages").insert({
+    ...(userId ? { user_id: userId } : {}),
+    name: message.name,
+    email: message.email,
+    message: message.message,
+  });
 }
 
 export async function getMessages(userId: string): Promise<CustomerMessage[]> {
-  const { data } = await createClient()
+  const { data } = await (
+    await createClient()
+  )
     .from("customer_messages")
     .select("*")
     .eq("user_id", userId)

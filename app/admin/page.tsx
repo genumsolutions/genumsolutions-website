@@ -2,17 +2,10 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import dynamicImport from "next/dynamic";
 import { getCurrentAdmin, getCurrentUserRole } from "../../lib/admin";
 import { getManagedProducts } from "../../lib/content-store";
 import LogoutButton from "../../components/LogoutButton";
-
-const AdminPanel = dynamicImport(() => import("../../components/AdminPanel"), {
-  ssr: false,
-  loading: () => (
-    <div className="mx-auto max-w-7xl px-5 py-12 text-sm text-muted">Loading admin…</div>
-  ),
-});
+import AdminPanel from "./AdminPanelClient";
 
 export const dynamic = "force-dynamic";
 // U-48: robots.txt already disallows /admin, but disallow is only a hint to

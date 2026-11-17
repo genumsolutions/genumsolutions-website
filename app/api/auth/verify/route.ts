@@ -21,10 +21,10 @@ import { enforceSingleSession } from "../../../../lib/single-session";
 // configured: Supabase Free with the default sender refuses template edits, so
 // the default email stays link-only. The panel therefore offers "code or link"
 // and this endpoint accepts the code as soon as the template has one.
-function jsonWithCookies(body: unknown, init?: Parameters<typeof NextResponse.json>[1]) {
+async function jsonWithCookies(body: unknown, init?: Parameters<typeof NextResponse.json>[1]) {
   const res = NextResponse.json(body, init);
   try {
-    for (const c of cookies().getAll()) res.cookies.set(c);
+    for (const c of (await cookies()).getAll()) res.cookies.set(c);
   } catch {}
   return res;
 }
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data, error } = await supabase.auth.verifyOtp(
       purpose === "signin" ? { type: "email", email, token } : { type: "signup", email, token }
     );

@@ -79,7 +79,7 @@ export async function PATCH(request: Request) {
   if (displayName.trim().length === 0 && displayName.length > 0)
     return NextResponse.json({ error: "Name cannot be only spaces." }, { status: 400 });
 
-  const supabase = createClient();
+  const supabase = await createClient();
   // RLS rejects the row if this device is not the caller's, which is the point.
   const { data, error } = await supabase
     .from("user_devices")
@@ -111,7 +111,7 @@ export async function DELETE(request: Request) {
   if (!UUID_RE.test(deviceId))
     return NextResponse.json({ error: "A valid deviceId is required." }, { status: 400 });
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error } = await supabase
     .from("user_devices")
     .delete()

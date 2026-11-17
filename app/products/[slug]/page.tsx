@@ -19,9 +19,10 @@ export function generateStaticParams() {
 export async function generateMetadata({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
-  const product = (await getManagedProducts()).find((item) => item.id === params.slug);
+  const { slug } = await params;
+  const product = (await getManagedProducts()).find((item) => item.id === slug);
   if (!product || product.active === false) return {};
   const description = (product.note || product.description || "").slice(0, 155);
   return {
@@ -37,7 +38,7 @@ export async function generateMetadata({
   };
 }
 
-export default async function ProductPage({ params }: { params: { slug: string } }) {
+export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   // U-47v4 (deep-check finding): ProductDetailPro's allProducts prop (used
   // for the related-products row and bundle rows) used to receive the WHOLE
   // catalog, leaking every row into this route's RSC payload.
@@ -49,8 +50,9 @@ export default async function ProductPage({ params }: { params: { slug: string }
   // route serves all three catalogs, so the product is resolved from the whole
   // catalog and the prop is scoped per product (own catalog + the two bundle
   // scopes) by detailCatalog() — the payload fix stays, the 404s go.
+  const { slug } = await params;
   const all = await getManagedProducts();
-  const product = all.find((item) => item.id === params.slug);
+  const product = all.find((item) => item.id === slug);
   // Hidden products must not be reachable by direct URL (or indexable via
   // their canonical/metadata below), same rule as the catalogs.
   if (!product || product.active === false) notFound();

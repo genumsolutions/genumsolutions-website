@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
 
     // The tokens must belong to a real user before we adopt them.
     const {

@@ -38,7 +38,7 @@ function needsAuthRefresh(pathname: string) {
   return AUTH_PATHS.some((prefix) => pathname === prefix || pathname.startsWith(prefix + "/"));
 }
 
-export async function middleware(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
 
   const { pathname } = request.nextUrl;

@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { formatNPR, type Product } from "../../lib/catalog";
 import { inputClass } from "../../lib/styles";
@@ -10,6 +11,7 @@ import CheckoutPushOptIn from "../../components/CheckoutPushOptIn";
 import NewsletterOptIn from "../../components/NewsletterOptIn";
 
 export default function CheckoutPage() {
+  const router = useRouter();
   const { lines, setQuantity, clear, hydrated } = useCart();
   const [products, setProducts] = useState<Product[]>([]);
   const [productsState, setProductsState] = useState<"loading" | "ready" | "failed">("loading");
@@ -142,7 +144,7 @@ export default function CheckoutPage() {
         keepalive: true,
       }).catch(() => undefined);
       clear();
-      window.location.href = `/checkout/success?order=${result.order.id}`;
+      router.push(`/checkout/success?order=${result.order.id}`);
     } else {
       setMessage(result.error || "Could not place the order.");
       setBusy(false);

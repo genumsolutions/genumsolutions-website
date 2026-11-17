@@ -80,7 +80,6 @@ export default function AdminProfileEntries() {
 
   useEffect(() => {
     void load(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function load(p: number) {

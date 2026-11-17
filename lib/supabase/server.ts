@@ -31,9 +31,11 @@ export function supabaseServiceConfigured() {
 }
 
 // Cookie-bound client: enforces RLS for the signed-in user. Use in route handlers.
-export function createClient(): SupabaseClient {
+// Next 16 removed synchronous request APIs: cookies() must be awaited, so this
+// is async. Every call site awaits it.
+export async function createClient(): Promise<SupabaseClient> {
   assertConfigured();
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -84,7 +86,7 @@ export type SessionUser = { id: string; email: string };
 export async function getSessionUser(): Promise<SessionUser | null> {
   if (!supabaseConfigured()) return null;
   try {
-    const { data } = await createClient().auth.getUser();
+    const { data } = await (await createClient()).auth.getUser();
     if (!data.user?.email) return null;
     return { id: data.user.id, email: data.user.email };
   } catch {

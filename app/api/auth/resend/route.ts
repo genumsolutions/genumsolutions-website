@@ -31,12 +31,16 @@ export async function POST(request: Request) {
     if (purpose === "signin") {
       // Suspicious sign-in: re-send the one-time sign-in email. Never creates an
       // account (shouldCreateUser:false), so it cannot be used to probe for one.
-      await createClient().auth.signInWithOtp({
+      await (
+        await createClient()
+      ).auth.signInWithOtp({
         email,
         options: { shouldCreateUser: false, emailRedirectTo: redirectTo },
       });
     } else {
-      await createClient().auth.resend({
+      await (
+        await createClient()
+      ).auth.resend({
         type: "signup",
         email,
         options: { emailRedirectTo: redirectTo },

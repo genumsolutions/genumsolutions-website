@@ -22,15 +22,17 @@ export const metadata: Metadata = {
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams?: {
+  // Next 16 hands searchParams in as a Promise.
+  searchParams?: Promise<{
     page?: string;
     q?: string;
     category?: string;
     sort?: string;
     maxPrice?: string;
     inStock?: string;
-  };
+  }>;
 }) {
+  const sp = (await searchParams) ?? {};
   // U-47v3 (deep-check finding): the page previously handed the WHOLE
   // catalog to the client component and scoped it in the browser — the RSC
   // flight payload then shipped all 49 3D-model rows to /products (hidden,
@@ -42,16 +44,16 @@ export default async function ProductsPage({
     (p) => p.active !== false
   );
 
-  const initialPage = Math.max(1, Number(searchParams?.page) || 1);
-  const initialQuery = String(searchParams?.q || "");
-  const initialCategory = String(searchParams?.category || "All");
-  const rawSort = String(searchParams?.sort || "featured");
+  const initialPage = Math.max(1, Number(sp.page) || 1);
+  const initialQuery = String(sp.q || "");
+  const initialCategory = String(sp.category || "All");
+  const rawSort = String(sp.sort || "featured");
   const initialSort = isSortOption(rawSort) ? rawSort : "featured";
   // C2 (2026-09-23): only recognized ceilings are honored; anything else
   // falls back to "any price" rather than silently filtering to nothing.
-  const rawMaxPrice = Number(searchParams?.maxPrice) || 0;
+  const rawMaxPrice = Number(sp.maxPrice) || 0;
   const initialMaxPrice = [500, 1000, 2500, 5000, 10000].includes(rawMaxPrice) ? rawMaxPrice : 0;
-  const initialInStock = searchParams?.inStock === "1" || searchParams?.inStock === "true";
+  const initialInStock = sp.inStock === "1" || sp.inStock === "true";
 
   return (
     <PageShell>

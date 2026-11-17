@@ -9,8 +9,13 @@ export const metadata: Metadata = { title: "Sign in", robots: { index: false, fo
 const modes = ["signin", "signup", "forgot"] as const;
 
 // ?mode=signup|forgot deep-links (e.g. from marketing CTAs) land on the right tab.
-export default function LoginPage({ searchParams }: { searchParams?: { mode?: string } }) {
-  const requested = searchParams?.mode as (typeof modes)[number] | undefined;
+// Next 16 hands searchParams in as a Promise.
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ mode?: string }>;
+}) {
+  const requested = (await searchParams)?.mode as (typeof modes)[number] | undefined;
   const initialMode = requested && modes.includes(requested) ? requested : "signin";
   return (
     <PageShell>

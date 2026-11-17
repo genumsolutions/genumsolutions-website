@@ -38,7 +38,6 @@ export default function AdminMessages({ setMessage: _setMessage, canDelete }: Pr
 
   useEffect(() => {
     void loadSubscribers(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function loadSubscribers(p: number) {

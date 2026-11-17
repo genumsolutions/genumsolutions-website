@@ -228,7 +228,8 @@ describe("admin project-pricing PUT: approval", () => {
 describe("public project-pricing GET", () => {
   const call = (projectId: string) =>
     publicGET(new Request(`http://localhost/api/project-pricing/${projectId}`), {
-      params: { projectId },
+      // Next 16 hands route params in as a Promise.
+      params: Promise.resolve({ projectId }),
     });
 
   it("returns null when nothing is approved", async () => {

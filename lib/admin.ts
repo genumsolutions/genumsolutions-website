@@ -7,7 +7,7 @@ import type { AdminRole } from "./roles";
 export async function getCurrentAdmin(): Promise<{ id: string; email: string } | null> {
   if (!supabaseConfigured()) return null;
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data } = await supabase.auth.getUser();
     if (!data.user) return null;
     if (isOwnerEmail(data.user.email)) {
@@ -70,7 +70,7 @@ export async function getCurrentUserRole(): Promise<AdminRole | null> {
 // Reads the signed-in user's effective role ('' when no user / no row).
 // The owner email counts as 'owner' even without a profiles row.
 async function currentProfileRole(): Promise<string> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data } = await supabase.auth.getUser();
   if (!data.user) return "";
   if (isOwnerEmail(data.user.email)) return "owner";

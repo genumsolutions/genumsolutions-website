@@ -72,7 +72,9 @@ export async function POST(request: Request) {
   const sendLimit = checkRateLimit(`login-code:${email}`, 1, 120_000);
   if (sendLimit.allowed) {
     try {
-      await createClient().auth.signInWithOtp({
+      await (
+        await createClient()
+      ).auth.signInWithOtp({
         email,
         options: { shouldCreateUser: false, emailRedirectTo: undefined },
       });

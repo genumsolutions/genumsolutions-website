@@ -19,8 +19,11 @@ export const fetchCache = "force-no-store";
  * Mirrors the shape of /api/print (public 3D print content) for parity.
  */
 
-export async function GET(_request: Request, { params }: { params: { projectId: string } }) {
-  const projectId = (params.projectId ?? "").trim();
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ projectId: string }> }
+) {
+  const projectId = ((await params).projectId ?? "").trim();
   if (!projectId) return NextResponse.json({ error: "projectId is required." }, { status: 400 });
 
   try {

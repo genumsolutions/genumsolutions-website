@@ -48,7 +48,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 async function resolveViewer() {
   const session = await getSessionUser();
   if (!session) return null;
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: profile } = await supabase
     .from("profiles")
     .select("role, tier")
@@ -68,7 +68,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const supabase = viewer.isAdmin ? createServiceClient() : createClient();
+  const supabase = viewer.isAdmin ? createServiceClient() : await createClient();
   const { data, error } = await supabase
     .from("robot_user_settings")
     .select("robot_id, robot_name, settings, updated_at")
@@ -100,7 +100,7 @@ export async function PUT(request: Request) {
   // Pro gate: only pro users may hold robot preference rows. Admins are
   // always allowed (they manage every account, including their own).
   if (!viewer.isAdmin) {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: profile } = await supabase
       .from("profiles")
       .select("tier")
@@ -112,7 +112,7 @@ export async function PUT(request: Request) {
   }
 
   const supabase =
-    viewer.isAdmin && userId !== viewer.session.id ? createServiceClient() : createClient();
+    viewer.isAdmin && userId !== viewer.session.id ? createServiceClient() : await createClient();
   const { error } = await supabase.from("robot_user_settings").upsert(
     {
       user_id: userId,
@@ -150,7 +150,7 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const supabase =
-    viewer.isAdmin && userId !== viewer.session.id ? createServiceClient() : createClient();
+    viewer.isAdmin && userId !== viewer.session.id ? createServiceClient() : await createClient();
   const { error } = await supabase
     .from("robot_user_settings")
     .delete()

@@ -20,7 +20,7 @@ export async function POST(request: Request) {
   const user = await getSessionUser();
   if (!user) return new NextResponse(null, { status: 204 });
 
-  const { error } = await createClient().rpc("track_habit", { p_kind: kind });
+  const { error } = await (await createClient()).rpc("track_habit", { p_kind: kind });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
@@ -45,7 +45,9 @@ export async function GET() {
   const user = await getSessionUser();
   if (!user) return new NextResponse(null, { status: 204 });
 
-  const { data, error } = await createClient()
+  const { data, error } = await (
+    await createClient()
+  )
     .from("user_habits")
     .select(
       "viewed_count, search_count, cart_adds, orders_placed, last_viewed_at, last_search_at, last_cart_at, last_order_at"

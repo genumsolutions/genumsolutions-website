@@ -65,7 +65,7 @@ export function reportError(
   sendToProvider(report);
 
   // Console keeps local dev + server logs useful with zero configuration.
-  // eslint-disable-next-line no-console
+
   console.error("[error-reporting]", report.message, report.tags, error);
 }
 
