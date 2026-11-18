@@ -116,6 +116,15 @@ Tests pinning this: `tests/project-details.test.ts` and
 `tests/product-column-write.test.ts` (website), `src/config/projectDetails.test.ts`
 and `src/services/adminService.test.ts` (app).
 
+### What renders publicly
+
+The three blocks are visible on the public project page
+(`components/ProductDetailPro.tsx` → "Project information"), built by
+`projectDetailViews` in `lib/project-details.ts`: only blocks with content are
+drawn, blank rows are dropped, and procedure steps render as an ordered list.
+Because it reads the merged product, it is correct on both sides of the
+migration.
+
 ### Code touch points
 
 The block is read and written through one module per client, by design, so the
@@ -164,6 +173,15 @@ After the reader/writer swap, the admin check is: edit a package's Code details 
 3D materials / Coding procedure in **both** consoles, reload, and confirm the
 values survive a round trip and appear in the other client — that is the only real
 proof the two writers agree.
+
+The in-console companion to these queries is **Users → Diagnostics → Data
+checks** (`components/admin/AdminProjectDrift.tsx` +
+`app/api/admin/project-detail-drift/route.ts`). It compares every project
+package's columns with its JSON copy and lists the fields that disagree — which
+is precisely the state an older app bundle produces. Before the migration it
+reports that the columns are absent, and it never treats an empty column as
+drift (`lib/project-details.ts` → `projectDetailDrift`). Run it after the
+backfill, then again before dropping the JSON copy; zero drift is the go-ahead.
 
 One check worth doing right after the apply, before trusting the console: save a
 package from each client and confirm the `project_*` columns changed (not just

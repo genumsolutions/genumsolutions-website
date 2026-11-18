@@ -10,6 +10,8 @@ import {
   PROJECT_DETAIL_COLUMN_KEYS,
   blankProjectDetails,
   projectDetailColumns,
+  projectDetailDrift,
+  projectDetailViews,
   readProjectDetails,
   writeProjectDetails,
 } from "../lib/project-details";
@@ -99,5 +101,167 @@ describe("projectDetailColumns", () => {
     const written = writeProjectDetails({ sourceSite: "makerworld" }, details);
     expect(written.sourceSite).toBe("makerworld");
     expect(readProjectDetails(written)).toEqual(details);
+  });
+});
+
+describe("projectDetailViews (public project page)", () => {
+  it("returns nothing for a package with no details", () => {
+    expect(projectDetailViews(blankProjectDetails())).toEqual([]);
+  });
+
+  it("only includes blocks that have content", () => {
+    const details = {
+      ...blankProjectDetails(),
+      code: { ...blankProjectDetails().code, language: "Arduino C++" },
+    };
+    expect(projectDetailViews(details).map((view) => view.key)).toEqual(["code"]);
+  });
+
+  it("drops blank rows and keeps the filled ones in display order", () => {
+    const details = {
+      ...blankProjectDetails(),
+      material: {
+        ...blankProjectDetails().material,
+        printer: "Bambu Lab P1S",
+        filament: "   ",
+        layerHeight: "0.2 mm",
+      },
+    };
+    expect(projectDetailViews(details)).toEqual([
+      {
+        key: "material",
+        title: "3D printing",
+        rows: [
+          { label: "Printer", value: "Bambu Lab P1S" },
+          { label: "Layer height", value: "0.2 mm" },
+        ],
+        steps: [],
+        notes: "",
+      },
+    ]);
+  });
+
+  it("trims procedure steps and never renders blanks", () => {
+    const details = {
+      ...blankProjectDetails(),
+      procedure: { steps: [" Open the sketch ", "  ", "Flash"], notes: "  " },
+    };
+    expect(projectDetailViews(details)).toEqual([
+      {
+        key: "procedure",
+        title: "Coding procedure",
+        rows: [],
+        steps: ["Open the sketch", "Flash"],
+        notes: "",
+      },
+    ]);
+  });
+
+  it("shows a block whose only content is a note", () => {
+    const details = {
+      ...blankProjectDetails(),
+      code: { ...blankProjectDetails().code, notes: "Uses the ESP32 core" },
+    };
+    expect(projectDetailViews(details)).toEqual([
+      expect.objectContaining({ key: "code", rows: [], notes: "Uses the ESP32 core" }),
+    ]);
+  });
+
+  it("renders what the columns hold, not the stale JSON copy", () => {
+    const details = readProjectDetails(
+      { projectDetails: { code: { language: "JSON language" } } },
+      { project_code_language: "Column language" }
+    );
+    expect(projectDetailViews(details)).toEqual([
+      {
+        key: "code",
+        title: "Software and code",
+        rows: [{ label: "Language", value: "Column language" }],
+        steps: [],
+        notes: "",
+      },
+    ]);
+  });
+
+  it("is safe on a package with no importMeta at all", () => {
+    expect(projectDetailViews(readProjectDetails(undefined))).toEqual([]);
+  });
+});
+
+describe("projectDetailDrift (rollout integrity check)", () => {
+  it("reports nothing for a row without the columns", () => {
+    expect(
+      projectDetailDrift({ projectDetails: { code: { language: "JSON language" } } }, {})
+    ).toEqual([]);
+    expect(projectDetailDrift({}, null)).toEqual([]);
+  });
+
+  it("reports nothing when the two copies agree", () => {
+    const details = {
+      ...blankProjectDetails(),
+      code: { ...blankProjectDetails().code, language: "Arduino C++" },
+    };
+    expect(
+      projectDetailDrift(writeProjectDetails({}, details), projectDetailColumns(details))
+    ).toEqual([]);
+  });
+
+  it("names the field and both values when the column is newer", () => {
+    const details = {
+      ...blankProjectDetails(),
+      code: { ...blankProjectDetails().code, language: "Arduino C++" },
+    };
+    const drift = projectDetailDrift(
+      { projectDetails: { code: { language: "Arduino C" } } },
+      projectDetailColumns(details)
+    );
+    expect(drift).toEqual([
+      { field: "code.language", label: "Code language", column: "Arduino C++", json: "Arduino C" },
+    ]);
+  });
+
+  it("compares procedure steps positionally, not as a set", () => {
+    const details = {
+      ...blankProjectDetails(),
+      procedure: { steps: ["Flash", "Wire"], notes: "" },
+    };
+    const drift = projectDetailDrift(
+      { projectDetails: { procedure: { steps: ["Wire", "Flash"] } } },
+      projectDetailColumns(details)
+    );
+    expect(drift).toEqual([
+      {
+        field: "procedure.steps",
+        label: "Procedure steps",
+        column: "Flash\nWire",
+        json: "Wire\nFlash",
+      },
+    ]);
+  });
+
+  it("ignores an empty column even when the JSON copy has a value", () => {
+    // Pre-backfill state: the column was never written, so there is nothing to
+    // disagree with — reporting it would flag every legacy row.
+    expect(
+      projectDetailDrift(
+        { projectDetails: { code: { language: "Arduino C++" } } },
+        {
+          project_code_language: "",
+          project_procedure_steps: [],
+        }
+      )
+    ).toEqual([]);
+  });
+
+  it("tolerates hostile column shapes", () => {
+    expect(
+      projectDetailDrift(
+        {},
+        {
+          project_code_language: 42,
+          project_procedure_steps: "not a list",
+        }
+      )
+    ).toEqual([]);
   });
 });

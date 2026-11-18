@@ -189,6 +189,207 @@ export function projectDetailColumns(details: ProjectDetails): Record<string, un
 }
 
 /**
+ * The public project page's view of the blocks: only what has content, in
+ * display order, so a half-filled block never draws an empty heading.
+ *
+ * Kept here rather than in the component because "which fields are worth
+ * showing" is a data question, and it is the same answer the app's project
+ * screen needs if it ever grows a read-only view.
+ */
+export type ProjectDetailView = {
+  key: "code" | "material" | "procedure";
+  title: string;
+  /** Label/value rows to render as a description list. */
+  rows: { label: string; value: string }[];
+  /** Ordered steps (procedure only). */
+  steps: string[];
+  /** Trailing paragraph, e.g. "Hold BOOT while flashing". */
+  notes: string;
+};
+
+export function projectDetailViews(details: ProjectDetails): ProjectDetailView[] {
+  const rowsFor = (entries: [string, string][]) =>
+    entries.filter(([, value]) => value.trim() !== "").map(([label, value]) => ({ label, value }));
+
+  const views: ProjectDetailView[] = [
+    {
+      key: "code",
+      title: "Software and code",
+      rows: rowsFor([
+        ["Language", details.code.language],
+        ["Repository", details.code.repositoryUrl],
+        ["Libraries", details.code.libraries],
+      ]),
+      steps: [],
+      notes: details.code.notes.trim(),
+    },
+    {
+      key: "material",
+      title: "3D printing",
+      rows: rowsFor([
+        ["Printer", details.material.printer],
+        ["Filament", details.material.filament],
+        ["Layer height", details.material.layerHeight],
+        ["Infill", details.material.infill],
+        ["Print time", details.material.printTime],
+      ]),
+      steps: [],
+      notes: details.material.notes.trim(),
+    },
+    {
+      key: "procedure",
+      title: "Coding procedure",
+      rows: [],
+      steps: details.procedure.steps.map((step) => step.trim()).filter(Boolean),
+      notes: details.procedure.notes.trim(),
+    },
+  ];
+
+  return views.filter((view) => view.rows.length > 0 || view.steps.length > 0 || view.notes !== "");
+}
+
+/**
+ * A field whose column and JSON copy disagree during the dual-write rollout.
+ * `column` and `json` are both stringified for display (steps join on newline).
+ */
+export type ProjectDetailDrift = {
+  field: string;
+  label: string;
+  column: string;
+  json: string;
+};
+
+type DriftField = {
+  field: string;
+  label: string;
+  column: (typeof PROJECT_DETAIL_COLUMN_KEYS)[number];
+  /** The JSON side's value for the same field. */
+  fromJson: (details: ProjectDetails) => string | string[];
+  steps?: boolean;
+};
+
+const DRIFT_FIELDS: DriftField[] = [
+  {
+    field: "code.language",
+    label: "Code language",
+    column: "project_code_language",
+    fromJson: (d) => d.code.language,
+  },
+  {
+    field: "code.repositoryUrl",
+    label: "Code repository",
+    column: "project_code_repository",
+    fromJson: (d) => d.code.repositoryUrl,
+  },
+  {
+    field: "code.libraries",
+    label: "Code libraries",
+    column: "project_code_libraries",
+    fromJson: (d) => d.code.libraries,
+  },
+  {
+    field: "code.notes",
+    label: "Code notes",
+    column: "project_code_notes",
+    fromJson: (d) => d.code.notes,
+  },
+  {
+    field: "material.printer",
+    label: "Printer",
+    column: "project_material_printer",
+    fromJson: (d) => d.material.printer,
+  },
+  {
+    field: "material.filament",
+    label: "Filament",
+    column: "project_material_filament",
+    fromJson: (d) => d.material.filament,
+  },
+  {
+    field: "material.layerHeight",
+    label: "Layer height",
+    column: "project_material_layer_height",
+    fromJson: (d) => d.material.layerHeight,
+  },
+  {
+    field: "material.infill",
+    label: "Infill",
+    column: "project_material_infill",
+    fromJson: (d) => d.material.infill,
+  },
+  {
+    field: "material.printTime",
+    label: "Print time",
+    column: "project_material_print_time",
+    fromJson: (d) => d.material.printTime,
+  },
+  {
+    field: "material.notes",
+    label: "Material notes",
+    column: "project_material_notes",
+    fromJson: (d) => d.material.notes,
+  },
+  {
+    field: "procedure.steps",
+    label: "Procedure steps",
+    column: "project_procedure_steps",
+    fromJson: (d) => d.procedure.steps,
+    steps: true,
+  },
+  {
+    field: "procedure.notes",
+    label: "Procedure notes",
+    column: "project_procedure_notes",
+    fromJson: (d) => d.procedure.notes,
+  },
+];
+
+/**
+ * Compare a products row's columns with its `import_meta.projectDetails` copy.
+ *
+ * During the dual-write rollout the two copies can drift — an old app bundle
+ * writes only JSON, a fresh console writes both — and the reader prefers the
+ * column, so a stale JSON copy is invisible rather than harmless. Reports only
+ * fields where the column has a value AND differs from the JSON copy: an empty
+ * column just means "this row was never migrated", which is the normal state
+ * before the backfill runs.
+ *
+ * Returns [] for a row with no columns, which is what makes this safe to call
+ * before the migration is applied.
+ */
+export function projectDetailDrift(
+  meta: ProductImportMeta | Record<string, unknown> | undefined | null,
+  row: ProjectDetailRow
+): ProjectDetailDrift[] {
+  if (!row || typeof row !== "object") return [];
+  const json = readProjectDetails(meta);
+  const drift: ProjectDetailDrift[] = [];
+
+  for (const field of DRIFT_FIELDS) {
+    const raw = row[field.column];
+    let columnValue: string;
+    if (field.steps) {
+      const steps = Array.isArray(raw)
+        ? raw.filter((step): step is string => typeof step === "string" && step.trim() !== "")
+        : [];
+      if (steps.length === 0) continue;
+      columnValue = steps.join("\n");
+    } else {
+      if (typeof raw !== "string" || raw === "") continue;
+      columnValue = raw;
+    }
+
+    const jsonValue = field.fromJson(json);
+    const jsonText = Array.isArray(jsonValue) ? jsonValue.join("\n") : jsonValue;
+    if (columnValue !== jsonText) {
+      drift.push({ field: field.field, label: field.label, column: columnValue, json: jsonText });
+    }
+  }
+
+  return drift;
+}
+
+/**
  * Write projectDetails back into an importMeta bag. Returns a NEW bag so the
  * caller can `setProduct({ ...product, importMeta: writeProjectDetails(...) })`
  * without mutating the product being edited. Import provenance keys are kept.

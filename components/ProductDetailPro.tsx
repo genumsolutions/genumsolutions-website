@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ArrowUpRight, Check } from "lucide-react";
 import { galleryImages, relatedProducts, scopeForProduct, type Product } from "../lib/catalog";
 import { getProductMedia } from "../lib/product-media";
+import { projectDetailViews, readProjectDetails } from "../lib/project-details";
 import { useCart } from "./cart-provider";
 import { recordProductView } from "../lib/recently-viewed";
 import ProductCard from "./ProductCard";
@@ -229,6 +230,11 @@ export default function ProductDetailPro({
       keepalive: true,
     }).catch(() => undefined);
   }, [product.id]);
+  // 2026-11-18: the admin console's three detail blocks (code, 3D material,
+  // coding procedure). content-store already merged the project_* columns over
+  // import_meta.projectDetails, so one read covers both states of the rollout;
+  // blocks with no content drop out instead of drawing empty headings.
+  const projectDetailBlocks = projectDetailViews(readProjectDetails(product.importMeta));
   const projectSections = [
     ["Objectives", product.objectives],
     ["Materials required", product.materialsRequired],
@@ -680,6 +686,44 @@ export default function ProductDetailPro({
                   </div>
                 ))}
             </div>
+            {projectDetailBlocks.length > 0 && (
+              <div className="mt-8 grid gap-6 sm:grid-cols-2">
+                {projectDetailBlocks.map((block) => (
+                  <div key={block.key}>
+                    <h2 className="text-sm font-bold text-ink">{block.title}</h2>
+                    {block.rows.length > 0 && (
+                      <dl className="mt-2">
+                        {block.rows.map((row) => (
+                          <div
+                            key={row.label}
+                            className="flex items-baseline justify-between gap-4 border-b border-line py-1.5"
+                          >
+                            <dt className="text-xs font-black uppercase tracking-widest text-slate-500">
+                              {row.label}
+                            </dt>
+                            <dd className="max-w-[70%] whitespace-pre-line text-right text-sm text-muted">
+                              {row.value}
+                            </dd>
+                          </div>
+                        ))}
+                      </dl>
+                    )}
+                    {block.steps.length > 0 && (
+                      <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm leading-6 text-muted">
+                        {block.steps.map((step, index) => (
+                          <li key={`${block.key}-${index}`}>{step}</li>
+                        ))}
+                      </ol>
+                    )}
+                    {block.notes ? (
+                      <p className="mt-2 whitespace-pre-line text-sm leading-6 text-muted">
+                        {block.notes}
+                      </p>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            )}
             {product.maintenanceNotes ? (
               <p className="mt-6 text-sm leading-6 text-muted">
                 <strong className="text-ink">Maintenance and safety:</strong>{" "}

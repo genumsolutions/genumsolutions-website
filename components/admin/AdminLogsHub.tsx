@@ -10,10 +10,11 @@ import {
 } from "../../lib/styles";
 import AdminLogs from "./AdminLogs";
 import AdminProfileEntries from "./AdminProfileEntries";
+import AdminProjectDrift from "./AdminProjectDrift";
 import AdminUserLogs from "./AdminUserLogs";
 
 // =====================================================================
-// AdminLogsHub — one "Logs" tab, three sections.
+// AdminLogsHub — one "Logs" tab, four sections.
 //
 // System Logs, User Logs and Profile Entries were three separate tabs doing
 // the same job: read what happened and clear rows out. They became one tab
@@ -21,6 +22,10 @@ import AdminUserLogs from "./AdminUserLogs";
 // the per-user audit trail and the per-user profiles without hunting through
 // the tab strip. Panels are the originals, unchanged — this file is only the
 // frame, so a fix in one panel still applies everywhere it is used.
+//
+// 2026-11-18: a fourth section ("Data checks") carries the project-detail drift
+// report, which is a catalog-integrity question, not a log — it lives here so
+// the rollout has a visible place to stand without adding a tab.
 // =====================================================================
 
 const SECTIONS = [
@@ -38,6 +43,11 @@ const SECTIONS = [
     id: "diagnostics",
     label: "Fleet diagnostics",
     hint: "Device crash reports and app log lines from the field.",
+  },
+  {
+    id: "drift",
+    label: "Data checks",
+    hint: "Catalog rows whose two project-detail copies disagree during the columns rollout.",
   },
 ] as const;
 
@@ -74,6 +84,7 @@ export default function AdminLogsHub() {
         {section === "activity" && <AdminUserLogs />}
         {section === "profiles" && <AdminProfileEntries />}
         {section === "diagnostics" && <AdminLogs />}
+        {section === "drift" && <AdminProjectDrift />}
       </div>
     </div>
   );

@@ -111,8 +111,10 @@ Both clients already write `import_meta` whole, so the blocks round-trip with no
 schema change; the shape has exactly one reader/writer per repo
 (`lib/project-details.ts` here, `mobile/src/config/projectDetails.ts` in the
 app). The management token needed for DDL was expired on 2026-11-18, which is
-why the jsonb bag was chosen. The public project page does not render these
-three blocks yet; that is the follow-up once the columns land.
+why the jsonb bag was chosen. The public project page now renders the three
+blocks (Project information → Software and code / 3D printing / Coding
+procedure), reading the same merged value the console does, so a block with no
+content simply does not appear.
 
 **The columns are written in code, and the migration is still unapplied.**
 `supabase/migrations/20261118180000_project_details_columns.sql` adds twelve
@@ -128,6 +130,12 @@ copies. The columns are only included in a save after a one-time probe
 because an unknown column is a `42703` that would fail the whole product save.
 So until the migration runs, behaviour is exactly the JSON layout above; after
 it, the same builds start filling the columns with no redeploy.
+
+Users → Diagnostics → **Data checks** lists packages whose two copies disagree.
+That is how the rollout is verified before the JSON copy is dropped: a mismatch
+means one side edited a package without the other, and saving it in a console
+rewrites both. Before the migration the panel says the columns are absent
+instead of flagging every row.
 
 ## Who can do what
 
