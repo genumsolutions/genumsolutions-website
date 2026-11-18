@@ -1,6 +1,12 @@
 import { localProducts } from "./catalog-data";
 import { clampGallery } from "./image-budget";
 import type { Product } from "./catalog";
+import {
+  PROJECT_DETAIL_COLUMN_KEYS,
+  projectDetailColumns,
+  readProjectDetails,
+  writeProjectDetails,
+} from "./project-details";
 import { ROBOCAR_MODES as localRoBoModes, type RoboCarMode } from "./robo-car-catalog";
 import { createServiceClient, supabaseConfigured } from "./supabase/server";
 // U-48 ISR flip: this store's reads are CACHE-FRIENDLY — every admin write
@@ -69,7 +75,27 @@ type ProductRow = {
   featured_print?: boolean | null;
 };
 
+/**
+ * Project-detail blocks are read column-first with a per-field JSON fallback
+ * (lib/project-details.ts). The merged value goes back into `importMeta` so the
+ * admin editor keeps reading one shape, and so the next save writes the JSON
+ * copy (dual write) without the editor knowing about the columns.
+ * A row with no column values keeps its import_meta untouched.
+ */
+function importMetaWithProjectDetails(row: ProductRow): Product["importMeta"] {
+  const raw = row.import_meta && typeof row.import_meta === "object" ? row.import_meta : null;
+  const hasColumns = PROJECT_DETAIL_COLUMN_KEYS.some((key) => {
+    const value = (row as Record<string, unknown>)[key];
+    return typeof value === "string" ? value !== "" : Array.isArray(value) && value.length > 0;
+  });
+  const merged = hasColumns
+    ? writeProjectDetails(raw, readProjectDetails(raw, row as Record<string, unknown>))
+    : raw;
+  return merged ? (merged as Product["importMeta"]) : undefined;
+}
+
 function rowToProduct(row: ProductRow): Product {
+  const importMeta = importMetaWithProjectDetails(row);
   return {
     id: row.id,
     name: row.name,
@@ -118,13 +144,38 @@ function rowToProduct(row: ProductRow): Product {
     ...(row.supplier ? { supplier: row.supplier } : {}),
     ...(row.image_url ? { image: row.image_url } : {}),
     ...(Array.isArray(row.gallery) ? { gallery: row.gallery.filter(Boolean) } : {}),
-    ...(row.import_meta && typeof row.import_meta === "object"
-      ? { importMeta: row.import_meta as Product["importMeta"] }
-      : {}),
+    ...(importMeta ? { importMeta } : {}),
   };
 }
 
-export function productToRow(product: Product) {
+/**
+ * True when the products table has the project-detail columns.
+ *
+ * A write that names a column the database does not have fails with 42703 and
+ * takes the whole product save with it, so the payload only carries those
+ * columns when this says yes. Probed once per server instance (one row, one
+ * column) and cached; a failed probe counts as "not there" — the JSON copy
+ * still works, exactly as before the migration.
+ */
+let projectDetailColumnsProbe: Promise<boolean> | null = null;
+
+export function projectDetailColumnsAvailable(): Promise<boolean> {
+  projectDetailColumnsProbe ??= (async () => {
+    const { error } = await createServiceClient()
+      .from("products")
+      .select("project_code_language")
+      .limit(1);
+    return !error;
+  })().catch(() => false);
+  return projectDetailColumnsProbe;
+}
+
+/** Test seam: forget the cached probe answer. */
+export function resetProjectDetailColumnsProbe() {
+  projectDetailColumnsProbe = null;
+}
+
+export function productToRow(product: Product, options?: { projectColumns?: boolean }) {
   return {
     id: product.id,
     name: product.name,
@@ -172,6 +223,11 @@ export function productToRow(product: Product) {
     // posted (see lib/image-budget.ts / docs/STORAGE_BUDGET.md).
     gallery: clampGallery(product.gallery || []),
     import_meta: product.importMeta || {},
+    // Dual write: the JSON copy stays for the app's older bundles and until
+    // the rollout is finished. The columns go along only when they exist.
+    ...(options?.projectColumns
+      ? projectDetailColumns(readProjectDetails(product.importMeta))
+      : {}),
     updated_at: new Date().toISOString(),
   };
 }
@@ -205,7 +261,8 @@ export async function getManagedProducts(): Promise<Product[]> {
 }
 
 export async function saveProduct(product: Product) {
-  await createServiceClient().from("products").upsert(productToRow(product));
+  const projectColumns = await projectDetailColumnsAvailable();
+  await createServiceClient().from("products").upsert(productToRow(product, { projectColumns }));
 }
 
 export async function deleteProduct(id: string) {

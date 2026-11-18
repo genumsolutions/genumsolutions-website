@@ -1,7 +1,10 @@
 # Project detail columns (promoting `import_meta.projectDetails`)
 
-Status: **migration written, not applied.** Until it is applied, both clients keep
-reading and writing the JSON block and nothing here changes behaviour.
+Status: **migration written, code swap shipped (reader + dual write), migration
+not applied.** No database credentials exist in this environment, so the apply is
+still the one outstanding step — see [Applying it](#applying-it). Until it runs,
+the probe described below reports the columns missing and every save keeps using
+the JSON copy exactly as before.
 
 ## Why this exists
 
@@ -79,14 +82,39 @@ delete `import_meta.projectDetails`.
    missing until this migration runs**. That is the intended signal, not a
    regression — do not "fix" it by removing the lines from `schema.sql`.
 
-2. Deploy the **reader first**: prefer a column when it has a value, fall back to
-   `import_meta.projectDetails`, and fall back again to the blank shape. Both
-   clients already share that fallback logic shape in one module each, so this is
-   a change to two files, not to any screen.
-3. Deploy the **writer**: write the columns _and_ keep writing the JSON copy for
-   one release, so an older client (or an old OTA bundle still in the field) does
-   not lose data it cannot see.
+2. ~~Deploy the reader~~ — **done** (this commit on the website; app `aecd33f`). Each field
+   takes the column when it has a value and `import_meta.projectDetails`
+   otherwise; an empty steps column (the migration's `'[]'` default) does not
+   hide a populated JSON copy. The fallback is per field, not per block, so a
+   row edited on one surface while the other still writes JSON stays correct.
+3. ~~Deploy the writer~~ — **done, behind a capability probe.** Saves write the
+   columns _and_ keep writing the JSON copy, so an older client (or an old OTA
+   bundle still in the field) does not lose data it cannot see.
 4. Verify (below), then remove the JSON write and finally the JSON copy.
+
+### The write gate
+
+A write that names a column the database does not have fails with `42703` and
+takes the **whole product save** with it — including the fields that have nothing
+_to do with project details_. So neither client writes the columns
+unconditionally:
+
+```
+select project_code_language from products limit 1
+```
+
+is run **once per process** (`projectDetailColumnsAvailable()`, in
+`lib/content-store.ts` / `mobile/src/services/adminService.ts`), the answer is
+cached, and an error counts as "not there". That makes the same deployed build
+safe before and after the migration: before it, saves silently use the JSON copy;
+after it, the same save starts writing both. The probe is memoised for the life
+of the process, so a server instance already running when the migration executes
+keeps writing JSON-only until it restarts — harmless, because the reader accepts
+either.
+
+Tests pinning this: `tests/project-details.test.ts` and
+`tests/product-column-write.test.ts` (website), `src/config/projectDetails.test.ts`
+and `src/services/adminService.test.ts` (app).
 
 ### Code touch points
 
@@ -99,8 +127,11 @@ swap is contained:
 | App     | `mobile/src/config/projectDetails.ts` | `mobile/src/services/adminService.ts`, `mobile/src/services/productService.ts` | `mobile/src/screens/AdminScreen.tsx`        |
 
 Nothing outside those modules knows where the data lives. `readProjectDetails`
-and `writeProjectDetails` keep their signatures; only their input changes from the
-`importMeta` bag to the product row, plus a fallback read of the bag.
+takes an optional second argument (the products row) and `productToRow` takes an
+optional `{ projectColumns }`; the admin screens were not changed beyond reading
+the merged value off the product. On the website `rowToProduct` writes the merged
+blocks back into `importMeta`, so the editor keeps seeing one shape and the next
+save dual-writes without knowing about the columns.
 
 ## Verification
 
@@ -134,6 +165,11 @@ After the reader/writer swap, the admin check is: edit a package's Code details 
 values survive a round trip and appear in the other client — that is the only real
 proof the two writers agree.
 
+One check worth doing right after the apply, before trusting the console: save a
+package from each client and confirm the `project_*` columns changed (not just
+`import_meta`). If they did not, the probe cached a "missing" answer before the
+migration ran — restart that process.
+
 ## Rollback
 
 The columns are additive, so the safe rollback needs no data restore:
@@ -164,5 +200,5 @@ those six blocks in the console, so roll the code back first.
 - `schema.sql` carries the same column adds so a fresh database converges without
   needing the backfill (there are no legacy rows to translate). The backfill lives
   in the migration only.
-- The old reader/writer modules still describe the JSON layout in their header
-  comments; update those comments in the same commit as the code swap, not before.
+- Both reader/writer module headers were updated with the swap; they now point
+  here for the rollout order.

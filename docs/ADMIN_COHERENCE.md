@@ -114,13 +114,20 @@ app). The management token needed for DDL was expired on 2026-11-18, which is
 why the jsonb bag was chosen. The public project page does not render these
 three blocks yet; that is the follow-up once the columns land.
 
-**The columns are now written, not applied.**
+**The columns are written in code, and the migration is still unapplied.**
 `supabase/migrations/20261118180000_project_details_columns.sql` adds twelve
 `products.project_*` columns and backfills them from the JSON block, and
 `docs/PROJECT_DETAILS_COLUMNS.md` is the runbook: rollout order (backfill →
 reader with JSON fallback → dual write → drop the JSON copy), the verification
-queries, and the rollback. Nothing in the console changes until that migration
-runs, so the JSON layout above is still the source of truth today.
+queries, and the rollback.
+
+Both clients now ship the reader and the dual writer: each field prefers its
+column, falls back to the JSON block per field, and saves keep writing both
+copies. The columns are only included in a save after a one-time probe
+(`select project_code_language from products limit 1`) confirms they exist,
+because an unknown column is a `42703` that would fail the whole product save.
+So until the migration runs, behaviour is exactly the JSON layout above; after
+it, the same builds start filling the columns with no redeploy.
 
 ## Who can do what
 
