@@ -24,13 +24,15 @@ import { resolve } from "node:path";
 // U-R5 (2026-11-09): "System Logs" + "User Logs" + "Profile Entries" merged
 // into one "Logs" tab (AdminLogsHub) with three sections — same panels, one
 // entry point. Both clients expose the identical 9-tab inventory.
+// 2026-11-18 (owner): "Content" merged into "Settings" — company record, home
+// page copy, storefront services and the journal are one surface on both
+// clients. 7 tabs.
 const ADMIN_TABS = [
   "Dashboard",
   "Orders",
   "Electronic Products",
   "3D Products",
   "Projects",
-  "Content",
   "Users",
   "Settings",
 ];

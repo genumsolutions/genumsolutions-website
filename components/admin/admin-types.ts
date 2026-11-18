@@ -23,13 +23,16 @@ export const STATUSES = ["pending", "paid", "fulfilled", "cancelled"] as const;
 // rows out — spread over three tab strips that each cost a click to reach. The
 // panels themselves are unchanged and still mounted inside the hub, so nothing
 // was rewritten to make the merge.
+// 2026-11-18 (owner): "Content" merged into "Settings" — company record, home
+// page copy, storefront services and the journal are one surface, so the
+// console is 7 tabs on both clients. The panels themselves are unchanged
+// (AdminSettings / AdminContent / AdminServices / AdminJournal).
 export const TABS = [
   "Dashboard",
   "Orders",
   "Electronic Products",
   "3D Products",
   "Projects",
-  "Content",
   "Users",
   "Settings",
 ] as const;
@@ -48,9 +51,8 @@ export const TAB_HINTS: Record<Tab, string> = {
   "Electronic Products": "The /products catalog — pricing, stock and photos.",
   "3D Products": "The /3d-printing catalog.",
   Projects: "Bundles sold on /projects, including pre-packaged kits.",
-  Content: "Services, journal posts and the home page copy.",
   Users: "Accounts, roles, messages, project profiles, activity and diagnostics.",
-  Settings: "Company details, socials and contact channels.",
+  Settings: "Company, home page, services and journal.",
 };
 
 export const TAB_GROUP_OF: Record<Tab, string> = Object.fromEntries(

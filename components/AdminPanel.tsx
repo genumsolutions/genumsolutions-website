@@ -20,7 +20,6 @@ import {
   Cpu,
   Box,
   Package,
-  FileText,
   Users,
   Settings as SettingsIcon,
 } from "lucide-react";
@@ -50,8 +49,12 @@ const panelId = (name: string) => name.toLowerCase().replace(/\s+/g, "-");
 
 const ORDER_SECTIONS = ["Orders", "Finance"] as const;
 type OrderSection = (typeof ORDER_SECTIONS)[number];
-const CONTENT_SECTIONS = ["Services", "Journal", "Content"] as const;
-type ContentSection = (typeof CONTENT_SECTIONS)[number];
+// 2026-11-18 (owner: "the content page should be moved to the setting"): the
+// Content tab no longer exists. Its three panels joined the company record in
+// Settings, because that is where an admin looks for anything that is not a
+// catalog item. The tab strip above is untouched, so the parity contract holds.
+const SETTINGS_SECTIONS = ["Company", "Home page", "Storefront services", "Journal"] as const;
+type SettingsSection = (typeof SETTINGS_SECTIONS)[number];
 const USER_SECTIONS = ["Users", "Messages", "Logs"] as const;
 type UserSection = (typeof USER_SECTIONS)[number];
 
@@ -133,7 +136,6 @@ const TAB_ICONS: TabIconMap = {
   "Electronic Products": Cpu,
   "3D Products": Box,
   Projects: Package,
-  Content: FileText,
   Users: Users,
   Settings: SettingsIcon,
 };
@@ -144,7 +146,7 @@ export default function AdminPanel({ initialProducts, currentRole }: Props) {
   const [message, setMessage] = useState("");
   const [visited, setVisited] = useState<Set<number>>(() => new Set([0]));
   const [ordersSection, setOrdersSection] = useState<OrderSection>("Orders");
-  const [contentSection, setContentSection] = useState<ContentSection>("Services");
+  const [settingsSection, setSettingsSection] = useState<SettingsSection>("Company");
   const [userSection, setUserSection] = useState<UserSection>("Users");
 
   const canDelete = isAdminRole(currentRole);
@@ -216,30 +218,7 @@ export default function AdminPanel({ initialProducts, currentRole }: Props) {
             canDelete={canDelete}
           />
         );
-      case "Content":
-        return (
-          <AdminSectionTabs
-            group="content"
-            label="Content sections"
-            tabs={CONTENT_SECTIONS}
-            active={contentSection}
-            onChange={setContentSection}
-            panels={[
-              {
-                tab: "Services",
-                content: <AdminServices setMessage={setMessage} canDelete={canDelete} />,
-              },
-              {
-                tab: "Journal",
-                content: <AdminJournal setMessage={setMessage} canDelete={canDelete} />,
-              },
-              {
-                tab: "Content",
-                content: <AdminContent setMessage={setMessage} canDelete={canDelete} />,
-              },
-            ]}
-          />
-        );
+
       case "Users":
         return (
           <AdminSectionTabs
@@ -268,7 +247,33 @@ export default function AdminPanel({ initialProducts, currentRole }: Props) {
           />
         );
       case "Settings":
-        return <AdminSettings setMessage={setMessage} canDelete={canDelete} />;
+        return (
+          <AdminSectionTabs
+            group="settings"
+            label="Settings sections"
+            tabs={SETTINGS_SECTIONS}
+            active={settingsSection}
+            onChange={setSettingsSection}
+            panels={[
+              {
+                tab: "Company",
+                content: <AdminSettings setMessage={setMessage} canDelete={canDelete} />,
+              },
+              {
+                tab: "Home page",
+                content: <AdminContent setMessage={setMessage} canDelete={canDelete} />,
+              },
+              {
+                tab: "Storefront services",
+                content: <AdminServices setMessage={setMessage} canDelete={canDelete} />,
+              },
+              {
+                tab: "Journal",
+                content: <AdminJournal setMessage={setMessage} canDelete={canDelete} />,
+              },
+            ]}
+          />
+        );
     }
   }
 
