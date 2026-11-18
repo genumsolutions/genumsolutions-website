@@ -1018,10 +1018,10 @@ export default function AdminProducts({
               </button>
               <div className="p-4 pr-14">
                 <p className="text-xs font-black uppercase tracking-widest text-navy">
-                  Mobile storefront · two-column catalog
+                  Mobile web storefront
                 </p>
                 <p className="mt-1 text-[11px] text-muted">
-                  Uses the same card shown to customers.
+                  Uses the same card shown to customers, at the width a phone gives it.
                 </p>
                 {previewProduct.active === false && (
                   <p className="mt-2 text-xs font-bold text-red-600">
@@ -1033,29 +1033,23 @@ export default function AdminProducts({
                 <p className="sr-only">
                   Storefront card preview for {previewProduct.name}, {previewProduct.priceLabel}.
                 </p>
-                <div
-                  aria-hidden="true"
-                  {...({ inert: "" } as Record<string, string>)}
-                  className="pointer-events-none mx-auto grid w-full max-w-[343px] grid-cols-2 gap-3"
-                >
-                  <div className="min-w-0">
+                {/* 2026-11-18 (owner): a 343px two-column grid squeezed the card
+                    into ~160px, which read as a compressed box rather than the
+                    customer's screen. One card, inside a phone-width frame. */}
+                <div className="mx-auto w-full max-w-[390px] rounded-xl border border-line bg-white p-3">
+                  <div
+                    aria-hidden="true"
+                    {...({ inert: "" } as Record<string, string>)}
+                    className="pointer-events-none mx-auto w-full max-w-[343px]"
+                  >
                     <ProductCard product={previewProduct} />
                   </div>
-                  <div className="min-w-0" aria-hidden="true" />
                 </div>
               </div>
               <div className="flex flex-wrap justify-end gap-2 p-4">
-                <a
-                  href={`/products/${previewProduct.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex min-h-10 items-center rounded-full bg-navy px-4 text-xs font-black text-white transition hover:bg-navy-dark"
-                >
-                  View page
-                </a>
                 <button
                   onClick={() => setPreviewProduct(null)}
-                  className="inline-flex min-h-10 items-center rounded-full border border-line px-4 text-xs font-black text-ink transition hover:border-navy"
+                  className="inline-flex min-h-10 items-center rounded-full bg-navy px-4 text-xs font-black text-white transition hover:bg-navy-dark"
                 >
                   Close
                 </button>
@@ -1091,24 +1085,14 @@ export default function AdminProducts({
               </div>
               <figcaption className="flex items-center justify-between gap-3 text-xs font-bold text-white">
                 <span className="min-w-0 truncate">{lightbox.alt}</span>
-                <span className="flex shrink-0 gap-2">
-                  <a
-                    href={lightbox.src}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex min-h-[40px] items-center rounded-lg border border-white/30 px-4 text-xs font-black text-white transition hover:border-white"
-                  >
-                    Open original
-                  </a>
-                  <button
-                    type="button"
-                    onClick={() => setLightbox(null)}
-                    aria-label="Close image preview"
-                    className="inline-flex min-h-[40px] items-center rounded-lg bg-white px-4 text-xs font-black text-ink transition hover:bg-white/90"
-                  >
-                    Close
-                  </button>
-                </span>
+                <button
+                  type="button"
+                  onClick={() => setLightbox(null)}
+                  aria-label="Close image preview"
+                  className="inline-flex min-h-[40px] shrink-0 items-center rounded-lg bg-white px-4 text-xs font-black text-ink transition hover:bg-white/90"
+                >
+                  Close
+                </button>
               </figcaption>
             </figure>
           </div>,

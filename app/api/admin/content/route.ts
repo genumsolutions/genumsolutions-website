@@ -12,27 +12,69 @@ import {
 } from "../../../../lib/settings-store";
 import { revalidateContent } from "../../../../lib/revalidate";
 
+/**
+ * GET — one payload for the Content panel.
+ *
+ * 2026-11-18 (owner: "Homepage content. Failed to fetch site content… same
+ * message on refresh"): this used to load four sources through one Promise.all
+ * inside one try/catch, so a failure in ANY of them (a missing table, a missing
+ * service-role key) returned a single blanket 500 — "Could not load site
+ * content." — and refreshing retried the identical call. The panel could not
+ * tell which part broke, and the good data was thrown away with the bad.
+ *
+ * Each source now settles independently: the page renders whatever loaded,
+ * names the source that failed, and never blames the whole panel for one table.
+ * `contentLoaded` is explicit so the form will not let staff save an empty hero
+ * over a hero it never managed to read.
+ */
 export async function GET(_request: Request) {
   if (!(await isStaffRequest()))
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  try {
-    const [content, training, pilot, curriculum] = await Promise.all([
-      getSiteContent(),
-      getTrainingPrograms!,
-      getPilotCostLines!,
-      getCurriculumHighlights!,
-    ]);
-    return NextResponse.json({
-      homeTitle: content.homeTitle,
-      homeBody: content.homeBody,
-      trainingPrograms: training,
-      pilotCostLines: pilot,
-      curriculumHighlights: curriculum,
-    });
-  } catch (error) {
-    console.error("Admin content load failed", error);
-    return NextResponse.json({ error: "Could not load site content." }, { status: 500 });
+
+  const [content, training, pilot, curriculum] = await Promise.allSettled([
+    getSiteContent(),
+    getTrainingPrograms(),
+    getPilotCostLines(),
+    getCurriculumHighlights(),
+  ]);
+
+  const faults: { source: string; message: string }[] = [];
+  const reasonOf = (result: PromiseSettledResult<unknown>) =>
+    result.status === "rejected"
+      ? result.reason instanceof Error
+        ? result.reason.message
+        : String(result.reason ?? "unknown error")
+      : "";
+
+  if (content.status === "rejected") {
+    console.error("Admin content: site_content failed", content.reason);
+    faults.push({ source: "Home page content", message: reasonOf(content) });
   }
+  if (training.status === "rejected") {
+    console.error("Admin content: training_programs failed", training.reason);
+    faults.push({ source: "Training programs", message: reasonOf(training) });
+  }
+  if (pilot.status === "rejected") {
+    console.error("Admin content: pilot_cost_lines failed", pilot.reason);
+    faults.push({ source: "Pilot costs", message: reasonOf(pilot) });
+  }
+  if (curriculum.status === "rejected") {
+    console.error("Admin content: curriculum_highlights failed", curriculum.reason);
+    faults.push({ source: "Curriculum highlights", message: reasonOf(curriculum) });
+  }
+
+  const home = content.status === "fulfilled" ? content.value : null;
+
+  return NextResponse.json({
+    homeTitle: home?.homeTitle ?? "",
+    homeBody: home?.homeBody ?? "",
+    /** False when the hero could not be read — the form must not save over it. */
+    contentLoaded: content.status === "fulfilled",
+    trainingPrograms: training.status === "fulfilled" ? training.value : [],
+    pilotCostLines: pilot.status === "fulfilled" ? pilot.value : [],
+    curriculumHighlights: curriculum.status === "fulfilled" ? curriculum.value : [],
+    faults,
+  });
 }
 
 export async function PUT(request: Request) {

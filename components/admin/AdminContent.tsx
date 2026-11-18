@@ -20,25 +20,64 @@ export default function AdminContent({ setMessage, canDelete }: Props) {
   const [programs, setPrograms] = useState<RowItem[]>([]);
   const [pilots, setPilots] = useState<RowItem[]>([]);
   const [curricula, setCurricula] = useState<RowItem[]>([]);
+  // 2026-11-18: one blanket catch used to hide which of the four sources failed,
+  // and refreshing re-ran the same failing call for the same message.
+  const [faults, setFaults] = useState<{ source: string; message?: string }[]>([]);
+  const [contentLoaded, setContentLoaded] = useState(false);
 
   useEffect(() => {
-    void Promise.all([
-      fetch("/api/admin/content").then((r) => (r.ok ? r.json() : Promise.reject())),
-      fetch("/api/admin/settings").then((r) => (r.ok ? r.json() : Promise.reject())),
-    ])
-      .then(([content, settings]) => {
-        setHomeTitle(content.homeTitle || "");
-        setHomeBody(content.homeBody || "");
-        setPrograms(settings.trainingPrograms ?? []);
-        setPilots(settings.pilotCostLines ?? []);
-        setCurricula(settings.curriculumHighlights ?? []);
-      })
-      .catch(() => setMessage("Could not load site content."))
-      .finally(() => setLoaded(true));
+    let cancelled = false;
+    void (async () => {
+      try {
+        const response = await fetch("/api/admin/content");
+        const payload = await response.json().catch(() => ({}));
+        if (cancelled) return;
+        if (!response.ok) {
+          setFaults([
+            {
+              source: "Content",
+              message: payload?.error ?? `HTTP ${response.status}`,
+            },
+          ]);
+          return;
+        }
+        setHomeTitle(payload.homeTitle ?? "");
+        setHomeBody(payload.homeBody ?? "");
+        setContentLoaded(payload.contentLoaded !== false);
+        setPrograms(payload.trainingPrograms ?? []);
+        setPilots(payload.pilotCostLines ?? []);
+        setCurricula(payload.curriculumHighlights ?? []);
+        const reported: { source: string; message?: string }[] = Array.isArray(payload.faults)
+          ? payload.faults
+          : [];
+        setFaults(reported);
+        if (reported.length > 0) {
+          setMessage(
+            `Some content could not be loaded: ${reported.map((f) => f.source).join(", ")}.`
+          );
+        }
+      } catch {
+        if (!cancelled) {
+          setFaults([{ source: "Content", message: "The server could not be reached." }]);
+        }
+      } finally {
+        if (!cancelled) setLoaded(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [setMessage]);
 
   async function save(event?: React.FormEvent) {
     event?.preventDefault();
+    // 2026-11-18: never save an empty hero over a hero we failed to read.
+    if (!contentLoaded) {
+      setMessage(
+        "Home page content could not be loaded, so it cannot be saved over. Reload the panel once the source is reachable."
+      );
+      return;
+    }
     if (!homeTitle.trim() || !homeBody.trim()) {
       setMessage("Homepage title and body are required.");
       return;
@@ -70,6 +109,29 @@ export default function AdminContent({ setMessage, canDelete }: Props) {
     <div className="mt-4">
       <PanelCard>
         <h2 className={editorCardTitle}>Homepage content</h2>
+        {faults.length > 0 && (
+          <div
+            role="status"
+            className="mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs leading-5 text-amber-900"
+          >
+            <strong className="block">
+              {faults.length === 1
+                ? "One section could not be loaded."
+                : `${faults.length} sections could not be loaded.`}
+            </strong>
+            <ul className="mt-1 list-disc pl-4">
+              {faults.map((fault) => (
+                <li key={fault.source}>
+                  {fault.source}
+                  {fault.message ? ` — ${fault.message}` : ""}
+                </li>
+              ))}
+            </ul>
+            <span className="mt-1 block">
+              Everything else loaded normally. Retry only after the source above is back.
+            </span>
+          </div>
+        )}
         {!loaded ? (
           <LoadingRow className="mt-3" />
         ) : (
@@ -95,7 +157,7 @@ export default function AdminContent({ setMessage, canDelete }: Props) {
             <SaveBar>
               <button
                 type="submit"
-                disabled={busy}
+                disabled={busy || !contentLoaded}
                 className="bg-gold px-5 py-3 text-sm font-black text-ink transition hover:bg-gold-dark disabled:opacity-60"
               >
                 {busy ? "Saving..." : "Save content"}

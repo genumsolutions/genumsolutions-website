@@ -1299,17 +1299,9 @@ export default function AdminProjectPackages({
                     {previewProduct.priceLabel}
                   </strong>
                   <span className="flex gap-2">
-                    <a
-                      href={`/products/${previewProduct.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="rounded-full bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark"
-                    >
-                      View page
-                    </a>
                     <button
                       onClick={() => setPreviewProduct(null)}
-                      className="rounded-full border border-line px-4 py-2 text-xs font-black text-ink transition hover:border-navy"
+                      className="rounded-full bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark"
                     >
                       Close
                     </button>
