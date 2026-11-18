@@ -17,9 +17,11 @@ import { NextResponse } from "next/server";
 import { isStaffRequest } from "../../../../lib/admin";
 import { createClient } from "../../../../lib/supabase/server";
 import { revalidateProducts } from "../../../../lib/revalidate";
-
-const EDGE_BASE = `${process.env.NEXT_PUBLIC_SUPABASE_URL!.replace(/\/$/, "")}/functions/v1`;
-
+function edgeBase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!url) return undefined;
+  return `${url.replace(/\/$/, "")}/functions/v1`;
+}
 export async function POST(request: Request) {
   if (!(await isStaffRequest()))
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -34,7 +36,9 @@ export async function POST(request: Request) {
     if (sessionError || !accessToken)
       return NextResponse.json({ error: "Could not read your session." }, { status: 401 });
 
-    const res = await fetch(`${EDGE_BASE}/link-import`, {
+    const eb = edgeBase();
+    if (!eb) return NextResponse.json({ error: "link import is not configured." }, { status: 503 });
+    const res = await fetch(`${eb}/link-import`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
       body: JSON.stringify(body),
