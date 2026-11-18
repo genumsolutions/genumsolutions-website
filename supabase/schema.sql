@@ -183,6 +183,22 @@ alter table public.products add column if not exists documentation_url text not 
 alter table public.products add column if not exists video_url text not null default '';
 alter table public.products add column if not exists maintenance_notes text not null default '';
 alter table public.products add column if not exists project_category text;
+-- 2026-11-18: project detail blocks promoted out of import_meta, so a fresh
+-- database matches what 20261118180000_project_details_columns.sql produces on
+-- an existing one. The backfill lives in that migration only — a new database
+-- has no legacy import_meta rows to translate.
+alter table public.products add column if not exists project_code_language text not null default '';
+alter table public.products add column if not exists project_code_repository text not null default '';
+alter table public.products add column if not exists project_code_libraries text not null default '';
+alter table public.products add column if not exists project_code_notes text not null default '';
+alter table public.products add column if not exists project_material_printer text not null default '';
+alter table public.products add column if not exists project_material_filament text not null default '';
+alter table public.products add column if not exists project_material_layer_height text not null default '';
+alter table public.products add column if not exists project_material_infill text not null default '';
+alter table public.products add column if not exists project_material_print_time text not null default '';
+alter table public.products add column if not exists project_material_notes text not null default '';
+alter table public.products add column if not exists project_procedure_steps jsonb not null default '[]';
+alter table public.products add column if not exists project_procedure_notes text not null default '';
 create index if not exists products_category_idx on public.products(category);
 create index if not exists products_project_category_idx on public.products(project_category);
 

@@ -110,10 +110,17 @@ procedure are stored in `products.import_meta.projectDetails`:
 Both clients already write `import_meta` whole, so the blocks round-trip with no
 schema change; the shape has exactly one reader/writer per repo
 (`lib/project-details.ts` here, `mobile/src/config/projectDetails.ts` in the
-app). A dedicated-columns migration can be added later without touching the
-admin UI — the management token needed for DDL was expired on 2026-11-18, which
-is why the jsonb bag was chosen. The public project page does not render these
+app). The management token needed for DDL was expired on 2026-11-18, which is
+why the jsonb bag was chosen. The public project page does not render these
 three blocks yet; that is the follow-up once the columns land.
+
+**The columns are now written, not applied.**
+`supabase/migrations/20261118180000_project_details_columns.sql` adds twelve
+`products.project_*` columns and backfills them from the JSON block, and
+`docs/PROJECT_DETAILS_COLUMNS.md` is the runbook: rollout order (backfill →
+reader with JSON fallback → dual write → drop the JSON copy), the verification
+queries, and the rollback. Nothing in the console changes until that migration
+runs, so the JSON layout above is still the source of truth today.
 
 ## Who can do what
 
