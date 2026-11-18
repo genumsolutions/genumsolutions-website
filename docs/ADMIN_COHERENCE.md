@@ -9,7 +9,7 @@ parity tests enforce it:
 - `genumsolutions-website/tests/admin-parity.test.ts`
 - `genumsolutions-app/mobile/src/config/admin-parity.test.ts`
 
-## Tab inventory (8, identical on both)
+## Tab inventory (7, identical on both)
 
 | Tab                 | Contents                                                                 |
 | ------------------- | ------------------------------------------------------------------------ |
@@ -18,9 +18,13 @@ parity tests enforce it:
 | Electronic Products | `/products` catalog + import                                             |
 | 3D Products         | `/3d-printing` catalog + import                                          |
 | Projects            | Project packages, components, import                                     |
-| Content             | Services, journal, home copy, training programs                          |
 | Users               | Directory, messages + newsletter opt-ins, per-user projects, Logs subtab |
-| Settings            | Company info, store settings                                             |
+| Settings            | Company record · Home page · Storefront services · Journal               |
+
+**2026-11-18:** the Content tab was merged into Settings on both clients. The
+company record, home-page copy, storefront services and the journal are four
+sections of one tab, because they all answer "what does the site say about us"
+and each cost its own click. The panels themselves were not rewritten.
 
 The **Logs** subtab is inside **Users**, not a top-level tab. It groups system
 diagnostics, user activity, and profile entries into three sections. The panels
