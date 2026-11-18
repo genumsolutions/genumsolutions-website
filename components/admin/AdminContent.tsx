@@ -112,7 +112,7 @@ export default function AdminContent({ setMessage, canDelete }: Props) {
         {faults.length > 0 && (
           <div
             role="status"
-            className="mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs leading-5 text-amber-900"
+            className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900"
           >
             <strong className="block">
               {faults.length === 1
