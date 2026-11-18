@@ -15,9 +15,9 @@ parity tests enforce it:
 | ------------------- | ------------------------------------------------------------------------ |
 | Dashboard           | KPIs, revenue trend, recent activity                                     |
 | Orders              | Orders + finance/transactions                                            |
-| Electronic Products | `/products` catalog + import                                             |
+| Electronic Products | `/products` — Catalog · Categories · Import subtabs                      |
 | 3D Products         | `/3d-printing` catalog + import                                          |
-| Projects            | Project packages, components, import                                     |
+| Projects            | Project packages (5-level editor), components, pricing, import           |
 | Users               | Directory, messages + newsletter opt-ins, per-user projects, Logs subtab |
 | Settings            | Company record · Home page · Storefront services · Journal               |
 
@@ -31,6 +31,57 @@ diagnostics, user activity, and profile entries into three sections. The panels
 themselves were not rewritten — `AdminLogs`, `AdminUserLogs` and
 `AdminProfileEntries` are mounted inside `AdminLogsHub`, so a fix in a panel
 still applies everywhere it is used.
+
+## Section subtabs (identical on both clients)
+
+**Electronic Products** — `Catalog · Categories · Import`. The catalog list is
+unchanged. Categories is a read-only roll-up per category (items,
+visible/hidden, stock, price range) whose rows jump into the catalog filtered to
+that category. Import hosts the link importer, which no longer shares the page
+with the list. 3D Products keeps its own `PrintSectionTabs` studio.
+
+**Projects** — the package editor is one hierarchy level at a time, in this
+order:
+
+| Subtab              | Fields                                                                                                                                   |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Category            | id, name, summary, category, project category, description, overview, outcomes, prerequisites, deliverables, audience, difficulty, image |
+| Pricing             | price, stock, price label, SKU, warranty, delivery, maintenance notes                                                                    |
+| Code details        | language/toolchain, repository, libraries, source folder, docs/video links, control methods, spec lines, code notes                      |
+| 3D material details | materials required, printer, filament, layer height, infill, print time, material notes                                                  |
+| Coding procedure    | build steps, coding procedure steps, procedure notes, estimated duration                                                                 |
+
+Component links and the package quote stay in their own panels under the
+project list (they key off a saved project id).
+
+**Where the new project fields live.** Category is `products.project_category`;
+pricing is `project_pricing`; code details, 3D material details and coding
+procedure are stored in `products.import_meta.projectDetails`:
+
+```jsonc
+{
+  "projectDetails": {
+    "code": { "language": "", "repositoryUrl": "", "libraries": "", "notes": "" },
+    "material": {
+      "printer": "",
+      "filament": "",
+      "layerHeight": "",
+      "infill": "",
+      "printTime": "",
+      "notes": "",
+    },
+    "procedure": { "steps": [""], "notes": "" },
+  },
+}
+```
+
+Both clients already write `import_meta` whole, so the blocks round-trip with no
+schema change; the shape has exactly one reader/writer per repo
+(`lib/project-details.ts` here, `mobile/src/config/projectDetails.ts` in the
+app). A dedicated-columns migration can be added later without touching the
+admin UI — the management token needed for DDL was expired on 2026-11-18, which
+is why the jsonb bag was chosen. The public project page does not render these
+three blocks yet; that is the follow-up once the columns land.
 
 ## Who can do what
 

@@ -65,6 +65,13 @@ export type ProductImportMeta = {
   structuredSpecs?: { key: string; value: string }[];
   stats?: Record<string, number>;
   pricing?: Record<string, unknown>;
+  /**
+   * 2026-11-18: project-only detail blocks edited under Admin → Projects
+   * (Code details / 3D material details / Coding procedure). Shape lives in
+   * lib/project-details.ts, which is the only reader/writer; the jsonb bag is
+   * used because no DDL migration is available (see that module's header).
+   */
+  projectDetails?: Record<string, unknown>;
 };
 
 export const galleryImages = (product: Pick<Product, "image" | "gallery">): string[] => {

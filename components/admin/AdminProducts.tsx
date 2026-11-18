@@ -32,6 +32,8 @@ import {
 } from "./admin-helpers";
 import { AdminEditorSheet } from "./AdminEditorSheet";
 
+const PRODUCT_SUBTABS = ["Catalog", "Categories", "Import"] as const;
+
 type Props = {
   /** Which catalog this tab manages — drives list scope, import default, and copy. */
   kind: "electronic" | "models";
@@ -169,6 +171,32 @@ export default function AdminProducts({
     (productPage - 1) * PAGE_SIZE,
     productPage * PAGE_SIZE
   );
+
+  // 2026-11-18 (owner: "Add sub-tabs to Electronic Products"): the electronic
+  // catalog is now three sections — the list, a category roll-up, and the link
+  // importer that used to share the page with both. 3D Products keeps its
+  // current two-column layout (it already has PrintSectionTabs).
+  const [subTab, setSubTab] = useState<(typeof PRODUCT_SUBTABS)[number]>("Catalog");
+  const categoryGroups = Array.from(
+    catalogProducts.reduce((groups, item) => {
+      const key = item.category || "Uncategorised";
+      const group = groups.get(key) ?? {
+        name: key,
+        total: 0,
+        live: 0,
+        stock: 0,
+        lowest: Number.POSITIVE_INFINITY,
+        highest: 0,
+      };
+      group.total += 1;
+      if (item.active !== false) group.live += 1;
+      group.stock += Math.max(0, Number(item.stock) || 0);
+      group.lowest = Math.min(group.lowest, Number(item.price) || 0);
+      group.highest = Math.max(group.highest, Number(item.price) || 0);
+      groups.set(key, group);
+      return groups;
+    }, new Map<string, { name: string; total: number; live: number; stock: number; lowest: number; highest: number }>())
+  ).sort((a, b) => a[0].localeCompare(b[0]));
 
   function updateProduct(key: keyof Product, value: string | number | string[] | boolean) {
     setProduct((current) => ({ ...current, [key]: value }));
@@ -440,558 +468,631 @@ export default function AdminProducts({
 
   return (
     <>
-      <div className="mt-4 grid min-w-0 gap-4 xl:grid-cols-[1fr_1.3fr]">
-        <section aria-label={`${tabLabel} list`} className={panelListSection}>
-          <PanelCard>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className={panelTitle}>
-                {tabLabel} ({filteredProducts.length})
-              </h2>
-              {/* U-35 (2026-09-25): "Add product" used to live only inside the
+      {!isModels ? (
+        <div
+          role="tablist"
+          aria-label="Electronic product sections"
+          className="mt-4 flex flex-wrap gap-2"
+        >
+          {PRODUCT_SUBTABS.map((name) => (
+            <button
+              key={name}
+              type="button"
+              role="tab"
+              aria-selected={subTab === name}
+              onClick={() => setSubTab(name)}
+              className={
+                subTab === name
+                  ? "rounded-full bg-navy px-3 py-1.5 text-xs font-black text-white"
+                  : "rounded-full border border-line px-3 py-1.5 text-xs font-bold text-ink transition hover:border-navy"
+              }
+            >
+              {name}
+            </button>
+          ))}
+        </div>
+      ) : null}
+      <div
+        className={`mt-4 grid min-w-0 gap-4 ${isModels ? "xl:grid-cols-[1fr_1.3fr]" : "xl:grid-cols-1"}`}
+      >
+        {isModels || subTab === "Catalog" ? (
+          <section aria-label={`${tabLabel} list`} className={panelListSection}>
+            <PanelCard>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className={panelTitle}>
+                  {tabLabel} ({filteredProducts.length})
+                </h2>
+                {/* U-35 (2026-09-25): "Add product" used to live only inside the
                   SaveBar, which is hidden until a product already has an id —
                   so the one action that creates a product was invisible. */}
-              <button
-                type="button"
-                onClick={() => {
-                  setProduct({ ...emptyProduct, category: defaultCategory });
-                  // U-39b fix (2026-09-26): a fresh product must also drop the
-                  // last import link, not just its "Extracted ✓" banner.
-                  setLinkUrl("");
-                  setExtracted(null);
-                  setEditorOpen(true);
-                }}
-                className="shrink-0 border border-gold px-3 py-1.5 text-xs font-bold text-gold transition hover:bg-gold hover:text-ink"
-              >
-                + Add product
-              </button>
-            </div>
-            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search by name, SKU, or id"
-                aria-label="Search products"
-                className={`w-full ${inputClass}`}
-              />
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                aria-label="Category filter"
-                className={`w-full sm:w-48 ${inputClass}`}
-              >
-                <option value="All">All categories</option>
-                {categories.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={stockFilter}
-                onChange={(e) => setStockFilter(e.target.value as "all" | "in" | "low" | "out")}
-                aria-label="Stock filter"
-                className={`w-full sm:w-44 ${inputClass}`}
-              >
-                <option value="all">All stock</option>
-                <option value="in">In stock (&gt;3)</option>
-                <option value="low">Low stock (1–3)</option>
-                <option value="out">Out of stock (0)</option>
-              </select>
-            </div>
-            <div className="mt-3 divide-y divide-line">
-              {shownProducts.map((item) => {
-                const stock = Number(item.stock) || 0;
-                const stockLabel =
-                  stock <= 0
-                    ? "Out of stock"
-                    : stock <= 3
-                      ? `Low stock (${stock})`
-                      : `In stock (${stock})`;
-                const stockClass =
-                  stock <= 0
-                    ? "bg-red-100 text-red-700"
-                    : stock <= 3
-                      ? "bg-amber-100 text-amber-800"
-                      : "bg-emerald-100 text-emerald-700";
-                return (
-                  <div key={item.id} className={`${cardRow} items-center`}>
-                    <div className={cardRowText}>
-                      <span className="block">
-                        <strong>{item.name}</strong>{" "}
-                        <span className="text-muted/70">{item.sku}</span>
-                      </span>
-                      <span className="mt-1 flex flex-wrap items-center gap-2">
-                        <span
-                          className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${stockClass}`}
-                        >
-                          {stockLabel}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProduct({ ...emptyProduct, category: defaultCategory });
+                    // U-39b fix (2026-09-26): a fresh product must also drop the
+                    // last import link, not just its "Extracted ✓" banner.
+                    setLinkUrl("");
+                    setExtracted(null);
+                    setEditorOpen(true);
+                  }}
+                  className="shrink-0 border border-gold px-3 py-1.5 text-xs font-bold text-gold transition hover:bg-gold hover:text-ink"
+                >
+                  + Add product
+                </button>
+              </div>
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search by name, SKU, or id"
+                  aria-label="Search products"
+                  className={`w-full ${inputClass}`}
+                />
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  aria-label="Category filter"
+                  className={`w-full sm:w-48 ${inputClass}`}
+                >
+                  <option value="All">All categories</option>
+                  {categories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={stockFilter}
+                  onChange={(e) => setStockFilter(e.target.value as "all" | "in" | "low" | "out")}
+                  aria-label="Stock filter"
+                  className={`w-full sm:w-44 ${inputClass}`}
+                >
+                  <option value="all">All stock</option>
+                  <option value="in">In stock (&gt;3)</option>
+                  <option value="low">Low stock (1–3)</option>
+                  <option value="out">Out of stock (0)</option>
+                </select>
+              </div>
+              <div className="mt-3 divide-y divide-line">
+                {shownProducts.map((item) => {
+                  const stock = Number(item.stock) || 0;
+                  const stockLabel =
+                    stock <= 0
+                      ? "Out of stock"
+                      : stock <= 3
+                        ? `Low stock (${stock})`
+                        : `In stock (${stock})`;
+                  const stockClass =
+                    stock <= 0
+                      ? "bg-red-100 text-red-700"
+                      : stock <= 3
+                        ? "bg-amber-100 text-amber-800"
+                        : "bg-emerald-100 text-emerald-700";
+                  return (
+                    <div key={item.id} className={`${cardRow} items-center`}>
+                      <div className={cardRowText}>
+                        <span className="block">
+                          <strong>{item.name}</strong>{" "}
+                          <span className="text-muted/70">{item.sku}</span>
                         </span>
-                        {item.active === false && (
-                          <span className="inline-flex rounded-full bg-mist px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-ink/80">
-                            Hidden
+                        <span className="mt-1 flex flex-wrap items-center gap-2">
+                          <span
+                            className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${stockClass}`}
+                          >
+                            {stockLabel}
                           </span>
+                          {item.active === false && (
+                            <span className="inline-flex rounded-full bg-mist px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-ink/80">
+                              Hidden
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                      <span className="flex shrink-0 flex-wrap gap-2">
+                        <button
+                          onClick={() => {
+                            setProduct(item);
+                            setEditorOpen(true);
+                          }}
+                          className="text-xs font-bold text-navy underline"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => setPreviewProduct(item)}
+                          className="text-xs font-bold text-muted underline"
+                        >
+                          Preview
+                        </button>
+                        <button
+                          onClick={() => void toggleProductVisibility(item)}
+                          className="text-xs font-bold text-ink underline"
+                        >
+                          {item.active === false ? "Show" : "Hide"}
+                        </button>
+                        {canDelete && (
+                          <button
+                            onClick={() => removeProduct(item.id)}
+                            className="text-xs font-bold text-red-600 underline"
+                          >
+                            Delete
+                          </button>
                         )}
                       </span>
                     </div>
-                    <span className="flex shrink-0 flex-wrap gap-2">
-                      <button
-                        onClick={() => {
-                          setProduct(item);
-                          setEditorOpen(true);
-                        }}
-                        className="text-xs font-bold text-navy underline"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => setPreviewProduct(item)}
-                        className="text-xs font-bold text-muted underline"
-                      >
-                        Preview
-                      </button>
-                      <button
-                        onClick={() => void toggleProductVisibility(item)}
-                        className="text-xs font-bold text-ink underline"
-                      >
-                        {item.active === false ? "Show" : "Hide"}
-                      </button>
-                      {canDelete && (
-                        <button
-                          onClick={() => removeProduct(item.id)}
-                          className="text-xs font-bold text-red-600 underline"
-                        >
-                          Delete
-                        </button>
-                      )}
-                    </span>
-                  </div>
-                );
-              })}
-              {shownProducts.length === 0 && (
-                <EmptyState>
-                  No {tabLabel.toLowerCase()} match &ldquo;{query}&rdquo;.
-                </EmptyState>
-              )}
-            </div>
-            <Pager page={productPage} totalPages={totalPages} onPage={setProductPage} />
-          </PanelCard>
-        </section>
-        <section
-          id={kind === "models" ? "models-editor" : "product-editor"}
-          aria-label="Product editor"
-          className="min-w-0"
-        >
-          <form onSubmit={previewLink} className={`${editorCard} mb-6`}>
-            <h2 className={editorCardTitle}>Import into {tabLabel} by link</h2>
-            <p className="mt-1 text-sm text-muted">
-              Everything extracted here is saved as a <strong>{tabLabel}</strong> item — it appears
-              on the {isModels ? "/3d-printing" : "/products"} page for customers. Paste a product
-              page, click <strong>Extract details</strong>, review the title, description, specs and
-              images below, then click <strong>Save product</strong>. Details are read from{" "}
-              <strong>MakerWorld</strong> and <strong>Printables</strong>; any other link is still
-              saved, but you fill the fields yourself.
-            </p>
-            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-              <input
-                ref={linkInput}
-                value={linkUrl}
-                onChange={(e) => {
-                  setLinkUrl(e.target.value);
-                  if (e.target.value !== linkUrl) setExtracted(null);
-                }}
-                placeholder="https://makerworld.com/en/models/... or any product page"
-                aria-label="Product link"
-                className={`min-w-0 flex-1 ${inputClass}`}
-              />
-              <button
-                type="submit"
-                disabled={!linkUrl.trim() || importing}
-                className={`${adminBtnGold} shrink-0`}
-              >
-                {importing ? "Extracting…" : "Extract details"}
-              </button>
-            </div>
-            {extracted && (
-              <div className="mt-3 flex items-center gap-3 rounded bg-navy/5 p-3">
-                {extracted.images[0] ? (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setLightbox({
-                        src: extracted?.images[0] ?? "",
-                        alt: `First imported image for ${tabLabel}`,
-                      })
-                    }
-                    aria-label="View the imported image full size"
-                    className="shrink-0 rounded border border-line transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy hover:border-navy"
-                  >
-                    <Image
-                      src={extracted.images[0]}
-                      alt=""
-                      width={56}
-                      height={56}
-                      unoptimized
-                      className="h-14 w-14 rounded object-cover"
-                    />
-                  </button>
-                ) : (
-                  <div className="h-14 w-14 shrink-0 rounded border border-dashed border-line" />
+                  );
+                })}
+                {shownProducts.length === 0 && (
+                  <EmptyState>
+                    No {tabLabel.toLowerCase()} match &ldquo;{query}&rdquo;.
+                  </EmptyState>
                 )}
-                <p className="min-w-0 text-sm leading-snug text-ink">
-                  <strong className="block">
-                    {extracted.fields > 0
-                      ? `${extracted.fields} spec line${extracted.fields === 1 ? "" : "s"}`
-                      : "Details"}{" "}
-                    extracted from {extracted.provider}.
-                  </strong>
-                  <span className="text-muted">
-                    {extracted.images.length} image{extracted.images.length === 1 ? "" : "s"} found
-                    {extracted.images.length === 0
-                      ? " — you can paste or upload one below"
-                      : "; review the fields in the editor below, then click Save product"}
-                    .
-                  </span>
-                </p>
               </div>
-            )}
-            {demand.length > 0 && (
-              <div className="mt-3 rounded-lg border border-line bg-navy/[0.03] p-3">
-                <p className="text-xs leading-snug text-muted">
-                  <strong className="text-ink">Not readable yet:</strong> staff have pasted{" "}
-                  {demand
-                    .slice(0, 3)
-                    .map((d) => d.host)
-                    .join(", ")}
-                  {demand.length > 3 ? ` and ${demand.length - 3} more source(s)` : ""}. Tell us and
-                  we will add it — the product still saves, you just fill the fields by hand.
-                </p>
+              <Pager page={productPage} totalPages={totalPages} onPage={setProductPage} />
+            </PanelCard>
+          </section>
+        ) : null}
+        {!isModels && subTab === "Categories" ? (
+          <section aria-label={`${tabLabel} categories`} className={panelListSection}>
+            <PanelCard>
+              <h2 className={panelTitle}>Categories ({categoryGroups.length})</h2>
+              <p className="mt-1 text-sm text-muted">
+                How the {isModels ? "/3d-printing" : "/products"} catalog is filed. Open a category
+                to see its items in the catalog list.
+              </p>
+              <div className="mt-3 divide-y divide-line">
+                {categoryGroups.map(([name, group]) => (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => {
+                      setCategory(name);
+                      setProductPage(1);
+                      setSubTab("Catalog");
+                    }}
+                    className={`${cardRow} w-full text-left transition hover:bg-mist/40`}
+                  >
+                    <span className={cardRowText}>
+                      <strong className="block">{name}</strong>
+                      <span className="mt-1 block text-xs text-muted">
+                        {group.live} visible · {group.total - group.live} hidden · {group.stock} in
+                        stock ·{" "}
+                        {group.lowest === group.highest
+                          ? `NPR ${group.lowest.toLocaleString("en-IN")}`
+                          : `NPR ${group.lowest.toLocaleString("en-IN")}–${group.highest.toLocaleString("en-IN")}`}
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-xs font-black text-gold">
+                      {group.total} {group.total === 1 ? "item" : "items"}
+                    </span>
+                  </button>
+                ))}
+                {categoryGroups.length === 0 && <EmptyState>No products yet.</EmptyState>}
               </div>
-            )}
-          </form>
-          {editorOpen ? (
-            <AdminEditorSheet
-              title={
-                products.some((item) => item.id === product.id)
-                  ? `Edit ${product.id}`
-                  : "Add a new product"
-              }
-              hint="Saves to the shared products table used by the storefront and the app."
-              onClose={() => setEditorOpen(false)}
-            >
-              <form onSubmit={saveProduct} className={editorCard}>
-                <h2 className={editorCardTitle}>
-                  {products.some((item) => item.id === product.id)
-                    ? `Edit ${product.id}`
-                    : "Add a new product"}
-                </h2>
-                <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                  {fields
-                    .filter((key) => key !== "category")
-                    .map((key) => (
-                      <label key={key} className="min-w-0 text-sm font-bold capitalize">
-                        {key}
-                        <input
-                          value={String(product[key] ?? "")}
-                          onChange={(e) =>
-                            updateProduct(
-                              key,
-                              ["price", "stock"].includes(key)
-                                ? Number(e.target.value)
-                                : e.target.value
-                            )
-                          }
-                          className={`mt-2 w-full ${inputClass}`}
-                        />
-                        {key === "stock" && (
-                          <span className="mt-1 block text-xs font-normal text-muted">
-                            Retail items: set 0 to mark out of stock/unavailable for direct
-                            purchase. Project packages use quote flow regardless of stock.
-                          </span>
-                        )}
-                      </label>
-                    ))}
-                  <label className="min-w-0 text-sm font-bold capitalize">
-                    category
-                    <input
-                      list="product-category-suggestions"
-                      value={product.category}
-                      onChange={(e) => updateProduct("category", e.target.value)}
-                      placeholder="Type a category, e.g. 3D Models"
-                      aria-label="Category (type or pick)"
-                      className={`mt-2 w-full ${inputClass}`}
-                    />
-                    <datalist id="product-category-suggestions">
-                      {categories.map((cat) => (
-                        <option key={cat} value={cat} />
-                      ))}
-                    </datalist>
-                  </label>
-                  <label className="min-w-0 text-sm font-bold capitalize">
-                    product type
-                    <select
-                      value={product.productType}
-                      onChange={(e) => updateProduct("productType", e.target.value)}
-                      className={`mt-2 w-full ${inputClass}`}
-                    >
-                      {["Retail kit", "Project package", "Material", "Service package"].map((t) => (
-                        <option key={t} value={t}>
-                          {t}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="min-w-0 text-sm font-bold sm:col-span-2">
-                    Specs, one per line
-                    <textarea
-                      value={
-                        Array.isArray(product.specs)
-                          ? product.specs.join("\n")
-                          : String(product.specs)
+            </PanelCard>
+          </section>
+        ) : null}
+        {isModels || subTab === "Import" ? (
+          <section
+            id={kind === "models" ? "models-editor" : "product-editor"}
+            aria-label="Product editor"
+            className="min-w-0"
+          >
+            <form onSubmit={previewLink} className={`${editorCard} mb-6`}>
+              <h2 className={editorCardTitle}>Import into {tabLabel} by link</h2>
+              <p className="mt-1 text-sm text-muted">
+                Everything extracted here is saved as a <strong>{tabLabel}</strong> item — it
+                appears on the {isModels ? "/3d-printing" : "/products"} page for customers. Paste a
+                product page, click <strong>Extract details</strong>, review the title, description,
+                specs and images below, then click <strong>Save product</strong>. Details are read
+                from <strong>MakerWorld</strong> and <strong>Printables</strong>; any other link is
+                still saved, but you fill the fields yourself.
+              </p>
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                <input
+                  ref={linkInput}
+                  value={linkUrl}
+                  onChange={(e) => {
+                    setLinkUrl(e.target.value);
+                    if (e.target.value !== linkUrl) setExtracted(null);
+                  }}
+                  placeholder="https://makerworld.com/en/models/... or any product page"
+                  aria-label="Product link"
+                  className={`min-w-0 flex-1 ${inputClass}`}
+                />
+                <button
+                  type="submit"
+                  disabled={!linkUrl.trim() || importing}
+                  className={`${adminBtnGold} shrink-0`}
+                >
+                  {importing ? "Extracting…" : "Extract details"}
+                </button>
+              </div>
+              {extracted && (
+                <div className="mt-3 flex items-center gap-3 rounded bg-navy/5 p-3">
+                  {extracted.images[0] ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setLightbox({
+                          src: extracted?.images[0] ?? "",
+                          alt: `First imported image for ${tabLabel}`,
+                        })
                       }
-                      onChange={(e) => updateProduct("specs", e.target.value.split("\n"))}
-                      rows={4}
-                      className={`mt-2 w-full ${inputClass}`}
-                    />
-                  </label>
-                  {isModels && (
-                    <fieldset className="min-w-0 rounded-xl border border-line p-4 sm:col-span-2">
-                      <legend className="px-1 text-sm font-bold">Print details</legend>
-                      <p className="text-xs font-normal text-muted">
-                        Shown on the /3d-printing cards, the featured row and the product page.
-                        Weight drives the calculator estimate.
-                      </p>
-                      <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                        <label className="min-w-0 text-sm font-bold">
-                          Print category
-                          <select
-                            value={product.printCategory ?? ""}
-                            onChange={(e) => updateProduct("printCategory", e.target.value)}
-                            className={`mt-2 w-full ${inputClass}`}
-                          >
-                            <option value="">Uncategorised</option>
-                            {printOptions.categories.map((cat) => (
-                              <option key={cat.id} value={cat.id}>
-                                {cat.name}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                        <label className="min-w-0 text-sm font-bold">
-                          Material
-                          <input
-                            list="print-material-suggestions"
-                            value={product.material ?? ""}
-                            onChange={(e) => updateProduct("material", e.target.value)}
-                            placeholder="PLA, PETG, or both"
-                            className={`mt-2 w-full ${inputClass}`}
-                          />
-                          <datalist id="print-material-suggestions">
-                            {printOptions.materials.map((mat) => (
-                              <option key={mat.id} value={mat.name} />
-                            ))}
-                          </datalist>
-                        </label>
-                        <label className="min-w-0 text-sm font-bold">
-                          Dimensions
-                          <input
-                            value={product.dimensions ?? ""}
-                            onChange={(e) => updateProduct("dimensions", e.target.value)}
-                            placeholder="e.g. 12 × 8 × 10 cm"
-                            className={`mt-2 w-full ${inputClass}`}
-                          />
-                        </label>
-                        <label className="min-w-0 text-sm font-bold">
-                          Weight (grams)
-                          <input
-                            type="number"
-                            min={0}
-                            value={product.weightGrams ?? 0}
-                            onChange={(e) => updateProduct("weightGrams", Number(e.target.value))}
-                            className={`mt-2 w-full ${inputClass}`}
-                          />
-                        </label>
-                        <label className="min-w-0 text-sm font-bold sm:col-span-2">
-                          Customisation options, one per line
-                          <textarea
-                            value={(product.customization ?? []).join("\n")}
-                            onChange={(e) =>
-                              updateProduct("customization", e.target.value.split("\n"))
-                            }
-                            rows={3}
-                            placeholder="Material choice\nSize scaling\nName engraving"
-                            className={`mt-2 w-full ${inputClass}`}
-                          />
-                        </label>
-                        <label className="flex items-center gap-2 text-sm font-bold sm:col-span-2">
-                          <input
-                            type="checkbox"
-                            checked={product.featuredPrint === true}
-                            onChange={(e) => updateProduct("featuredPrint", e.target.checked)}
-                            className="h-4 w-4"
-                          />{" "}
-                          Feature this model on /3d-printing
-                        </label>
-                      </div>
-                    </fieldset>
+                      aria-label="View the imported image full size"
+                      className="shrink-0 rounded border border-line transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy hover:border-navy"
+                    >
+                      <Image
+                        src={extracted.images[0]}
+                        alt=""
+                        width={56}
+                        height={56}
+                        unoptimized
+                        className="h-14 w-14 rounded object-cover"
+                      />
+                    </button>
+                  ) : (
+                    <div className="h-14 w-14 shrink-0 rounded border border-dashed border-line" />
                   )}
-                  <div className="min-w-0 sm:col-span-2">
-                    <p className="text-sm font-bold">Product image</p>
-                    <div className="mt-2 flex min-w-0 flex-wrap items-center gap-3">
-                      {product.image && (
-                        <div className="relative h-16 w-16 shrink-0">
-                          {/* 2026-11-14: the cover is a preview target too — click
+                  <p className="min-w-0 text-sm leading-snug text-ink">
+                    <strong className="block">
+                      {extracted.fields > 0
+                        ? `${extracted.fields} spec line${extracted.fields === 1 ? "" : "s"}`
+                        : "Details"}{" "}
+                      extracted from {extracted.provider}.
+                    </strong>
+                    <span className="text-muted">
+                      {extracted.images.length} image{extracted.images.length === 1 ? "" : "s"}{" "}
+                      found
+                      {extracted.images.length === 0
+                        ? " — you can paste or upload one below"
+                        : "; review the fields in the editor below, then click Save product"}
+                      .
+                    </span>
+                  </p>
+                </div>
+              )}
+              {demand.length > 0 && (
+                <div className="mt-3 rounded-lg border border-line bg-navy/[0.03] p-3">
+                  <p className="text-xs leading-snug text-muted">
+                    <strong className="text-ink">Not readable yet:</strong> staff have pasted{" "}
+                    {demand
+                      .slice(0, 3)
+                      .map((d) => d.host)
+                      .join(", ")}
+                    {demand.length > 3 ? ` and ${demand.length - 3} more source(s)` : ""}. Tell us
+                    and we will add it — the product still saves, you just fill the fields by hand.
+                  </p>
+                </div>
+              )}
+            </form>
+            {editorOpen ? (
+              <AdminEditorSheet
+                title={
+                  products.some((item) => item.id === product.id)
+                    ? `Edit ${product.id}`
+                    : "Add a new product"
+                }
+                hint="Saves to the shared products table used by the storefront and the app."
+                onClose={() => setEditorOpen(false)}
+              >
+                <form onSubmit={saveProduct} className={editorCard}>
+                  <h2 className={editorCardTitle}>
+                    {products.some((item) => item.id === product.id)
+                      ? `Edit ${product.id}`
+                      : "Add a new product"}
+                  </h2>
+                  <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                    {fields
+                      .filter((key) => key !== "category")
+                      .map((key) => (
+                        <label key={key} className="min-w-0 text-sm font-bold capitalize">
+                          {key}
+                          <input
+                            value={String(product[key] ?? "")}
+                            onChange={(e) =>
+                              updateProduct(
+                                key,
+                                ["price", "stock"].includes(key)
+                                  ? Number(e.target.value)
+                                  : e.target.value
+                              )
+                            }
+                            className={`mt-2 w-full ${inputClass}`}
+                          />
+                          {key === "stock" && (
+                            <span className="mt-1 block text-xs font-normal text-muted">
+                              Retail items: set 0 to mark out of stock/unavailable for direct
+                              purchase. Project packages use quote flow regardless of stock.
+                            </span>
+                          )}
+                        </label>
+                      ))}
+                    <label className="min-w-0 text-sm font-bold capitalize">
+                      category
+                      <input
+                        list="product-category-suggestions"
+                        value={product.category}
+                        onChange={(e) => updateProduct("category", e.target.value)}
+                        placeholder="Type a category, e.g. 3D Models"
+                        aria-label="Category (type or pick)"
+                        className={`mt-2 w-full ${inputClass}`}
+                      />
+                      <datalist id="product-category-suggestions">
+                        {categories.map((cat) => (
+                          <option key={cat} value={cat} />
+                        ))}
+                      </datalist>
+                    </label>
+                    <label className="min-w-0 text-sm font-bold capitalize">
+                      product type
+                      <select
+                        value={product.productType}
+                        onChange={(e) => updateProduct("productType", e.target.value)}
+                        className={`mt-2 w-full ${inputClass}`}
+                      >
+                        {["Retail kit", "Project package", "Material", "Service package"].map(
+                          (t) => (
+                            <option key={t} value={t}>
+                              {t}
+                            </option>
+                          )
+                        )}
+                      </select>
+                    </label>
+                    <label className="min-w-0 text-sm font-bold sm:col-span-2">
+                      Specs, one per line
+                      <textarea
+                        value={
+                          Array.isArray(product.specs)
+                            ? product.specs.join("\n")
+                            : String(product.specs)
+                        }
+                        onChange={(e) => updateProduct("specs", e.target.value.split("\n"))}
+                        rows={4}
+                        className={`mt-2 w-full ${inputClass}`}
+                      />
+                    </label>
+                    {isModels && (
+                      <fieldset className="min-w-0 rounded-xl border border-line p-4 sm:col-span-2">
+                        <legend className="px-1 text-sm font-bold">Print details</legend>
+                        <p className="text-xs font-normal text-muted">
+                          Shown on the /3d-printing cards, the featured row and the product page.
+                          Weight drives the calculator estimate.
+                        </p>
+                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                          <label className="min-w-0 text-sm font-bold">
+                            Print category
+                            <select
+                              value={product.printCategory ?? ""}
+                              onChange={(e) => updateProduct("printCategory", e.target.value)}
+                              className={`mt-2 w-full ${inputClass}`}
+                            >
+                              <option value="">Uncategorised</option>
+                              {printOptions.categories.map((cat) => (
+                                <option key={cat.id} value={cat.id}>
+                                  {cat.name}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="min-w-0 text-sm font-bold">
+                            Material
+                            <input
+                              list="print-material-suggestions"
+                              value={product.material ?? ""}
+                              onChange={(e) => updateProduct("material", e.target.value)}
+                              placeholder="PLA, PETG, or both"
+                              className={`mt-2 w-full ${inputClass}`}
+                            />
+                            <datalist id="print-material-suggestions">
+                              {printOptions.materials.map((mat) => (
+                                <option key={mat.id} value={mat.name} />
+                              ))}
+                            </datalist>
+                          </label>
+                          <label className="min-w-0 text-sm font-bold">
+                            Dimensions
+                            <input
+                              value={product.dimensions ?? ""}
+                              onChange={(e) => updateProduct("dimensions", e.target.value)}
+                              placeholder="e.g. 12 × 8 × 10 cm"
+                              className={`mt-2 w-full ${inputClass}`}
+                            />
+                          </label>
+                          <label className="min-w-0 text-sm font-bold">
+                            Weight (grams)
+                            <input
+                              type="number"
+                              min={0}
+                              value={product.weightGrams ?? 0}
+                              onChange={(e) => updateProduct("weightGrams", Number(e.target.value))}
+                              className={`mt-2 w-full ${inputClass}`}
+                            />
+                          </label>
+                          <label className="min-w-0 text-sm font-bold sm:col-span-2">
+                            Customisation options, one per line
+                            <textarea
+                              value={(product.customization ?? []).join("\n")}
+                              onChange={(e) =>
+                                updateProduct("customization", e.target.value.split("\n"))
+                              }
+                              rows={3}
+                              placeholder="Material choice\nSize scaling\nName engraving"
+                              className={`mt-2 w-full ${inputClass}`}
+                            />
+                          </label>
+                          <label className="flex items-center gap-2 text-sm font-bold sm:col-span-2">
+                            <input
+                              type="checkbox"
+                              checked={product.featuredPrint === true}
+                              onChange={(e) => updateProduct("featuredPrint", e.target.checked)}
+                              className="h-4 w-4"
+                            />{" "}
+                            Feature this model on /3d-printing
+                          </label>
+                        </div>
+                      </fieldset>
+                    )}
+                    <div className="min-w-0 sm:col-span-2">
+                      <p className="text-sm font-bold">Product image</p>
+                      <div className="mt-2 flex min-w-0 flex-wrap items-center gap-3">
+                        {product.image && (
+                          <div className="relative h-16 w-16 shrink-0">
+                            {/* 2026-11-14: the cover is a preview target too — click
                           it to see the imported photo at full size before
                           deciding to keep it. */}
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setLightbox({
-                                src: product.image ?? "",
-                                alt: product.name ? `${product.name} cover` : "Product cover",
-                              })
-                            }
-                            aria-label={`View ${product.name || "product"} cover full size`}
-                            className="block h-16 w-16 rounded transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
-                          >
-                            <Image
-                              src={product.image}
-                              alt={product.name || "Product preview"}
-                              width={64}
-                              height={64}
-                              unoptimized
-                              className="h-16 w-16 rounded object-cover"
-                            />
-                          </button>
-                          {/* U-39b: remove the cover (clears the URL field below).
-                          2026-11-14: was a 20px hot spot — below the WCAG 2.5.8
-                          minimum and hard to hit, so staff kept leaving
-                          unwanted photos in place. 28px + focus ring now. */}
-                          <button
-                            type="button"
-                            onClick={() => updateProduct("image", "")}
-                            aria-label="Remove product image"
-                            className={adminIconButton}
-                          >
-                            ×
-                          </button>
-                        </div>
-                      )}
-                      <input
-                        value={product.image || ""}
-                        onChange={(e) => updateProduct("image", e.target.value)}
-                        placeholder="https://... or upload below"
-                        aria-label="Product image URL"
-                        className={`min-w-0 flex-1 ${inputClass}`}
-                      />
-                      <input
-                        ref={fileInput}
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) void uploadImage(file);
-                          e.currentTarget.value = "";
-                        }}
-                        className="hidden"
-                      />
-                      <button
-                        type="button"
-                        disabled={uploading}
-                        onClick={() => fileInput.current?.click()}
-                        className={`${adminBtnPrimary} shrink-0`}
-                      >
-                        {uploading ? "Uploading..." : "Upload"}
-                      </button>
-                    </div>
-                  </div>
-                  <div className="min-w-0 sm:col-span-2">
-                    <p className="text-sm font-bold">
-                      Gallery — one image URL per line{" "}
-                      <span className="font-normal text-muted">
-                        (first is the cover if no image set; storage URLs are kept as-is on save)
-                      </span>
-                    </p>
-                    <textarea
-                      value={Array.isArray(product.gallery) ? product.gallery.join("\n") : ""}
-                      onChange={(e) =>
-                        updateProduct("gallery", clampGallery(e.target.value.split("\n")))
-                      }
-                      rows={4}
-                      placeholder={"https://...\nhttps://..."}
-                      aria-label="Product gallery image URLs"
-                      className={`mt-2 w-full break-all font-mono text-xs ${inputClass}`}
-                    />
-                    {Array.isArray(product.gallery) && product.gallery.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {product.gallery.map((src, i) => (
-                          // U-39b fix (2026-09-26): no overflow-hidden on this box —
-                          // it clipped the -top/-right × button out of view, so
-                          // staff saw no way to remove an extraction photo.
-                          <div
-                            key={`${src}-${i}`}
-                            className="relative h-14 w-14 rounded border border-line bg-mist"
-                          >
-                            <button
-                              type="button"
-                              onClick={() => setLightbox({ src, alt: `Gallery image ${i + 1}` })}
-                              aria-label={`View gallery image ${i + 1} full size`}
-                              className="block h-full w-full rounded transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
-                            >
-                              <Image
-                                src={src}
-                                alt={`Gallery ${i + 1}`}
-                                width={56}
-                                height={56}
-                                unoptimized
-                                className="h-full w-full rounded object-cover"
-                              />
-                            </button>
-                            {/* U-39b (2026-09-26): per-image remove button so staff
-                            can drop unwanted extraction photos before saving.
-                            2026-11-14: 28px target + focus ring (see P-17). */}
                             <button
                               type="button"
                               onClick={() =>
-                                updateProduct(
-                                  "gallery",
-                                  (product.gallery as string[]).filter((_, j) => j !== i)
-                                )
+                                setLightbox({
+                                  src: product.image ?? "",
+                                  alt: product.name ? `${product.name} cover` : "Product cover",
+                                })
                               }
-                              aria-label={`Remove gallery image ${i + 1}`}
+                              aria-label={`View ${product.name || "product"} cover full size`}
+                              className="block h-16 w-16 rounded transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
+                            >
+                              <Image
+                                src={product.image}
+                                alt={product.name || "Product preview"}
+                                width={64}
+                                height={64}
+                                unoptimized
+                                className="h-16 w-16 rounded object-cover"
+                              />
+                            </button>
+                            {/* U-39b: remove the cover (clears the URL field below).
+                          2026-11-14: was a 20px hot spot — below the WCAG 2.5.8
+                          minimum and hard to hit, so staff kept leaving
+                          unwanted photos in place. 28px + focus ring now. */}
+                            <button
+                              type="button"
+                              onClick={() => updateProduct("image", "")}
+                              aria-label="Remove product image"
                               className={adminIconButton}
                             >
                               ×
                             </button>
                           </div>
-                        ))}
+                        )}
+                        <input
+                          value={product.image || ""}
+                          onChange={(e) => updateProduct("image", e.target.value)}
+                          placeholder="https://... or upload below"
+                          aria-label="Product image URL"
+                          className={`min-w-0 flex-1 ${inputClass}`}
+                        />
+                        <input
+                          ref={fileInput}
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) void uploadImage(file);
+                            e.currentTarget.value = "";
+                          }}
+                          className="hidden"
+                        />
+                        <button
+                          type="button"
+                          disabled={uploading}
+                          onClick={() => fileInput.current?.click()}
+                          className={`${adminBtnPrimary} shrink-0`}
+                        >
+                          {uploading ? "Uploading..." : "Upload"}
+                        </button>
                       </div>
-                    )}
+                    </div>
+                    <div className="min-w-0 sm:col-span-2">
+                      <p className="text-sm font-bold">
+                        Gallery — one image URL per line{" "}
+                        <span className="font-normal text-muted">
+                          (first is the cover if no image set; storage URLs are kept as-is on save)
+                        </span>
+                      </p>
+                      <textarea
+                        value={Array.isArray(product.gallery) ? product.gallery.join("\n") : ""}
+                        onChange={(e) =>
+                          updateProduct("gallery", clampGallery(e.target.value.split("\n")))
+                        }
+                        rows={4}
+                        placeholder={"https://...\nhttps://..."}
+                        aria-label="Product gallery image URLs"
+                        className={`mt-2 w-full break-all font-mono text-xs ${inputClass}`}
+                      />
+                      {Array.isArray(product.gallery) && product.gallery.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {product.gallery.map((src, i) => (
+                            // U-39b fix (2026-09-26): no overflow-hidden on this box —
+                            // it clipped the -top/-right × button out of view, so
+                            // staff saw no way to remove an extraction photo.
+                            <div
+                              key={`${src}-${i}`}
+                              className="relative h-14 w-14 rounded border border-line bg-mist"
+                            >
+                              <button
+                                type="button"
+                                onClick={() => setLightbox({ src, alt: `Gallery image ${i + 1}` })}
+                                aria-label={`View gallery image ${i + 1} full size`}
+                                className="block h-full w-full rounded transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
+                              >
+                                <Image
+                                  src={src}
+                                  alt={`Gallery ${i + 1}`}
+                                  width={56}
+                                  height={56}
+                                  unoptimized
+                                  className="h-full w-full rounded object-cover"
+                                />
+                              </button>
+                              {/* U-39b (2026-09-26): per-image remove button so staff
+                            can drop unwanted extraction photos before saving.
+                            2026-11-14: 28px target + focus ring (see P-17). */}
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  updateProduct(
+                                    "gallery",
+                                    (product.gallery as string[]).filter((_, j) => j !== i)
+                                  )
+                                }
+                                aria-label={`Remove gallery image ${i + 1}`}
+                                className={adminIconButton}
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <SaveBar>
-                  <button type="submit" disabled={busy || uploading} className={adminBtnGold}>
-                    {busy ? "Saving..." : "Save product"}
-                  </button>
-                  {product.id && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        // U-39b fix (2026-09-26): "New product" resets the whole
-                        // editor — including the sticky import link + banner.
-                        setProduct({ ...emptyProduct, category: defaultCategory });
-                        setLinkUrl("");
-                        setExtracted(null);
-                      }}
-                      className={adminBtnOutline}
-                    >
-                      New product
+                  <SaveBar>
+                    <button type="submit" disabled={busy || uploading} className={adminBtnGold}>
+                      {busy ? "Saving..." : "Save product"}
                     </button>
-                  )}
-                </SaveBar>
-              </form>
-            </AdminEditorSheet>
-          ) : null}
-        </section>
+                    {product.id && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          // U-39b fix (2026-09-26): "New product" resets the whole
+                          // editor — including the sticky import link + banner.
+                          setProduct({ ...emptyProduct, category: defaultCategory });
+                          setLinkUrl("");
+                          setExtracted(null);
+                        }}
+                        className={adminBtnOutline}
+                      >
+                        New product
+                      </button>
+                    )}
+                  </SaveBar>
+                </form>
+              </AdminEditorSheet>
+            ) : null}
+          </section>
+        ) : null}
       </div>
       {previewProduct &&
         createPortal(

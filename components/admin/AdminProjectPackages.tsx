@@ -17,6 +17,14 @@ import type { Product } from "./admin-types";
 import { emptyProduct, PAGE_SIZE } from "./admin-types";
 import { AdminImageField, Pager, editorCard, editorCardTitle, panelCard } from "./admin-helpers";
 import { AdminEditorSheet } from "./AdminEditorSheet";
+// 2026-11-18: the three new project blocks (code details, 3D material details,
+// coding procedure) live in products.import_meta.projectDetails — see
+// lib/project-details.ts for the shape and why no migration was needed.
+import {
+  readProjectDetails,
+  writeProjectDetails,
+  type ProjectDetails,
+} from "../../lib/project-details";
 
 type Props = {
   products: Product[];
@@ -24,6 +32,15 @@ type Props = {
   setMessage: (msg: string) => void;
   canDelete: boolean;
 };
+
+const PROJECT_EDITOR_SUBTABS = [
+  "Category",
+  "Pricing",
+  "Code details",
+  "3D material details",
+  "Coding procedure",
+] as const;
+type ProjectEditorSubTab = (typeof PROJECT_EDITOR_SUBTABS)[number];
 
 function ProjectEditor({
   product,
@@ -40,18 +57,33 @@ function ProjectEditor({
   busy: boolean;
   categories: string[];
 }) {
+  // 2026-11-18 (owner): the project sheet was one long form of ~20 fields.
+  // It is now the hierarchy the owner asked for — Category, Pricing, Code
+  // details, 3D material details, Coding procedure — one panel at a time.
+  // Saving still writes the whole product, so every tab's edits persist.
+  const [subTab, setSubTab] = useState<ProjectEditorSubTab>("Category");
+
   function setField<K extends keyof Product>(key: K, value: Product[K]) {
     onChange({ ...product, [key]: value });
   }
 
-  const textFields: { key: keyof Product; label: string }[] = [
+  // Code details / 3D material details / coding procedure live in
+  // products.import_meta.projectDetails — see lib/project-details.ts.
+  const details = readProjectDetails(product.importMeta);
+  function setDetails(next: ProjectDetails) {
+    onChange({ ...product, importMeta: writeProjectDetails(product.importMeta, next) });
+  }
+
+  const identityFields: { key: keyof Product; label: string }[] = [
     { key: "id", label: "Project ID" },
     { key: "name", label: "Project name" },
-    { key: "sku", label: "SKU / package code" },
-    { key: "priceLabel", label: "Price label" },
     { key: "note", label: "Short summary" },
     { key: "audience", label: "Ideal audience" },
     { key: "difficulty", label: "Difficulty" },
+  ];
+  const pricingFields: { key: keyof Product; label: string }[] = [
+    { key: "sku", label: "SKU / package code" },
+    { key: "priceLabel", label: "Price label" },
     { key: "warranty", label: "Warranty / support" },
     { key: "delivery", label: "Delivery / lead time" },
   ];
@@ -64,188 +96,452 @@ function ProjectEditor({
         </h2>
         <p className="mt-1 text-sm text-muted">
           These fields are stored in the shared products table and appear on the public project page
-          and native app.
+          and native app. One section at a time — saving keeps every section you have filled in.
         </p>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          {textFields.map(({ key, label }) => (
-            <label key={key} className="min-w-0 text-sm font-bold">
-              {label}
-              <input
-                value={String(product[key] ?? "")}
-                onChange={(event) => setField(key, event.target.value as Product[typeof key])}
-                className={`mt-2 w-full ${inputClass}`}
-              />
-            </label>
+        <div
+          role="tablist"
+          aria-label="Project package sections"
+          className="mt-4 flex flex-wrap gap-2"
+        >
+          {PROJECT_EDITOR_SUBTABS.map((name) => (
+            <button
+              key={name}
+              type="button"
+              role="tab"
+              aria-selected={subTab === name}
+              onClick={() => setSubTab(name)}
+              className={
+                subTab === name
+                  ? "rounded-full bg-navy px-3 py-1.5 text-xs font-black text-white"
+                  : "rounded-full border border-line px-3 py-1.5 text-xs font-bold text-ink transition hover:border-navy"
+              }
+            >
+              {name}
+            </button>
           ))}
-          <label className="min-w-0 text-sm font-bold">
-            Category
-            <select
-              value={product.category || ""}
-              onChange={(event) => setField("category", event.target.value)}
-              className={`mt-2 w-full ${inputClass}`}
-            >
-              {categories.map((category) => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-sm font-bold">
-            Project category
-            <select
-              value={product.project_category || ""}
-              onChange={(event) => setField("project_category", event.target.value)}
-              className={`mt-2 w-full ${inputClass}`}
-              aria-label="Project category (groups projects on the public page)"
-            >
-              <option value="">— not set —</option>
-              {PROJECT_CATEGORIES.filter((c) => c.slug !== "remote-controller")
-                .slice()
-                .map((cat) => (
-                  <option key={cat.slug} value={cat.name}>
-                    {cat.name}
+        </div>
+
+        {subTab === "Category" ? (
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            {identityFields.map(({ key, label }) => (
+              <label key={key} className="min-w-0 text-sm font-bold">
+                {label}
+                <input
+                  value={String(product[key] ?? "")}
+                  onChange={(event) => setField(key, event.target.value as Product[typeof key])}
+                  className={`mt-2 w-full ${inputClass}`}
+                />
+              </label>
+            ))}
+            <label className="min-w-0 text-sm font-bold">
+              Category
+              <select
+                value={product.category || ""}
+                onChange={(event) => setField("category", event.target.value)}
+                className={`mt-2 w-full ${inputClass}`}
+              >
+                {categories.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
                   </option>
                 ))}
-            </select>
-            <span className="mt-1 block text-xs font-normal text-muted">
-              Groups this project on the public /projects page: Robo Car, Smart Home, Smart Farm,
-              Smart City, Smart Dustbin, or Aerial Drones. Rolls up into the wheeled, smart, and
-              drone buckets the owner asked for.
-            </span>
-          </label>
-          <label className="text-sm font-bold">
-            Price (NPR)
-            <input
-              type="number"
-              min="0"
-              value={product.price}
-              onChange={(event) => setField("price", Number(event.target.value))}
-              className={`mt-2 w-full ${inputClass}`}
-            />
-          </label>
-          <label className="text-sm font-bold">
-            Stock / available units
-            <input
-              type="number"
-              min="0"
-              value={product.stock}
-              onChange={(event) => setField("stock", Number(event.target.value))}
-              className={`mt-2 w-full ${inputClass}`}
-            />
-            <span className="mt-1 block text-xs font-normal text-muted">
-              Retail items: 0 shows as out of stock/unavailable for direct purchase. Project
-              packages use quote flow regardless of stock.
-            </span>
-          </label>
-          <label className="sm:col-span-2 text-sm font-bold">
-            Full project description
-            <textarea
-              value={product.description}
-              onChange={(event) => setField("description", event.target.value)}
-              rows={6}
-              className={`mt-2 w-full ${inputClass}`}
-            />
-          </label>
-          <label className="sm:col-span-2 text-sm font-bold">
-            Project overview
-            <textarea
-              value={product.projectOverview || ""}
-              onChange={(event) => setField("projectOverview", event.target.value)}
-              rows={4}
-              className={`mt-2 w-full ${inputClass}`}
-            />
-          </label>
-          {(
-            [
-              ["objectives", "Objectives"],
-              ["materialsRequired", "Materials required"],
-              ["learningOutcomes", "Learning outcomes"],
-              ["buildSteps", "Build steps"],
-              ["controlMethods", "Control methods"],
-              ["prerequisites", "Prerequisites"],
-              ["deliverables", "Deliverables"],
-            ] as const
-          ).map(([key, label]) => (
-            <label key={key} className="text-sm font-bold">
-              {label} (one per line)
+              </select>
+            </label>
+            <label className="text-sm font-bold">
+              Project category
+              <select
+                value={product.project_category || ""}
+                onChange={(event) => setField("project_category", event.target.value)}
+                className={`mt-2 w-full ${inputClass}`}
+                aria-label="Project category (groups projects on the public page)"
+              >
+                <option value="">— not set —</option>
+                {PROJECT_CATEGORIES.filter((c) => c.slug !== "remote-controller")
+                  .slice()
+                  .map((cat) => (
+                    <option key={cat.slug} value={cat.name}>
+                      {cat.name}
+                    </option>
+                  ))}
+              </select>
+              <span className="mt-1 block text-xs font-normal text-muted">
+                Groups this project on the public /projects page: Robo Car, Smart Home, Smart Farm,
+                Smart City, Smart Dustbin, or Aerial Drones. Rolls up into the wheeled, smart, and
+                drone buckets the owner asked for.
+              </span>
+            </label>
+            <label className="sm:col-span-2 text-sm font-bold">
+              Full project description
               <textarea
-                value={(product[key] || []).join("\n")}
-                onChange={(event) => setField(key, event.target.value.split("\n").filter(Boolean))}
+                value={product.description}
+                onChange={(event) => setField("description", event.target.value)}
                 rows={4}
                 className={`mt-2 w-full ${inputClass}`}
               />
             </label>
-          ))}
-          <label className="text-sm font-bold">
-            Estimated duration
-            <input
-              value={product.estimatedDuration || ""}
-              onChange={(event) => setField("estimatedDuration", event.target.value)}
-              placeholder="e.g. 2 weeks"
-              className={`mt-2 w-full ${inputClass}`}
+            <label className="sm:col-span-2 text-sm font-bold">
+              Project overview
+              <textarea
+                value={product.projectOverview || ""}
+                onChange={(event) => setField("projectOverview", event.target.value)}
+                rows={4}
+                className={`mt-2 w-full ${inputClass}`}
+              />
+            </label>
+            {(
+              [
+                ["objectives", "Objectives"],
+                ["learningOutcomes", "Learning outcomes"],
+                ["prerequisites", "Prerequisites"],
+                ["deliverables", "Deliverables"],
+              ] as const
+            ).map(([key, label]) => (
+              <label key={key} className="text-sm font-bold">
+                {label} (one per line)
+                <textarea
+                  value={(product[key] || []).join("\n")}
+                  onChange={(event) =>
+                    setField(key, event.target.value.split("\n").filter(Boolean))
+                  }
+                  rows={3}
+                  className={`mt-2 w-full ${inputClass}`}
+                />
+              </label>
+            ))}
+            {/* 2026-11-14: was a bare URL input — no thumbnail, no way to check
+                or clear the imported picture. Shared AdminImageField now. */}
+            <AdminImageField
+              label="Image"
+              value={product.image || ""}
+              onChange={(image) => setField("image", image)}
             />
-          </label>
-          <label className="text-sm font-bold">
-            Source folder / reference
-            <input
-              value={product.sourceFolder || ""}
-              onChange={(event) => setField("sourceFolder", event.target.value)}
-              className={`mt-2 w-full ${inputClass}`}
-            />
-          </label>
-          <label className="text-sm font-bold">
-            Documentation URL
-            <input
-              value={product.documentationUrl || ""}
-              onChange={(event) => setField("documentationUrl", event.target.value)}
-              className={`mt-2 w-full ${inputClass}`}
-            />
-          </label>
-          <label className="text-sm font-bold">
-            Video URL
-            <input
-              value={product.videoUrl || ""}
-              onChange={(event) => setField("videoUrl", event.target.value)}
-              className={`mt-2 w-full ${inputClass}`}
-            />
-          </label>
-          <label className="sm:col-span-2 text-sm font-bold">
-            Maintenance and safety notes
-            <textarea
-              value={product.maintenanceNotes || ""}
-              onChange={(event) => setField("maintenanceNotes", event.target.value)}
-              rows={4}
-              className={`mt-2 w-full ${inputClass}`}
-            />
-          </label>
-          <label className="sm:col-span-2 text-sm font-bold">
-            Components, technologies, and deliverables (one per line)
-            <textarea
-              value={product.specs.join("\n")}
-              onChange={(event) =>
-                setField("specs", event.target.value.split("\n").filter(Boolean))
-              }
-              rows={6}
-              className={`mt-2 w-full ${inputClass}`}
-            />
-          </label>
-          {/* 2026-11-14: was a bare URL input — no thumbnail, no way to check
-              or clear the imported picture. Shared AdminImageField now. */}
-          <AdminImageField
-            label="Image"
-            value={product.image || ""}
-            onChange={(image) => setField("image", image)}
-          />
-          <label className="flex items-center gap-2 text-sm font-bold sm:col-span-2">
-            <input
-              type="checkbox"
-              checked={product.active !== false}
-              onChange={(event) => setField("active", event.target.checked)}
-            />{" "}
-            Visible to customers
-          </label>
-        </div>
+            <label className="flex items-center gap-2 text-sm font-bold sm:col-span-2">
+              <input
+                type="checkbox"
+                checked={product.active !== false}
+                onChange={(event) => setField("active", event.target.checked)}
+              />{" "}
+              Visible to customers
+            </label>
+          </div>
+        ) : null}
+
+        {subTab === "Pricing" ? (
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <label className="text-sm font-bold">
+              Price (NPR)
+              <input
+                type="number"
+                min="0"
+                value={product.price}
+                onChange={(event) => setField("price", Number(event.target.value))}
+                className={`mt-2 w-full ${inputClass}`}
+              />
+            </label>
+            <label className="text-sm font-bold">
+              Stock / available units
+              <input
+                type="number"
+                min="0"
+                value={product.stock}
+                onChange={(event) => setField("stock", Number(event.target.value))}
+                className={`mt-2 w-full ${inputClass}`}
+              />
+              <span className="mt-1 block text-xs font-normal text-muted">
+                Retail items: 0 shows as out of stock/unavailable for direct purchase. Project
+                packages use quote flow regardless of stock.
+              </span>
+            </label>
+            {pricingFields.map(({ key, label }) => (
+              <label key={key} className="min-w-0 text-sm font-bold">
+                {label}
+                <input
+                  value={String(product[key] ?? "")}
+                  onChange={(event) => setField(key, event.target.value as Product[typeof key])}
+                  className={`mt-2 w-full ${inputClass}`}
+                />
+              </label>
+            ))}
+            <label className="sm:col-span-2 text-sm font-bold">
+              Maintenance and safety notes
+              <textarea
+                value={product.maintenanceNotes || ""}
+                onChange={(event) => setField("maintenanceNotes", event.target.value)}
+                rows={3}
+                className={`mt-2 w-full ${inputClass}`}
+              />
+            </label>
+            <p className="sm:col-span-2 rounded-lg border border-line bg-navy/[0.03] p-3 text-xs leading-5 text-muted">
+              Component links and the package quote (base charge, markup, extras, bulk tiers) are
+              edited in the <strong className="text-ink">Linked components</strong> and{" "}
+              <strong className="text-ink">Pricing</strong> panels under the project list. They key
+              off a saved project id, so save this package first.
+            </p>
+          </div>
+        ) : null}
+
+        {subTab === "Code details" ? (
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <label className="min-w-0 text-sm font-bold">
+              Language / toolchain
+              <input
+                value={details.code.language}
+                onChange={(event) =>
+                  setDetails({
+                    ...details,
+                    code: { ...details.code, language: event.target.value },
+                  })
+                }
+                placeholder="Arduino C++ (ESP32 core)"
+                className={`mt-2 w-full ${inputClass}`}
+              />
+            </label>
+            <label className="min-w-0 text-sm font-bold">
+              Repository / firmware link
+              <input
+                value={details.code.repositoryUrl}
+                onChange={(event) =>
+                  setDetails({
+                    ...details,
+                    code: { ...details.code, repositoryUrl: event.target.value },
+                  })
+                }
+                placeholder="https://github.com/genumsolutions/..."
+                className={`mt-2 w-full ${inputClass}`}
+              />
+            </label>
+            <label className="sm:col-span-2 text-sm font-bold">
+              Libraries / dependencies (one per line)
+              <textarea
+                value={details.code.libraries}
+                onChange={(event) =>
+                  setDetails({
+                    ...details,
+                    code: { ...details.code, libraries: event.target.value },
+                  })
+                }
+                rows={3}
+                placeholder={"ESP32Servo\nWiFi.h"}
+                className={`mt-2 w-full ${inputClass}`}
+              />
+            </label>
+            <label className="text-sm font-bold">
+              Source folder / reference
+              <input
+                value={product.sourceFolder || ""}
+                onChange={(event) => setField("sourceFolder", event.target.value)}
+                className={`mt-2 w-full ${inputClass}`}
+              />
+            </label>
+            <label className="text-sm font-bold">
+              Documentation URL
+              <input
+                value={product.documentationUrl || ""}
+                onChange={(event) => setField("documentationUrl", event.target.value)}
+                className={`mt-2 w-full ${inputClass}`}
+              />
+            </label>
+            <label className="text-sm font-bold">
+              Video URL
+              <input
+                value={product.videoUrl || ""}
+                onChange={(event) => setField("videoUrl", event.target.value)}
+                className={`mt-2 w-full ${inputClass}`}
+              />
+            </label>
+            <label className="sm:col-span-2 text-sm font-bold">
+              Control methods (one per line)
+              <textarea
+                value={(product.controlMethods || []).join("\n")}
+                onChange={(event) =>
+                  setField("controlMethods", event.target.value.split("\n").filter(Boolean))
+                }
+                rows={3}
+                className={`mt-2 w-full ${inputClass}`}
+              />
+            </label>
+            <label className="sm:col-span-2 text-sm font-bold">
+              Components, technologies, and deliverables (one per line)
+              <textarea
+                value={product.specs.join("\n")}
+                onChange={(event) =>
+                  setField("specs", event.target.value.split("\n").filter(Boolean))
+                }
+                rows={5}
+                className={`mt-2 w-full ${inputClass}`}
+              />
+            </label>
+            <label className="sm:col-span-2 text-sm font-bold">
+              Code notes (pin map, flashing caveats…)
+              <textarea
+                value={details.code.notes}
+                onChange={(event) =>
+                  setDetails({ ...details, code: { ...details.code, notes: event.target.value } })
+                }
+                rows={3}
+                className={`mt-2 w-full ${inputClass}`}
+              />
+            </label>
+          </div>
+        ) : null}
+
+        {subTab === "3D material details" ? (
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <label className="sm:col-span-2 text-sm font-bold">
+              Materials required (one per line)
+              <textarea
+                value={(product.materialsRequired || []).join("\n")}
+                onChange={(event) =>
+                  setField("materialsRequired", event.target.value.split("\n").filter(Boolean))
+                }
+                rows={4}
+                className={`mt-2 w-full ${inputClass}`}
+              />
+            </label>
+            <label className="min-w-0 text-sm font-bold">
+              Printer
+              <input
+                value={details.material.printer}
+                onChange={(event) =>
+                  setDetails({
+                    ...details,
+                    material: { ...details.material, printer: event.target.value },
+                  })
+                }
+                placeholder="Bambu Lab P1S"
+                className={`mt-2 w-full ${inputClass}`}
+              />
+            </label>
+            <label className="min-w-0 text-sm font-bold">
+              Filament
+              <input
+                value={details.material.filament}
+                onChange={(event) =>
+                  setDetails({
+                    ...details,
+                    material: { ...details.material, filament: event.target.value },
+                  })
+                }
+                placeholder="PLA 1.75 mm"
+                className={`mt-2 w-full ${inputClass}`}
+              />
+            </label>
+            <label className="min-w-0 text-sm font-bold">
+              Layer height
+              <input
+                value={details.material.layerHeight}
+                onChange={(event) =>
+                  setDetails({
+                    ...details,
+                    material: { ...details.material, layerHeight: event.target.value },
+                  })
+                }
+                placeholder="0.2 mm"
+                className={`mt-2 w-full ${inputClass}`}
+              />
+            </label>
+            <label className="min-w-0 text-sm font-bold">
+              Infill
+              <input
+                value={details.material.infill}
+                onChange={(event) =>
+                  setDetails({
+                    ...details,
+                    material: { ...details.material, infill: event.target.value },
+                  })
+                }
+                placeholder="20%"
+                className={`mt-2 w-full ${inputClass}`}
+              />
+            </label>
+            <label className="min-w-0 text-sm font-bold">
+              Print time
+              <input
+                value={details.material.printTime}
+                onChange={(event) =>
+                  setDetails({
+                    ...details,
+                    material: { ...details.material, printTime: event.target.value },
+                  })
+                }
+                placeholder="6 h 20 m"
+                className={`mt-2 w-full ${inputClass}`}
+              />
+            </label>
+            <label className="sm:col-span-2 text-sm font-bold">
+              Material notes (supports, colour, post-processing…)
+              <textarea
+                value={details.material.notes}
+                onChange={(event) =>
+                  setDetails({
+                    ...details,
+                    material: { ...details.material, notes: event.target.value },
+                  })
+                }
+                rows={3}
+                className={`mt-2 w-full ${inputClass}`}
+              />
+            </label>
+          </div>
+        ) : null}
+
+        {subTab === "Coding procedure" ? (
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <label className="sm:col-span-2 text-sm font-bold">
+              Build steps (one per line)
+              <textarea
+                value={(product.buildSteps || []).join("\n")}
+                onChange={(event) =>
+                  setField("buildSteps", event.target.value.split("\n").filter(Boolean))
+                }
+                rows={4}
+                className={`mt-2 w-full ${inputClass}`}
+              />
+            </label>
+            <label className="sm:col-span-2 text-sm font-bold">
+              Coding procedure (one step per line)
+              <textarea
+                value={details.procedure.steps.join("\n")}
+                onChange={(event) =>
+                  setDetails({
+                    ...details,
+                    procedure: {
+                      ...details.procedure,
+                      steps: event.target.value.split("\n").filter(Boolean),
+                    },
+                  })
+                }
+                rows={4}
+                placeholder={"Open the sketch in Arduino IDE…\nPick the ESP32 board…\nUpload…"}
+                className={`mt-2 w-full ${inputClass}`}
+              />
+            </label>
+            <label className="sm:col-span-2 text-sm font-bold">
+              Procedure notes
+              <textarea
+                value={details.procedure.notes}
+                onChange={(event) =>
+                  setDetails({
+                    ...details,
+                    procedure: { ...details.procedure, notes: event.target.value },
+                  })
+                }
+                rows={3}
+                className={`mt-2 w-full ${inputClass}`}
+              />
+            </label>
+            <label className="text-sm font-bold">
+              Estimated duration
+              <input
+                value={product.estimatedDuration || ""}
+                onChange={(event) => setField("estimatedDuration", event.target.value)}
+                placeholder="e.g. 2 weeks"
+                className={`mt-2 w-full ${inputClass}`}
+              />
+            </label>
+          </div>
+        ) : null}
+
         <div className="mt-5 flex flex-wrap gap-3">
           <button
             type="submit"
