@@ -78,6 +78,55 @@ jobs:
       - name: Build
         run: npm run build
 
+  # Browser parity — tests/parity-projects.spec.ts drives a real Chromium
+  # against the PRODUCTION build, not the dev server: the job builds here and
+  # `playwright.config.ts` starts `npm run start` in CI, so the suite checks
+  # what actually ships. The placeholder Supabase values are the same ones the
+  # `build` job uses, which makes the catalog read fall back to
+  # lib/catalog-data.ts — exactly what the spec needs (a project package and
+  # its detail page) without depending on the live database.
+  e2e-parity:
+    name: E2E parity (Playwright)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      NEXT_PUBLIC_SITE_URL: https://genumsolutions-website.vercel.app
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+      SUPABASE_SERVICE_ROLE_KEY: placeholder-service-role-key
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Build
+        run: npm run build
+
+      - name: Run the parity suite against the build
+        run: npm run test:e2e
+
+      # Traces and DOM snapshots only exist for failures (trace: on-first-retry).
+      - name: Upload Playwright artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7
+
   # Catalog parity — the app ships a GENERATED copy of THIS repo's fallback
   # catalog (lib/catalog-data.ts + lib/catalog-extras-data.ts). The app repo
   # regenerates and diffs that copy in its own CI, but that check only runs on
