@@ -12,9 +12,9 @@ Both the app and website provide admin functionality for managing company settin
 
 ## 1. Top-Level Tab/Section Structure
 
-### App (mobile) — 8 tabs
+### App (mobile) — 7 tabs
 
-The app uses a **8-tab horizontal bar** at the top of `AdminScreen.tsx`:
+The app uses a **7-tab horizontal bar** at the top of `AdminScreen.tsx`:
 
 | Tab          | Label                   | Section Component | Description                                                              |
 | ------------ | ----------------------- | ----------------- | ------------------------------------------------------------------------ |
@@ -23,11 +23,10 @@ The app uses a **8-tab horizontal bar** at the top of `AdminScreen.tsx`:
 | `electronic` | **Electronic Products** | `ElectronicsTab`  | `/products` catalog — pricing, stock, photos                             |
 | `threed`     | **3D Products**         | `ThreeDTab`       | `/3d-printing` catalog                                                   |
 | `projects`   | **Projects**            | `ProjectsTab`     | Bundles sold on `/projects` including pre-packaged kits                  |
-| `content`    | **Content**             | `ContentTab`      | Services, journal posts, home page copy                                  |
 | `users`      | **Users**               | `UsersTab`        | Accounts, roles, tiers, per-user directories/profile, robot/car profiles |
-| `settings`   | **Settings**            | `SettingsTab`     | Company info (17 fields) in three sections; read-only until Edit         |
+| `settings`   | **Settings**            | `SettingsTab`     | Company · Home page · Storefront services · Journal                      |
 
-The eight entries above are the whole bar — `TABS` in `AdminScreen.tsx` has exactly these. **Nothing is a ninth tab:** Users carries three sections (Users / Messages / Logs), Content carries three (Services / Journal / Content), Orders carries two (Orders / Finance), and 3D Products carries the print studio (Catalog, Categories, Pricing, Costs, Promotions, Services, Gallery, Requests, Reports). Messages lists customer messages plus newsletter opt-ins; Logs shows User activity / User profiles / Fleet diagnostics.
+The seven entries above are the whole bar — `ADMIN_TABS` in `src/config/adminTabs.ts` (mirrored by `TABS` in `AdminScreen.tsx`) has exactly these. **Nothing is a ninth tab:** Users carries three sections (Users / Messages / Logs), Settings carries four (Company / Home page / Storefront services / Journal), Orders carries two (Orders / Finance), Electronic Products carries three (Catalog / Categories / Import), and 3D Products carries the print studio (Catalog, Categories, Pricing, Costs, Promotions, Services, Gallery, Requests, Reports). Project packages are edited in five sections (Category / Pricing / Code details / 3D material details / Coding procedure). The former Content tab merged into Settings on 2026-11-18. Messages lists customer messages plus newsletter opt-ins; Logs shows User activity / User profiles / Fleet diagnostics.
 
 ### Website — Multi-panel layout
 

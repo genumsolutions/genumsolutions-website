@@ -32,7 +32,7 @@ export const tabBase =
 
 // ---------------------------------------------------------------
 // Admin section pills (2026-11-15)
-// The eight top tabs own uppercase + wide tracking. Section rows sit one
+// The seven top tabs own uppercase + wide tracking. Section rows sit one
 // level BELOW them: sentence case, xs body size, 32px height, muted until
 // selected. Every admin section strip (panel sections, Settings, 3D Products,
 // Logs) uses these, so tabs -> subtabs -> content reads in one hierarchy.

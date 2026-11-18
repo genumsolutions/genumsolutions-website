@@ -3,25 +3,24 @@
 ## 1. Admin Dashboard Overview
 
 The authenticated `/admin` page mounts the website's `AdminPanel`, which
-provides eight top-level tabs and nested sections within Orders, Content, and
-Users.
+provides seven top-level tabs and nested sections within Orders, Users and
+Settings.
 
 ### 1.1 Top-Level Navigation Structure
 
-The website and app expose the same eight top-level tabs, enforced by parity
-tests. All tabs are panels within `/admin`; Orders, Content, and Users have
-their own subtabs.
+The website and app expose the same seven top-level tabs, enforced by parity
+tests. All tabs are panels within `/admin`; Orders, Users and Settings have
+their own subtabs. The former Content tab merged into Settings on 2026-11-18.
 
-| Top-level tab       | Contents                                |
-| ------------------- | --------------------------------------- |
-| Dashboard           | KPIs and recent activity                |
-| Orders              | Orders, payments, and finance           |
-| Electronic Products | Product catalog                         |
-| 3D Products         | 3D printing catalog                     |
-| Projects            | Project packages and components         |
-| Content             | Services, journal, and home page copy   |
-| Users               | Directory, messages, profiles, and Logs |
-| Settings            | Company and store settings              |
+| Top-level tab       | Contents                                 |
+| ------------------- | ---------------------------------------- |
+| Dashboard           | KPIs and recent activity                 |
+| Orders              | Orders, payments, and finance            |
+| Electronic Products | Product catalog                          |
+| 3D Products         | 3D printing catalog                      |
+| Projects            | Packages, components, pricing, import    |
+| Users               | Directory, messages, profiles, and Logs  |
+| Settings            | Company · Home page · Services · Journal |
 
 ### 1.2 Users Subtab: Directory and Projects (2026-11)
 
