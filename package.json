@@ -13,6 +13,7 @@
     "format:check": "prettier --check .",
     "test": "vitest",
     "test:ci": "vitest run",
+    "test:e2e": "playwright test",
     "icons": "node scripts/generate-icons.mjs",
     "seed": "tsx scripts/seed-products.ts",
     "seed:journal": "tsx scripts/seed-journal.ts",
@@ -46,6 +47,7 @@
     "web-vitals": "^6.2.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.1",
     "@types/node": "^22.7.4",
     "@types/pg": "^8.23.1",
     "@types/react": "^19.3.0",

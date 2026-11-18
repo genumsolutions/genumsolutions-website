@@ -13,6 +13,10 @@ data/*.json
 # Supabase CLI local state (link scratch)
 supabase/.temp/
 
+# Playwright artifacts (regenerable)
+test-results/
+playwright-report/
+
 # UX audit screenshots (regenerable)
 ux-audit-shots/
 backups/
