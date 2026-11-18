@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { inputClass } from "../../lib/styles";
+import {
+  adminSectionPill,
+  adminSectionPillActive,
+  adminSectionPillInactive,
+  adminSectionStrip,
+  inputClass,
+} from "../../lib/styles";
 import AdminRows from "./AdminRows";
 import type { RowItem } from "./AdminRows";
 import { LoadingRow, PanelCard, SaveBar, editorCardTitle } from "./admin-helpers";
@@ -9,6 +15,18 @@ import { LoadingRow, PanelCard, SaveBar, editorCardTitle } from "./admin-helpers
 type Props = {
   setMessage: (msg: string) => void;
   canDelete: boolean;
+};
+
+// 2026-11-18: one scroll held four unrelated record types. Each now has its own
+// window, mirroring the app's Settings → Home page sections.
+const HOME_SECTIONS = ["Hero", "Training", "Pilot costs", "Curriculum"] as const;
+type HomeSection = (typeof HOME_SECTIONS)[number];
+
+const HOME_HINTS: Record<HomeSection, string> = {
+  Hero: "The title and body at the top of the home page; both clients read this record.",
+  Training: "Programs listed on the home page and the training pages.",
+  "Pilot costs": "Running cost lines shown on the app home screen.",
+  Curriculum: "Age-band skills shown on the app home screen.",
 };
 
 export default function AdminContent({ setMessage, canDelete }: Props) {
@@ -24,6 +42,7 @@ export default function AdminContent({ setMessage, canDelete }: Props) {
   // and refreshing re-ran the same failing call for the same message.
   const [faults, setFaults] = useState<{ source: string; message?: string }[]>([]);
   const [contentLoaded, setContentLoaded] = useState(false);
+  const [section, setSection] = useState<HomeSection>("Hero");
 
   useEffect(() => {
     let cancelled = false;
@@ -107,94 +126,118 @@ export default function AdminContent({ setMessage, canDelete }: Props) {
 
   return (
     <div className="mt-4">
-      <PanelCard>
-        <h2 className={editorCardTitle}>Homepage content</h2>
-        {faults.length > 0 && (
-          <div
-            role="status"
-            className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900"
+      <div className={adminSectionStrip} role="group" aria-label="Home page sections">
+        {HOME_SECTIONS.map((name) => (
+          <button
+            key={name}
+            type="button"
+            aria-pressed={section === name}
+            onClick={() => setSection(name)}
+            className={`${adminSectionPill} ${
+              section === name ? adminSectionPillActive : adminSectionPillInactive
+            }`}
           >
-            <strong className="block">
-              {faults.length === 1
-                ? "One section could not be loaded."
-                : `${faults.length} sections could not be loaded.`}
-            </strong>
-            <ul className="mt-1 list-disc pl-4">
-              {faults.map((fault) => (
-                <li key={fault.source}>
-                  {fault.source}
-                  {fault.message ? ` — ${fault.message}` : ""}
-                </li>
-              ))}
-            </ul>
-            <span className="mt-1 block">
-              Everything else loaded normally. Retry only after the source above is back.
-            </span>
-          </div>
-        )}
-        {!loaded ? (
-          <LoadingRow className="mt-3" />
-        ) : (
-          <form onSubmit={save} className="mt-5 grid gap-4">
-            <label className="min-w-0 text-sm font-bold">
-              Homepage title
-              <textarea
-                value={homeTitle}
-                onChange={(e) => setHomeTitle(e.target.value)}
-                rows={2}
-                className={`mt-2 w-full ${inputClass}`}
-              />
-            </label>
-            <label className="min-w-0 text-sm font-bold">
-              Homepage body
-              <textarea
-                value={homeBody}
-                onChange={(e) => setHomeBody(e.target.value)}
-                rows={8}
-                className={`mt-2 w-full ${inputClass}`}
-              />
-            </label>
-            <SaveBar>
-              <button
-                type="submit"
-                disabled={busy || !contentLoaded}
-                className="bg-gold px-5 py-3 text-sm font-black text-ink transition hover:bg-gold-dark disabled:opacity-60"
-              >
-                {busy ? "Saving..." : "Save content"}
-              </button>
-            </SaveBar>
-          </form>
-        )}
-      </PanelCard>
+            {name}
+          </button>
+        ))}
+      </div>
+      <p className="mt-2 text-xs text-muted">{HOME_HINTS[section]}</p>
+      {section === "Hero" ? (
+        <PanelCard>
+          <h2 className={editorCardTitle}>Homepage content</h2>
+          {faults.length > 0 && (
+            <div
+              role="status"
+              className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900"
+            >
+              <strong className="block">
+                {faults.length === 1
+                  ? "One section could not be loaded."
+                  : `${faults.length} sections could not be loaded.`}
+              </strong>
+              <ul className="mt-1 list-disc pl-4">
+                {faults.map((fault) => (
+                  <li key={fault.source}>
+                    {fault.source}
+                    {fault.message ? ` — ${fault.message}` : ""}
+                  </li>
+                ))}
+              </ul>
+              <span className="mt-1 block">
+                Everything else loaded normally. Retry only after the source above is back.
+              </span>
+            </div>
+          )}
+          {!loaded ? (
+            <LoadingRow className="mt-3" />
+          ) : (
+            <form onSubmit={save} className="mt-5 grid gap-4">
+              <label className="min-w-0 text-sm font-bold">
+                Homepage title
+                <textarea
+                  value={homeTitle}
+                  onChange={(e) => setHomeTitle(e.target.value)}
+                  rows={2}
+                  className={`mt-2 w-full ${inputClass}`}
+                />
+              </label>
+              <label className="min-w-0 text-sm font-bold">
+                Homepage body
+                <textarea
+                  value={homeBody}
+                  onChange={(e) => setHomeBody(e.target.value)}
+                  rows={8}
+                  className={`mt-2 w-full ${inputClass}`}
+                />
+              </label>
+              <SaveBar>
+                <button
+                  type="submit"
+                  disabled={busy || !contentLoaded}
+                  className="bg-gold px-5 py-3 text-sm font-black text-ink transition hover:bg-gold-dark disabled:opacity-60"
+                >
+                  {busy ? "Saving..." : "Save content"}
+                </button>
+              </SaveBar>
+            </form>
+          )}
+        </PanelCard>
+      ) : null}
 
-      <div className="mt-6 grid gap-6">
-        <AdminRows
-          kind="training"
-          rows={programs}
-          onChange={setPrograms}
-          caption="Training programs"
-          hint="Windo training shows on the app home + website pages."
-          canDelete={canDelete}
-          setMessage={setMessage}
-        />
-        <AdminRows
-          kind="pilot"
-          rows={pilots}
-          onChange={setPilots}
-          caption="Pilot cost lines"
-          hint="Running costs shown on the app home screen."
-          canDelete={canDelete}
-          setMessage={setMessage}
-        />
-        <AdminRows
-          kind="curriculum"
-          rows={curricula}
-          onChange={setCurricula}
-          caption="Curriculum highlights"
-          hint="Age-band skills for the app home screen."
-          canDelete={canDelete}
-          setMessage={setMessage}
-        />
+      <div className="mt-4 grid gap-6">
+        {section === "Training" ? (
+          <AdminRows
+            kind="training"
+            rows={programs}
+            onChange={setPrograms}
+            caption="Training programs"
+            hint="Windo training shows on the app home + website pages."
+            canDelete={canDelete}
+            setMessage={setMessage}
+          />
+        ) : null}
+        {section === "Pilot costs" ? (
+          <AdminRows
+            kind="pilot"
+            rows={pilots}
+            onChange={setPilots}
+            caption="Pilot cost lines"
+            hint="Running costs shown on the app home screen."
+            canDelete={canDelete}
+            setMessage={setMessage}
+          />
+        ) : null}
+        {section === "Curriculum" ? (
+          <AdminRows
+            kind="curriculum"
+            rows={curricula}
+            onChange={setCurricula}
+            caption="Curriculum highlights"
+            hint="Age-band skills for the app home screen."
+            canDelete={canDelete}
+            setMessage={setMessage}
+          />
+        ) : null}
       </div>
     </div>
   );

@@ -11,26 +11,50 @@ parity tests enforce it:
 
 ## Tab inventory (7, identical on both)
 
-| Tab                 | Contents                                                                 |
-| ------------------- | ------------------------------------------------------------------------ |
-| Dashboard           | KPIs, revenue trend, recent activity                                     |
-| Orders              | Orders + finance/transactions                                            |
-| Electronic Products | `/products` — Catalog · Categories · Import subtabs                      |
-| 3D Products         | `/3d-printing` catalog + import                                          |
-| Projects            | Project packages (5-level editor), components, pricing, import           |
-| Users               | Directory, messages + newsletter opt-ins, per-user projects, Logs subtab |
-| Settings            | Company record · Home page · Storefront services · Journal               |
+| Tab                 | Contents                                                       |
+| ------------------- | -------------------------------------------------------------- |
+| Dashboard           | KPIs, revenue trend, recent activity                           |
+| Orders              | Orders + finance/transactions                                  |
+| Electronic Products | `/products` — Catalog · Categories · Import subtabs            |
+| 3D Products         | `/3d-printing` catalog + import                                |
+| Projects            | Project packages (5-level editor), components, pricing, import |
+| Users               | Accounts · Project profiles · Messages · Diagnostics           |
+| Settings            | Company record · Home page · Storefront services · Journal     |
 
 **2026-11-18:** the Content tab was merged into Settings on both clients. The
 company record, home-page copy, storefront services and the journal are four
 sections of one tab, because they all answer "what does the site say about us"
 and each cost its own click. The panels themselves were not rewritten.
 
-The **Logs** subtab is inside **Users**, not a top-level tab. It groups system
-diagnostics, user activity, and profile entries into three sections. The panels
-themselves were not rewritten — `AdminLogs`, `AdminUserLogs` and
+The Logs tab became the **Diagnostics** window inside **Users** (it groups
+system diagnostics, user activity and profile entries into three sections). The
+panels themselves were not rewritten — `AdminLogs`, `AdminUserLogs` and
 `AdminProfileEntries` are mounted inside `AdminLogsHub`, so a fix in a panel
 still applies everywhere it is used.
+
+### Users windows
+
+_Accounts · Project profiles · Messages · Diagnostics._
+
+- **Accounts** — the directory with role, tier, joined/last seen, per-user
+  projects and delete (admin only).
+- **Project profiles** — every saved `car_profiles` row across builders, newest
+  first, searchable by builder/car/profile key/unique id, with a settings count
+  and last update. Read-only by design: repairs go through the account row so
+  there is one write path. Served by `/api/admin/users?profiles=1`.
+- **Messages** — customer messages plus newsletter opt-ins.
+- **Diagnostics** — the crash-report/app-log panels, the activity log and the
+  profile-entry log, opening on the fleet diagnostics.
+
+### Settings depth
+
+- **Company** has three nested sections — Details / Contact / Social — over one
+  `company_info` row. The sheet edits a **draft**: typing no longer touches the
+  saved record, Cancel discards, Save validates name/email (the email format is
+  checked) and shows the database error inside the sheet. Each field carries a
+  line explaining where its value appears.
+- **Home page** has four nested sections — Hero / Training / Pilot costs /
+  Curriculum — instead of one scroll mixing four record types.
 
 ## Section subtabs (identical on both clients)
 
@@ -40,8 +64,16 @@ visible/hidden, stock, price range) whose rows jump into the catalog filtered to
 that category. Import hosts the link importer, which no longer shares the page
 with the list. 3D Products keeps its own `PrintSectionTabs` studio.
 
-**Projects** — the package editor is one hierarchy level at a time, in this
-order:
+**Projects** — the tab opens on a section strip: `Catalog · Categories ·
+Pricing · Software & features · 3D materials · Coding procedure`. Catalog keeps
+the existing list/editor. The other five roll every package up under one
+question — how it is filed, what it costs, what it runs on, what it is printed
+from, how it is built — and each row opens that package's editor on the
+matching sub-tab. Pricing reads all rows in one request (the route returns the
+whole table when no `projectId` is passed); a family picked in Categories
+filters the catalog through the separate `project_category` filter.
+
+The package editor is one hierarchy level at a time, in this order:
 
 | Subtab              | Fields                                                                                                                                   |
 | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |

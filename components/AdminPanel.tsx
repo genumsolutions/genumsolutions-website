@@ -35,6 +35,7 @@ import AdminServices from "./admin/AdminServices";
 import AdminJournal from "./admin/AdminJournal";
 import AdminContent from "./admin/AdminContent";
 import AdminUsers from "./admin/AdminUsers";
+import AdminProjectProfiles from "./admin/AdminProjectProfiles";
 import AdminMessages from "./admin/AdminMessages";
 import AdminSettings from "./admin/AdminSettings";
 import AdminLogsHub from "./admin/AdminLogsHub";
@@ -55,7 +56,11 @@ type OrderSection = (typeof ORDER_SECTIONS)[number];
 // catalog item. The tab strip above is untouched, so the parity contract holds.
 const SETTINGS_SECTIONS = ["Company", "Home page", "Storefront services", "Journal"] as const;
 type SettingsSection = (typeof SETTINGS_SECTIONS)[number];
-const USER_SECTIONS = ["Users", "Messages", "Logs"] as const;
+// 2026-11-18 (owner: "the user tab also need the proper windowing like sub
+// tabs"): Accounts / Project profiles / Messages / Diagnostics. Logs kept its
+// three nested sections inside Diagnostics, so the audit trail still exists —
+// it is just filed under what it is for.
+const USER_SECTIONS = ["Accounts", "Project profiles", "Messages", "Diagnostics"] as const;
 type UserSection = (typeof USER_SECTIONS)[number];
 
 function AdminSectionTabs<T extends string>({
@@ -147,7 +152,7 @@ export default function AdminPanel({ initialProducts, currentRole }: Props) {
   const [visited, setVisited] = useState<Set<number>>(() => new Set([0]));
   const [ordersSection, setOrdersSection] = useState<OrderSection>("Orders");
   const [settingsSection, setSettingsSection] = useState<SettingsSection>("Company");
-  const [userSection, setUserSection] = useState<UserSection>("Users");
+  const [userSection, setUserSection] = useState<UserSection>("Accounts");
 
   const canDelete = isAdminRole(currentRole);
   const tabIndex = TABS.indexOf(tab);
@@ -229,7 +234,7 @@ export default function AdminPanel({ initialProducts, currentRole }: Props) {
             onChange={setUserSection}
             panels={[
               {
-                tab: "Users",
+                tab: "Accounts",
                 content: (
                   <AdminUsers
                     setMessage={setMessage}
@@ -238,11 +243,12 @@ export default function AdminPanel({ initialProducts, currentRole }: Props) {
                   />
                 ),
               },
+              { tab: "Project profiles", content: <AdminProjectProfiles /> },
               {
                 tab: "Messages",
                 content: <AdminMessages setMessage={setMessage} canDelete={canDelete} />,
               },
-              { tab: "Logs", content: <AdminLogsHub /> },
+              { tab: "Diagnostics", content: <AdminLogsHub /> },
             ]}
           />
         );

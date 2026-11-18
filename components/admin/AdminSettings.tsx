@@ -69,6 +69,25 @@ export default function AdminSettings({ setMessage, canDelete: _canDelete }: Pro
   // Fieldsets are only rendered after Edit is pressed, matching the app console
   // and every other admin editor on the site.
   const [editing, setEditing] = useState(false);
+  // 2026-11-18: edits happen on a DRAFT. Typing used to write straight into
+  // `company`, so Cancel left the read-only view showing unsaved values and a
+  // failed save looked identical to a successful one. Now nothing reaches the
+  // saved record until a validated Save, and the database error is shown in
+  // the sheet instead of only in the page message.
+  const [draft, setDraft] = useState<CompanyInfo>(emptyCompany);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  function startEditing() {
+    setDraft({ ...company });
+    setSaveError(null);
+    setEditing(true);
+  }
+
+  function cancelEditing() {
+    setDraft({ ...company });
+    setSaveError(null);
+    setEditing(false);
+  }
 
   useEffect(() => {
     void fetch("/api/admin/settings")
@@ -80,28 +99,41 @@ export default function AdminSettings({ setMessage, canDelete: _canDelete }: Pro
 
   async function saveCompany(event?: FormEvent) {
     event?.preventDefault();
-    if (!company.name.trim() || !company.email.trim()) {
-      setMessage("Company name and email are required.");
+    const missing: string[] = [];
+    if (!draft.name.trim()) missing.push("company name");
+    if (!draft.email.trim()) missing.push("email");
+    if (missing.length > 0) {
+      setSaveError(`Add the ${missing.join(" and ")} before saving.`);
+      return;
+    }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(draft.email.trim())) {
+      setSaveError("That email does not look right — it needs an @ and a domain.");
       return;
     }
     setBusy(true);
+    setSaveError(null);
     try {
+      const next: CompanyInfo = {
+        ...draft,
+        name: draft.name.trim(),
+        email: draft.email.trim(),
+        whatsappNumber: draft.whatsappNumber.replace(/[^\d]/g, ""),
+      };
       const response = await fetch("/api/admin/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "company",
-          company: { ...company, name: company.name.trim(), email: company.email.trim() },
-        }),
+        body: JSON.stringify({ action: "company", company: next }),
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
-        setMessage(result.error || "Could not save company information.");
+        setSaveError(result.error || "Could not save company information.");
         return;
       }
+      setCompany(next);
+      setEditing(false);
       setMessage("Company information saved.");
     } catch {
-      setMessage("Could not reach the server to save the company information.");
+      setSaveError("Could not reach the server to save the company information.");
     } finally {
       setBusy(false);
     }
@@ -131,7 +163,7 @@ export default function AdminSettings({ setMessage, canDelete: _canDelete }: Pro
         </span>
         <button
           type="button"
-          onClick={() => setEditing((value) => !value)}
+          onClick={() => (editing ? cancelEditing() : startEditing())}
           className={
             editing
               ? `${adminSectionPill} ${adminSectionPillInactive}`
@@ -147,7 +179,7 @@ export default function AdminSettings({ setMessage, canDelete: _canDelete }: Pro
         <AdminEditorSheet
           title={SECTIONS.find((s) => s.id === section)?.label ?? "Company information"}
           hint="Saves to the shared company record the app and website both read."
-          onClose={() => setEditing(false)}
+          onClose={cancelEditing}
         >
           <form onSubmit={saveCompany} className="space-y-4">
             <PanelCard>
@@ -156,58 +188,79 @@ export default function AdminSettings({ setMessage, canDelete: _canDelete }: Pro
                   <h2 className={editorCardTitle}>Company details</h2>
                   <label className="min-w-0 text-sm font-bold">
                     Name
+                    <span className="mt-1 block text-xs font-normal text-muted">
+                      Prints on invoices and order summaries; shown on the About and Legal pages.
+                    </span>
                     <input
-                      value={company.name}
-                      onChange={(e) => setCompany({ ...company, name: e.target.value })}
+                      value={draft.name}
+                      onChange={(e) => setDraft({ ...draft, name: e.target.value })}
                       className={`mt-2 w-full ${inputClass}`}
                     />
                   </label>
                   <label className="min-w-0 text-sm font-bold">
                     Short name
+                    <span className="mt-1 block text-xs font-normal text-muted">
+                      Used where space is tight — the footer, app icon label and receipts.
+                    </span>
                     <input
-                      value={company.shortName}
-                      onChange={(e) => setCompany({ ...company, shortName: e.target.value })}
+                      value={draft.shortName}
+                      onChange={(e) => setDraft({ ...draft, shortName: e.target.value })}
                       className={`mt-2 w-full ${inputClass}`}
                     />
                   </label>
                   <label className="min-w-0 text-sm font-bold">
                     Address
+                    <span className="mt-1 block text-xs font-normal text-muted">
+                      Posted address on the Contact page and order confirmation emails.
+                    </span>
                     <textarea
-                      value={company.address}
-                      onChange={(e) => setCompany({ ...company, address: e.target.value })}
+                      value={draft.address}
+                      onChange={(e) => setDraft({ ...draft, address: e.target.value })}
                       rows={2}
                       className={`mt-2 w-full ${inputClass}`}
                     />
                   </label>
                   <label className="min-w-0 text-sm font-bold">
                     City
+                    <span className="mt-1 block text-xs font-normal text-muted">
+                      Shown with the address; also used for the local-delivery note.
+                    </span>
                     <input
-                      value={company.city}
-                      onChange={(e) => setCompany({ ...company, city: e.target.value })}
+                      value={draft.city}
+                      onChange={(e) => setDraft({ ...draft, city: e.target.value })}
                       className={`mt-2 w-full ${inputClass}`}
                     />
                   </label>
                   <label className="min-w-0 text-sm font-bold">
                     Country
+                    <span className="mt-1 block text-xs font-normal text-muted">
+                      Shown with the address and used for the VAT line.
+                    </span>
                     <input
-                      value={company.country}
-                      onChange={(e) => setCompany({ ...company, country: e.target.value })}
+                      value={draft.country}
+                      onChange={(e) => setDraft({ ...draft, country: e.target.value })}
                       className={`mt-2 w-full ${inputClass}`}
                     />
                   </label>
                   <label className="min-w-0 text-sm font-bold">
                     PAN
+                    <span className="mt-1 block text-xs font-normal text-muted">
+                      Tax registration number printed on invoices. Leave empty if not registered.
+                    </span>
                     <input
-                      value={company.pan}
-                      onChange={(e) => setCompany({ ...company, pan: e.target.value })}
+                      value={draft.pan}
+                      onChange={(e) => setDraft({ ...draft, pan: e.target.value })}
                       className={`mt-2 w-full ${inputClass}`}
                     />
                   </label>
                   <label className="min-w-0 text-sm font-bold">
                     VAT label
+                    <span className="mt-1 block text-xs font-normal text-muted">
+                      The tax wording on invoices, e.g. &quot;VAT / 13%&quot;.
+                    </span>
                     <input
-                      value={company.vatLabel}
-                      onChange={(e) => setCompany({ ...company, vatLabel: e.target.value })}
+                      value={draft.vatLabel}
+                      onChange={(e) => setDraft({ ...draft, vatLabel: e.target.value })}
                       className={`mt-2 w-full ${inputClass}`}
                     />
                   </label>
@@ -218,26 +271,35 @@ export default function AdminSettings({ setMessage, canDelete: _canDelete }: Pro
                   <h2 className={editorCardTitle}>Contact</h2>
                   <label className="min-w-0 text-sm font-bold">
                     Email
+                    <span className="mt-1 block text-xs font-normal text-muted">
+                      The public contact address for messages, quotes and order questions.
+                    </span>
                     <input
                       type="email"
-                      value={company.email}
-                      onChange={(e) => setCompany({ ...company, email: e.target.value })}
+                      value={draft.email}
+                      onChange={(e) => setDraft({ ...draft, email: e.target.value })}
                       className={`mt-2 w-full ${inputClass}`}
                     />
                   </label>
                   <label className="min-w-0 text-sm font-bold">
                     Phone
+                    <span className="mt-1 block text-xs font-normal text-muted">
+                      Shown on the Contact page. Leave empty to hide the call button.
+                    </span>
                     <input
-                      value={company.phone}
-                      onChange={(e) => setCompany({ ...company, phone: e.target.value })}
+                      value={draft.phone}
+                      onChange={(e) => setDraft({ ...draft, phone: e.target.value })}
                       className={`mt-2 w-full ${inputClass}`}
                     />
                   </label>
                   <label className="min-w-0 text-sm font-bold">
                     Description
+                    <span className="mt-1 block text-xs font-normal text-muted">
+                      Two or three sentences for the Contact page and search-engine summaries.
+                    </span>
                     <textarea
-                      value={company.description}
-                      onChange={(e) => setCompany({ ...company, description: e.target.value })}
+                      value={draft.description}
+                      onChange={(e) => setDraft({ ...draft, description: e.target.value })}
                       rows={3}
                       className={`mt-2 w-full ${inputClass}`}
                     />
@@ -249,9 +311,13 @@ export default function AdminSettings({ setMessage, canDelete: _canDelete }: Pro
                   <h2 className={editorCardTitle}>Social & messaging</h2>
                   <label className="min-w-0 text-sm font-bold">
                     WhatsApp number
+                    <span className="mt-1 block text-xs font-normal text-muted">
+                      Digits only with the country code and no plus sign. Empty hides the WhatsApp
+                      button.
+                    </span>
                     <input
-                      value={company.whatsappNumber}
-                      onChange={(e) => setCompany({ ...company, whatsappNumber: e.target.value })}
+                      value={draft.whatsappNumber}
+                      onChange={(e) => setDraft({ ...draft, whatsappNumber: e.target.value })}
                       placeholder="97798XXXXXXXX"
                       className={`mt-2 w-full ${inputClass}`}
                     />
@@ -259,8 +325,8 @@ export default function AdminSettings({ setMessage, canDelete: _canDelete }: Pro
                   <label className="min-w-0 text-sm font-bold">
                     Facebook URL
                     <input
-                      value={company.facebookUrl}
-                      onChange={(e) => setCompany({ ...company, facebookUrl: e.target.value })}
+                      value={draft.facebookUrl}
+                      onChange={(e) => setDraft({ ...draft, facebookUrl: e.target.value })}
                       placeholder="https://facebook.com/…"
                       className={`mt-2 w-full ${inputClass}`}
                     />
@@ -268,8 +334,8 @@ export default function AdminSettings({ setMessage, canDelete: _canDelete }: Pro
                   <label className="min-w-0 text-sm font-bold">
                     Instagram URL
                     <input
-                      value={company.instagramUrl}
-                      onChange={(e) => setCompany({ ...company, instagramUrl: e.target.value })}
+                      value={draft.instagramUrl}
+                      onChange={(e) => setDraft({ ...draft, instagramUrl: e.target.value })}
                       placeholder="https://instagram.com/…"
                       className={`mt-2 w-full ${inputClass}`}
                     />
@@ -277,8 +343,8 @@ export default function AdminSettings({ setMessage, canDelete: _canDelete }: Pro
                   <label className="min-w-0 text-sm font-bold">
                     TikTok URL
                     <input
-                      value={company.tiktokUrl}
-                      onChange={(e) => setCompany({ ...company, tiktokUrl: e.target.value })}
+                      value={draft.tiktokUrl}
+                      onChange={(e) => setDraft({ ...draft, tiktokUrl: e.target.value })}
                       placeholder="https://tiktok.com/@…"
                       className={`mt-2 w-full ${inputClass}`}
                     />
@@ -286,8 +352,8 @@ export default function AdminSettings({ setMessage, canDelete: _canDelete }: Pro
                   <label className="min-w-0 text-sm font-bold">
                     LinkedIn URL
                     <input
-                      value={company.linkedinUrl}
-                      onChange={(e) => setCompany({ ...company, linkedinUrl: e.target.value })}
+                      value={draft.linkedinUrl}
+                      onChange={(e) => setDraft({ ...draft, linkedinUrl: e.target.value })}
                       placeholder="https://linkedin.com/company/…"
                       className={`mt-2 w-full ${inputClass}`}
                     />
@@ -295,8 +361,8 @@ export default function AdminSettings({ setMessage, canDelete: _canDelete }: Pro
                   <label className="min-w-0 text-sm font-bold">
                     YouTube URL
                     <input
-                      value={company.youtubeUrl}
-                      onChange={(e) => setCompany({ ...company, youtubeUrl: e.target.value })}
+                      value={draft.youtubeUrl}
+                      onChange={(e) => setDraft({ ...draft, youtubeUrl: e.target.value })}
                       placeholder="https://youtube.com/@…"
                       className={`mt-2 w-full ${inputClass}`}
                     />
@@ -305,9 +371,12 @@ export default function AdminSettings({ setMessage, canDelete: _canDelete }: Pro
                     two consoles hold the identical company record. */}
                   <label className="min-w-0 text-sm font-bold">
                     Website URL
+                    <span className="mt-1 block text-xs font-normal text-muted">
+                      Linked from the app&apos;s About screen and the site footer.
+                    </span>
                     <input
-                      value={company.url}
-                      onChange={(e) => setCompany({ ...company, url: e.target.value })}
+                      value={draft.url}
+                      onChange={(e) => setDraft({ ...draft, url: e.target.value })}
                       placeholder="https://example.com"
                       className={`mt-2 w-full ${inputClass}`}
                     />
@@ -315,6 +384,11 @@ export default function AdminSettings({ setMessage, canDelete: _canDelete }: Pro
                 </div>
               )}
             </PanelCard>
+            {saveError ? (
+              <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+                {saveError}
+              </p>
+            ) : null}
             <SaveBar>
               <button
                 type="submit"
@@ -322,6 +396,13 @@ export default function AdminSettings({ setMessage, canDelete: _canDelete }: Pro
                 className="bg-navy px-5 py-3 text-sm font-black text-white transition hover:bg-navy/90 disabled:opacity-60"
               >
                 {busy ? "Saving..." : "Save company"}
+              </button>
+              <button
+                type="button"
+                onClick={cancelEditing}
+                className="border border-line bg-white px-5 py-3 text-sm font-black text-ink transition hover:border-navy"
+              >
+                Cancel
               </button>
             </SaveBar>
           </form>

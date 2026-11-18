@@ -44,7 +44,10 @@ const SECTIONS = [
 type SectionId = (typeof SECTIONS)[number]["id"];
 
 export default function AdminLogsHub() {
-  const [section, setSection] = useState<SectionId>("activity");
+  // 2026-11-18: this hub is the Users tab's Diagnostics window now, so it
+  // opens on the fleet diagnostics (crash reports + app logs) instead of user
+  // activity. The other two sections stay one click away.
+  const [section, setSection] = useState<SectionId>("diagnostics");
   const active = SECTIONS.find((s) => s.id === section) ?? SECTIONS[0];
 
   return (

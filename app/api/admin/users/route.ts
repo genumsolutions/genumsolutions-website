@@ -25,6 +25,65 @@ export async function GET(request: Request) {
   const limit = Math.min(50, Math.max(5, Number(params.get("limit")) || 10));
   const needle = (params.get("q") || "").trim().toLowerCase();
 
+  // 2026-11-18 (Users → Project profiles): every saved car profile across all
+  // builders in one read, newest first. Read-only on purpose — an edit or
+  // repair still goes through the owning account row so there is one write
+  // path for a builder's settings.
+  if (params.get("profiles") === "1") {
+    try {
+      const db = createServiceClient();
+      const { data, error } = await db
+        .from("car_profiles")
+        .select("id, user_id, profile_key, car_name, unique_id, settings, updated_at")
+        .order("updated_at", { ascending: false })
+        .limit(300);
+      if (error) throw error;
+      const rows = data ?? [];
+      const ownerIds = Array.from(
+        new Set(rows.map((row) => String((row as { user_id?: string }).user_id ?? "")))
+      ).filter(Boolean);
+      const owners = new Map<string, { name: string; email: string }>();
+      if (ownerIds.length > 0) {
+        const { data: people } = await db.from("profiles").select("id, name").in("id", ownerIds);
+        for (const person of people ?? []) {
+          owners.set(String(person.id), { name: String(person.name ?? ""), email: "" });
+        }
+      }
+      return NextResponse.json({
+        profiles: rows.map((row) => {
+          const profile = row as {
+            id?: string;
+            user_id?: string;
+            profile_key?: string;
+            car_name?: string;
+            unique_id?: string;
+            settings?: unknown;
+            updated_at?: string;
+          };
+          const userId = String(profile.user_id ?? "");
+          const settings =
+            profile.settings && typeof profile.settings === "object"
+              ? (profile.settings as Record<string, unknown>)
+              : {};
+          return {
+            id: String(profile.id ?? ""),
+            userId,
+            ownerName: owners.get(userId)?.name ?? "",
+            profileKey: String(profile.profile_key ?? ""),
+            carName: String(profile.car_name ?? ""),
+            uniqueId: String(profile.unique_id ?? ""),
+            settingsCount: Object.keys(settings).length,
+            updatedAt: String(profile.updated_at ?? ""),
+          };
+        }),
+        truncated: rows.length === 300,
+      });
+    } catch (error) {
+      console.error("Admin project profiles listing failed", error);
+      return NextResponse.json({ error: "Could not load project profiles." }, { status: 500 });
+    }
+  }
+
   try {
     const db = createServiceClient();
     // Fetch one extra row to detect whether a next page exists.

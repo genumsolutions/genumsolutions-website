@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import { inputClass, cardRow, cardRowText } from "../../lib/styles";
@@ -42,6 +42,301 @@ const PROJECT_EDITOR_SUBTABS = [
 ] as const;
 type ProjectEditorSubTab = (typeof PROJECT_EDITOR_SUBTABS)[number];
 
+const PROJECT_SECTIONS = [
+  "Catalog",
+  "Categories",
+  "Pricing",
+  "Software & features",
+  "3D materials",
+  "Coding procedure",
+] as const;
+type ProjectSection = (typeof PROJECT_SECTIONS)[number];
+
+// 2026-11-18 (owner: "the project tab need some more work in arranging the
+// project categories and details"): the tab now opens on a section strip that
+// mirrors the 3D studio. Catalog keeps the existing list + editor; the other
+// five sections roll every package up under one question — how it is filed,
+// what it costs, what it runs on, what it is printed from, how it is built —
+// and each row jumps into that package's editor on the matching sub-tab.
+function ProjectSectionPanel({
+  section,
+  products,
+  pricingRows,
+  pricingState,
+  onRetryPricing,
+  onOpen,
+  onFilterCategory,
+}: {
+  section: Exclude<ProjectSection, "Catalog">;
+  products: Product[];
+  pricingRows: Record<string, ProjectPricing>;
+  pricingState: "idle" | "loading" | "ready" | "error";
+  onRetryPricing: () => void;
+  onOpen: (product: Product, tab: ProjectEditorSubTab) => void;
+  onFilterCategory: (name: string) => void;
+}) {
+  const familyOf = (item: Product) =>
+    (PROJECT_CATEGORIES.find((category) => category.slug === item.project_category)?.name ??
+      item.project_category) ||
+    "Uncategorised";
+  const money = (value: number) => `NPR ${Math.round(value).toLocaleString("en-IN")}`;
+  const total = products.length;
+
+  const families = Array.from(
+    products.reduce((groups, item) => {
+      const key = familyOf(item);
+      const group = groups.get(key) ?? {
+        name: key,
+        total: 0,
+        live: 0,
+        lowest: Number.POSITIVE_INFINITY,
+        highest: 0,
+      };
+      group.total += 1;
+      if (item.active !== false) group.live += 1;
+      const price = Number(item.price) || 0;
+      group.lowest = Math.min(group.lowest, price);
+      group.highest = Math.max(group.highest, price);
+      groups.set(key, group);
+      return groups;
+    }, new Map<string, { name: string; total: number; live: number; lowest: number; highest: number }>())
+  ).sort((a, b) => b[1].total - a[1].total);
+
+  const approved = products.filter(
+    (item) => pricingRows[item.id]?.priceStatus === "approved"
+  ).length;
+  const draft = products.filter((item) => {
+    const row = pricingRows[item.id];
+    return row != null && row.priceStatus !== "approved";
+  }).length;
+  const missingPricing = total - approved - draft;
+
+  const empty = <p className="py-8 text-center text-sm text-muted">No project packages yet.</p>;
+
+  const description =
+    section === "Categories"
+      ? "How the company's projects are filed. Pick a family to see its packages in the catalog."
+      : section === "Pricing"
+        ? "Every package's quote state. Draft prices stay hidden from customers until an admin approves them."
+        : section === "Software & features"
+          ? "Toolchain, repository and the feature list each package documents for its builder."
+          : section === "3D materials"
+            ? "What each package is printed from: materials, printer profile and print settings."
+            : "The build and flashing procedure each package ships with.";
+
+  return (
+    <div className="mt-4 min-w-0 space-y-3">
+      <div>
+        <h2 className={editorCardTitle}>{section}</h2>
+        <p className="mt-1 text-sm text-muted">{description}</p>
+      </div>
+
+      {section === "Categories"
+        ? families.length === 0
+          ? empty
+          : families.map(([name, group]) => (
+              <button
+                key={name}
+                type="button"
+                onClick={() => onFilterCategory(name)}
+                className="flex w-full flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-card p-4 text-left transition hover:border-navy"
+              >
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-bold text-ink">{name}</span>
+                  <span className="mt-1 block text-xs text-muted">
+                    {group.live} live · {group.total - group.live} hidden ·{" "}
+                    {group.lowest === group.highest
+                      ? money(group.lowest)
+                      : `${money(group.lowest)}–${money(group.highest)}`}
+                  </span>
+                </span>
+                <span className="shrink-0 text-xs font-black text-gold">
+                  {group.total} {group.total === 1 ? "package" : "packages"}
+                </span>
+              </button>
+            ))
+        : null}
+
+      {section === "Pricing" ? (
+        <>
+          <div className="rounded-xl border border-line bg-card p-4">
+            <p className="text-xs font-black uppercase tracking-widest text-muted">Quote state</p>
+            <p className="mt-1 text-sm text-ink">
+              {approved} approved · {draft} draft · {missingPricing} without a pricing row
+            </p>
+            <p className="mt-1 text-xs leading-5 text-muted">
+              A package without a row uses the editor defaults (zero base charge, no markup) and its
+              prices stay hidden until approved.
+            </p>
+          </div>
+          {pricingState === "loading" ? (
+            <p className="py-6 text-center text-sm text-muted">Loading pricing…</p>
+          ) : pricingState === "error" ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-4">
+              <p className="text-sm font-bold text-red-700">Could not load project pricing.</p>
+              <button
+                type="button"
+                onClick={onRetryPricing}
+                className="mt-2 rounded-full bg-navy px-4 py-2 text-xs font-black text-white"
+              >
+                Retry
+              </button>
+            </div>
+          ) : total === 0 ? (
+            empty
+          ) : (
+            products.map((item) => {
+              const row = pricingRows[item.id];
+              const isApproved = row?.priceStatus === "approved";
+              return (
+                <div key={item.id} className="rounded-xl border border-line bg-card p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="min-w-0 flex-1 truncate text-sm font-bold text-ink">
+                      {item.name}
+                    </span>
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black uppercase ${
+                        isApproved
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-amber-100 text-amber-800"
+                      }`}
+                    >
+                      {row ? (isApproved ? "Approved" : "Draft") : "No row"}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-muted">{familyOf(item)}</p>
+                  <p className="mt-2 text-xs text-ink">
+                    Base {money(row?.packageBaseCharge ?? 0)} · markup{" "}
+                    {row?.componentMarkupPercent ?? 0}% · minimum {money(row?.minimumOrder ?? 0)}
+                  </p>
+                  <p className="mt-1 text-xs text-muted">
+                    {row?.extras.length ? `${row.extras.length} extras` : "No extras"} ·{" "}
+                    {row?.bulkTiers.length ? `${row.bulkTiers.length} bulk tiers` : "No bulk tiers"}
+                    {row?.priceApprovedAt ? ` · approved ${row.priceApprovedAt.slice(0, 10)}` : ""}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => onOpen(item, "Pricing")}
+                    className="mt-2 rounded-lg border border-line px-3 py-1.5 text-xs font-black text-navy hover:border-navy"
+                  >
+                    Edit pricing
+                  </button>
+                </div>
+              );
+            })
+          )}
+        </>
+      ) : null}
+
+      {section === "Software & features"
+        ? total === 0
+          ? empty
+          : products.map((item) => {
+              const details = readProjectDetails(item.importMeta);
+              const checks = [
+                Boolean(details.code.language.trim()),
+                Boolean(details.code.repositoryUrl.trim()),
+                Boolean(details.code.libraries.trim()),
+                Boolean((item.objectives ?? []).length),
+                Boolean((item.controlMethods ?? []).length),
+                Boolean((item.specs ?? []).length),
+              ];
+              const filled = checks.filter(Boolean).length;
+              return (
+                <div key={item.id} className="rounded-xl border border-line bg-card p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="min-w-0 flex-1 truncate text-sm font-bold text-ink">
+                      {item.name}
+                    </span>
+                    <span className="shrink-0 text-xs font-black text-navy">{filled}/6</span>
+                  </div>
+                  <p className="mt-1 text-xs text-muted">{familyOf(item)}</p>
+                  <p className="mt-2 text-xs leading-5 text-ink">
+                    {details.code.language || "No toolchain set"}
+                    {details.code.repositoryUrl ? " · repo linked" : " · no repo"}
+                    {details.code.libraries.trim()
+                      ? ` · ${details.code.libraries.split("\n").filter(Boolean).length} libraries`
+                      : ""}
+                  </p>
+                  <p className="mt-1 text-xs text-muted">
+                    {(item.objectives ?? []).length} objectives ·{" "}
+                    {(item.controlMethods ?? []).length} control methods ·{" "}
+                    {(item.specs ?? []).length} features listed
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => onOpen(item, "Code details")}
+                    className="mt-2 rounded-lg border border-line px-3 py-1.5 text-xs font-black text-navy hover:border-navy"
+                  >
+                    Edit code &amp; features
+                  </button>
+                </div>
+              );
+            })
+        : null}
+
+      {section === "3D materials"
+        ? total === 0
+          ? empty
+          : products.map((item) => {
+              const details = readProjectDetails(item.importMeta);
+              return (
+                <div key={item.id} className="rounded-xl border border-line bg-card p-4">
+                  <span className="block truncate text-sm font-bold text-ink">{item.name}</span>
+                  <p className="mt-1 text-xs text-muted">{familyOf(item)}</p>
+                  <p className="mt-2 text-xs leading-5 text-ink">
+                    {details.material.printer || "No printer set"} ·{" "}
+                    {details.material.filament || "No filament set"}
+                  </p>
+                  <p className="mt-1 text-xs text-muted">
+                    {details.material.layerHeight || "—"} layer · {details.material.infill || "—"}{" "}
+                    infill · {details.material.printTime || "no print time"} ·{" "}
+                    {(item.materialsRequired ?? []).length} materials listed
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => onOpen(item, "3D material details")}
+                    className="mt-2 rounded-lg border border-line px-3 py-1.5 text-xs font-black text-navy hover:border-navy"
+                  >
+                    Edit 3D materials
+                  </button>
+                </div>
+              );
+            })
+        : null}
+
+      {section === "Coding procedure"
+        ? total === 0
+          ? empty
+          : products.map((item) => {
+              const details = readProjectDetails(item.importMeta);
+              return (
+                <div key={item.id} className="rounded-xl border border-line bg-card p-4">
+                  <span className="block truncate text-sm font-bold text-ink">{item.name}</span>
+                  <p className="mt-1 text-xs text-muted">{familyOf(item)}</p>
+                  <p className="mt-2 text-xs leading-5 text-ink">
+                    {(item.buildSteps ?? []).length} build steps · {details.procedure.steps.length}{" "}
+                    coding steps
+                  </p>
+                  <p className="mt-1 text-xs text-muted">
+                    {item.estimatedDuration || "No duration set"}
+                    {details.procedure.notes ? " · notes added" : " · no procedure notes"}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => onOpen(item, "Coding procedure")}
+                    className="mt-2 rounded-lg border border-line px-3 py-1.5 text-xs font-black text-navy hover:border-navy"
+                  >
+                    Edit procedure
+                  </button>
+                </div>
+              );
+            })
+        : null}
+    </div>
+  );
+}
+
 function ProjectEditor({
   product,
   onChange,
@@ -49,6 +344,7 @@ function ProjectEditor({
   onReset,
   busy,
   categories,
+  initialTab = "Category",
 }: {
   product: Product;
   onChange: (product: Product) => void;
@@ -56,12 +352,14 @@ function ProjectEditor({
   onReset: () => void;
   busy: boolean;
   categories: string[];
+  /** Which section the sheet opens on — the Projects sections deep-link here. */
+  initialTab?: ProjectEditorSubTab;
 }) {
   // 2026-11-18 (owner): the project sheet was one long form of ~20 fields.
   // It is now the hierarchy the owner asked for — Category, Pricing, Code
   // details, 3D material details, Coding procedure — one panel at a time.
   // Saving still writes the whole product, so every tab's edits persist.
-  const [subTab, setSubTab] = useState<ProjectEditorSubTab>("Category");
+  const [subTab, setSubTab] = useState<ProjectEditorSubTab>(initialTab);
 
   function setField<K extends keyof Product>(key: K, value: Product[K]) {
     onChange({ ...product, [key]: value });
@@ -574,6 +872,9 @@ export default function AdminProjectPackages({
   const [product, setProduct] = useState<Product>(emptyProduct);
   const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
   const [projectCategory, setProjectCategory] = useState("All");
+  // 2026-11-18: a family filter separate from the `category` column — the
+  // Categories section files projects by project_category and sends them here.
+  const [projectFamily, setProjectFamily] = useState("All");
   const [projectQuery, setProjectQuery] = useState("");
   const [stockFilter, setStockFilter] = useState<"all" | "in" | "low" | "out">("all");
   const [projectPage, setProjectPage] = useState(1);
@@ -598,6 +899,39 @@ export default function AdminProjectPackages({
   // an admin approves them.
   const [projectPricing, setProjectPricing] = useState<ProjectPricing>(defaultProjectPricing);
   const [pricingBusy, setPricingBusy] = useState(false);
+
+  // 2026-11-18: Projects section strip. The Pricing roll-up needs every row at
+  // once, which the route already returns when no projectId is passed.
+  const [section, setSection] = useState<ProjectSection>("Catalog");
+  const [editorStartTab, setEditorStartTab] = useState<ProjectEditorSubTab>("Category");
+  const [pricingRows, setPricingRows] = useState<Record<string, ProjectPricing>>({});
+  const [pricingState, setPricingState] = useState<"idle" | "loading" | "ready" | "error">("idle");
+
+  const loadPricingRows = useCallback(async () => {
+    setPricingState("loading");
+    try {
+      const response = await fetch("/api/admin/project-pricing");
+      if (!response.ok) throw new Error("Could not load project pricing.");
+      const data = await response.json();
+      const map: Record<string, ProjectPricing> = {};
+      for (const row of (data.pricing ?? []) as ProjectPricing[]) map[row.id] = row;
+      setPricingRows(map);
+      setPricingState("ready");
+    } catch {
+      setPricingState("error");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (section === "Pricing" && pricingState === "idle") void loadPricingRows();
+  }, [section, pricingState, loadPricingRows]);
+
+  function openProject(item: Product, tab: ProjectEditorSubTab = "Category") {
+    setProduct(item);
+    setEditorStartTab(tab);
+    setSection("Catalog");
+    setEditorOpen(true);
+  }
 
   useEffect(() => {
     if (!product.id || product.productType !== "Project package") {
@@ -806,8 +1140,13 @@ export default function AdminProjectPackages({
       item.category === "Pre-packaged Kits"
   );
   const projectCategories = Array.from(new Set(projectProducts.map((item) => item.category)));
+  const familyNameOf = (item: Product) =>
+    (PROJECT_CATEGORIES.find((category) => category.slug === item.project_category)?.name ??
+      item.project_category) ||
+    "Uncategorised";
   const filteredProjects = projectProducts.filter((item) => {
     const matchesCategory = projectCategory === "All" || item.category === projectCategory;
+    const matchesFamily = projectFamily === "All" || familyNameOf(item) === projectFamily;
     const needle = projectQuery.trim().toLowerCase();
     const matchesQuery =
       !needle ||
@@ -818,7 +1157,7 @@ export default function AdminProjectPackages({
       (stockFilter === "out" && stock <= 0) ||
       (stockFilter === "low" && stock > 0 && stock <= 3) ||
       (stockFilter === "in" && stock > 3);
-    return matchesCategory && matchesQuery && matchesStock;
+    return matchesCategory && matchesFamily && matchesQuery && matchesStock;
   });
   const totalPages = Math.max(1, Math.ceil(filteredProjects.length / PAGE_SIZE));
   const shownProjects = filteredProjects.slice(
@@ -895,652 +1234,724 @@ export default function AdminProjectPackages({
 
   return (
     <>
-      <div className="mt-4 grid min-w-0 gap-4 xl:grid-cols-[1fr_1.3fr]">
-        <section aria-label="Project package list" className="min-w-0 space-y-4">
-          <div className={panelCard}>
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className={editorCardTitle}>Project Packages ({filteredProjects.length})</h2>
-              <button
-                type="button"
-                onClick={() => {
-                  setProduct({
-                    ...emptyProduct,
-                    productType: "Project package",
-                    category: "Project Packages",
-                    project_category: "",
-                  });
-                  setEditorOpen(true);
-                }}
-                className="min-h-[36px] rounded-full bg-navy px-4 text-xs font-black text-white transition hover:bg-navy-dark"
-              >
-                + Add package
-              </button>
-              <select
-                value={projectCategory}
-                onChange={(e) => {
-                  setProjectCategory(e.target.value);
-                  setProjectPage(1);
-                }}
-                className={inputClass}
-                aria-label="Project category"
-              >
-                <option value="All">All categories</option>
-                {projectCategories.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <input
-              value={projectQuery}
-              onChange={(e) => {
-                setProjectQuery(e.target.value);
-                setProjectPage(1);
-              }}
-              placeholder="Search by name, SKU, or id"
-              aria-label="Search project packages"
-              className={`mt-3 w-full ${inputClass}`}
-            />
-            <select
-              value={stockFilter}
-              onChange={(e) => {
-                setStockFilter(e.target.value as "all" | "in" | "low" | "out");
-                setProjectPage(1);
-              }}
-              aria-label="Stock filter"
-              className={`mt-3 w-full sm:w-44 ${inputClass}`}
-            >
-              <option value="all">All stock</option>
-              <option value="in">In stock (&gt;3)</option>
-              <option value="low">Low stock (1–3)</option>
-              <option value="out">Out of stock (0)</option>
-            </select>
-            <div className="mt-3 divide-y divide-line">
-              {shownProjects.map((item) => {
-                const stock = Number(item.stock) || 0;
-                const stockLabel =
-                  stock <= 0
-                    ? "Out of stock"
-                    : stock <= 3
-                      ? `Low stock (${stock})`
-                      : `In stock (${stock})`;
-                const stockClass =
-                  stock <= 0
-                    ? "bg-red-100 text-red-700"
-                    : stock <= 3
-                      ? "bg-amber-100 text-amber-800"
-                      : "bg-emerald-100 text-emerald-700";
-                return (
-                  <div key={item.id} className={`${cardRow} items-center`}>
-                    <div className={cardRowText}>
-                      <span className="block">
-                        <strong>{item.name}</strong>{" "}
-                        <span className="text-muted/70">{item.sku}</span>
-                      </span>
-                      <span className="text-[10px] font-black uppercase tracking-wide text-gold">
-                        {item.inventoryType || "Catalog"} · {item.priceLabel}
-                      </span>
-                      <span className="mt-1 flex flex-wrap items-center gap-2">
-                        <span
-                          className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${stockClass}`}
-                        >
-                          {stockLabel}
-                        </span>
-                        {item.active === false && (
-                          <span className="inline-flex rounded-full bg-mist px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-ink/80">
-                            Hidden
-                          </span>
-                        )}
-                      </span>
-                    </div>
-                    <span className="flex shrink-0 flex-wrap gap-2">
-                      <button
-                        onClick={() => {
-                          setProduct(item);
-                          setEditorOpen(true);
-                        }}
-                        className="text-xs font-bold text-navy underline"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => setPreviewProduct(item)}
-                        className="text-xs font-bold text-muted underline"
-                      >
-                        Preview
-                      </button>
-                      <button
-                        onClick={() => void toggleProductVisibility(item)}
-                        className="text-xs font-bold text-ink underline"
-                      >
-                        {item.active === false ? "Show" : "Hide"}
-                      </button>
-                      {canDelete && (
-                        <button
-                          onClick={() => removeProduct(item.id)}
-                          className="text-xs font-bold text-red-600 underline"
-                        >
-                          Delete
-                        </button>
-                      )}
-                    </span>
-                  </div>
-                );
-              })}
-              {shownProjects.length === 0 && (
-                <p className="py-3 text-sm text-muted">
-                  No project packages match &ldquo;{projectQuery}&rdquo;.
-                </p>
-              )}
-            </div>
-            <Pager page={projectPage} totalPages={totalPages} onPage={setProjectPage} />
-          </div>
-        </section>
-        <section
-          id="project-package-editor"
-          aria-label="Project package editor"
-          className="min-w-0"
-        >
-          {editorOpen ? (
-            <AdminEditorSheet
-              title={product.id ? `Edit ${product.name}` : "Add a project package"}
-              hint="Saves to the shared products table used by the website and the app."
-              onClose={() => setEditorOpen(false)}
-            >
-              <ProjectEditor
-                product={product}
-                onChange={setProduct}
-                onSave={saveProduct}
-                onReset={() =>
-                  setProduct({
-                    ...emptyProduct,
-                    productType: "Project package",
-                    category: "Project Packages",
-                    project_category: "",
-                  })
-                }
-                busy={busy}
-                categories={
-                  projectCategories.length ? projectCategories : ["Project Packages", "Robot Cars"]
-                }
-              />
-            </AdminEditorSheet>
-          ) : null}
-          {/* U-45: component linker — only for a SAVED project row (needs an
-              id to hang links on). Suggestions come from the matcher; staff
-              adjusts quantities / removes rows, then saves. */}
-          {product.id && product.productType === "Project package" && (
-            <div className={`${editorCard} mt-4`}>
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h2 className={editorCardTitle}>Components used in this project</h2>
-                <button
-                  type="button"
-                  onClick={() => void saveComponentLinks()}
-                  disabled={linkerBusy}
-                  className="rounded-full bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark disabled:opacity-60"
-                >
-                  {linkerBusy ? "Saving…" : "Save component links"}
-                </button>
-              </div>
-              <p className="mt-1 text-sm text-muted">
-                Pre-filled from the project&rsquo;s materials list where the catalog matched. Link
-                the exact Electronic Products a builder needs — they appear (with quantities) on the
-                project&rsquo;s public page.
-              </p>
-              {linkerLinks.length === 0 && !linkerBusy && (
-                <p className="mt-3 text-sm text-muted">
-                  No components linked yet — add from the suggestions below.
-                </p>
-              )}
-              <ul className="mt-3 space-y-2">
-                {linkerLinks.map((link) => {
-                  const linked = products.find((p) => p.id === link.productId);
-                  return (
-                    <li
-                      key={link.productId}
-                      className={`${cardRow} items-center rounded border border-line px-3 py-2`}
-                    >
-                      <span className="min-w-0 flex-1 truncate text-sm font-bold text-ink">
-                        {linked?.name ?? link.productId}
-                      </span>
-                      <label className="flex items-center gap-2 text-xs font-black text-muted">
-                        Qty
-                        <input
-                          type="number"
-                          min={1}
-                          max={99}
-                          value={link.quantity}
-                          onChange={(e) =>
-                            setLinkerLinks((current) =>
-                              current.map((l) =>
-                                l.productId === link.productId
-                                  ? {
-                                      ...l,
-                                      quantity: Math.max(
-                                        1,
-                                        Math.min(99, Number(e.target.value) || 1)
-                                      ),
-                                    }
-                                  : l
-                              )
-                            )
-                          }
-                          className="w-16 rounded border border-line px-2 py-1 text-right text-sm text-ink"
-                          aria-label={`Quantity for ${linked?.name ?? link.productId}`}
-                        />
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setLinkerLinks((current) =>
-                            current.filter((l) => l.productId !== link.productId)
-                          )
-                        }
-                        className="text-xs font-bold text-red-600 underline"
-                        aria-label={`Remove ${linked?.name ?? link.productId}`}
-                      >
-                        Remove
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-              {linkerSuggestions.length > 0 && (
-                <div className="mt-4 border-t border-line pt-3">
-                  <p className="text-xs font-black uppercase tracking-widest text-muted">
-                    Matcher suggestions
-                  </p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {linkerSuggestions.map((s) => {
-                      const already = linkerLinks.some((l) => l.productId === s.productId);
-                      return (
-                        <button
-                          key={s.label}
-                          type="button"
-                          disabled={!s.productId || already}
-                          onClick={() => {
-                            if (!s.productId) return;
-                            setLinkerLinks((current) => [
-                              ...current,
-                              { productId: s.productId as string, quantity: s.quantity },
-                            ]);
-                          }}
-                          title={
-                            s.productId
-                              ? `matched by ${s.matchedBy} (score ${s.score.toFixed(2)})`
-                              : "no catalog match — generic part"
-                          }
-                          className={`rounded-full border px-3 py-1.5 text-xs font-bold transition ${
-                            already
-                              ? "border-line bg-mist text-muted/70"
-                              : s.productId
-                                ? "border-navy bg-white text-navy hover:bg-mist"
-                                : "cursor-not-allowed border-dashed border-line text-muted/70"
-                          }`}
-                        >
-                          {already ? "✓ " : "+ "}
-                          {s.label}
-                          {s.quantity > 1 ? ` (×${s.quantity})` : ""}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </section>
+      {/* 2026-11-18: Projects is sectioned like the 3D studio — catalog list
+          first, then five roll-ups across every package. */}
+      <div role="tablist" aria-label="Project sections" className="mt-4 flex flex-wrap gap-2">
+        {PROJECT_SECTIONS.map((name) => (
+          <button
+            key={name}
+            type="button"
+            role="tab"
+            aria-selected={section === name}
+            onClick={() => setSection(name)}
+            className={
+              section === name
+                ? "rounded-full bg-navy px-3 py-1.5 text-xs font-black text-white"
+                : "rounded-full border border-line px-3 py-1.5 text-xs font-bold text-ink transition hover:border-navy"
+            }
+          >
+            {name}
+          </button>
+        ))}
       </div>
-
-      {/* 2026-11-13: project pricing (mirrors the 3D print studio pricing panel).
-            Only shown for a saved project package — it has an id to hang the pricing
-            row on, and the catalog components it can be priced from. */}
-      {product.id && product.productType === "Project package" && (
-        <section id="project-package-pricing" aria-label="Project package pricing" className="mt-4">
-          <div className={`${editorCard} rounded-xl border border-line bg-card p-5`}>
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className={editorCardTitle}>Pricing</h2>
-              <button
-                type="button"
-                disabled={pricingBusy}
-                onClick={async () => {
-                  if (!product.id) return;
-                  const next = {
-                    ...projectPricing,
-                    extras: extrasState,
-                    bulkTiers: bulkTiersState,
-                  };
-                  await saveProjectPricing_(next);
-                }}
-                className="rounded-full bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark disabled:opacity-60"
-              >
-                {pricingBusy ? "Saving…" : "Save pricing"}
-              </button>
-            </div>
-            <p className="mt-1 text-sm text-muted">
-              Set the base charge, component markup, optional extras, bulk tiers and minimum order
-              for this project package. Prices stay hidden (rate on request) until you approve them
-              below.
-            </p>
-
-            {/* publication status + approve/withdraw */}
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-[11px] font-black uppercase tracking-[0.14em] text-muted">
-                  Publication status
-                </p>
-                <p className="mt-1 text-sm font-bold text-ink">
-                  {projectPricing.priceStatus === "approved"
-                    ? `Rates approved${projectPricing.priceApprovedAt ? ` on ${new Date(projectPricing.priceApprovedAt).toLocaleDateString()}` : ""}${projectPricing.priceApprovedBy ? ` by ${projectPricing.priceApprovedBy}` : ""}`
-                    : 'Draft — customers see "rate on request" and the calculator stays hidden'}
-                </p>
-              </div>
-              <button
-                type="button"
-                disabled={pricingBusy}
-                onClick={async () => {
-                  if (!product.id) return;
-                  const approved = projectPricing.priceStatus !== "approved";
-                  if (
-                    approved &&
-                    !window.confirm(
-                      "Publish the current project pricing and switch the calculator on?"
-                    )
-                  )
-                    return;
-                  await approveProjectPricing_(approved);
-                }}
-                className={`min-h-[44px] rounded-full px-5 text-xs font-black transition disabled:opacity-60 ${
-                  projectPricing.priceStatus === "approved"
-                    ? "border border-line bg-white text-ink hover:border-red-500"
-                    : "bg-navy text-white hover:bg-navy-dark"
-                }`}
-              >
-                {projectPricing.priceStatus === "approved"
-                  ? "Withdraw rates"
-                  : "Approve & publish rates"}
-              </button>
-            </div>
-
-            <div className="mt-5 grid gap-4 xl:grid-cols-[1fr_1.3fr]">
-              <div className={editorCard}>
-                <h2 className={editorCardTitle}>Base charge &amp; markup</h2>
-                <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                  <label className="min-w-0 text-sm font-bold">
-                    Package base charge (NPR)
-                    <input
-                      type="number"
-                      min={0}
-                      value={projectPricing.packageBaseCharge}
-                      onChange={(e) =>
-                        setProjectPricing({
-                          ...projectPricing,
-                          packageBaseCharge: Math.max(0, Math.round(Number(e.target.value) || 0)),
-                        })
-                      }
-                      className={`mt-2 w-full ${inputClass}`}
-                    />
-                  </label>
-                  <label className="min-w-0 text-sm font-bold">
-                    Component markup (%)
-                    <input
-                      type="number"
-                      min={0}
-                      max={500}
-                      value={projectPricing.componentMarkupPercent}
-                      onChange={(e) =>
-                        setProjectPricing({
-                          ...projectPricing,
-                          componentMarkupPercent: Math.max(
-                            0,
-                            Math.min(500, Math.round(Number(e.target.value) || 0))
-                          ),
-                        })
-                      }
-                      className={`mt-2 w-full ${inputClass}`}
-                    />
-                  </label>
-                  <label className="min-w-0 text-sm font-bold">
-                    Minimum order (NPR)
-                    <input
-                      type="number"
-                      min={0}
-                      value={projectPricing.minimumOrder}
-                      onChange={(e) =>
-                        setProjectPricing({
-                          ...projectPricing,
-                          minimumOrder: Math.max(0, Math.round(Number(e.target.value) || 0)),
-                        })
-                      }
-                      className={`mt-2 w-full ${inputClass}`}
-                    />
-                  </label>
-                  <label className="sm:col-span-2 min-w-0 text-sm font-bold">
-                    Pricing note
-                    <input
-                      value={projectPricing.note}
-                      onChange={(e) =>
-                        setProjectPricing({
-                          ...projectPricing,
-                          note: e.target.value.slice(0, 300),
-                        })
-                      }
-                      className={`mt-2 w-full ${inputClass}`}
-                      placeholder="Internal note (not shown to customers)"
-                    />
-                  </label>
-                </div>
-              </div>
-
-              <div className={editorCard}>
-                <h2 className={editorCardTitle}>Extras &amp; bulk tiers</h2>
-
-                <div className="mt-3">
-                  <p className="text-sm font-bold">Optional extras (flat add-ons)</p>
-                  {extrasState.map((extra, index) => (
-                    <div key={extra.id ?? index} className="mt-2 flex flex-wrap items-end gap-2">
-                      <input
-                        value={extra.name}
-                        aria-label="Extra name"
-                        onChange={(e) => {
-                          const next = extrasState.map((x, i) =>
-                            i === index ? { ...x, name: e.target.value.slice(0, 60) } : x
-                          );
-                          setExtrasState(next);
-                        }}
-                        className={`min-w-0 flex-1 ${inputClass}`}
-                        placeholder="e.g. On-site training"
-                      />
-                      <input
-                        type="number"
-                        min={0}
-                        aria-label="Extra amount (NPR)"
-                        value={extra.amount}
-                        onChange={(e) => {
-                          const next = extrasState.map((x, i) =>
-                            i === index
-                              ? {
-                                  ...x,
-                                  amount: Math.max(0, Math.round(Number(e.target.value) || 0)),
-                                }
-                              : x
-                          );
-                          setExtrasState(next);
-                        }}
-                        className={`w-32 ${inputClass}`}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setExtrasState(extrasState.filter((_, i) => i !== index))}
-                        className="rounded-lg border border-line px-3 py-3 text-xs font-black text-red-600"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ))}
+      {section === "Catalog" ? (
+        <>
+          <div className="mt-4 grid min-w-0 gap-4 xl:grid-cols-[1fr_1.3fr]">
+            <section aria-label="Project package list" className="min-w-0 space-y-4">
+              <div className={panelCard}>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h2 className={editorCardTitle}>Project Packages ({filteredProjects.length})</h2>
                   <button
                     type="button"
-                    onClick={() =>
-                      setExtrasState([
-                        ...extrasState,
-                        { id: `extra-${extrasState.length + 1}`, name: "", amount: 0 },
-                      ])
-                    }
-                    className="mt-2 rounded-lg border border-line px-4 py-2 text-xs font-black text-ink hover:border-navy"
+                    onClick={() => {
+                      openProject({
+                        ...emptyProduct,
+                        productType: "Project package",
+                        category: "Project Packages",
+                        project_category: "",
+                      });
+                    }}
+                    className="min-h-[36px] rounded-full bg-navy px-4 text-xs font-black text-white transition hover:bg-navy-dark"
                   >
-                    Add extra
+                    + Add package
+                  </button>
+                  <select
+                    value={projectCategory}
+                    onChange={(e) => {
+                      setProjectCategory(e.target.value);
+                      setProjectPage(1);
+                    }}
+                    className={inputClass}
+                    aria-label="Project category"
+                  >
+                    <option value="All">All categories</option>
+                    {projectCategories.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {projectFamily !== "All" ? (
+                  <p className="mt-3 flex flex-wrap items-center gap-2 text-xs font-bold text-muted">
+                    Family: <span className="text-ink">{projectFamily}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProjectFamily("All");
+                        setProjectPage(1);
+                      }}
+                      className="rounded-full border border-line px-2 py-1 text-[11px] font-black text-navy"
+                    >
+                      Clear
+                    </button>
+                  </p>
+                ) : null}
+                <input
+                  value={projectQuery}
+                  onChange={(e) => {
+                    setProjectQuery(e.target.value);
+                    setProjectPage(1);
+                  }}
+                  placeholder="Search by name, SKU, or id"
+                  aria-label="Search project packages"
+                  className={`mt-3 w-full ${inputClass}`}
+                />
+                <select
+                  value={stockFilter}
+                  onChange={(e) => {
+                    setStockFilter(e.target.value as "all" | "in" | "low" | "out");
+                    setProjectPage(1);
+                  }}
+                  aria-label="Stock filter"
+                  className={`mt-3 w-full sm:w-44 ${inputClass}`}
+                >
+                  <option value="all">All stock</option>
+                  <option value="in">In stock (&gt;3)</option>
+                  <option value="low">Low stock (1–3)</option>
+                  <option value="out">Out of stock (0)</option>
+                </select>
+                <div className="mt-3 divide-y divide-line">
+                  {shownProjects.map((item) => {
+                    const stock = Number(item.stock) || 0;
+                    const stockLabel =
+                      stock <= 0
+                        ? "Out of stock"
+                        : stock <= 3
+                          ? `Low stock (${stock})`
+                          : `In stock (${stock})`;
+                    const stockClass =
+                      stock <= 0
+                        ? "bg-red-100 text-red-700"
+                        : stock <= 3
+                          ? "bg-amber-100 text-amber-800"
+                          : "bg-emerald-100 text-emerald-700";
+                    return (
+                      <div key={item.id} className={`${cardRow} items-center`}>
+                        <div className={cardRowText}>
+                          <span className="block">
+                            <strong>{item.name}</strong>{" "}
+                            <span className="text-muted/70">{item.sku}</span>
+                          </span>
+                          <span className="text-[10px] font-black uppercase tracking-wide text-gold">
+                            {item.inventoryType || "Catalog"} · {item.priceLabel}
+                          </span>
+                          <span className="mt-1 flex flex-wrap items-center gap-2">
+                            <span
+                              className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${stockClass}`}
+                            >
+                              {stockLabel}
+                            </span>
+                            {item.active === false && (
+                              <span className="inline-flex rounded-full bg-mist px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-ink/80">
+                                Hidden
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                        <span className="flex shrink-0 flex-wrap gap-2">
+                          <button
+                            onClick={() => openProject(item)}
+                            className="text-xs font-bold text-navy underline"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => setPreviewProduct(item)}
+                            className="text-xs font-bold text-muted underline"
+                          >
+                            Preview
+                          </button>
+                          <button
+                            onClick={() => void toggleProductVisibility(item)}
+                            className="text-xs font-bold text-ink underline"
+                          >
+                            {item.active === false ? "Show" : "Hide"}
+                          </button>
+                          {canDelete && (
+                            <button
+                              onClick={() => removeProduct(item.id)}
+                              className="text-xs font-bold text-red-600 underline"
+                            >
+                              Delete
+                            </button>
+                          )}
+                        </span>
+                      </div>
+                    );
+                  })}
+                  {shownProjects.length === 0 && (
+                    <p className="py-3 text-sm text-muted">
+                      No project packages match &ldquo;{projectQuery}&rdquo;.
+                    </p>
+                  )}
+                </div>
+                <Pager page={projectPage} totalPages={totalPages} onPage={setProjectPage} />
+              </div>
+            </section>
+            <section
+              id="project-package-editor"
+              aria-label="Project package editor"
+              className="min-w-0"
+            >
+              {editorOpen ? (
+                <AdminEditorSheet
+                  title={product.id ? `Edit ${product.name}` : "Add a project package"}
+                  hint="Saves to the shared products table used by the website and the app."
+                  onClose={() => setEditorOpen(false)}
+                >
+                  <ProjectEditor
+                    key={`${product.id}-${editorStartTab}`}
+                    initialTab={editorStartTab}
+                    product={product}
+                    onChange={setProduct}
+                    onSave={saveProduct}
+                    onReset={() =>
+                      setProduct({
+                        ...emptyProduct,
+                        productType: "Project package",
+                        category: "Project Packages",
+                        project_category: "",
+                      })
+                    }
+                    busy={busy}
+                    categories={
+                      projectCategories.length
+                        ? projectCategories
+                        : ["Project Packages", "Robot Cars"]
+                    }
+                  />
+                </AdminEditorSheet>
+              ) : null}
+              {/* U-45: component linker — only for a SAVED project row (needs an
+              id to hang links on). Suggestions come from the matcher; staff
+              adjusts quantities / removes rows, then saves. */}
+              {product.id && product.productType === "Project package" && (
+                <div className={`${editorCard} mt-4`}>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h2 className={editorCardTitle}>Components used in this project</h2>
+                    <button
+                      type="button"
+                      onClick={() => void saveComponentLinks()}
+                      disabled={linkerBusy}
+                      className="rounded-full bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark disabled:opacity-60"
+                    >
+                      {linkerBusy ? "Saving…" : "Save component links"}
+                    </button>
+                  </div>
+                  <p className="mt-1 text-sm text-muted">
+                    Pre-filled from the project&rsquo;s materials list where the catalog matched.
+                    Link the exact Electronic Products a builder needs — they appear (with
+                    quantities) on the project&rsquo;s public page.
+                  </p>
+                  {linkerLinks.length === 0 && !linkerBusy && (
+                    <p className="mt-3 text-sm text-muted">
+                      No components linked yet — add from the suggestions below.
+                    </p>
+                  )}
+                  <ul className="mt-3 space-y-2">
+                    {linkerLinks.map((link) => {
+                      const linked = products.find((p) => p.id === link.productId);
+                      return (
+                        <li
+                          key={link.productId}
+                          className={`${cardRow} items-center rounded border border-line px-3 py-2`}
+                        >
+                          <span className="min-w-0 flex-1 truncate text-sm font-bold text-ink">
+                            {linked?.name ?? link.productId}
+                          </span>
+                          <label className="flex items-center gap-2 text-xs font-black text-muted">
+                            Qty
+                            <input
+                              type="number"
+                              min={1}
+                              max={99}
+                              value={link.quantity}
+                              onChange={(e) =>
+                                setLinkerLinks((current) =>
+                                  current.map((l) =>
+                                    l.productId === link.productId
+                                      ? {
+                                          ...l,
+                                          quantity: Math.max(
+                                            1,
+                                            Math.min(99, Number(e.target.value) || 1)
+                                          ),
+                                        }
+                                      : l
+                                  )
+                                )
+                              }
+                              className="w-16 rounded border border-line px-2 py-1 text-right text-sm text-ink"
+                              aria-label={`Quantity for ${linked?.name ?? link.productId}`}
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setLinkerLinks((current) =>
+                                current.filter((l) => l.productId !== link.productId)
+                              )
+                            }
+                            className="text-xs font-bold text-red-600 underline"
+                            aria-label={`Remove ${linked?.name ?? link.productId}`}
+                          >
+                            Remove
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  {linkerSuggestions.length > 0 && (
+                    <div className="mt-4 border-t border-line pt-3">
+                      <p className="text-xs font-black uppercase tracking-widest text-muted">
+                        Matcher suggestions
+                      </p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {linkerSuggestions.map((s) => {
+                          const already = linkerLinks.some((l) => l.productId === s.productId);
+                          return (
+                            <button
+                              key={s.label}
+                              type="button"
+                              disabled={!s.productId || already}
+                              onClick={() => {
+                                if (!s.productId) return;
+                                setLinkerLinks((current) => [
+                                  ...current,
+                                  { productId: s.productId as string, quantity: s.quantity },
+                                ]);
+                              }}
+                              title={
+                                s.productId
+                                  ? `matched by ${s.matchedBy} (score ${s.score.toFixed(2)})`
+                                  : "no catalog match — generic part"
+                              }
+                              className={`rounded-full border px-3 py-1.5 text-xs font-bold transition ${
+                                already
+                                  ? "border-line bg-mist text-muted/70"
+                                  : s.productId
+                                    ? "border-navy bg-white text-navy hover:bg-mist"
+                                    : "cursor-not-allowed border-dashed border-line text-muted/70"
+                              }`}
+                            >
+                              {already ? "✓ " : "+ "}
+                              {s.label}
+                              {s.quantity > 1 ? ` (×${s.quantity})` : ""}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </section>
+          </div>
+
+          {/* 2026-11-13: project pricing (mirrors the 3D print studio pricing panel).
+            Only shown for a saved project package — it has an id to hang the pricing
+            row on, and the catalog components it can be priced from. */}
+          {product.id && product.productType === "Project package" && (
+            <section
+              id="project-package-pricing"
+              aria-label="Project package pricing"
+              className="mt-4"
+            >
+              <div className={`${editorCard} rounded-xl border border-line bg-card p-5`}>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h2 className={editorCardTitle}>Pricing</h2>
+                  <button
+                    type="button"
+                    disabled={pricingBusy}
+                    onClick={async () => {
+                      if (!product.id) return;
+                      const next = {
+                        ...projectPricing,
+                        extras: extrasState,
+                        bulkTiers: bulkTiersState,
+                      };
+                      await saveProjectPricing_(next);
+                    }}
+                    className="rounded-full bg-navy px-4 py-2 text-xs font-black text-white transition hover:bg-navy-dark disabled:opacity-60"
+                  >
+                    {pricingBusy ? "Saving…" : "Save pricing"}
+                  </button>
+                </div>
+                <p className="mt-1 text-sm text-muted">
+                  Set the base charge, component markup, optional extras, bulk tiers and minimum
+                  order for this project package. Prices stay hidden (rate on request) until you
+                  approve them below.
+                </p>
+
+                {/* publication status + approve/withdraw */}
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] font-black uppercase tracking-[0.14em] text-muted">
+                      Publication status
+                    </p>
+                    <p className="mt-1 text-sm font-bold text-ink">
+                      {projectPricing.priceStatus === "approved"
+                        ? `Rates approved${projectPricing.priceApprovedAt ? ` on ${new Date(projectPricing.priceApprovedAt).toLocaleDateString()}` : ""}${projectPricing.priceApprovedBy ? ` by ${projectPricing.priceApprovedBy}` : ""}`
+                        : 'Draft — customers see "rate on request" and the calculator stays hidden'}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={pricingBusy}
+                    onClick={async () => {
+                      if (!product.id) return;
+                      const approved = projectPricing.priceStatus !== "approved";
+                      if (
+                        approved &&
+                        !window.confirm(
+                          "Publish the current project pricing and switch the calculator on?"
+                        )
+                      )
+                        return;
+                      await approveProjectPricing_(approved);
+                    }}
+                    className={`min-h-[44px] rounded-full px-5 text-xs font-black transition disabled:opacity-60 ${
+                      projectPricing.priceStatus === "approved"
+                        ? "border border-line bg-white text-ink hover:border-red-500"
+                        : "bg-navy text-white hover:bg-navy-dark"
+                    }`}
+                  >
+                    {projectPricing.priceStatus === "approved"
+                      ? "Withdraw rates"
+                      : "Approve & publish rates"}
                   </button>
                 </div>
 
-                <div className="mt-5">
-                  <p className="text-sm font-bold">Bulk tiers (quantity → % off)</p>
-                  {bulkTiersState.map((tier, index) => (
-                    <div key={index} className="mt-2 flex flex-wrap items-center gap-2">
-                      <label className="text-xs font-bold">
-                        Min qty
-                        <input
-                          type="number"
-                          min={1}
-                          value={tier.minQty}
-                          onChange={(e) => {
-                            const next = bulkTiersState.map((t, i) =>
-                              i === index
-                                ? {
-                                    ...t,
-                                    minQty: Math.max(1, Math.round(Number(e.target.value) || 1)),
-                                  }
-                                : t
-                            );
-                            setBulkTiersState(next);
-                          }}
-                          className={`ml-2 w-24 ${inputClass}`}
-                        />
-                      </label>
-                      <label className="text-xs font-bold">
-                        Discount %
+                <div className="mt-5 grid gap-4 xl:grid-cols-[1fr_1.3fr]">
+                  <div className={editorCard}>
+                    <h2 className={editorCardTitle}>Base charge &amp; markup</h2>
+                    <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                      <label className="min-w-0 text-sm font-bold">
+                        Package base charge (NPR)
                         <input
                           type="number"
                           min={0}
-                          max={90}
-                          value={tier.discountPercent}
-                          onChange={(e) => {
-                            const next = bulkTiersState.map((t, i) =>
-                              i === index
-                                ? {
-                                    ...t,
-                                    discountPercent: Math.min(
-                                      90,
-                                      Math.max(0, Math.round(Number(e.target.value) || 0))
-                                    ),
-                                  }
-                                : t
-                            );
-                            setBulkTiersState(next);
-                          }}
-                          className={`ml-2 w-24 ${inputClass}`}
+                          value={projectPricing.packageBaseCharge}
+                          onChange={(e) =>
+                            setProjectPricing({
+                              ...projectPricing,
+                              packageBaseCharge: Math.max(
+                                0,
+                                Math.round(Number(e.target.value) || 0)
+                              ),
+                            })
+                          }
+                          className={`mt-2 w-full ${inputClass}`}
                         />
                       </label>
+                      <label className="min-w-0 text-sm font-bold">
+                        Component markup (%)
+                        <input
+                          type="number"
+                          min={0}
+                          max={500}
+                          value={projectPricing.componentMarkupPercent}
+                          onChange={(e) =>
+                            setProjectPricing({
+                              ...projectPricing,
+                              componentMarkupPercent: Math.max(
+                                0,
+                                Math.min(500, Math.round(Number(e.target.value) || 0))
+                              ),
+                            })
+                          }
+                          className={`mt-2 w-full ${inputClass}`}
+                        />
+                      </label>
+                      <label className="min-w-0 text-sm font-bold">
+                        Minimum order (NPR)
+                        <input
+                          type="number"
+                          min={0}
+                          value={projectPricing.minimumOrder}
+                          onChange={(e) =>
+                            setProjectPricing({
+                              ...projectPricing,
+                              minimumOrder: Math.max(0, Math.round(Number(e.target.value) || 0)),
+                            })
+                          }
+                          className={`mt-2 w-full ${inputClass}`}
+                        />
+                      </label>
+                      <label className="sm:col-span-2 min-w-0 text-sm font-bold">
+                        Pricing note
+                        <input
+                          value={projectPricing.note}
+                          onChange={(e) =>
+                            setProjectPricing({
+                              ...projectPricing,
+                              note: e.target.value.slice(0, 300),
+                            })
+                          }
+                          className={`mt-2 w-full ${inputClass}`}
+                          placeholder="Internal note (not shown to customers)"
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className={editorCard}>
+                    <h2 className={editorCardTitle}>Extras &amp; bulk tiers</h2>
+
+                    <div className="mt-3">
+                      <p className="text-sm font-bold">Optional extras (flat add-ons)</p>
+                      {extrasState.map((extra, index) => (
+                        <div
+                          key={extra.id ?? index}
+                          className="mt-2 flex flex-wrap items-end gap-2"
+                        >
+                          <input
+                            value={extra.name}
+                            aria-label="Extra name"
+                            onChange={(e) => {
+                              const next = extrasState.map((x, i) =>
+                                i === index ? { ...x, name: e.target.value.slice(0, 60) } : x
+                              );
+                              setExtrasState(next);
+                            }}
+                            className={`min-w-0 flex-1 ${inputClass}`}
+                            placeholder="e.g. On-site training"
+                          />
+                          <input
+                            type="number"
+                            min={0}
+                            aria-label="Extra amount (NPR)"
+                            value={extra.amount}
+                            onChange={(e) => {
+                              const next = extrasState.map((x, i) =>
+                                i === index
+                                  ? {
+                                      ...x,
+                                      amount: Math.max(0, Math.round(Number(e.target.value) || 0)),
+                                    }
+                                  : x
+                              );
+                              setExtrasState(next);
+                            }}
+                            className={`w-32 ${inputClass}`}
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setExtrasState(extrasState.filter((_, i) => i !== index))
+                            }
+                            className="rounded-lg border border-line px-3 py-3 text-xs font-black text-red-600"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
                       <button
                         type="button"
                         onClick={() =>
-                          setBulkTiersState(bulkTiersState.filter((_, i) => i !== index))
+                          setExtrasState([
+                            ...extrasState,
+                            { id: `extra-${extrasState.length + 1}`, name: "", amount: 0 },
+                          ])
                         }
-                        className="rounded-lg border border-line px-3 py-2 text-xs font-black text-red-600"
+                        className="mt-2 rounded-lg border border-line px-4 py-2 text-xs font-black text-ink hover:border-navy"
                       >
-                        Remove
+                        Add extra
                       </button>
                     </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setBulkTiersState([...bulkTiersState, { minQty: 10, discountPercent: 5 }])
-                    }
-                    className="mt-2 rounded-lg border border-line px-4 py-2 text-xs font-black text-ink hover:border-navy"
-                  >
-                    Add tier
-                  </button>
-                </div>
-              </div>
-            </div>
 
-            {(extrasState.length > 0 ||
-              bulkTiersState.length > 0 ||
-              projectPricing.packageBaseCharge > 0 ||
-              projectPricing.componentMarkupPercent > 0 ||
-              projectPricing.minimumOrder > 0) && (
-              <div className="mt-5 border-t border-line pt-4">
-                <p className="text-xs font-black uppercase tracking-widest text-muted">
-                  Live estimate preview
-                </p>
-                <p className="mt-1 text-sm text-muted">
-                  Based on the components currently linked to this project (below) + the pricing
-                  rules above. This preview uses the same calculator the public page will show once
-                  you approve the rates.
-                </p>
-                {estimatePreview.available ? (
-                  <div className="mt-3 rounded-xl border border-line bg-white p-4">
-                    <p className="text-sm text-muted">
-                      Estimated indicative price
-                      {projectPricing.priceStatus === "approved"
-                        ? ""
-                        : " (draft preview — approve above to publish)"}
-                    </p>
-                    <p className="mt-2 font-display text-2xl font-bold text-ink">
-                      {formatNPR(estimatePreview.total)}
-                    </p>
-                    <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted">Package base charge</span>
-                        <span className="font-bold text-ink">
-                          {formatNPR(estimatePreview.packageBaseCharge)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted">
-                          Components (
-                          {estimatePreview.componentsTotal > 0 ? "included" : "none linked"})
-                        </span>
-                        <span className="font-bold text-ink">
-                          {formatNPR(estimatePreview.componentsTotal)}
-                        </span>
-                      </div>
-                      {estimatePreview.extrasTotal > 0 && (
-                        <div className="flex justify-between">
-                          <span className="text-muted">Extras</span>
-                          <span className="font-bold text-ink">
-                            {formatNPR(estimatePreview.extrasTotal)}
-                          </span>
+                    <div className="mt-5">
+                      <p className="text-sm font-bold">Bulk tiers (quantity → % off)</p>
+                      {bulkTiersState.map((tier, index) => (
+                        <div key={index} className="mt-2 flex flex-wrap items-center gap-2">
+                          <label className="text-xs font-bold">
+                            Min qty
+                            <input
+                              type="number"
+                              min={1}
+                              value={tier.minQty}
+                              onChange={(e) => {
+                                const next = bulkTiersState.map((t, i) =>
+                                  i === index
+                                    ? {
+                                        ...t,
+                                        minQty: Math.max(
+                                          1,
+                                          Math.round(Number(e.target.value) || 1)
+                                        ),
+                                      }
+                                    : t
+                                );
+                                setBulkTiersState(next);
+                              }}
+                              className={`ml-2 w-24 ${inputClass}`}
+                            />
+                          </label>
+                          <label className="text-xs font-bold">
+                            Discount %
+                            <input
+                              type="number"
+                              min={0}
+                              max={90}
+                              value={tier.discountPercent}
+                              onChange={(e) => {
+                                const next = bulkTiersState.map((t, i) =>
+                                  i === index
+                                    ? {
+                                        ...t,
+                                        discountPercent: Math.min(
+                                          90,
+                                          Math.max(0, Math.round(Number(e.target.value) || 0))
+                                        ),
+                                      }
+                                    : t
+                                );
+                                setBulkTiersState(next);
+                              }}
+                              className={`ml-2 w-24 ${inputClass}`}
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setBulkTiersState(bulkTiersState.filter((_, i) => i !== index))
+                            }
+                            className="rounded-lg border border-line px-3 py-2 text-xs font-black text-red-600"
+                          >
+                            Remove
+                          </button>
                         </div>
-                      )}
-                      {estimatePreview.discountPercent > 0 && (
-                        <div className="flex justify-between">
-                          <span className="text-muted">
-                            Bulk discount · {estimatePreview.discountPercent}%
-                          </span>
-                          <span className="font-bold text-red-600">
-                            −{formatNPR(estimatePreview.discountAmount)}
-                          </span>
-                        </div>
-                      )}
-                      {estimatePreview.minimumApplied && (
-                        <div className="flex justify-between">
-                          <span className="text-muted">Minimum order applied</span>
-                          <span className="font-bold text-ink">
-                            {formatNPR(estimatePreview.minimumOrder)}
-                          </span>
-                        </div>
-                      )}
-                    </dl>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setBulkTiersState([...bulkTiersState, { minQty: 10, discountPercent: 5 }])
+                        }
+                        className="mt-2 rounded-lg border border-line px-4 py-2 text-xs font-black text-ink hover:border-navy"
+                      >
+                        Add tier
+                      </button>
+                    </div>
                   </div>
-                ) : (
-                  <p className="mt-3 text-sm text-muted">{estimatePreview.reason}</p>
+                </div>
+
+                {(extrasState.length > 0 ||
+                  bulkTiersState.length > 0 ||
+                  projectPricing.packageBaseCharge > 0 ||
+                  projectPricing.componentMarkupPercent > 0 ||
+                  projectPricing.minimumOrder > 0) && (
+                  <div className="mt-5 border-t border-line pt-4">
+                    <p className="text-xs font-black uppercase tracking-widest text-muted">
+                      Live estimate preview
+                    </p>
+                    <p className="mt-1 text-sm text-muted">
+                      Based on the components currently linked to this project (below) + the pricing
+                      rules above. This preview uses the same calculator the public page will show
+                      once you approve the rates.
+                    </p>
+                    {estimatePreview.available ? (
+                      <div className="mt-3 rounded-xl border border-line bg-white p-4">
+                        <p className="text-sm text-muted">
+                          Estimated indicative price
+                          {projectPricing.priceStatus === "approved"
+                            ? ""
+                            : " (draft preview — approve above to publish)"}
+                        </p>
+                        <p className="mt-2 font-display text-2xl font-bold text-ink">
+                          {formatNPR(estimatePreview.total)}
+                        </p>
+                        <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-muted">Package base charge</span>
+                            <span className="font-bold text-ink">
+                              {formatNPR(estimatePreview.packageBaseCharge)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted">
+                              Components (
+                              {estimatePreview.componentsTotal > 0 ? "included" : "none linked"})
+                            </span>
+                            <span className="font-bold text-ink">
+                              {formatNPR(estimatePreview.componentsTotal)}
+                            </span>
+                          </div>
+                          {estimatePreview.extrasTotal > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-muted">Extras</span>
+                              <span className="font-bold text-ink">
+                                {formatNPR(estimatePreview.extrasTotal)}
+                              </span>
+                            </div>
+                          )}
+                          {estimatePreview.discountPercent > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-muted">
+                                Bulk discount · {estimatePreview.discountPercent}%
+                              </span>
+                              <span className="font-bold text-red-600">
+                                −{formatNPR(estimatePreview.discountAmount)}
+                              </span>
+                            </div>
+                          )}
+                          {estimatePreview.minimumApplied && (
+                            <div className="flex justify-between">
+                              <span className="text-muted">Minimum order applied</span>
+                              <span className="font-bold text-ink">
+                                {formatNPR(estimatePreview.minimumOrder)}
+                              </span>
+                            </div>
+                          )}
+                        </dl>
+                      </div>
+                    ) : (
+                      <p className="mt-3 text-sm text-muted">{estimatePreview.reason}</p>
+                    )}
+                  </div>
                 )}
               </div>
-            )}
-          </div>
-        </section>
+            </section>
+          )}
+        </>
+      ) : (
+        <ProjectSectionPanel
+          section={section}
+          products={projectProducts}
+          pricingRows={pricingRows}
+          pricingState={pricingState}
+          onRetryPricing={() => {
+            setPricingState("idle");
+            void loadPricingRows();
+          }}
+          onOpen={openProject}
+          onFilterCategory={(name) => {
+            setProjectFamily(name);
+            setProjectCategory("All");
+            setSection("Catalog");
+            setProjectPage(1);
+          }}
+        />
       )}
 
       {/* project package preview portal — the "eye" button in the list opens
