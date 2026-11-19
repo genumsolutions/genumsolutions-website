@@ -9,14 +9,15 @@
 # counted before and after, and the run aborts if any of them changed. Every
 # deleted row is written to a JSON artifact first, so the clear is reversible.
 #
-# Groups (comma-separated): logs, devices, carts.
+# Groups (comma-separated): logs, devices, carts, business. `business` deletes
+# orders, transactions and customer messages too — real records, backed up.
 name: Clear logs
 
 on:
   workflow_dispatch:
     inputs:
       groups:
-        description: "Groups to clear: logs, devices, carts (comma-separated)"
+        description: "Groups to clear: logs, devices, carts, business (comma-separated)"
         required: true
         default: "logs"
         type: string

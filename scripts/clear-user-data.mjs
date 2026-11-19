@@ -18,6 +18,9 @@
 //   devices  car_profiles, user_devices, device_relay_tokens, devices,
 //            robot_user_settings
 //   carts    carts
+//   business transactions, orders, customer_messages — REAL sales and mail.
+//            Owner 2026-11-19 chose to clear these too for a from-scratch
+//            shop/checkout test; they are backed up like everything else.
 //
 // Usage (from genumsolutions-website):
 //   node scripts/clear-user-data.mjs                 # dry run, counts only
@@ -66,11 +69,21 @@ const GROUPS = {
     { table: "devices", filter: "id=not.is.null" },
   ],
   carts: [{ table: "carts", filter: "user_id=not.is.null" }],
+  business: [
+    // transactions.order_id is `on delete cascade`, but deleting the ledger
+    // first keeps the intent explicit and works on any cascade setting.
+    { table: "transactions", filter: "created_at=gte.1970-01-01" },
+    { table: "orders", filter: "created_at=gte.1970-01-01" },
+    { table: "customer_messages", filter: "created_at=gte.1970-01-01" },
+  ],
 };
 
 // Counted before and after; any change aborts the run (with the backup dir
 // printed) because it means the service role reached something it must not.
-const PROTECTED = ["profiles", "orders", "transactions", "customer_messages"];
+// Always preserved. When the `business` group is requested, the transactional
+// tables are targets instead of guards — the guard list is built per run below.
+const ALWAYS_PROTECTED = ["profiles"];
+const BUSINESS_TABLES = ["orders", "transactions", "customer_messages"];
 
 if (!SUPABASE_URL || !SERVICE_KEY) {
   console.error(
@@ -137,6 +150,8 @@ async function remove(table, filter) {
 }
 
 const plan = groups.flatMap((g) => GROUPS[g]);
+const targeted = new Set(plan.map((p) => p.table));
+const PROTECTED = [...ALWAYS_PROTECTED, ...BUSINESS_TABLES.filter((t) => !targeted.has(t))];
 
 console.log(`${apply ? "APPLY" : "DRY RUN"} — groups: ${groups.join(", ")}`);
 console.log(`Target: ${SUPABASE_URL}`);
