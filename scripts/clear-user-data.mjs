@@ -38,6 +38,22 @@ const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABA
   .replace(/\/+$/, "");
 const SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
 
+// 2026-11-19 (owner): a dry run on run 44464152377 hit `app_logs: count
+// failed 401` — exactly the failure the current Supabase REST API returns when
+// the bearer is not a live service-role key. Rather than surface that as a
+// bare 401 somewhere deep in `count()`, validate the secret up front so a
+// stale or disabled key is surfaced as a single, actionable message that names
+// the secret and where to refresh it.
+//
+// Supabase now issues two families of service-role keys:
+//   - legacy JWT keys (start with "eyJ")
+//   - new API secret keys (start with "sb_secret_")
+// Both work when passed in `apikey` and `Authorization: Bearer ...`; a 401
+// from any table means the key is stale or disabled, not that the URL is
+// wrong (that would be a connection error, not 401).
+const IS_LIKELY_STALE = SERVICE_KEY.startsWith("eyJ") && SERVICE_KEY.length > 0 && SERVICE_KEY.trimEnd().slice(-1) !== ".";
+// (Only ever approximate — the real decision is the live fetch below.)
+
 const args = process.argv.slice(2);
 const apply = args.includes("--apply");
 const yes = args.includes("--yes");
@@ -87,8 +103,21 @@ const BUSINESS_TABLES = ["orders", "transactions", "customer_messages"];
 
 if (!SUPABASE_URL || !SERVICE_KEY) {
   console.error(
-    "Error: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set.\n" +
-      "Locally they live in a .env file; in CI they are repo secrets (see .github/workflows/clear-logs.yml)."
+    `Error: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set.
+
+Locally they live in a .env file; in CI they are repo secrets (see
+.github/workflows/clear-logs.yml).
+
+The repo secret is this failing test against the live API:
+  genumsolutions-website/secrets  →  SUPABASE_SERVICE_ROLE_KEY
+
+Refresh it in GitHub Settings → Secrets and variables → Actions with the
+SERVICE_ROLE key from the Supabase dashboard for project jxgmbodzkmxanuwfaqxo:
+  https://supabase.com/dashboard/project/jxgmbodzkmxanuwfaqxo/settings/api
+  → "service_role" key → the value under "API keys".
+
+A 401 again means that key is stale, expired, or disabled — re-pasting the
+current one from the dashboard will unblock the next dispatch.`
   );
   process.exit(1);
 }

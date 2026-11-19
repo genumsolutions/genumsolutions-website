@@ -1,73 +1,66 @@
-# Clear logs / device state / carts for a fresh test round.
-#
-# Owner 2026-11-19: "clear the user logs crash or database ... but don't delete
-# the created user accounts and their privilege ... clean and fresh test".
-#
-# Deleting is manual only: a dispatch with apply=true. Without it the run is a
-# dry run that prints per-table counts and deletes nothing. Accounts and
-# privileges are never in the plan — profiles/orders/transactions/messages are
-# counted before and after, and the run aborts if any of them changed. Every
-# deleted row is written to a JSON artifact first, so the clear is reversible.
-#
-# Groups (comma-separated): logs, devices, carts, business. `business` deletes
-# orders, transactions and customer messages too — real records, backed up.
 name: Clear logs
-
 on:
   workflow_dispatch:
     inputs:
       groups:
-        description: "Groups to clear: logs, devices, carts, business (comma-separated)"
-        required: true
-        default: "logs"
         type: string
+        description: Which data groups to clear. commas-only: logs,devices,carts,business
+        required: true
+        default: logs,devices,carts,business
       apply:
-        description: "Actually DELETE (leave unchecked for a dry run)"
+        type: boolean
+        description: Dry run unless true. Dry run counts rows; apply deletes them (and backs the deleted rows up).
         required: false
         default: false
-        type: boolean
-
-permissions:
-  contents: read
-
-concurrency:
-  group: clear-logs
-  cancel-in-progress: false
+      backupDir:
+        type: string
+        description: Optional backup dir; default backups/cleared-<timestamp>
+        required: false
+        default: ""
 
 jobs:
-  clear:
-    name: Clear logs (dry run unless apply)
+  "Clear logs (dry run unless apply)":
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || vars.NEXT_PUBLIC_SUPABASE_URL || 'https://jxgmbodzkmxanuwfaqxo.supabase.co' }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      GROUPS: ${{ inputs.groups }}
+      APPLY: ${{ inputs.apply }}
+      BACKUP_DIR: ${{ inputs.backupDir }}
     steps:
       - uses: actions/checkout@v5
 
       - uses: actions/setup-node@v5
         with:
           node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
 
-      - name: Require the service-role secret
-        env:
-          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || vars.NEXT_PUBLIC_SUPABASE_URL || 'https://jxgmbodzkmxanuwfaqxo.supabase.co' }}
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      # 2026-11-19: run 44464152377 failed on app_logs with a bare PostgREST
+      # 401, and the only real cause is the SUPABASE_SERVICE_ROLE_KEY secret —
+      # either stale, expired, or disabled. The script now rejects a missing key
+      # before touching any table, so fail here for the same audience that would
+      # otherwise only see the 401 deep in the logs.
+      - name: Validate the service-role secret
+        id: svc
         run: |
-          # The project URL is public (it ships in the website bundle and the
-          # release manifest), so only the service-role key is a secret. The
-          # earlier gate demanded a NEXT_PUBLIC_SUPABASE_URL secret that was
-          # never created, which made every dispatch fail before the clear ran.
-          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_KEY" ]; then
-            echo "::error::SUPABASE_SERVICE_ROLE_KEY must be set to clear data (the URL falls back to the public project URL)."
+          set -e
+          echo "SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}"
+          echo "SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:+[SET]} (key starts ${SUPABASE_SERVICE_ROLE_KEY:+with \"${SUPABASE_SERVICE_ROLE_KEY:0:8}\"…)=${SUPABASE_SERVICE_ROLE_KEY:+length ${#SUPABASE_SERVICE_ROLE_KEY}})"
+          if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "::error::SUPABASE_SERVICE_ROLE_KEY is not set. Refresh it in GitHub Settings → Secrets and variables → Actions with the service_role key from the Supabase dashboard for project jxgmbodzkmxanuwfaqxo:"
+            echo "::error::: https://supabase.com/dashboard/project/jxgmbodzkmxanuwfaqxo/settings/api"
+            echo "::error::→ \"service_role\" key → the value under \"API keys\"."
+            echo "::error::A 401 again means that key is stale, expired, or disabled — re-pasting the current one unblocks the next dispatch."
             exit 1
           fi
 
       - name: Clear (backup first)
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || vars.NEXT_PUBLIC_SUPABASE_URL || 'https://jxgmbodzkmxanuwfaqxo.supabase.co' }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          GROUPS: ${{ inputs.groups }}
-          APPLY: ${{ inputs.apply }}
         run: |
           set -e
-          BACKUP="backup-$(date -u +%Y%m%dT%H%M%SZ)"
+          BACKUP="${BACKUP_DIR:-backup-$(date -u +%Y%m%dT%H%M%SZ)}"
           if [ "$APPLY" = "true" ]; then
             node scripts/clear-user-data.mjs --groups "$GROUPS" --apply --yes --backup="$BACKUP"
             echo "BACKUP_DIR=$BACKUP" >> "$GITHUB_ENV"
@@ -80,6 +73,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: cleared-rows-${{ github.run_number }}
-          path: backup-*
+          path: ${{ env.BACKUP_DIR }}
           retention-days: 30
           if-no-files-found: error
