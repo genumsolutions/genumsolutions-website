@@ -12,6 +12,11 @@ on:
         description: Dry run unless true. Dry run counts rows; apply deletes them (and backs the deleted rows up).
         required: false
         default: false
+      _reconcile:
+        type: boolean
+        description: Internal — ignored; used only to force GitHub to re-read this workflow's definition.
+        required: false
+        default: true
       backupDir:
         type: string
         description: Optional backup dir; default backups/cleared-<timestamp>
