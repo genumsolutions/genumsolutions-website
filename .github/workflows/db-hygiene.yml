@@ -1,0 +1,60 @@
+# DB hygiene — remove test residue from the LIVE Supabase project.
+#
+# Why: the app/website E2E harnesses create real auth users and orders, and the
+# 4WD4M/2WD1M bench rounds wrote car_profiles + device_crash_reports rows. They
+# used to stay in the database forever and show up in the admin UI as if they
+# were customers and cars (owner 2026-11-19: "the database might have logged
+# some datas about the device test too ... make the mechanism so that the
+# things get resolved through the ci cd").
+#
+# Weekly report + manual apply. The scheduled run is REPORT ONLY (it fails when
+# residue exists, so the badge is honest); deleting always takes a deliberate
+# workflow_dispatch with apply=true. See scripts/cleanup-test-residue.mjs for
+# the exact match rules — real accounts/devices are never matched.
+name: DB hygiene
+
+on:
+  schedule:
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Delete the residue (leave unchecked to report only)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  residue:
+    name: Test residue sweep
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Require the service-role secret
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_KEY" ]; then
+            echo "::error::NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set for DB hygiene."
+            exit 1
+          fi
+
+      - name: Sweep test residue
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          APPLY: ${{ inputs.apply }}
+        run: |
+          if [ "$APPLY" = "true" ]; then
+            node scripts/cleanup-test-residue.mjs --apply
+          else
+            node scripts/cleanup-test-residue.mjs --fail-on-residue
+          fi

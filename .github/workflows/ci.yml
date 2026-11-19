@@ -299,3 +299,52 @@ jobs:
             exit 1
           fi
           echo "orders.items contract matches the app"
+
+  # Test residue in the LIVE database — harness auth users + their orders, and
+  # the device rows the bench rounds wrote (fixture board ids, RFC 5737
+  # TEST-NET addresses, "genumtest" SSIDs). Until this job existed those rows
+  # were removed by hand, if at all, and the admin Users tab showed them as if
+  # they were customers and cars.
+  #
+  # Same credential rule as db-drift: with the two secrets this is a real gate
+  # (it stays red while residue exists); without them it skips with a warning,
+  # because a missing repo secret is an owner to-do, not a code defect.
+  #
+  # To clean it: Actions -> DB hygiene -> Run workflow (apply=true), or
+  # `npm run db:residue:apply` locally.
+  db-hygiene:
+    name: Live database has no test residue
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Check for Supabase credentials
+        id: creds
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          IS_FORK_PR: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}
+        run: |
+          if [ -n "$SUPABASE_URL" ] && [ -n "$SUPABASE_SERVICE_KEY" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$IS_FORK_PR" = "true" ]; then
+            echo "::warning::Fork PR: Actions secrets are unavailable by design, so live DB residue was NOT checked."
+          else
+            echo "::warning::Live DB residue check skipped: add NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY under Settings -> Secrets and variables -> Actions."
+          fi
+          echo "ready=false" >> "$GITHUB_OUTPUT"
+
+      - name: Report test residue (fails when any exists)
+        if: steps.creds.outputs.ready == 'true'
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/cleanup-test-residue.mjs --fail-on-residue
