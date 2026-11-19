@@ -47,17 +47,21 @@ jobs:
 
       - name: Require the service-role secret
         env:
-          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || vars.NEXT_PUBLIC_SUPABASE_URL || 'https://jxgmbodzkmxanuwfaqxo.supabase.co' }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
+          # The project URL is public (it ships in the website bundle and the
+          # release manifest), so only the service-role key is a secret. The
+          # earlier gate demanded a NEXT_PUBLIC_SUPABASE_URL secret that was
+          # never created, which made every dispatch fail before the clear ran.
           if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_KEY" ]; then
-            echo "::error::NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set to clear data."
+            echo "::error::SUPABASE_SERVICE_ROLE_KEY must be set to clear data (the URL falls back to the public project URL)."
             exit 1
           fi
 
       - name: Clear (backup first)
         env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || vars.NEXT_PUBLIC_SUPABASE_URL || 'https://jxgmbodzkmxanuwfaqxo.supabase.co' }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           GROUPS: ${{ inputs.groups }}
           APPLY: ${{ inputs.apply }}
