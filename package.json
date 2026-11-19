@@ -24,6 +24,8 @@
     "db:drift": "node scripts/db-drift-check.mjs",
     "db:residue": "node scripts/cleanup-test-residue.mjs",
     "db:residue:apply": "node scripts/cleanup-test-residue.mjs --apply",
+    "db:clear": "node scripts/clear-user-data.mjs",
+    "db:clear:apply": "node scripts/clear-user-data.mjs --apply --yes",
     "limits": "node scripts/free-tier-usage.mjs",
     "prepare": "husky",
     "images:optimize": "tsx scripts/optimize-images.ts",

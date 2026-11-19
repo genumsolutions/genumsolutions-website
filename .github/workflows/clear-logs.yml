@@ -1,0 +1,80 @@
+# Clear logs / device state / carts for a fresh test round.
+#
+# Owner 2026-11-19: "clear the user logs crash or database ... but don't delete
+# the created user accounts and their privilege ... clean and fresh test".
+#
+# Deleting is manual only: a dispatch with apply=true. Without it the run is a
+# dry run that prints per-table counts and deletes nothing. Accounts and
+# privileges are never in the plan — profiles/orders/transactions/messages are
+# counted before and after, and the run aborts if any of them changed. Every
+# deleted row is written to a JSON artifact first, so the clear is reversible.
+#
+# Groups (comma-separated): logs, devices, carts.
+name: Clear logs
+
+on:
+  workflow_dispatch:
+    inputs:
+      groups:
+        description: "Groups to clear: logs, devices, carts (comma-separated)"
+        required: true
+        default: "logs"
+        type: string
+      apply:
+        description: "Actually DELETE (leave unchecked for a dry run)"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: clear-logs
+  cancel-in-progress: false
+
+jobs:
+  clear:
+    name: Clear logs (dry run unless apply)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Require the service-role secret
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_KEY" ]; then
+            echo "::error::NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set to clear data."
+            exit 1
+          fi
+
+      - name: Clear (backup first)
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GROUPS: ${{ inputs.groups }}
+          APPLY: ${{ inputs.apply }}
+        run: |
+          set -e
+          BACKUP="backup-$(date -u +%Y%m%dT%H%M%SZ)"
+          if [ "$APPLY" = "true" ]; then
+            node scripts/clear-user-data.mjs --groups "$GROUPS" --apply --yes --backup="$BACKUP"
+            echo "BACKUP_DIR=$BACKUP" >> "$GITHUB_ENV"
+          else
+            node scripts/clear-user-data.mjs --groups "$GROUPS"
+          fi
+
+      - name: Upload the deleted rows
+        if: inputs.apply
+        uses: actions/upload-artifact@v4
+        with:
+          name: cleared-rows-${{ github.run_number }}
+          path: backup-*
+          retention-days: 30
+          if-no-files-found: error
