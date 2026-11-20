@@ -122,6 +122,56 @@ async function provisionProbeUser() {
   const text = await res.text().catch(() => "");
   return { ok: false, detail: `admin createUser HTTP ${res.status} ${text.slice(0, 160)}` };
 }
+
+/** Sign in through the real /login form and wait for the signed-in page.
+ *
+ * Checkout needs a session: POST /api/orders answers 401 "Sign in to place your
+ * order." while the browser is a guest, and the form then just sits on
+ * /checkout. The probe used to inherit a session from signup; that only worked
+ * while the project had email confirmation switched off. Signing in explicitly
+ * makes the flow independent of that setting. */
+async function signInViaUi(targetPage, email, password) {
+  await targetPage.goto(BASE + "/login", { waitUntil: "networkidle2", timeout: 60000 });
+  await targetPage.evaluate(() => {
+    const tab = [...document.querySelectorAll("button")].find((x) =>
+      /^sign in$/i.test(x.textContent?.trim() || "")
+    );
+    if (tab) tab.click();
+  });
+  const filled = await targetPage.evaluate(
+    ({ email, password }) => {
+      const nativeI = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value"
+      ).set;
+      let n = 0;
+      for (const el of document.querySelectorAll("input")) {
+        if (el.name === "email") {
+          nativeI.call(el, email);
+          el.dispatchEvent(new Event("input", { bubbles: true }));
+          n++;
+        } else if (el.name === "password") {
+          nativeI.call(el, password);
+          el.dispatchEvent(new Event("input", { bubbles: true }));
+          n++;
+        }
+      }
+      return n;
+    },
+    { email, password }
+  );
+  if (filled !== 2) return { ok: false, detail: `${filled}/2 fields` };
+  await targetPage.evaluate(() =>
+    [...document.querySelectorAll("button")]
+      .find((b) => /^sign in$/i.test(b.textContent?.trim() || "") && b.type === "submit")
+      ?.click()
+  );
+  const ok = await targetPage
+    .waitForFunction(() => /\/account|\/admin/.test(location.pathname), { timeout: 20000 })
+    .then(() => true)
+    .catch(() => false);
+  return { ok, detail: targetPage.url().replace(BASE, "") };
+}
 const results = [];
 // The reporter groups steps by this. It used to infer the flow from
 // results.length, which mislabelled later steps ("order placed" showed up as
@@ -160,6 +210,8 @@ try {
   );
   const provisioned = await provisionProbeUser();
   step("probe account ready", provisioned.ok, provisioned.detail);
+  const signedIn = await signInViaUi(page, EMAIL, PROBE_PASSWORD);
+  step("probe account signed in", signedIn.ok, signedIn.detail);
 
   // 2. add to build list from the product page (probe = any in-stock item)
   let probe = null;
