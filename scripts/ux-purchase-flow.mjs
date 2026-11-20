@@ -91,7 +91,37 @@ const SUPABASE_URL =
   process.env.NEXT_PUBLIC_SUPABASE_URL || "https://jxgmbodzkmxanuwfaqxo.supabase.co";
 
 const rand = Math.random().toString(36).slice(2, 8);
-const EMAIL = `uxflow-${rand}@genumtest.invalid`;
+// A real-looking domain: the account is created by the admin API (no mail is
+// sent), but Supabase still validates the address shape, and a reserved
+// `.invalid` domain is not worth betting a nightly run on.
+const EMAIL = `uxflow-${rand}@genumsolutions.com`;
+const PROBE_PASSWORD = "Genum-e2e-2026!";
+
+/** Create the probe account directly, pre-confirmed.
+ *
+ * The probe used to sign up through /api/auth/register, which makes Supabase
+ * send a confirmation email. The project uses the built-in mailer, whose whole
+ * quota is a couple of messages per hour, so a twice-daily probe consumed it and
+ * the run then failed with 429 from the rate limiter or 500 from "Error sending
+ * confirmation email" - red for a mail quota, while checkout, contact and the
+ * newsletter were all healthy. Admin createUser with email_confirm:true needs no
+ * mail and still gives the login round-trip below a real account to sign into.
+ * The register route keeps its coverage in tests/auth-registration.test.ts, and
+ * its input validation is still exercised live (a rejected payload sends no
+ * email). */
+async function provisionProbeUser() {
+  const key = loadServiceKey();
+  if (!key)
+    return { ok: false, detail: "no SUPABASE_SERVICE_ROLE_KEY - cannot create the probe account" };
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
+    method: "POST",
+    headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ email: EMAIL, password: PROBE_PASSWORD, email_confirm: true }),
+  });
+  if (res.ok) return { ok: true, detail: `admin createUser, email pre-confirmed (no mail sent)` };
+  const text = await res.text().catch(() => "");
+  return { ok: false, detail: `admin createUser HTTP ${res.status} ${text.slice(0, 160)}` };
+}
 const results = [];
 // The reporter groups steps by this. It used to infer the flow from
 // results.length, which mislabelled later steps ("order placed" showed up as
@@ -114,16 +144,22 @@ let orderId = null;
 try {
   await page.goto(BASE + "/", { waitUntil: "domcontentloaded", timeout: 60000 });
 
-  // 1. signup
-  const reg = await page.evaluate(async (email) => {
+  // 1. account. See provisionProbeUser() for why this is not the register route.
+  const reg = await page.evaluate(async () => {
     const r = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: "UX Flow Probe", email, password: "Genum-e2e-2026!" }),
+      body: JSON.stringify({}),
     });
     return r.status;
-  }, EMAIL);
-  step("signup", reg === 200, `status ${reg}`);
+  });
+  step(
+    "register route validates input",
+    reg === 400,
+    `status ${reg} (400 expected, no email sent)`
+  );
+  const provisioned = await provisionProbeUser();
+  step("probe account ready", provisioned.ok, provisioned.detail);
 
   // 2. add to build list from the product page (probe = any in-stock item)
   let probe = null;
