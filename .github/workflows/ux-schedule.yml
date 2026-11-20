@@ -49,15 +49,27 @@ jobs:
       # ubuntu-latest ships Chromium, but pin Chrome for Stable so the audit
       # sees what real users see.
       - name: Install Chrome for Testing (stable)
+        id: chrome
         uses: browser-actions/setup-chrome@v1
         with:
           chrome-version: stable
           install-chromedriver: false
 
+      # The path the setup action reports, and nothing guessed by find. A bare
+      # `find ... -name google-chrome | head -1` picked
+      # /opt/google/chrome/cron/google-chrome - a cron shell wrapper, not the
+      # browser - and every run died at "Failed to launch the browser process"
+      # before a single page was checked. Whatever we end up with is executed
+      # once here so a bad path fails loudly, next to the cause.
       - name: Export CHROME_PATH
         run: |
-          CHROME_BIN="$(find "$HOME" /opt /usr/bin -maxdepth 6 -type f \( -name chrome -o -name google-chrome \) 2>/dev/null | head -1)"
-          if [ -z "$CHROME_BIN" ]; then CHROME_BIN="$(which google-chrome || which chromium || which chromium-browser)"; fi
+          CHROME_BIN="${{ steps.chrome.outputs.chrome-path }}"
+          if [ -z "$CHROME_BIN" ] || [ ! -x "$CHROME_BIN" ]; then
+            CHROME_BIN="$(find "$HOME" /opt /usr/bin -maxdepth 6 -type f \( -name chrome -o -name google-chrome -o -name google-chrome-stable \) 2>/dev/null | grep -v '/cron/' | head -1)"
+          fi
+          if [ -z "$CHROME_BIN" ]; then CHROME_BIN="$(which google-chrome || which google-chrome-stable || which chromium || which chromium-browser)"; fi
+          if [ -z "$CHROME_BIN" ]; then echo "No Chrome binary found"; exit 1; fi
+          "$CHROME_BIN" --version
           echo "CHROME_PATH=$CHROME_BIN" >> "$GITHUB_ENV"
           echo "Using Chrome: $CHROME_BIN"
 
