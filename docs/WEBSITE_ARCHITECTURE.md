@@ -2,7 +2,7 @@
 
 ## Overview
 
-Next.js 14 (App Router, TypeScript) storefront for **GENUM SOLUTIONS PVT. LTD.** — robotics kits, electronics components, robot-car projects, 3D printing, AI/IoT project packages, and STEM training programs, built and shipped from Kathmandu, Nepal.
+Next.js 16 (App Router, TypeScript) storefront for **GENUM SOLUTIONS PVT. LTD.** — robotics kits, electronics components, robot-car projects, 3D printing, AI/IoT project packages, and STEM training programs, built and shipped from Kathmandu, Nepal.
 
 Live: https://genumsolutions-website.vercel.app
 
@@ -52,7 +52,7 @@ website/
 │   ├── create-admin.ts
 │   ├── sync-app-fallback.mjs   # Sync app fallback
 │   └── ...
-├── middleware.ts               # Auth cookie refresh
+├── proxy.ts                    # Auth cookie refresh (Next 16 middleware)
 ├── tailwind.config.ts          # Tailwind config
 └── next.config.mjs             # Next.js config
 ```
@@ -63,7 +63,7 @@ website/
 
 | Layer                 | Technology                                                                           |
 | --------------------- | ------------------------------------------------------------------------------------ |
-| Framework             | Next.js 14.2 (App Router) + React 18 + TypeScript                                    |
+| Framework             | Next.js 16.4 (App Router) + React 19 + TypeScript                                    |
 | Styling               | Tailwind CSS (custom ink/navy/sky/mist/gold/line/border/surface/muted/accent tokens) |
 | Database/Auth/Storage | Supabase (Postgres + Auth + Storage, cookie sessions via `@supabase/ssr`)            |
 | Fonts                 | Inter + Sora via `next/font` (self-hosted)                                           |
@@ -117,18 +117,18 @@ Next.js App Router with page-based routing:
 
 See `docs/WEBSITE_ADMIN_COMPLETE.md` for complete admin UI documentation.
 
-**8 top-level tabs** in the admin dashboard, identical to the app:
+**7 top-level tabs** in the admin dashboard, identical to the app (Content merged
+into Settings on 2026-11-18):
 
-| Tab                 | Description                                        |
-| ------------------- | -------------------------------------------------- |
-| Dashboard           | Main dashboard overview                            |
-| Orders              | Orders and finance/transactions                    |
-| Electronic Products | Product catalog                                    |
-| 3D Products         | 3D printing catalog                                |
-| Projects            | Project packages                                   |
-| Content             | Services, journal, home copy                       |
-| Users               | Directory, messages, profiles, and the Logs subtab |
-| Settings            | Company info, training programs, and pilot costs   |
+| Tab                 | Description                                                                              |
+| ------------------- | ---------------------------------------------------------------------------------------- |
+| Dashboard           | Main dashboard overview                                                                  |
+| Orders              | Orders and finance/transactions                                                          |
+| Electronic Products | Product catalog                                                                          |
+| 3D Products         | 3D printing catalog                                                                      |
+| Projects            | Project packages                                                                         |
+| Users               | Directory, messages, profiles, and the Logs subtab                                       |
+| Settings            | Company info, training programs, pilot costs, and Content (services, journal, home copy) |
 
 Within **Users**, the **Users**, **Messages**, and **Logs** subtabs are available.
 Logs groups system diagnostics, user activity, and profile entries into three sections.
@@ -385,7 +385,7 @@ lib/                          # Business logic
 supabase/                     # Database schema
   schema.sql                  # Source of truth
 scripts/                       # Utility scripts
-middleware.ts                 # Auth cookie refresh
+proxy.ts                      # Auth cookie refresh (Next 16 middleware)
 tailwind.config.ts            # Tailwind config
 next.config.mjs               # Next.js config
 ```

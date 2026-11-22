@@ -235,7 +235,7 @@ The Settings tab:
 
 | Feature                 | Website                                             | App                                          | Status      |
 | ----------------------- | --------------------------------------------------- | -------------------------------------------- | ----------- |
-| Tab order (8 tabs)      | Identical                                           | Identical                                    | ✅ Mirrored |
+| Tab order (7 tabs)      | Identical                                           | Identical                                    | ✅ Mirrored |
 | Users subtabs           | Users, Messages, Logs                               | Users, Messages, Logs                        | ✅ Mirrored |
 | Users projects          | Per-user **Show projects** expander (read-only)     | Same expander, same rows                     | ✅ Mirrored |
 | Users → Messages        | Contact messages **plus** newsletter opt-ins        | Contact messages **plus** newsletter opt-ins | ✅ Mirrored |

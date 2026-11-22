@@ -263,7 +263,7 @@ Used in: SettingsTab (company), ProfileEntriesTab, UsersTab (car profiles, robot
 
 ### Website (Next.js + React + TypeScript)
 
-- **Framework:** Next.js 14 (app router), React 18, TypeScript
+- **Framework:** Next.js 16 (app router), React 19, TypeScript
 - **Navigation:** Next.js page routes + React components
 - **Styling:** Tailwind CSS (`tailwind.config.ts`)
 - **State Management:** `useState`, `useEffect` across components
@@ -335,7 +335,7 @@ The `profile_key` is the **stable identity** that persists across app reinstalls
 
 | Feature                     | App                                                                            | Website                                  | Mirrored?                  |
 | --------------------------- | ------------------------------------------------------------------------------ | ---------------------------------------- | -------------------------- |
-| Tab order (8 tabs)          | Identical order                                                                | Identical order                          | ✅ Yes                     |
+| Tab order (7 tabs)          | Identical order                                                                | Identical order                          | ✅ Yes                     |
 | Users tab structure         | 3 sections (User Directory, Car Profiles, Robot Profiles)                      | 3 sections (same)                        | ✅ Yes                     |
 | Edit-button pattern         | Read-only → Edit → form → Save/Cancel                                          | Same                                     | ✅ Yes                     |
 | Company info fields         | 12 fields (subset, no url/city/country/vatLabel/description)                   | 17 fields (incl. url)                    | ⚠️ App uses subset         |

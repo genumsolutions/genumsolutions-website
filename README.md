@@ -1,6 +1,6 @@
 # GENUM SOLUTIONS website
 
-Next.js 14 (App Router, TypeScript) storefront for **GENUM SOLUTIONS PVT. LTD.** — robotics kits, electronics components, robot-car projects, 3D printing, AI/IoT project packages, and STEM training programs, built and shipped from Kathmandu, Nepal.
+Next.js 16 (App Router, TypeScript) storefront for **GENUM SOLUTIONS PVT. LTD.** — robotics kits, electronics components, robot-car projects, 3D printing, AI/IoT project packages, and STEM training programs, built and shipped from Kathmandu, Nepal.
 
 Live: https://genumsolutions-website.vercel.app · PAN 623676190
 
@@ -9,7 +9,7 @@ Live: https://genumsolutions-website.vercel.app · PAN 623676190
 - `docs/STORAGE_BUDGET.md` — free-tier limits, the image budget, and the
   `images:optimize` / `images:verify` / `backup` commands.
 - `docs/ADMIN_COHERENCE.md` — the admin contract shared with the mobile app
-  (8 top-level tabs, roles, data ownership, per-user profile management).
+  (7 top-level tabs, roles, data ownership, per-user profile management).
 - `scripts/ADMIN_DASHBOARD_STATE.md` — what the dashboard currently does and
   why each decision was made.
 
@@ -17,7 +17,7 @@ Live: https://genumsolutions-website.vercel.app · PAN 623676190
 
 | Layer                 | Technology                                                                                                            |
 | --------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Framework             | Next.js 14.2 (App Router) + React 18 + TypeScript                                                                     |
+| Framework             | Next.js 16.4 (App Router) + React 19 + TypeScript                                                                     |
 | Styling               | Tailwind CSS (custom `ink/navy/navy-dark/navy-light/sky/mist/gold/gold-dark/line/border/surface/muted/accent` tokens) |
 | Database/Auth/Storage | Supabase (Postgres + Auth + Storage, cookie sessions via `@supabase/ssr`)                                             |
 | Fonts                 | Inter + Sora via `next/font` (self-hosted)                                                                            |
@@ -34,20 +34,21 @@ Live: https://genumsolutions-website.vercel.app · PAN 623676190
 
 ### Admin Dashboard Structure (Nov 2026)
 
-The admin dashboard has 8 top-level tabs, identical to the mobile app:
+The admin dashboard has **7** top-level tabs, identical to the mobile app
+(the separate Content tab was merged into Settings on 2026-11-18 — company
+record, home page copy, storefront services and the journal are one surface):
 
-| Tab                 | Description                                        |
-| ------------------- | -------------------------------------------------- |
-| Dashboard           | Main dashboard overview                            |
-| Orders              | Orders and finance/transactions                    |
-| Electronic Products | Product catalog                                    |
-| 3D Products         | 3D printing catalog                                |
-| Projects            | Project packages                                   |
-| Content             | Services, journal, home copy                       |
-| Users               | Directory, messages, profiles, and the Logs subtab |
-| Settings            | Company info, training programs, and pilot costs   |
+| Tab                 | Description                                                                              |
+| ------------------- | ---------------------------------------------------------------------------------------- |
+| Dashboard           | Main dashboard overview                                                                  |
+| Orders              | Orders and finance/transactions                                                          |
+| Electronic Products | Product catalog                                                                          |
+| 3D Products         | 3D printing catalog                                                                      |
+| Projects            | Project packages                                                                         |
+| Users               | Directory, messages, profiles, and the Logs subtab                                       |
+| Settings            | Company info, training programs, pilot costs, and Content (services, journal, home copy) |
 
-All eight tabs are panels within the single `/admin` route. The Users tab has
+All seven tabs are panels within the single `/admin` route. The Users tab has
 **Users**, **Messages**, and **Logs** subtabs. Logs groups system diagnostics,
 user activity, and profile entries into three sections.
 
@@ -136,7 +137,7 @@ lib/
   company.ts              Company identity (name, address, PAN, contacts)
 supabase/schema.sql       Tables, RLS policies, storage bucket, triggers
 scripts/                  seed-products.ts, create-admin.ts
-middleware.ts             Refreshes Supabase auth cookies on every request
+proxy.ts                  Refreshes Supabase auth cookies on request (Next 16's middleware)
 ```
 
 ## Run locally
@@ -238,7 +239,7 @@ Safe pattern everywhere: the order is saved `pending` server-side, prices are **
 
 The storefront follows a defense-in-depth posture suitable for a client deployment:
 
-- **Authentication & RBAC** — Supabase Auth (email/password + Google OAuth, PKCE). Admin access is restricted to users whose `profiles.role = 'admin'`. Page-level guards (`getCurrentAdmin`) and per-route `isAdminRequest()` checks run on every admin API; an **edge middleware guard** additionally bounces unauthenticated visitors away from `/admin` before any page renders.
+- **Authentication & RBAC** — Supabase Auth (email/password + Google OAuth, PKCE). Admin access is restricted to users whose `profiles.role = 'admin'`. Page-level guards (`getCurrentAdmin`) and per-route `isAdminRequest()` checks run on every admin API; the **edge proxy guard** (`proxy.ts`, Next 16's replacement for `middleware.ts`) additionally bounces unauthenticated visitors away from `/admin` before any page renders.
 - **Row Level Security** — all tables ship with RLS policies in `supabase/schema.sql`. The service-role client (used only in server code) bypasses RLS and is **never** exposed to the browser (`SUPABASE_SERVICE_ROLE_KEY` is server-only, never `NEXT_PUBLIC_`).
 - **Secrets** — all credentials live in environment variables (Vercel + `.env.local`, gitignored). `.env.example` documents every key; nothing secret is committed to the repo.
 - **HTTPS & headers** — Vercel terminates TLS; `next.config.mjs` sets strict transport (`Strict-Transport-Security`), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, a restrictive `Referrer-Policy`, and a locked-down `Permissions-Policy`.

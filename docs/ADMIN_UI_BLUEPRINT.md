@@ -1,7 +1,7 @@
 # Website (genumsolutions-website) — Admin UI Blueprint
 
 Verified 2026-11-16 against `main` @ `d4f124e`. This describes the console that
-exists, not an earlier plan: one `/admin` route, eight tabs, and a sheet for every
+exists, not an earlier plan: one `/admin` route, seven tabs, and a sheet for every
 add/edit form. `WEBSITE_ADMIN_COMPLETE.md` documents the fields and copy;
 `APP_WEBSITE_UI_COMPARISON.md` maps the website onto the app.
 
