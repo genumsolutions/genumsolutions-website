@@ -51,8 +51,6 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: package-lock.json
 
       # 2026-11-19: run 44464152377 failed on app_logs with a bare PostgREST
       # 401, and the only real cause is the SUPABASE_SERVICE_ROLE_KEY secret --
