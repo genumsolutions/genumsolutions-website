@@ -23,9 +23,16 @@ on:
         required: false
         default: ""
 
+# The only runner registered for this repo is a Windows self-hosted one, and
+# it has no PowerShell 7: without a pinned shell every `run:` step falls back
+# to Windows PowerShell while these steps are written as bash.
+defaults:
+  run:
+    shell: bash
+
 jobs:
   "Clear logs (dry run unless apply)":
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: read
     env:

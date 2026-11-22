@@ -31,10 +31,17 @@ permissions:
   contents: write
   pull-requests: write
 
+# The only runner registered for this repo is a Windows self-hosted one, and
+# it has no PowerShell 7: without a pinned shell every `run:` step falls back
+# to Windows PowerShell while these steps are written as bash.
+defaults:
+  run:
+    shell: bash
+
 jobs:
   refresh:
     name: Refresh lib/catalog-extras-data.ts
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v5
         with:
