@@ -31,7 +31,11 @@ defaults:
     shell: bash
 
 jobs:
-  "Clear logs (dry run unless apply)":
+  # The job id must stay a bare identifier; the readable title goes in `name`.
+  # The old id was "Clear logs (dry run unless apply)", and GitHub rejects
+  # spaces and parentheses in a job id, so this workflow never parsed at all.
+  clear:
+    name: Clear logs (dry run unless apply)
     runs-on: self-hosted
     permissions:
       contents: read
