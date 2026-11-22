@@ -1,31 +1,31 @@
-name: Clear logs
+name: "Clear logs"
 on:
   workflow_dispatch:
     inputs:
       groups:
         type: string
-        description: "Which data groups to clear. commas-only: logs,devices,carts,business"
+        description: "Which data groups to clear. Comma-separated only: logs, devices, carts, business"
         required: true
-        default: logs,devices,carts,business
+        default: "logs,devices,carts,business"
       apply:
         type: boolean
-        description: Dry run unless true. Dry run counts rows; apply deletes them (and backs the deleted rows up).
+        description: "Dry run unless true. Dry run counts rows; apply deletes them and backs the deleted rows up first."
         required: false
         default: false
       _reconcile:
         type: boolean
-        description: Internal — ignored; used only to force GitHub to re-read this workflow's definition.
+        description: "Internal. Ignored; used only to force GitHub to re-read this workflow's definition."
         required: false
         default: true
       backupDir:
         type: string
-        description: Optional backup dir; default backups/cleared-<timestamp>
+        description: "Optional backup directory. Defaults to backups/cleared-<timestamp>."
         required: false
         default: ""
 
-# The only runner registered for this repo is a Windows self-hosted one, and
-# it has no PowerShell 7: without a pinned shell every `run:` step falls back
-# to Windows PowerShell while these steps are written as bash.
+# The only runner registered for this repo is a Windows self-hosted one, and it
+# has no PowerShell 7: without a pinned shell every run step falls back to
+# Windows PowerShell while these steps are written as bash.
 defaults:
   run:
     shell: bash
@@ -51,25 +51,25 @@ jobs:
           cache-dependency-path: package-lock.json
 
       # 2026-11-19: run 44464152377 failed on app_logs with a bare PostgREST
-      # 401, and the only real cause is the SUPABASE_SERVICE_ROLE_KEY secret —
+      # 401, and the only real cause is the SUPABASE_SERVICE_ROLE_KEY secret --
       # either stale, expired, or disabled. The script now rejects a missing key
       # before touching any table, so fail here for the same audience that would
       # otherwise only see the 401 deep in the logs.
-      - name: Validate the service-role secret
+      - name: "Validate the service-role secret"
         id: svc
         run: |
           set -e
           echo "SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}"
-          echo "SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:+[SET]} (key starts ${SUPABASE_SERVICE_ROLE_KEY:+with \"${SUPABASE_SERVICE_ROLE_KEY:0:8}\"…)=${SUPABASE_SERVICE_ROLE_KEY:+length ${#SUPABASE_SERVICE_ROLE_KEY}})"
           if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
-            echo "::error::SUPABASE_SERVICE_ROLE_KEY is not set. Refresh it in GitHub Settings → Secrets and variables → Actions with the service_role key from the Supabase dashboard for project jxgmbodzkmxanuwfaqxo:"
-            echo "::error::: https://supabase.com/dashboard/project/jxgmbodzkmxanuwfaqxo/settings/api"
-            echo "::error::→ \"service_role\" key → the value under \"API keys\"."
-            echo "::error::A 401 again means that key is stale, expired, or disabled — re-pasting the current one unblocks the next dispatch."
+            echo "::error::SUPABASE_SERVICE_ROLE_KEY is not set. Refresh it in GitHub Settings > Secrets and variables > Actions with the service_role key from the Supabase dashboard for project jxgmbodzkmxanuwfaqxo:"
+            echo "::error::https://supabase.com/dashboard/project/jxgmbodzkmxanuwfaqxo/settings/api"
+            echo "::error::service_role key, the value under API keys."
+            echo "::error::A 401 again means that key is stale, expired, or disabled; re-pasting the current one unblocks the next dispatch."
             exit 1
           fi
+          echo "SUPABASE_SERVICE_ROLE_KEY=[SET] length ${#SUPABASE_SERVICE_ROLE_KEY}"
 
-      - name: Clear (backup first)
+      - name: "Clear (backup first)"
         run: |
           set -e
           BACKUP="${BACKUP_DIR:-backup-$(date -u +%Y%m%dT%H%M%SZ)}"
@@ -80,7 +80,7 @@ jobs:
             node scripts/clear-user-data.mjs --groups "$GROUPS"
           fi
 
-      - name: Upload the deleted rows
+      - name: "Upload the deleted rows"
         if: inputs.apply
         uses: actions/upload-artifact@v4
         with:
