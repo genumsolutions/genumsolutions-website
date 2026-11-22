@@ -4,7 +4,7 @@ on:
     inputs:
       groups:
         type: string
-        description: Which data groups to clear. commas-only: logs,devices,carts,business
+        description: "Which data groups to clear. commas-only: logs,devices,carts,business"
         required: true
         default: logs,devices,carts,business
       apply:
