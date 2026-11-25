@@ -174,8 +174,9 @@ export default function AppDownloadClient({
                     {appInfo.arch} · {appInfo.sizeLabel} download
                   </li>
                   <li className="flex items-center gap-2">
-                    <Check size={16} className="shrink-0 text-navy" aria-hidden="true" /> Install
-                    over an older version to keep your data
+                    <Check size={16} className="shrink-0 text-navy" aria-hidden="true" /> Keeps your
+                    data — if Android says &quot;App not installed&quot;, uninstall the old build
+                    once, then install again
                   </li>
                 </ul>
                 <div className="mt-6 flex flex-wrap items-center gap-3">
@@ -225,7 +226,10 @@ export default function AppDownloadClient({
                       {formatReleaseDateUtc(appInfo.updatedAt)}
                     </time>
                     {appInfo.notes ? (
-                      <span className="text-slate-500"> · {appInfo.notes}</span>
+                      <span className="text-slate-500">
+                        {" · "}
+                        {appInfo.notes.replace(/\s*\([0-9a-f]{7,40}\)$/i, "")}
+                      </span>
                     ) : null}
                   </p>
                 )}
