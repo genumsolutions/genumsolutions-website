@@ -152,7 +152,7 @@ jobs:
       - name: Checkout app
         uses: actions/checkout@v5
         with:
-          repository: genumsolutions/genumsolutions-app
+          repository: genumsolutions/genumsolutions-app-V4
           path: app
           token: ${{ secrets.CROSS_REPO_READ_TOKEN || github.token }}
           persist-credentials: false
@@ -289,7 +289,7 @@ jobs:
       - name: Checkout app
         uses: actions/checkout@v5
         with:
-          repository: genumsolutions/genumsolutions-app
+          repository: genumsolutions/genumsolutions-app-V4
           path: app
           token: ${{ secrets.CROSS_REPO_READ_TOKEN || github.token }}
           persist-credentials: false
