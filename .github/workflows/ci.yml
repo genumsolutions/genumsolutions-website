@@ -10,9 +10,9 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-# The only runner registered for this repo is a Windows self-hosted one, and
-# it has no PowerShell 7: without a pinned shell every `run:` step falls back
-# to Windows PowerShell while these steps are written as bash.
+# These steps are written for bash. The pin matters if a job ever runs on a
+# Windows self-hosted runner (none has PowerShell 7, so every `run:` step would
+# fall back to Windows PowerShell); GitHub-hosted Ubuntu defaults to bash.
 defaults:
   run:
     shell: bash
@@ -20,7 +20,7 @@ defaults:
 jobs:
   quality:
     name: Quality checks
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     permissions:
       contents: read
     env:
@@ -60,7 +60,7 @@ jobs:
 
   build:
     name: Production build
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     permissions:
       contents: read
     env:
@@ -92,7 +92,7 @@ jobs:
   # its detail page) without depending on the live database.
   e2e-parity:
     name: E2E parity (Playwright)
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     permissions:
       contents: read
     env:
@@ -140,7 +140,7 @@ jobs:
   # failing when the committed copy differs.
   catalog-parity:
     name: App bundled catalog matches this repo
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     if: github.actor != 'dependabot[bot]' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     permissions:
       contents: read
@@ -185,7 +185,7 @@ jobs:
 
   edge-relay:
     name: Edge function typecheck (car-relay)
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     permissions:
       contents: read
     # tsconfig.json EXCLUDES supabase/functions, so the car-relay edge function
@@ -229,7 +229,7 @@ jobs:
   # check locally.
   db-drift:
     name: Live database matches schema.sql
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
@@ -277,7 +277,7 @@ jobs:
   # file and this job fails when the two copies differ.
   order-items-contract:
     name: Order items contract matches the app
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     if: github.actor != 'dependabot[bot]' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     permissions:
       contents: read
@@ -316,7 +316,7 @@ jobs:
   # `npm run db:residue:apply` locally.
   db-hygiene:
     name: Live database has no test residue
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:

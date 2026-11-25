@@ -36,7 +36,7 @@ jobs:
   # spaces and parentheses in a job id, so this workflow never parsed at all.
   clear:
     name: Clear logs (dry run unless apply)
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     permissions:
       contents: read
     env:

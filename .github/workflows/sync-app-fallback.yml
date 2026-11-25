@@ -38,7 +38,7 @@ defaults:
 jobs:
   sync:
     name: Sync lib/company.ts to the live release
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
