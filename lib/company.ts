@@ -80,8 +80,8 @@ export type AppInfo = {
 //   node scripts/sync-app-fallback.mjs
 // (in this repo). bump-version.mjs in the app repo no longer touches this file.
 export const androidApp: AppInfo = {
-  version: "4.0.0",
-  versionCode: 73,
+  version: "4.0.1",
+  versionCode: 74,
   sizeLabel: "41.9 MB",
   arch: "Android · 64-bit",
   apkUrl:
